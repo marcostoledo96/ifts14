@@ -8,7 +8,7 @@ Este contrato define la API PHP futura bajo `/certificados/api/` para validar ce
 |---|---|
 | Ruta pública | `/certificados/api/` |
 | Formato | JSON UTF-8 |
-| Persistencia | MariaDB 10.6.27 con PDO y prepared statements cuando se implemente |
+| Persistencia | MariaDB 10.6.27 con PDO y prepared statements cuando se implemente. Modelo documentado en `docs/database/01-modelo-datos-certificados.md`. |
 | Exposición pública | Mínima: autenticidad, estado y datos no sensibles del certificado |
 | Fuera de alcance | Código PHP, Angular, migraciones, generación PDF/QR, envío de mails |
 
@@ -129,13 +129,15 @@ Toda respuesta de error debe usar este formato:
 
 ## Conceptos de base esperados
 
-Sin crear migraciones todavía, el modelo futuro debería contemplar tablas con prefijo `cert_` para:
+El modelo de datos inicial contempla tablas con prefijo `cert_`:
 
 | Concepto | Propósito |
 |---|---|
 | `cert_certificados` | Estado, código público, fecha de emisión y referencia al alumno/curso. |
 | `cert_tokens_verificacion` | Hash del token público, vigencia, revocación y último uso. |
 | `cert_eventos_auditoria` | Eventos no sensibles de emisión, verificación, revocación o reenvío. |
+
+La migración controlada es `database/migrations/001_certificados_qr.sql`. El token público se almacena como hash con pepper externo a Git; la API futura debe calcularlo antes de consultar `cert_tokens_verificacion.token_hash`.
 
 ## Expectativas para Angular futuro
 
