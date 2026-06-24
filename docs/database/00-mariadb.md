@@ -22,9 +22,9 @@ material_privado_no_versionar/db_dumps_originales/
 
 No deben versionarse.
 
-## Conceptos futuros para certificados QR
+## Modelo para certificados QR
 
-No hay migraciones creadas todavía. Cuando se implemente el módulo, el modelo debería usar tablas nuevas con prefijo `cert_`:
+El modelo inicial queda definido en `docs/database/01-modelo-datos-certificados.md` y en la migración controlada `database/migrations/001_certificados_qr.sql`.
 
 | Concepto | Propósito |
 |---|---|
@@ -32,7 +32,7 @@ No hay migraciones creadas todavía. Cuando se implemente el módulo, el modelo 
 | `cert_tokens_verificacion` | Hash del token público, vigencia, revocación y último uso. |
 | `cert_eventos_auditoria` | Eventos no sensibles de emisión, verificación, revocación o reenvío. |
 
-La definición real de columnas, índices y claves queda diferida a un ciclo de migraciones controladas.
+Los tokens públicos no se guardan en texto plano. El backend futuro debe comparar contra `token_hash` calculado con hash criptográfico y pepper fuera de Git.
 
 ## Hallazgos de auditoría (hipótesis)
 
