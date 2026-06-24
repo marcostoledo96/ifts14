@@ -28,7 +28,7 @@ Los prompts anteriores de `docs/opencode/` quedan archivados en `docs/opencode/a
 | Backend | `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md` |
 | Base de datos | `database/AGENTS.md`, `docs/database/00-mariadb.md`, `database/README.md` |
 | Deploy | `deploy/AGENTS.md`, `docs/deploy/00-cpanel-certificados.md`, `deploy/README.md` |
-| Auditoría | `docs/auditoria/00-inventario-material-descargado.md` |
+| Auditoría | `docs/auditoria/00-inventario-material-descargado.md`, `docs/auditoria/01-auditoria-material-original.md`, `docs/auditoria/02-hallazgos-dumps-sql.md` |
 | Scripts | `scripts/AGENTS.md` |
 | Specs | `openspec/AGENTS.md`, `openspec/specs/README.md`, `openspec/specs/repo-seguro/spec.md` |
 
