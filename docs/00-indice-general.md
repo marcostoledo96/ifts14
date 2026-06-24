@@ -25,12 +25,12 @@ Los prompts anteriores de `docs/opencode/` quedan archivados en `docs/opencode/a
 |---|---|
 | Arquitectura | `docs/01-contexto-decisiones-stack.md`, `docs/02-arquitectura.md` |
 | Frontend | `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md` |
-| Backend | `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md` |
+| Backend | `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md` |
 | Base de datos | `database/AGENTS.md`, `docs/database/00-mariadb.md`, `database/README.md` |
 | Deploy | `deploy/AGENTS.md`, `docs/deploy/00-cpanel-certificados.md`, `deploy/README.md` |
 | Auditoría | `docs/auditoria/00-inventario-material-descargado.md`, `docs/auditoria/01-auditoria-material-original.md`, `docs/auditoria/02-hallazgos-dumps-sql.md` |
 | Scripts | `scripts/AGENTS.md` |
-| Specs | `openspec/AGENTS.md`, `openspec/specs/README.md`, `openspec/specs/repo-seguro/spec.md` |
+| Specs | `openspec/AGENTS.md`, `openspec/specs/README.md`, `openspec/specs/repo-seguro/spec.md`, `openspec/specs/backend-contrato-api-certificados/spec.md` |
 
 ## Referencias condicionales
 
