@@ -22,6 +22,18 @@ material_privado_no_versionar/db_dumps_originales/
 
 No deben versionarse.
 
+## Conceptos futuros para certificados QR
+
+No hay migraciones creadas todavía. Cuando se implemente el módulo, el modelo debería usar tablas nuevas con prefijo `cert_`:
+
+| Concepto | Propósito |
+|---|---|
+| `cert_certificados` | Estado, código público, fecha de emisión y referencia al alumno/curso. |
+| `cert_tokens_verificacion` | Hash del token público, vigencia, revocación y último uso. |
+| `cert_eventos_auditoria` | Eventos no sensibles de emisión, verificación, revocación o reenvío. |
+
+La definición real de columnas, índices y claves queda diferida a un ciclo de migraciones controladas.
+
 ## Hallazgos de auditoría (hipótesis)
 
 - **Observado**: hay dos dumps SQL originales bajo `material_privado_no_versionar/db_dumps_originales/`, ambos ignorados por Git.

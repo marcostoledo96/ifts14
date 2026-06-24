@@ -19,11 +19,20 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 /certificados/api/
 ```
 
+## Contrato vigente
+
+El contrato público futuro de la API de certificados QR está documentado en:
+
+- `docs/backend/01-contrato-api-certificados.md`
+
+Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, reglas de seguridad y expectativas de integración. No implica implementación PHP todavía.
+
 ## Pendientes
 
 - Confirmar si Composer está disponible.
 - Confirmar mecanismo de email.
 - Confirmar generación de PDF/QR viable en el hosting.
+- Definir endpoints administrativos de emisión, revocación y reenvío en un ciclo SDD posterior.
 
 ## Hallazgos de auditoría (hipótesis)
 
