@@ -15,7 +15,8 @@ No leer todo el repositorio por defecto. Empezar por la ruta mínima del rol y a
 | Rol | Guía vigente |
 |---|---|
 | Marcos | `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` |
-| Matías | `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` |
+| Matías — F0-F3 | `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` |
+| Matías — Fase 2 F4-F6 | `MATIAS_PROMPTS_SDD_FASE2.md` |
 
 Los prompts anteriores de `docs/opencode/` quedan archivados en `docs/opencode/archive/` como referencia histórica.
 

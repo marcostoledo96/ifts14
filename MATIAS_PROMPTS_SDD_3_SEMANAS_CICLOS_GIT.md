@@ -2,7 +2,7 @@
 
 Esta guía es el punto de entrada para que Matías trabaje el frontend Angular 20 del módulo `/certificados/` desde Windows. Se trabaja en ciclos chicos, con Spec-Driven Development, validación explícita y cierre obligatorio con `sdd-archive`.
 
-> Estado de esta guía: WU1 define estructura, reglas y plantillas. WU2 detalla los ciclos F0-01 a F1-05. WU3 detalla los ciclos F2-01 a F3-06. WU4 completa referencias, checklists finales y mapeo spec → guía.
+> Estado de esta guía: cubre F0-F3. `muestra_pagina/` ya tiene 7 pantallas v0 para prompts 4-10; los prompts 11-22 continúan en `MATIAS_PROMPTS_SDD_FASE2.md`.
 
 ## Ruta rápida
 
@@ -12,7 +12,8 @@ Esta guía es el punto de entrada para que Matías trabaje el frontend Angular 2
 4. Elegí un ciclo F0-F3 y leé su objetivo, archivos, prompt, validaciones y límites.
 5. Pedile a OpenCode un ciclo SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 6. Ejecutá pruebas automáticas disponibles y QA manual antes de cerrar.
-7. Dejale a Marcos un reporte final con archivos, verificaciones, bloqueos y comandos Git propuestos. OpenCode no ejecuta commit, push, merge ni rebase.
+7. Al cerrar F3-06, continuá con `MATIAS_PROMPTS_SDD_FASE2.md` para F4-F6 si Marcos aprueba seguir.
+8. Dejale a Marcos un reporte final con archivos, verificaciones, bloqueos y comandos Git propuestos. OpenCode no ejecuta commit, push, merge ni rebase.
 
 ## Misión y contexto operativo
 
@@ -20,7 +21,7 @@ Esta guía es el punto de entrada para que Matías trabaje el frontend Angular 2
 |---|---|
 | Rol | Matías trabaja frontend Angular 20, UI/UX, responsive y accesibilidad. |
 | Producto | Módulo público `/certificados/` para validar certificaciones mediante QR o link. |
-| Fuente visual | `muestra_pagina/`, cuando tenga diseño utilizable generado en v0. |
+| Fuente visual | `muestra_pagina/` ya contiene referencia v0 utilizable para prompts 4-10; prompts 11-22 quedan pendientes. |
 | Fuente documental | `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md` y specs OpenSpec vigentes. |
 | Backend/API | No inventar contratos. Usar solo lo documentado por Marcos. |
 | Seguridad | No tocar `material_privado_no_versionar/`, dumps, logs, credenciales ni archivos `.env`. |
@@ -113,12 +114,13 @@ pruebas, QA manual, documentación actualizada, bloqueos y riesgos.
 
 ## Uso de `muestra_pagina/`
 
-`muestra_pagina/` es referencia visual y funcional, no código definitivo.
+`muestra_pagina/` es referencia visual y funcional, no código definitivo. Ya no se considera vacía para F1-F3: contiene 7 pantallas disponibles y deja 12 pendientes para Fase 2.
 
 | Estado de `muestra_pagina/` | Acción |
 |---|---|
 | Vacía o solo con `README.md`/`AGENTS.md` | No implementar pantallas finales. Solo preparar estructura, documentación o reportar bloqueo. |
-| Con diseño v0 utilizable | Analizar composición, jerarquía, paleta, tipografía, espaciados, estados y comportamiento. |
+| Con diseño v0 utilizable para prompts 4-10 | Analizar composición, jerarquía, paleta, tipografía, espaciados, estados y comportamiento. |
+| Prompts 11-22 pendientes | Usar `MATIAS_PROMPTS_SDD_FASE2.md`; no ampliar esta guía con F4-F6. |
 | Con React/Next exportado | No copiar literalmente. Portar la intención visual a Angular 20 con componentes propios. |
 
 Checklist mínimo antes de portar una pantalla:
@@ -128,6 +130,25 @@ Checklist mínimo antes de portar una pantalla:
 - [ ] Se registraron estados: carga, éxito, vacío, error y no encontrado si aplica.
 - [ ] Se respeta identidad institucional del IFTS 14.
 - [ ] La implementación no depende de contratos API inventados.
+
+### Prompts pendientes post-F3
+
+| Prompt | Pendiente | Documento operativo |
+|---:|---|---|
+| 11 | Detalle de certificación | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 12 | Vista previa PDF complementario | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 13 | Listado de cursos | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 14 | Detalle de curso | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 15 | Listado de certificaciones | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 16 | Listado de alumnos | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 17 | Detalle de alumno administrativo | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 18 | Enviar/reenviar certificación | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 19 | Revocar certificación | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 20 | Carga masiva placeholder | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 21 | Auditoría básica | `MATIAS_PROMPTS_SDD_FASE2.md` |
+| 22 | Configuración institucional | `MATIAS_PROMPTS_SDD_FASE2.md` |
+
+No implementar estos prompts dentro de F0-F3.
 
 ## Política frontend, pruebas y QA
 
@@ -401,7 +422,7 @@ Mensaje de commit sugerido: `docs(matias): registrar onboarding frontend`.
 
 ### Ciclo F1-01 — Auditar `muestra_pagina/`
 
-Objetivo: determinar si existe referencia visual utilizable y qué se puede portar a Angular 20.
+Objetivo: confirmar la referencia visual v0 disponible para prompts 4-10 y registrar que prompts 11-22 continúan en Fase 2.
 Rama sugerida: `frontend/auditar-muestra-pagina`.
 Archivos a leer: `AGENTS.md`, `GUIA.md`, `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md` y archivos visibles dentro de `muestra_pagina/` sin abrir material sensible externo.
 
@@ -415,21 +436,21 @@ Prompt exacto para OpenCode:
 ```txt
 Trabajemos el ciclo F1-01 — Auditar muestra_pagina/.
 Leé AGENTS.md, GUIA.md, docs/frontend/00-angular20-port-v0.md, muestra_pagina/README.md y muestra_pagina/AGENTS.md.
-Revisá solo la estructura segura de muestra_pagina/ y decime si hay diseño v0 utilizable.
-Si está vacía o solo tiene README/AGENTS, bloqueá la implementación de pantallas finales.
-Si hay diseño, listá pantallas, componentes, estados visibles, riesgos y próximos pasos para portar a Angular 20.
+Revisá solo la estructura segura de muestra_pagina/ y confirmá el estado documentado: 7 pantallas v0 disponibles y 12 pendientes.
+Listá pantallas, componentes, estados visibles, riesgos y próximos pasos para portar a Angular 20.
+Derivá prompts 11-22 a MATIAS_PROMPTS_SDD_FASE2.md; no los implementes dentro de este ciclo.
 No copies React/Next literalmente, no instales dependencias y no toques backend, base, deploy ni material_privado_no_versionar/.
 ```
 
 Validaciones automáticas:
 - [ ] `Get-ChildItem .\muestra_pagina -Force` lista únicamente nombres y estructura segura.
-- [ ] El reporte clasifica la carpeta como vacía, insuficiente o utilizable.
+- [ ] El reporte confirma 7 pantallas disponibles y 12 pendientes, o explica una diferencia encontrada.
 - [ ] No se modifica código Angular en este ciclo si no hay referencia aprobada.
 
 QA manual:
 - [ ] La auditoría distingue diseño visual de código fuente exportado.
 - [ ] Se registran pantallas y estados si existen.
-- [ ] Si falta referencia, el bloqueo queda explícito y no se inventan pantallas.
+- [ ] Los prompts 11-22 quedan derivados a `MATIAS_PROMPTS_SDD_FASE2.md`.
 
 Documentación a actualizar en `sdd-archive`:
 - `docs/frontend/00-angular20-port-v0.md` con hallazgos resumidos si hay diseño utilizable.
@@ -444,7 +465,7 @@ Mensaje de commit sugerido: `docs(frontend): registrar auditoria de muestra pagi
 
 ### Ciclo F1-02 — Extraer sistema visual desde v0
 
-Objetivo: convertir la referencia v0 en criterios visuales portables: composición, paleta, tipografía, espaciado, componentes y estados.
+Objetivo: convertir la referencia v0 disponible en criterios visuales portables: composición, paleta, tipografía, espaciado, componentes y estados.
 Rama sugerida: `frontend/sistema-visual-v0`.
 Archivos a leer: `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md`, hallazgos del ciclo F1-01 y archivos de diseño disponibles en `muestra_pagina/`.
 
@@ -457,8 +478,7 @@ Prompt exacto para OpenCode:
 ```txt
 Trabajemos el ciclo F1-02 — Extraer sistema visual desde v0.
 Usá los hallazgos de F1-01 y leé docs/frontend/00-angular20-port-v0.md, muestra_pagina/README.md y muestra_pagina/AGENTS.md.
-Si muestra_pagina/ no tiene diseño utilizable, reportá bloqueo y no inventes tokens.
-Si tiene diseño, extraé sistema visual: paleta, tipografía observada, espaciados, layout, componentes, estados, responsive y accesibilidad.
+Usá la referencia v0 disponible para prompts 4-10. Extraé sistema visual: paleta, tipografía observada, espaciados, layout, componentes, estados, responsive y accesibilidad.
 Proponé cómo documentarlo para Angular 20 sin copiar React/Next literalmente y sin instalar dependencias.
 No modifiques backend, base, deploy ni material_privado_no_versionar/.
 ```
@@ -634,7 +654,8 @@ Mensaje de commit sugerido: `feat(frontend): crear layout base publico admin`.
 | `node` o `npm` no se reconoce | Instalar Node.js LTS, cerrar PowerShell, abrir una terminal nueva y repetir `node --version` / `npm --version`. |
 | `ng` no se reconoce | Instalar Angular CLI con `npm install -g @angular/cli` o usar CLI local cuando exista app. Validar con `ng version`. |
 | `git status` muestra muchos cambios inesperados | Frenar. No commitear. Pedir revisión a Marcos con lista de archivos. |
-| `muestra_pagina/` está vacía | Bloquear UI final. Solo avanzar con estructura, documentación o preparación aprobada. |
+| `muestra_pagina/` no coincide con el inventario 7/12 | Frenar, actualizar `docs/frontend/00-angular20-port-v0.md` mediante SDD y no portar pantallas dudosas. |
+| Hay que seguir con prompts 11-22 | Usar `MATIAS_PROMPTS_SDD_FASE2.md`; no ampliar F0-F3. |
 | Tailwind no está aprobado | No instalar. Documentar necesidad, alternativas y esperar decisión. |
 | `npm test` o `npm run build` no existe | No inventar evidencia. Reportar comando ausente y validar con el menor chequeo disponible. |
 
@@ -1166,7 +1187,7 @@ Mensaje de commit sugerido: `build(frontend): validar build certificados`.
 
 ### Ciclo F3-06 — Handoff a Marcos
 
-Objetivo: entregar a Marcos un reporte revisable con estado, evidencia, riesgos, pendientes y comandos Git propuestos para decisión humana.
+Objetivo: entregar a Marcos un reporte revisable con estado, evidencia, riesgos, pendientes, handoff a Fase 2 y comandos Git propuestos para decisión humana.
 Rama sugerida: `docs/handoff-frontend-matias`.
 Archivos a leer: esta guía, reportes de F2/F3, `docs/frontend/00-angular20-port-v0.md`, `docs/00-indice-general.md` y spec del ciclo activo.
 
@@ -1182,7 +1203,7 @@ Trabajemos el ciclo F3-06 — Handoff a Marcos.
 Usá SDD completo. Leé esta guía, reportes de F2/F3, docs/frontend/00-angular20-port-v0.md,
 docs/00-indice-general.md y la spec del ciclo.
 Prepará un handoff para Marcos con resumen, archivos tocados, pruebas, QA, documentación actualizada,
-bloqueos, riesgos, próximos pasos y comandos Git propuestos sin ejecutarlos.
+bloqueos, riesgos, próximos pasos, referencia a MATIAS_PROMPTS_SDD_FASE2.md y comandos Git propuestos sin ejecutarlos.
 No hagas commit, push, merge ni rebase. No despliegues y no toques backend/base/material_privado_no_versionar/.
 ```
 
@@ -1190,12 +1211,14 @@ Validaciones automáticas:
 - [ ] `git status --short` y `git diff --stat` quedan registrados como evidencia, sin ejecutar commit.
 - [ ] El handoff lista archivos tocados y validaciones reales.
 - [ ] Los comandos Git aparecen como propuesta, no como acción ejecutada por OpenCode.
+- [ ] El handoff indica si Fase 2 queda habilitada, pendiente o bloqueada por Marcos.
 
 QA manual:
 - [ ] Marcos puede revisar qué cambió sin reconstruir todo el ciclo.
 - [ ] Pendientes y riesgos están separados de lo completado.
 - [ ] No se ocultan bloqueos de API, diseño, tests o deploy.
 - [ ] Queda claro qué requiere decisión humana.
+- [ ] Los prompts 11-22 no se mezclan con el cierre de F3.
 
 Documentación a actualizar en `sdd-archive`:
 - `docs/frontend/00-angular20-port-v0.md` con estado final del frontend.
@@ -1218,6 +1241,7 @@ Mensaje de commit sugerido: `docs(frontend): preparar handoff a marcos`.
 | `ng build --base-href /certificados/` falla | Confirmar que se ejecuta dentro de `apps/frontend-angular/` y que Angular CLI está disponible; no desplegar. |
 | Rutas internas no funcionan al refrescar | Documentar posible necesidad de configuración de servidor para SPA; no modificar cPanel ni `.htaccess` real sin Marcos. |
 | Falta contrato API PHP | Mantener servicios mock, reportar bloqueo y pedir definición a Marcos. |
+| Quedan prompts 11-22 pendientes | Derivar a `MATIAS_PROMPTS_SDD_FASE2.md` y pedir decisión humana antes de F4-F6. |
 | Aparecen datos sensibles en mock o consola | Frenar, removerlos del frontend y reportar el hallazgo sin copiar datos reales. |
 | `dist/` queda generado | No versionarlo salvo decisión explícita; limpiar o dejar fuera de commit propuesto según indique Marcos. |
 | Se necesita deploy | Preparar instrucciones y evidencia; no subir archivos ni tocar `public_html`. |
@@ -1254,6 +1278,7 @@ Usá estos comandos solo cuando el ciclo lo indique. No convierten por sí solos
 | `GUIA.md` | Para entender objetivo, roles, alcance y metodología. |
 | `docs/00-indice-general.md` | Para ubicar documentación vigente sin leer todo el repo. |
 | `docs/frontend/00-angular20-port-v0.md` | Antes de tocar UI, Angular, build frontend o port desde `muestra_pagina/`. |
+| `MATIAS_PROMPTS_SDD_FASE2.md` | Para continuar prompts 11-22 después de F3-06. |
 | `apps/frontend-angular/AGENTS.md` | Antes de editar la app Angular. |
 | `muestra_pagina/README.md` y `muestra_pagina/AGENTS.md` | Antes de auditar o portar la referencia visual. |
 | `openspec/changes/<cambio>/specs/` | Para validar el contrato del ciclo activo. |
@@ -1389,6 +1414,7 @@ Antes de ejecutar `git add`, Marcos o Matías deben revisar que no entren archiv
 | Preparación de entorno Windows | `Preparación de entorno Windows`, `Ciclo F0-01`, `Referencias finales`. |
 | Flujo OpenCode/Gentle-AI y SDD | `Flujo OpenCode/Gentle-AI y SDD`, `Ciclo F0-02`, `Checklist final de cierre del ciclo`. |
 | Uso de `muestra_pagina/` | `Uso de muestra_pagina/`, `Ciclo F1-01`, `Ciclo F1-02`, QA transversal. |
+| Handoff a Fase 2 | `Prompts pendientes post-F3`, `Ciclo F3-06`, `MATIAS_PROMPTS_SDD_FASE2.md`. |
 | Política frontend, pruebas y QA | `Política frontend, pruebas y QA`, checklists de cada ciclo, `Checklist manual por pantalla`. |
 | Errores comunes y límites | `Errores comunes y límites`, `Qué NO hacer` de cada ciclo, seguridad final. |
 | Ciclos F0-01 a F3-06 | Secciones `Semana 0`, `Semana 1`, `Semana 2`, `Semana 3` con ciclos F0-01..F3-06. |
