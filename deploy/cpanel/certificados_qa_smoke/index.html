@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IFTS 14 — Smoke certificados QA</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f6f7fb; color: #1f2937; }
+    main { width: min(720px, calc(100% - 32px)); padding: 32px; border: 1px solid #d9dee8; border-radius: 16px; background: #fff; }
+    code, a { color: #075985; }
+    li { margin-block: 8px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Smoke activo en /certificados_qa/</h1>
+    <p>Esta página confirma que el fallback estático responde en la carpeta de prueba.</p>
+    <ul>
+      <li><a href="api/health">Probar /api/health</a></li>
+      <li><code>/validar/ABC123</code> debe volver a esta página por fallback de ruta.</li>
+    </ul>
+    <p><strong>Importante:</strong> <code>/validar/ABC123</code> es solo una prueba de fallback. No valida certificados.</p>
+  </main>
+</body>
+</html>
