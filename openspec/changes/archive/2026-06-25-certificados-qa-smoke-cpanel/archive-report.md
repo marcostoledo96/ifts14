@@ -4,9 +4,10 @@
 
 Cambio archivado en `openspec/changes/archive/2026-06-25-certificados-qa-smoke-cpanel/`. No se modificó `openspec/specs/` porque este cambio no introduce ni modifica contrato de producto: entrega un paquete local versionable de humo para validación manual en cPanel aislado, no agrega endpoints, no cambia el envelope ni la API del backend base.
 
-Veredicto del ciclo al archivar: `PASS WITH WARNINGS` (0 CRITICAL, 1 WARNING de `php -l` no disponible en la sesión de verify). SDD cycle complete.
+**Veredicto del ciclo: REMOTE VERIFY PASSED** (PASS con advertencias no bloqueantes). 0 CRITICAL. SDD cycle complete.
 
-Veredicto del smoke HTTP real post-archive: PASS. 0 CRITICAL. La WARNING previa de `php -l` local se preserva por transparencia y se suma una segunda WARNING no bloqueante sobre el cuerpo HTML que cPanel entrega en las respuestas 403 (no expone archivos internos). Detalle completo en la sección "Smoke HTTP real post-archive" más abajo.
+- Veredicto al archivar originalmente: `PASS WITH WARNINGS` (0 CRITICAL, 1 WARNING de `php -l` no disponible en la sesión de verify local).
+- Veredicto del smoke HTTP real post-archive: **REMOTE VERIFY PASSED** (7/7 casos PASS contra cPanel del usuario). La WARNING previa de `php -l` local se reclasifica como `SKIPPED/BLOCKED` por ausencia de PHP en el entorno de la sesión de verify, y se suma una segunda WARNING no bloqueante sobre el cuerpo HTML que cPanel entrega en las respuestas 403 (no expone archivos internos). Detalle completo en la sección "Smoke HTTP real post-archive" más abajo.
 
 ## Qué cambió
 
@@ -138,17 +139,17 @@ Casos 5 y 6. cPanel entrega el código HTTP 403 correcto y no expone los archivo
 
 ### Distinción de advertencias
 
-| Advertencia | Origen | Bloquea archive | Acción |
-|---|---|---|---|
-| `php -l` no ejecutable localmente | Sesión original de verify (entorno sin `php`) | No | Sugerida al usuario; no requerida para el smoke HTTP real. |
-| Cuerpo HTML en 403 | cPanel real observado en smoke HTTP | No | Documentada; mitigación opcional futura. |
+| Advertencia | Origen | Bloquea archive | Estado actual | Acción |
+|---|---|---|---|---|
+| `php -l` SKIPPED/BLOCKED | Sesión de verify (entorno local sin `php`) | No | **SKIPPED/BLOCKED** explícito, decisión del usuario: NO se instala PHP en este ciclo. | Pendiente para futuros ciclos del backend (p. ej. `backend-base-php-certificados`) cuando la verificación local del backend sea objetivo. |
+| Cuerpo HTML en 403 | cPanel real observado en smoke HTTP | No | WARNING no bloqueante (HTTP 403 preservado, archivos no expuestos). | Documentada; mitigación opcional futura con `ErrorDocument 403` propio. |
 
 ### Observación Engram
 
-El resultado completo del smoke real se guardó en Engram bajo el topic_key `sdd/certificados-qa-smoke-cpanel/real-cpanel-verify` del proyecto `ifts14` (capture_prompt: false por ser artefacto SDD automatizado) para trazabilidad entre sesiones.
+El resultado completo del smoke real se guardó en Engram bajo el topic_key `sdd/certificados-qa-smoke-cpanel/real-cpanel-verify` del proyecto `ifts14` (capture_prompt: false por ser artefacto SDD automatizado) para trazabilidad entre sesiones. El cierre del ciclo con `REMOTE VERIFY PASSED` y la reclasificación de `php -l` como `SKIPPED/BLOCKED` se persiste en el topic_key `sdd/certificados-qa-smoke-cpanel/remote-verify-passed` (mismo proyecto, `capture_prompt: false`).
 
 ## Estado
 
-SDD cycle complete. Smoke HTTP real en `/certificados_qa/` ejecutado por el usuario contra cPanel: PASS. La WARNING local de `php -l` y la WARNING nueva de cuerpo HTML en 403 son no bloqueantes y se preservan para auditoría. Próximo ciclo recomendado, según prioridad del usuario: continuar con el ciclo del backend base de certificados (`backend-base-php-certificados` ya está activo) o repetir el smoke en otra carpeta aislada si se necesita re-validar tras un cambio mayor. Independiente del orden: el smoke package queda versionado, archivado y validado en cPanel real para reutilización.
+**SDD cycle complete. REMOTE VERIFY PASSED.** Smoke HTTP real en `/certificados_qa/` ejecutado por el usuario contra cPanel: 7/7 casos PASS. La SKIPPED/BLOCKED local de `php -l` (decisión explícita: no se instala PHP en este ciclo) queda como pendiente para futuros ciclos del backend; no es falla de este smoke cPanel. La WARNING no bloqueante de cuerpo HTML en 403 se preserva para auditoría. Próximo ciclo recomendado, según prioridad del usuario: continuar con el ciclo del backend base de certificados (`backend-base-php-certificados` ya está activo) o repetir el smoke en otra carpeta aislada si se necesita re-validar tras un cambio mayor. Independiente del orden: el smoke package queda versionado, archivado y validado en cPanel real para reutilización.
 
 Recordatorio de limpieza: tras la validación, eliminar `public_html/certificados_qa/` desde cPanel File Manager para no dejar el paquete expuesto en producción.

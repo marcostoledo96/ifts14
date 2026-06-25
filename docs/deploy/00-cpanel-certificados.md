@@ -59,7 +59,12 @@ Existe un paquete de humo local en `deploy/cpanel/certificados_qa_smoke/` para v
 
 ### Resultado del smoke en cPanel real
 
-El usuario ejecutó el bloque de pruebas contra `https://ifts14.com.ar/certificados_qa/` y los siete casos respondieron según lo esperado: `200` en raíz y SPA-fallback, `200 application/json` en `/api/health`, `404` JSON controlado en `/api/no-existe`, `403` en `/api/src/Response.php` y `/api/config/certificados-config.example.php` (archivos no expuestos), y `405` con header `Allow: GET` en `POST /api/health`. Veredicto: PASS. Evidencia completa en `openspec/changes/archive/2026-06-25-certificados-qa-smoke-cpanel/verify-report.md`.
+**Veredicto: REMOTE VERIFY PASSED.** El usuario ejecutó el bloque de pruebas contra `https://ifts14.com.ar/certificados_qa/` y los siete casos respondieron según lo esperado: `200` en raíz y SPA-fallback, `200 application/json` en `/api/health`, `404` JSON controlado en `/api/no-existe`, `403` en `/api/src/Response.php` y `/api/config/certificados-config.example.php` (archivos no expuestos), y `405` con header `Allow: GET` en `POST /api/health`. Evidencia completa en `openspec/changes/archive/2026-06-25-certificados-qa-smoke-cpanel/verify-report.md`.
+
+#### Advertencias no bloqueantes
+
+- **Cuerpo HTML en respuestas 403**: cPanel entrega código HTTP 403 correcto y no expone archivos internos; el cuerpo de la respuesta es HTML del sitio principal, no JSON controlado por la API. Severidad WARNING no bloqueante. Mitigación futura opcional: `ErrorDocument 403` propio en `certificados_qa/.htaccess` o `certificados_qa/api/.htaccess`.
+- **`php -l` local SKIPPED/BLOCKED**: el entorno local de la sesión de verify no tiene PHP instalado. No es falla del smoke cPanel de este ciclo. Permanece como pendiente para futuros ciclos del backend (p. ej. `backend-base-php-certificados`). No se instaló PHP en este ciclo por decisión explícita.
 
 > Recordatorio: una vez validado, eliminar `public_html/certificados_qa/` desde cPanel File Manager para no dejar el paquete expuesto en producción.
 
