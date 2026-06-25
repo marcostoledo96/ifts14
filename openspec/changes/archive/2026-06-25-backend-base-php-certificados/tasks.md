@@ -47,10 +47,12 @@ Chain strategy: pending
 ## Phase 4 — Verificación y QA
 
 - [x] 4.1 `git status --ignored --short`: sin `config.php`, `db.php`, `database.php` o `conexion.php` reales versionados.
-- [ ] 4.2 `php -l` sobre `index.php`, `src/Response.php`, `src/Config.php`, `src/Database.php` y `config/certificados-config.example.php`.
-- [ ] 4.3 `php -m` confirma `pdo_mysql`, `openssl` y `mbstring` habilitadas.
-- [ ] 4.4 `curl -i http://127.0.0.1:8080/health` devuelve 200 con `{ "data": { "status": "ok", "service": "certificados-api" }, "meta": { ... } }`.
-- [ ] 4.5 `curl -i -X POST http://127.0.0.1:8080/health` devuelve 405 con `Allow: GET` y sin ejecutar PDO.
+- [x] 4.2 `php -l` sobre `index.php`, `src/Response.php`, `src/Config.php`, `src/Database.php` y `config/certificados-config.example.php`. PASS vía `bash scripts/php-docker-lint.sh` ejecutado por Marcos con `ifts14-php84:latest` (PHP 8.4.22). Cero errores de sintaxis.
+- [x] 4.3 `php -m` confirma `pdo_mysql`, `openssl`, `mbstring`, `curl`, `zip` y `xml` habilitadas. PASS vía `bash scripts/php-docker-modules-check.sh` ejecutado por Marcos.
+- [x] 4.4 `GET http://127.0.0.1:8080/health` devuelve 200 con `Content-Type: application/json; charset=utf-8` y JSON `data.status: ok`, `data.service: certificados-api`. Ejecutado por Marcos dentro de `ifts14-php84-smoke` mediante `sudo docker run` (sin Docker Compose).
+- [x] 4.5 `POST http://127.0.0.1:8080/health` devuelve 405 con `Allow: GET` y JSON `error.code: METHOD_NOT_ALLOWED`, `error.message: Método no permitido.` Ejecutado por Marcos en el mismo contenedor. `index.php` sólo requiere `Response.php`; no se ejecutó PDO.
+- [x] 4.6 (extra) `GET http://127.0.0.1:8080/no-existe` devuelve 404 con JSON `error.code: NOT_FOUND`, `error.message: Recurso no encontrado.` Confirma 404 seguro.
+- [x] 4.7 (extra) Logs del contenedor: `PHP 8.4.22 Development Server started`; Accepted/Closing por request; sin errores fatales. Contenedor detenido con `sudo docker stop ifts14-php84-smoke`.
 
 ## Non-goals explícitos
 

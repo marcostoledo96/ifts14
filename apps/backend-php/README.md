@@ -47,3 +47,47 @@ curl -i -X POST http://127.0.0.1:8080/health
 ```
 
 `GET /health` no carga configuración ni abre PDO.
+
+## QA local con Docker PHP 8.4
+
+Si el PHP nativo local no coincide con producción, usar el runtime Docker mínimo:
+
+```bash
+bash scripts/php-docker-build.sh
+bash scripts/php-docker-version.sh
+bash scripts/php-docker-modules-check.sh
+bash scripts/php-docker-lint.sh
+```
+
+Validado localmente con la imagen `ifts14-php84:latest`: PHP 8.4.22, módulos requeridos OK y `php -l` sin errores sobre los PHP del backend base.
+
+Los scripts usan `sudo docker build` y `sudo docker run`. No usan Docker Compose, no montan credenciales reales y no conectan con bases de datos reales.
+
+### Smoke HTTP local con `sudo docker run`
+
+Para arrancar el servidor embebido y correr el smoke HTTP local sin Docker Compose, dentro de la imagen `ifts14-php84`:
+
+```bash
+sudo docker run -d --rm \
+  --name ifts14-php84-smoke \
+  -p 8080:8080 \
+  -v "$PWD/apps/backend-php":/app \
+  -w /app \
+  -e CERTIFICADOS_CONFIG_PATH=/app/config/certificados-config.example.php \
+  ifts14-php84 \
+  php -S 0.0.0.0:8080 -t /app /app/index.php
+```
+
+Casos validados:
+
+| Caso | Resultado esperado |
+|---|---|
+| `curl -i http://127.0.0.1:8080/health` | 200 con `data.status: ok`, `data.service: certificados-api`. |
+| `curl -i -X POST http://127.0.0.1:8080/health` | 405 con `Allow: GET` y `error.code: METHOD_NOT_ALLOWED`. |
+| `curl -i http://127.0.0.1:8080/no-existe` | 404 con `error.code: NOT_FOUND`. |
+
+Cierre limpio:
+
+```bash
+sudo docker stop ifts14-php84-smoke
+```
