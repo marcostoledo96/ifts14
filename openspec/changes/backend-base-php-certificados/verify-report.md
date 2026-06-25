@@ -8,13 +8,14 @@
 | Ciclo | M2-02 — base PHP segura |
 | Modo | SDD verify estándar; TDD estricto no declarado activo |
 | Fecha | 2026-06-25 |
+| Commit verificado | `65d3fc7` (`feat(backend): agregar base php segura para certificados`) |
 | Veredicto | **FAIL** |
 
 ## Resumen ejecutivo
 
 La implementación mínima bajo `apps/backend-php/` está alineada por inspección con el alcance de M2-02: crea front controller, respuesta JSON, configuración externa, fábrica PDO lazy, ejemplo ficticio, `.htaccess` local y README. No se detectaron Angular, endpoint de validación pública, `.env`, credenciales reales ni archivos reales `config.php`, `db.php`, `database.php` o `conexion.php`.
 
-El verify queda en **FAIL por bloqueo de entorno**: el binario `php` sigue no disponible, por lo que no se pudieron ejecutar `php -l`, `php -m` ni el smoke HTTP local requerido para cerrar M2-02. El smoke real de cPanel en `/certificados_qa/` se incorpora sólo como evidencia de apoyo sobre copias/adaptaciones del comportamiento, no como reemplazo de la QA local de `apps/backend-php/`.
+Verificación post-commit: `HEAD` es `65d3fc7`. El verify queda en **FAIL por bloqueo de entorno**: el binario `php` sigue no disponible, por lo que no se pudieron ejecutar `php -l`, `php -m` ni el smoke HTTP local requerido para cerrar M2-02. El smoke real de cPanel en `/certificados_qa/` se incorpora sólo como evidencia de apoyo sobre copias/adaptaciones del comportamiento, no como reemplazo de la QA local de `apps/backend-php/`.
 
 ## Artifacts read
 
@@ -26,6 +27,7 @@ El verify queda en **FAIL por bloqueo de entorno**: el binario `php` sigue no di
 | `openspec/changes/backend-base-php-certificados/apply-progress.md` | Leído |
 | `apps/backend-php/` | Inspeccionado |
 | `openspec/changes/archive/2026-06-25-certificados-qa-smoke-cpanel/verify-report.md` | Leído como evidencia de apoyo |
+| `HEAD` | Verificado en `65d3fc7` |
 
 ## Completeness
 
@@ -43,18 +45,13 @@ El verify queda en **FAIL por bloqueo de entorno**: el binario `php` sigue no di
 
 ### `git status --ignored --short`
 
-Resultado ejecutado en esta sesión:
+Resultado post-commit ejecutado en esta sesión:
 
 ```txt
  M .atl/skill-registry.md
  M .gitignore
-?? apps/backend-php/.htaccess
-?? apps/backend-php/README.md
-?? apps/backend-php/config/
-?? apps/backend-php/index.php
-?? apps/backend-php/src/
+ M openspec/changes/backend-base-php-certificados/verify-report.md
 ?? muestra_pagina/revision_y_parches_prompts_stitch_v0_ifts14.md
-?? openspec/changes/backend-base-php-certificados/
 !! .atl/.skill-registry.cache.json
 !! material_privado_no_versionar/
 ```
@@ -62,7 +59,9 @@ Resultado ejecutado en esta sesión:
 Notas:
 
 - `material_privado_no_versionar/` sólo aparece como ignorado; no fue leído.
+- `openspec/changes/backend-base-php-certificados/verify-report.md` aparece modificado por esta actualización post-commit del reporte.
 - Hay cambios no relacionados ya presentes: `.atl/skill-registry.md`, `.gitignore` y `muestra_pagina/revision_y_parches_prompts_stitch_v0_ifts14.md`.
+- Los archivos de `apps/backend-php/` y `openspec/changes/backend-base-php-certificados/` ya no aparecen como no versionados porque quedaron incluidos en `65d3fc7`.
 - No se detectaron archivos reales prohibidos bajo `apps/backend-php/`: `config.php`, `db.php`, `database.php`, `conexion.php`, `.env` ni `composer.json`.
 
 ### Disponibilidad de PHP
