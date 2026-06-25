@@ -1,10 +1,21 @@
 # Verify report — certificados-qa-smoke-cpanel
 
+## Veredicto REMOTE VERIFY
+
+**REMOTE VERIFY PASSED** (PASS con advertencias no bloqueantes).
+
+El smoke HTTP real contra el cPanel del usuario (`https://ifts14.com.ar/certificados_qa/`) cubre los 7 casos documentados y arroja PASS en cada uno. Las advertencias no bloqueantes se preservan para auditoría y se detallan al final de este reporte.
+
 ## Estado
 
 PASS WITH WARNINGS.
 
 El paquete smoke para `public_html/certificados_qa/` cumple la estructura, reglas `.htaccess`, adaptación de API, documentación operativa y control básico de artefactos inseguros. La única advertencia histórica de la sesión de verify original es que esta sesión no tiene `php` disponible, por lo que no se pudo ejecutar `php -l`. Esa limitación es independiente del smoke HTTP real, que se ejecutó contra el cPanel del usuario y se documenta más abajo con resultado PASS.
+
+## Alcance del verify de este ciclo
+
+- **En alcance y ejecutado**: smoke HTTP real contra el cPanel del usuario sobre los 7 casos del bloque `curl.exe` del README. Cobertura real, no sintética.
+- **SKIPPED/BLOCKED localmente**: `php -l` sobre los 5 archivos PHP del paquete. Bloqueado por ausencia de PHP en el entorno local de esta sesión. No es falla del smoke cPanel: es una limitación del entorno de la sesión de verify, y se mantiene como pendiente para ciclos futuros del backend (no se instaló PHP en este ciclo por decisión explícita).
 
 ## Evidencia ejecutada
 
@@ -99,4 +110,9 @@ El servidor conserva el código HTTP 403 y no expone los archivos internos (`src
 
 ## Veredicto final
 
-PASS WITH WARNINGS. 0 CRITICAL. 2 WARNING, ninguna bloqueante: (1) `php -l` local no ejecutable en la sesión original de verify, preservada por transparencia; (2) cuerpo HTML en respuestas 403 observado en cPanel real, no expone archivos internos. El smoke HTTP real en `/certificados_qa/` se valida como PASS.
+**REMOTE VERIFY PASSED** (PASS con advertencias no bloqueantes). 0 CRITICAL. 2 WARNING, ninguna bloqueante:
+
+1. **`php -l` local SKIPPED/BLOCKED**: el entorno local de esta sesión de verify no tiene `php` instalado, por lo que `php -l` no se ejecutó sobre los 5 PHP del paquete. No es falla del smoke cPanel de este ciclo — es una limitación del entorno local de la sesión de verify. Decisión explícita: NO se instala PHP en este ciclo. Permanece como pendiente para futuros ciclos del backend (`backend-base-php-certificados` u otro que corresponda), cuando la verificación local del backend sea objetivo.
+2. **Cuerpo HTML en respuestas 403**: cPanel entrega código HTTP 403 correcto y no expone archivos internos (`src/Response.php`, `config/certificados-config.example.php`), pero el cuerpo de la respuesta es HTML del sitio principal, no un JSON controlado por la API. Severidad: WARNING no bloqueante. Impacto de seguridad: nulo. Impacto de observabilidad: el cliente API no recibe un cuerpo JSON consistente con los errores 404/405 controlados. Mitigación futura opcional: definir un `ErrorDocument 403` propio en `certificados_qa/.htaccess` o `certificados_qa/api/.htaccess`. No requerido para el smoke actual.
+
+El smoke HTTP real contra `https://ifts14.com.ar/certificados_qa/` se valida como **REMOTE VERIFY PASSED**: 7/7 casos PASS según la matriz de la sección anterior.
