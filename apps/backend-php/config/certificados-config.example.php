@@ -8,4 +8,5 @@ return [
     'db_name' => 'ifts14_certificados_demo',
     'db_user' => 'usuario_demo',
     'db_pass' => 'clave_demo_no_real',
+    'token_pepper' => 'pepper_demo_ficticio_2026_no_usar',
 ];

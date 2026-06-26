@@ -5,7 +5,7 @@ declare(strict_types=1);
 final class Response
 {
     /** @param array<string, mixed> $data */
-    public static function json(int $status, array $data): void
+    public static function json(int $status, array $data, ?string $requestId = null): void
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
@@ -13,12 +13,12 @@ final class Response
         echo json_encode([
             'data' => $data,
             'meta' => [
-                'requestId' => self::requestId(),
+                'requestId' => $requestId ?? self::requestId(),
             ],
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    public static function error(int $status, string $code, string $message): void
+    public static function error(int $status, string $code, string $message, ?string $requestId = null): void
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
@@ -30,7 +30,7 @@ final class Response
                 'details' => [],
             ],
             'meta' => [
-                'requestId' => self::requestId(),
+                'requestId' => $requestId ?? self::requestId(),
             ],
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
