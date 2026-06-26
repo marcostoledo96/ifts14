@@ -1,0 +1,70 @@
+# Dependencias, builds y caches
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.angular/
+.vercel/
+.cache/
+.turbo/
+vendor/
+graphify-out/
+
+# Material privado y datos reales
+material_privado_no_versionar/
+backups/
+backups_originales/
+db_dumps_originales/
+servidor_original/
+dumps/
+dump/
+uploads/
+storage/uploads/
+
+# Dumps, backups, paquetes y logs
+*.sql
+*.sql.gz
+*.dump
+*.bak
+*.backup
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.log
+error_log
+
+# Secretos y credenciales
+.env
+.env.*
+credentials/
+credential/
+secrets/
+secret/
+*.key
+*.pem
+*.p12
+*.pfx
+*credentials*.json
+*secret*.json
+
+# Capturas pesadas y artefactos generados
+screenshots/
+captures/
+capturas/
+videos/
+recordings/
+trace/
+traces/
+playwright-report/
+test-results/
+
+# cPanel y Git interno descargado
+.cpanel.yml.local
+deploy_tmp/
+tmp_deploy/
+well-known/
+**/.git/

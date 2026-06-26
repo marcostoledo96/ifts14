@@ -4,9 +4,20 @@ Guía operativa para continuar los prompts 11-22 del port visual v0. Complementa
 
 > Estado: guía marco. Antes de que Matías ejecute F4-F6, el ciclo elegido debe expandirse con archivos a leer, validaciones, QA, límites y criterios de cierre si todavía no existe una spec/tarea detallada.
 
+## Herramientas obligatorias antes de empezar
+
+Antes de cualquier ciclo F4-F6, Matías debe:
+
+- Leer `AGENTS.md`, `docs/00-indice-general.md`, `docs/opencode/optimizacion-tokens.md` y el ciclo activo.
+- Verificar herramientas F0 con `node --version`, `npm --version`, `git --version`, `code --version` y `ng version` si el entorno cambió.
+- Resumir salidas largas; no pegar terminal completa sin síntesis.
+- No ejecutar Graphify. Si necesita contexto de arquitectura, pedir resumen aprobado por Marcos.
+- No instalar dependencias ni herramientas sin aprobación explícita.
+- No tocar backend, base de datos, deploy ni `material_privado_no_versionar/`.
+
 ## Ruta rápida
 
-1. Leé `README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md` y `docs/frontend/00-angular20-port-v0.md`.
+1. Leé `AGENTS.md`, `docs/00-indice-general.md`, `docs/opencode/optimizacion-tokens.md`, el ciclo activo y `docs/frontend/00-angular20-port-v0.md`.
 2. Confirmá que `muestra_pagina/` sigue siendo la referencia v0 vigente y que `muestra_pagina/MANIFIESTO_V0.md` coincide con la carpeta real.
 3. Elegí un ciclo F4-F6 y ejecutá SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 4. Si el ciclo depende de API, PDF, QR, permisos, auditoría o configuración no aprobada, primero pedí spec o bloqueá.
@@ -41,8 +52,9 @@ Usá este texto como base y reemplazá `<ciclo>` y `<objetivo>`.
 
 ```txt
 Trabajemos el ciclo <ciclo> — <objetivo> del frontend Angular 20 para IFTS14.
-Usá SDD completo. Leé AGENTS.md, GUIA.md, docs/00-indice-general.md,
-docs/frontend/00-angular20-port-v0.md, muestra_pagina/README.md y la spec OpenSpec correspondiente.
+Usá SDD completo. Leé AGENTS.md, docs/00-indice-general.md,
+docs/opencode/optimizacion-tokens.md, el ciclo activo, docs/frontend/00-angular20-port-v0.md,
+muestra_pagina/README.md y la spec OpenSpec correspondiente. No ejecutes Graphify; usá solo resúmenes aprobados por Marcos.
 No copies React/Next literalmente. No inventes API, PDF, QR, permisos ni configuración.
 Si Fase 2 sigue como guía marco, expandí primero el ciclo elegido antes de implementar.
 No toques backend, base de datos, deploy ni material_privado_no_versionar/.

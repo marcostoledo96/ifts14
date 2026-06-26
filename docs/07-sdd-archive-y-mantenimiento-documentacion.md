@@ -22,6 +22,7 @@ Al cerrar cada ciclo SDD, se debe actualizar la documentación mínima necesaria
 | Cambio de specs | `openspec/specs/` |
 | Cambio de reglas por carpeta | `AGENTS.md` de la carpeta afectada y este índice si cambia la lectura mínima |
 | Cambio de flujo operativo | `GUIA.md`, `docs/00-indice-general.md`, prompt raíz del rol afectado |
+| Cambio de flujo OpenCode/Graphify | `docs/opencode/optimizacion-tokens.md`, `docs/arquitectura/graphify/README.md`, `.graphifyignore`, `AGENTS.md`, prompts raíz |
 
 ## Regla
 
@@ -42,3 +43,13 @@ Al finalizar, OpenCode debe responder:
 ```
 
 OpenCode no debe hacer commit, push ni merge automáticamente.
+
+## Registro de cierre para costo de tokens
+
+Cuando el ciclo use OpenCode/Gentle-AI, agregar al reporte final:
+
+- salida extensa resumida o comprimida con `RTK`/equivalente;
+- si Graphify fue consultado, ruta del resumen aprobado usado;
+- confirmación de compactación/prune o motivo para omitirlo;
+- ubicación de logs o reportes guardados, sin copiar logs completos al contexto;
+- evidencia crítica conservada y evidencia omitida por costo, peso o seguridad.
