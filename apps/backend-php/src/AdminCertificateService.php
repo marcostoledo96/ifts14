@@ -80,6 +80,8 @@ final class AdminCertificateService
             $statement->bindValue(4, $data['expiresAt'] === null ? null : $data['expiresAt'] . ' 23:59:59');
             $statement->execute();
             $this->pdo->commit();
+        } catch (AdminCertificateException $exception) {
+            throw $exception;
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
@@ -114,29 +116,22 @@ final class AdminCertificateService
         $reason = $reason === '' ? null : mb_substr($reason, 0, 180);
         $revokedAt = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d H:i:s');
 
-        $statement = $this->pdo->prepare('SELECT estado FROM cert_certificados WHERE id = ? LIMIT 1');
-        $statement->execute([$certificateId]);
-        $status = $statement->fetchColumn();
-
-        if ($status === false) {
-            $this->safeAudit('revocacion', 'rechazado', ['certificado_id' => $certificateId]);
-            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
-        }
-
-        if ($status !== 'vigente') {
-            $this->safeAudit('revocacion', 'rechazado', ['certificado_id' => $certificateId]);
-            throw new AdminCertificateException(409, 'CERTIFICATE_NOT_REVOCABLE', 'Certificado no revocable.');
-        }
-
         $this->pdo->beginTransaction();
         try {
-            $statement = $this->pdo->prepare('UPDATE cert_certificados SET estado = \'revocado\', revocado_en = ?, motivo_revocacion = ? WHERE id = ?');
+            $statement = $this->pdo->prepare('UPDATE cert_certificados SET estado = \'revocado\', revocado_en = ?, motivo_revocacion = ? WHERE id = ? AND estado = \'vigente\'');
             $statement->execute([$revokedAt, $reason, $certificateId]);
+
+            if ($statement->rowCount() !== 1) {
+                $this->pdo->rollBack();
+                $this->auditRejectedRevocation($certificateId);
+            }
 
             $statement = $this->pdo->prepare('UPDATE cert_tokens_verificacion SET estado = \'revocado\', revocado_en = ? WHERE certificado_id = ? AND estado = \'activo\' AND revocado_en IS NULL');
             $statement->execute([$revokedAt, $certificateId]);
             $tokensRevoked = $statement->rowCount();
             $this->pdo->commit();
+        } catch (AdminCertificateException $exception) {
+            throw $exception;
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
@@ -148,6 +143,21 @@ final class AdminCertificateService
         $this->safeAudit('revocacion', 'ok', ['certificado_id' => $certificateId]);
 
         return ['id' => $certificateId, 'status' => 'revocado', 'revokedAt' => $revokedAt, 'tokensRevoked' => $tokensRevoked];
+    }
+
+    private function auditRejectedRevocation(int $certificateId): never
+    {
+        $statement = $this->pdo->prepare('SELECT estado FROM cert_certificados WHERE id = ? LIMIT 1');
+        $statement->execute([$certificateId]);
+        $status = $statement->fetchColumn();
+
+        if ($status === false) {
+            $this->safeAudit('revocacion', 'rechazado');
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+        }
+
+        $this->safeAudit('revocacion', 'rechazado', ['certificado_id' => $certificateId]);
+        throw new AdminCertificateException(409, 'CERTIFICATE_NOT_REVOCABLE', 'Certificado no revocable.');
     }
 
     /** @param array<string, mixed> $meta */
@@ -181,7 +191,9 @@ final class AdminCertificateService
         $issuedAt = $this->dateString($payload['issuedAt'] ?? null);
         $expiresAt = isset($payload['expiresAt']) && $payload['expiresAt'] !== '' ? $this->dateString($payload['expiresAt']) : null;
 
-        if (preg_match('/\A\d{6,12}\z/', $document) !== 1 || ($expiresAt !== null && $expiresAt < $issuedAt)) {
+        $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+
+        if (preg_match('/\A\d{6,12}\z/', $document) !== 1 || ($expiresAt !== null && ($expiresAt < $issuedAt || $expiresAt < $today))) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
 
