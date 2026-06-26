@@ -1,6 +1,6 @@
 # Contrato de API — Certificados QR
 
-Este contrato define la API PHP futura bajo `/certificados/api/` para validar certificados por QR o enlace. Es documental: no crea backend, frontend, migraciones ni dependencias.
+Este contrato define la API PHP bajo `/certificados/api/` para validar certificados por QR o enlace. Tras el ciclo `backend-validacion-publica-certificados`, los endpoints públicos `GET .../verificacion` y `POST .../consulta` están implementados y verificados con base local ficticia (ver `docs/backend/00-php84-api.md`). Los endpoints administrativos de emisión, revocación y reenvío siguen fuera de alcance y se definirán en ciclos SDD posteriores.
 
 ## Alcance
 
@@ -114,8 +114,9 @@ Toda respuesta de error debe usar este formato:
 
 - El QR debe apuntar a una URL pública del frontend, por ejemplo `/certificados/validar/{token}`.
 - El frontend debe consultar a `/certificados/api/certificados/{token}/verificacion`.
-- El token público no debe guardarse en texto plano si hay persistencia real: se debe comparar contra hash o estrategia equivalente.
-- Los logs solo pueden conservar prefijos o huellas truncadas no reversibles; nunca el token completo.
+- El token público no se guarda en texto plano: se compara contra `SHA-256(token + token_pepper)` con `token_pepper` externo a Git. El cálculo PHP usa `hash('sha256', $token . $tokenPepper, true)` (binario) contra `cert_tokens_verificacion.token_hash BINARY(32)`.
+- El seed demo versionable debe almacenar `token_hash` con `UNHEX(SHA2(CONCAT(token_demo, pepper_demo), 256))` para mantener coherencia con el cálculo PHP binario.
+- Los logs y la auditoría solo conservan prefijos o huellas truncadas no reversibles; nunca el token completo.
 - Tokens revocados, vencidos o inexistentes deben responder como no verificables sin revelar cuál caso ocurrió.
 
 ## Seguridad obligatoria

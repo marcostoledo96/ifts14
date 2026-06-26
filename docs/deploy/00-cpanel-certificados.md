@@ -37,6 +37,8 @@ Subir API PHP a:
 public_html/certificados/api/
 ```
 
+La configuración real debe quedar fuera del repositorio y fuera del webroot. Para validar certificados, el archivo externo debe incluir `token_pepper` además de las credenciales MariaDB; sin ese valor, `Config::load()` falla de forma segura con error genérico y la API no expone stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable (`apps/backend-php/config/certificados-config.example.php`) y contra un config ficticio bajo `/tmp`; la configuración real productiva permanece fuera de Git.
+
 ## .htaccess
 
 Debe permitir que Angular maneje rutas profundas y no capturar `/api/`.
@@ -47,6 +49,11 @@ Debe permitir que Angular maneje rutas profundas y no capturar `/api/`.
 - No tocar `public_html` sin backup.
 - No sobrescribir la web oficial.
 - Probar primero en carpeta aislada.
+
+## Pendientes de capacidad pública
+
+- **Rate limiting (`429 RATE_LIMITED`)**: el contrato de API lo menciona, pero el endpoint público de validación no lo implementa todavía. Queda pendiente para un ciclo SDD posterior; antes de producción conviene definir la estrategia (origen, ventana, backend de contador) para no abusar del endpoint público.
+- **Auditoría fault-injection**: el `INSERT` en `cert_eventos_auditoria` está envuelto en `try/catch` y no rompe la respuesta pública, pero no se ejecutó fault-injection en runtime.
 
 ## Smoke aislado (`certificados_qa`)
 
