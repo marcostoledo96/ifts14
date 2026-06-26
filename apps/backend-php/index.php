@@ -110,8 +110,17 @@ if (preg_match('#^/admin/certificados/(\d+)/revocar$#', $path, $matches) === 1) 
         return;
     }
 
-    $body = json_decode(file_get_contents('php://input') ?: '', true);
-    $reason = is_array($body) && isset($body['reason']) && is_string($body['reason']) ? $body['reason'] : null;
+    $rawBody = file_get_contents('php://input') ?: '';
+    $body = [];
+    if (trim($rawBody) !== '') {
+        $decoded = json_decode($rawBody, true);
+        if (!is_array($decoded) || json_last_error() !== JSON_ERROR_NONE) {
+            Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
+            return;
+        }
+        $body = $decoded;
+    }
+    $reason = isset($body['reason']) && is_string($body['reason']) ? $body['reason'] : null;
 
     respondToAdmin(static function () use ($config, $requestId, $matches, $reason): array {
         $service = new AdminCertificateService(
