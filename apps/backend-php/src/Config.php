@@ -43,7 +43,15 @@ final class Config
             $config['app_salt'] = $config['token_pepper'];
         }
 
+        $config['admin_api_key'] = self::stringOrEmpty($config['admin_api_key'] ?? '');
+
         return $config;
+    }
+
+    /** @param array<string, mixed> $config */
+    public static function adminApiKey(array $config): string
+    {
+        return self::stringOrEmpty($config['admin_api_key'] ?? '');
     }
 
     private static function positiveInt(mixed $value, int $default): int
@@ -59,5 +67,10 @@ final class Config
         }
 
         return $default;
+    }
+
+    private static function stringOrEmpty(mixed $value): string
+    {
+        return is_string($value) ? trim($value) : '';
     }
 }

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Definir el contrato público de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper. Esta spec reemplaza la versión anterior que describía solo el contrato futuro: tras el ciclo `backend-validacion-publica-certificados` los endpoints `GET .../verificacion` y `POST .../consulta` están implementados y verificados en DB local ficticia, mientras que los endpoints administrativos de emisión, revocación y reenvío siguen fuera de alcance para ciclos posteriores.
+Definir el contrato de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper, más el slice administrativo mínimo de emisión y revocación protegido por `X-Admin-Key`. El reenvío administrativo sigue fuera de alcance hasta definir un mecanismo de email/entrega.
 
 ## Requirements
 
@@ -119,3 +119,37 @@ El endpoint público de verificación MUST aplicar rate limiting mínimo y respo
 - **Given** múltiples consultas públicas desde el mismo bucket hasta exceder la ventana configurada
 - **When** la API recibe una nueva consulta GET o POST dentro de esa ventana
 - **Then** MUST responder `429 RATE_LIMITED` con sobre de error seguro.
+
+### Requirement: Contrato administrativo mínimo de certificados
+
+La API MUST documentar y sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión y `POST /admin/certificados/{id}/revocar` para revocación. Las respuestas MUST usar envelopes JSON existentes, DTOs seguros y errores sin DNI completo, token completo, secretos, SQL ni rutas internas.
+
+#### Scenario: Admin sin autorización
+
+- **Given** un request a un endpoint administrativo sin `X-Admin-Key` válido
+- **When** la API procesa la solicitud
+- **Then** MUST responder `401 UNAUTHORIZED` con sobre de error seguro.
+
+#### Scenario: Emisión documentada
+
+- **Given** un request autorizado con payload mínimo válido
+- **When** se invoca `POST /certificados/api/admin/certificados`
+- **Then** el contrato MUST indicar `201` con certificado emitido y datos sensibles enmascarados.
+- **And** MUST NOT devolver DNI completo ni token completo.
+
+#### Scenario: Revocación documentada
+
+- **Given** un request autorizado para un certificado revocable
+- **When** se invoca `POST /certificados/api/admin/certificados/{id}/revocar`
+- **Then** el contrato MUST indicar revocación del certificado e invalidación de tokens activos.
+
+### Requirement: Reenvío administrativo excluido
+
+El contrato MUST dejar explícitamente fuera de alcance `POST /certificados/api/admin/certificados/{id}/reenviar` hasta definir mecanismo de email/reenvío. La implementación MUST NOT crear endpoint, DTO ni lógica de reenvío en este ciclo.
+
+#### Scenario: Reenvío no disponible
+
+- **Given** este ciclo finalizado
+- **When** se inspecciona o invoca una ruta de reenvío administrativo
+- **Then** MUST no existir como capacidad implementada/documentada para uso operativo.
+- **And** SHOULD quedar registrada como pendiente hasta definir email.

@@ -1,6 +1,6 @@
 # Contrato de API — Certificados QR
 
-Este contrato define la API PHP bajo `/certificados/api/` para validar certificados por QR o enlace. Tras el ciclo `backend-validacion-publica-certificados`, los endpoints públicos `GET .../verificacion` y `POST .../consulta` están implementados y verificados con base local ficticia (ver `docs/backend/00-php84-api.md`). Los endpoints administrativos de emisión, revocación y reenvío siguen fuera de alcance y se definirán en ciclos SDD posteriores.
+Este contrato define la API PHP bajo `/certificados/api/` para validar certificados por QR o enlace. Tras el ciclo `backend-admin-certificados`, la API suma endpoints administrativos mínimos para emitir y revocar certificados con `X-Admin-Key`. El reenvío queda fuera de alcance hasta definir un mecanismo de email/entrega.
 
 ## Alcance
 
@@ -10,7 +10,7 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | Formato | JSON UTF-8 |
 | Persistencia | MariaDB 10.6.27 con PDO y prepared statements cuando se implemente. Modelo documentado en `docs/database/01-modelo-datos-certificados.md`. |
 | Exposición pública | Mínima: autenticidad, estado y datos no sensibles del certificado |
-| Fuera de alcance | Código PHP, Angular, migraciones, generación PDF/QR, envío de mails |
+| Fuera de alcance | Angular, migraciones nuevas, generación PDF/QR, envío de mails y reenvío administrativo |
 
 ## Endpoints previstos
 
@@ -19,8 +19,10 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | `GET` | `/certificados/api/health` | Verificar disponibilidad básica de la API. | Público técnico, sin datos sensibles. |
 | `GET` | `/certificados/api/certificados/{token}/verificacion` | Validar un token leído desde QR o link. | Público, respuesta mínima. |
 | `POST` | `/certificados/api/certificados/consulta` | Consulta alternativa cuando el cliente no pueda usar path param. | Público, respuesta mínima. |
+| `POST` | `/certificados/api/admin/certificados` | Emitir certificado y token verificable. | Admin con `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revocar certificado e invalidar tokens activos. | Admin con `X-Admin-Key`. |
 
-No se definen todavía endpoints administrativos de carga, emisión, reenvío ni revocación. Deben salir en ciclos SDD posteriores.
+No existe endpoint de reenvío: `POST /certificados/api/admin/certificados/{id}/reenviar` debe responder como ruta no encontrada mientras no haya mecanismo de email definido.
 
 ## DTOs
 
@@ -77,6 +79,79 @@ Request:
 
 La respuesta debe reutilizar el mismo DTO de verificación pública.
 
+### `POST /admin/certificados`
+
+Headers:
+
+| Header | Regla |
+|---|---|
+| `X-Admin-Key` | Requerido. Se compara contra configuración externa con `hash_equals()`. Si falta o no coincide, responde `401 UNAUTHORIZED` sin revelar causa. |
+
+Request demo mínimo:
+
+```json
+{
+  "studentDisplayName": "Persona Demo",
+  "documentNumber": "00000000",
+  "courseName": "Curso Demo",
+  "issuedAt": "2026-06-26",
+  "expiresAt": "2026-12-31"
+}
+```
+
+Respuesta `201`:
+
+```json
+{
+  "data": {
+    "id": 10,
+    "certificateCode": "CERT-2026-AB12CD34",
+    "status": "vigente",
+    "student": {
+      "displayName": "Persona Demo",
+      "documentMasked": "00****00"
+    },
+    "course": {
+      "name": "Curso Demo"
+    },
+    "issuedAt": "2026-06-26",
+    "expiresAt": "2026-12-31",
+    "tokenPrefix": "prefijo_demo"
+  },
+  "meta": {
+    "requestId": "req_admin_no_sensible"
+  }
+}
+```
+
+La emisión no devuelve DNI completo ni token completo. La entrega del token queda pendiente hasta definir email/reenvío u otro canal seguro.
+
+### `POST /admin/certificados/{id}/revocar`
+
+Request opcional:
+
+```json
+{
+  "reason": "Motivo operativo breve"
+}
+```
+
+Respuesta `200`:
+
+```json
+{
+  "data": {
+    "id": 10,
+    "status": "revocado",
+    "revokedAt": "2026-06-26 14:30:00",
+    "tokensRevoked": 1
+  },
+  "meta": {
+    "requestId": "req_admin_no_sensible"
+  }
+}
+```
+
 ## Sobre de errores
 
 Toda respuesta de error debe usar este formato:
@@ -97,8 +172,10 @@ Toda respuesta de error debe usar este formato:
 | HTTP | `code` | Uso |
 |---|---|---|
 | 400 | `VALIDATION_ERROR` | Token ausente o formato inválido. |
+| 401 | `UNAUTHORIZED` | Falta autorización administrativa válida. |
 | 404 | `CERTIFICATE_NOT_FOUND` | Token inexistente, revocado o no verificable públicamente. |
 | 405 | `METHOD_NOT_ALLOWED` | Método HTTP no permitido. |
+| 409 | `CERTIFICATE_NOT_REVOCABLE` | El certificado existe pero no puede revocarse en su estado actual. |
 | 429 | `RATE_LIMITED` | Demasiadas consultas desde el mismo origen. |
 | 500 | `INTERNAL_ERROR` | Error no esperado sin datos internos. |
 
@@ -127,6 +204,8 @@ Toda respuesta de error debe usar este formato:
 - Usar PDO y prepared statements para toda consulta SQL futura.
 - Mantener configuración real fuera de Git.
 - La verificación pública debe devolver solo datos mínimos necesarios para confirmar autenticidad.
+- Los endpoints administrativos deben fallar cerrados si `admin_api_key` no existe o está vacío.
+- La auditoría administrativa no debe guardar DNI completo, token completo, claves, SQL ni rutas internas.
 
 ## Rate limiting público
 
