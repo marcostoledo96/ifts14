@@ -2,7 +2,7 @@
 
 Esta guía es el punto de entrada para que Matías trabaje el frontend Angular 20 del módulo `/certificados/` desde Windows. Se trabaja en ciclos chicos, con Spec-Driven Development, validación explícita y cierre obligatorio con `sdd-archive`.
 
-> Estado de esta guía: cubre F0-F3. `muestra_pagina/` ya tiene 7 pantallas v0 para prompts 4-10; los prompts 11-22 continúan en `MATIAS_PROMPTS_SDD_FASE2.md`.
+> Estado de esta guía: cubre F0-F3. `muestra_pagina/` ya tiene contenido v0 para 7 pantallas de prompts 4-10; los prompts 11-22 continúan en `MATIAS_PROMPTS_SDD_FASE2.md`.
 
 ## Ruta rápida
 
@@ -12,7 +12,7 @@ Esta guía es el punto de entrada para que Matías trabaje el frontend Angular 2
 4. Elegí un ciclo F0-F3 y leé su objetivo, archivos, prompt, validaciones y límites.
 5. Pedile a OpenCode un ciclo SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 6. Ejecutá pruebas automáticas disponibles y QA manual antes de cerrar.
-7. Al cerrar F3-06, continuá con `MATIAS_PROMPTS_SDD_FASE2.md` para F4-F6 si Marcos aprueba seguir.
+7. Al cerrar F3-06, continuá con `MATIAS_PROMPTS_SDD_FASE2.md` para F4-F6 si Marcos aprueba seguir; si Fase 2 sigue como guía marco, primero expandí el ciclo elegido antes de ejecutarlo.
 8. Dejale a Marcos un reporte final con archivos, verificaciones, bloqueos y comandos Git propuestos. OpenCode no ejecuta commit, push, merge ni rebase.
 
 ## Misión y contexto operativo
@@ -21,11 +21,11 @@ Esta guía es el punto de entrada para que Matías trabaje el frontend Angular 2
 |---|---|
 | Rol | Matías trabaja frontend Angular 20, UI/UX, responsive y accesibilidad. |
 | Producto | Módulo público `/certificados/` para validar certificaciones mediante QR o link. |
-| Fuente visual | `muestra_pagina/` ya contiene referencia v0 utilizable para prompts 4-10; prompts 11-22 quedan pendientes. |
+| Fuente visual | `muestra_pagina/` contiene referencia v0 utilizable para prompts 4-10, con código Next.js/React exportado, capturas y manifiesto; prompts 11-22 quedan pendientes. |
 | Fuente documental | `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md` y specs OpenSpec vigentes. |
 | Backend/API | No inventar contratos. Usar solo lo documentado por Marcos. |
 | Seguridad | No tocar `material_privado_no_versionar/`, dumps, logs, credenciales ni archivos `.env`. |
-| Git | OpenCode puede proponer comandos; Matías o Marcos los ejecutan manualmente. |
+| Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. OpenCode solo ejecuta commit, push, merge o rebase con confirmación explícita de Marcos. |
 
 ### Alcance permitido
 
@@ -99,6 +99,22 @@ Reglas:
 - Cerrar siempre con `sdd-archive` para sincronizar documentación.
 - No saltar de idea a código sin spec, diseño y tasks.
 - No declarar terminado un ciclo sin reporte final.
+- La rama Git agrupa trabajo revisable; el ciclo SDD agrupa planificación. Si varios ciclos frontend forman una misma capacidad visual o técnica, pueden compartir rama.
+
+### Estrategia de ramas recomendada
+
+| Rama | Ciclos incluidos | Criterio |
+|---|---|---|
+| `docs/matias-onboarding-windows` | `F0-01`, `F0-02`, `F0-03` | Preparación de entorno, OpenCode y lectura mínima; todo es documentación/onboarding. |
+| `frontend/v0-design-system` | `F1-01`, `F1-02` | Auditoría de `muestra_pagina/` y extracción de sistema visual se revisan juntos. |
+| `frontend/angular-shell` | `F1-03`, `F1-04`, `F1-05` | Crear app, configurar estilos y layout base forman la fundación Angular inicial. |
+| `frontend/public-validation-flow` | `F2-01`, `F2-02` | Pantalla pública válida y estados no exitosos comparten contrato, privacidad y QA. |
+| `frontend/admin-foundation` | `F2-03`, `F2-04`, `F2-05` | Login/admin shell, cursos y asistencias son base operativa administrativa. |
+| `frontend/admin-certifications` | `F2-06` + futuros ciclos F5/F6 de certificaciones, envío, revocación y auditoría | Mantener acciones críticas de certificados en una rama separada por riesgo. |
+| `frontend/api-readiness` | `F3-01`, `F3-02` | Servicios mock y preparación de API PHP se verifican como contrato frontend/backend. |
+| `qa/frontend-release-readiness` | `F3-03`, `F3-04`, `F3-05`, `F3-06` | Tests, QA manual, build `/certificados/` y handoff cierran una unidad de release. |
+
+No juntar Fase 2 crítica (`PDF`, `envío`, `revocación`, `auditoría`, `configuración`) con la rama pública si requiere permisos, datos personales o contratos no aprobados. No mezclar cambios backend/deploy con ramas frontend.
 
 ### Prompt base para iniciar un ciclo con OpenCode
 
@@ -114,18 +130,21 @@ pruebas, QA manual, documentación actualizada, bloqueos y riesgos.
 
 ## Uso de `muestra_pagina/`
 
-`muestra_pagina/` es referencia visual y funcional, no código definitivo. Ya no se considera vacía para F1-F3: contiene 7 pantallas disponibles y deja 12 pendientes para Fase 2.
+`muestra_pagina/` es referencia visual y funcional, no código definitivo. Ya no se considera vacía para F1-F3: contiene código Next.js/React exportado y capturas para 7 pantallas disponibles; deja 12 pantallas pendientes para Fase 2.
+
+El commit que agregue o actualice contenido v0 debe incluir y mantener `muestra_pagina/MANIFIESTO_V0.md`.
 
 | Estado de `muestra_pagina/` | Acción |
 |---|---|
 | Vacía o solo con `README.md`/`AGENTS.md` | No implementar pantallas finales. Solo preparar estructura, documentación o reportar bloqueo. |
 | Con diseño v0 utilizable para prompts 4-10 | Analizar composición, jerarquía, paleta, tipografía, espaciados, estados y comportamiento. |
-| Prompts 11-22 pendientes | Usar `MATIAS_PROMPTS_SDD_FASE2.md`; no ampliar esta guía con F4-F6. |
+| Prompts 11-22 pendientes | Usar `MATIAS_PROMPTS_SDD_FASE2.md`; si sigue como guía marco, expandir el ciclo F4-F6 elegido antes de ejecutarlo. |
 | Con React/Next exportado | No copiar literalmente. Portar la intención visual a Angular 20 con componentes propios. |
 
 Checklist mínimo antes de portar una pantalla:
 
 - [ ] Hay referencia visual suficiente.
+- [ ] `muestra_pagina/MANIFIESTO_V0.md` coincide con la estructura real de la carpeta.
 - [ ] Se identificaron componentes reutilizables.
 - [ ] Se registraron estados: carga, éxito, vacío, error y no encontrado si aplica.
 - [ ] Se respeta identidad institucional del IFTS 14.
@@ -181,7 +200,8 @@ Si un comando no existe, no lo inventes como evidencia. Informá: “No hay runn
 - [ ] Consola del navegador sin errores nuevos.
 - [ ] Comparación visual contra `muestra_pagina/` cuando exista.
 - [ ] No regresión visual en pantallas tocadas.
-- [ ] No exposición de DNI completo, tokens completos ni datos sensibles.
+- [ ] Validación pública con DNI enmascarado, sin tokens completos ni datos sensibles reales.
+- [ ] Si una pantalla privada o de entrega al estudiante requiere DNI completo, existe spec aprobada y no se mezcla con validación pública.
 
 ## Errores comunes y límites
 
@@ -290,7 +310,7 @@ git push -u origin <rama>
 ### Ciclo F0-01 — Verificar entorno Windows
 
 Objetivo: confirmar que Windows tiene las herramientas mínimas para trabajar Angular 20 sin tocar código del producto.
-Rama sugerida: `docs/verificar-entorno-windows`.
+Rama sugerida: `docs/matias-onboarding-windows`.
 Archivos a leer: `README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md`.
 
 Comandos si aplica:
@@ -336,7 +356,7 @@ Mensaje de commit sugerido: `docs(matias): registrar verificacion de entorno win
 ### Ciclo F0-02 — Verificar OpenCode/Gentle-AI
 
 Objetivo: confirmar que Matías sabe iniciar OpenCode, pedir ciclos SDD y cerrar con evidencia sin delegar Git automático.
-Rama sugerida: `docs/verificar-opencode-sdd`.
+Rama sugerida: `docs/matias-onboarding-windows`.
 Archivos a leer: `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, esta guía.
 
 Comandos si aplica:
@@ -378,7 +398,7 @@ Mensaje de commit sugerido: `docs(matias): documentar verificacion de opencode s
 ### Ciclo F0-03 — Leer documentación mínima y entender misión
 
 Objetivo: dejar evidencia de que Matías entendió rol, alcance, fuentes de verdad y límites antes del trabajo frontend.
-Rama sugerida: `docs/onboarding-matias`.
+Rama sugerida: `docs/matias-onboarding-windows`.
 Archivos a leer: `README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md`, `apps/frontend-angular/AGENTS.md`.
 
 Comandos si aplica:
@@ -423,7 +443,7 @@ Mensaje de commit sugerido: `docs(matias): registrar onboarding frontend`.
 ### Ciclo F1-01 — Auditar `muestra_pagina/`
 
 Objetivo: confirmar la referencia visual v0 disponible para prompts 4-10 y registrar que prompts 11-22 continúan en Fase 2.
-Rama sugerida: `frontend/auditar-muestra-pagina`.
+Rama sugerida: `frontend/v0-design-system`.
 Archivos a leer: `AGENTS.md`, `GUIA.md`, `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md` y archivos visibles dentro de `muestra_pagina/` sin abrir material sensible externo.
 
 Comandos si aplica:
@@ -437,7 +457,7 @@ Prompt exacto para OpenCode:
 Trabajemos el ciclo F1-01 — Auditar muestra_pagina/.
 Leé AGENTS.md, GUIA.md, docs/frontend/00-angular20-port-v0.md, muestra_pagina/README.md y muestra_pagina/AGENTS.md.
 Revisá solo la estructura segura de muestra_pagina/ y confirmá el estado documentado: 7 pantallas v0 disponibles y 12 pendientes.
-Listá pantallas, componentes, estados visibles, riesgos y próximos pasos para portar a Angular 20.
+Verificá también muestra_pagina/MANIFIESTO_V0.md. Listá pantallas, componentes, estados visibles, riesgos y próximos pasos para portar a Angular 20.
 Derivá prompts 11-22 a MATIAS_PROMPTS_SDD_FASE2.md; no los implementes dentro de este ciclo.
 No copies React/Next literalmente, no instales dependencias y no toques backend, base, deploy ni material_privado_no_versionar/.
 ```
@@ -445,6 +465,7 @@ No copies React/Next literalmente, no instales dependencias y no toques backend,
 Validaciones automáticas:
 - [ ] `Get-ChildItem .\muestra_pagina -Force` lista únicamente nombres y estructura segura.
 - [ ] El reporte confirma 7 pantallas disponibles y 12 pendientes, o explica una diferencia encontrada.
+- [ ] `muestra_pagina/MANIFIESTO_V0.md` existe y coincide con la estructura segura.
 - [ ] No se modifica código Angular en este ciclo si no hay referencia aprobada.
 
 QA manual:
@@ -466,7 +487,7 @@ Mensaje de commit sugerido: `docs(frontend): registrar auditoria de muestra pagi
 ### Ciclo F1-02 — Extraer sistema visual desde v0
 
 Objetivo: convertir la referencia v0 disponible en criterios visuales portables: composición, paleta, tipografía, espaciado, componentes y estados.
-Rama sugerida: `frontend/sistema-visual-v0`.
+Rama sugerida: `frontend/v0-design-system`.
 Archivos a leer: `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md`, hallazgos del ciclo F1-01 y archivos de diseño disponibles en `muestra_pagina/`.
 
 Comandos si aplica:
@@ -507,7 +528,7 @@ Mensaje de commit sugerido: `docs(frontend): documentar sistema visual v0`.
 ### Ciclo F1-03 — Crear app Angular 20
 
 Objetivo: crear la base Angular 20 en `apps/frontend-angular/` solo si el ciclo SDD lo aprueba y la carpeta no contiene una app existente.
-Rama sugerida: `frontend/crear-app-angular`.
+Rama sugerida: `frontend/angular-shell`.
 Archivos a leer: `AGENTS.md`, `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, spec OpenSpec del ciclo activo.
 
 Comandos si aplica:
@@ -555,7 +576,7 @@ Mensaje de commit sugerido: `feat(frontend): crear base angular 20`.
 ### Ciclo F1-04 — Configurar Tailwind
 
 Objetivo: configurar Tailwind en Angular solo si el diseño y el ciclo SDD lo aprueban como sistema visual del frontend.
-Rama sugerida: `frontend/configurar-tailwind`.
+Rama sugerida: `frontend/angular-shell`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, hallazgos F1-02, `apps/frontend-angular/package.json` si existe.
 
 Comandos si aplica:
@@ -602,7 +623,7 @@ Mensaje de commit sugerido: `build(frontend): configurar tailwind en angular`.
 ### Ciclo F1-05 — Crear layout base público/admin
 
 Objetivo: preparar una estructura mínima de layout público/admin sin implementar pantallas finales ni lógica de negocio.
-Rama sugerida: `frontend/layout-base`.
+Rama sugerida: `frontend/angular-shell`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, hallazgos F1-01/F1-02, spec del ciclo activo.
 
 Comandos si aplica:
@@ -642,7 +663,7 @@ Documentación a actualizar en `sdd-archive`:
 
 Qué NO hacer:
 - No crear flujo de validación real sin contrato API.
-- No exponer DNI completo, tokens ni datos sensibles.
+- No exponer DNI completo en pantallas públicas, tokens ni datos sensibles.
 - No convertir placeholders en pantallas finales sin diseño aprobado.
 
 Mensaje de commit sugerido: `feat(frontend): crear layout base publico admin`.
@@ -664,7 +685,7 @@ Mensaje de commit sugerido: `feat(frontend): crear layout base publico admin`.
 ### Ciclo F2-01 — Pantalla pública de validación válida
 
 Objetivo: implementar o preparar la pantalla pública que muestra una certificación válida, usando datos mock si todavía no existe API integrada.
-Rama sugerida: `frontend/validacion-publica-valida`.
+Rama sugerida: `frontend/public-validation-flow`.
 Archivos a leer: `AGENTS.md`, `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/backend/01-contrato-api-certificados.md`, hallazgos F1-01/F1-02 y spec del ciclo activo.
 
 Comandos si aplica:
@@ -681,7 +702,7 @@ Trabajemos el ciclo F2-01 — Pantalla pública de validación válida.
 Usá SDD completo. Leé AGENTS.md, apps/frontend-angular/AGENTS.md, docs/frontend/00-angular20-port-v0.md,
 docs/backend/01-contrato-api-certificados.md, hallazgos F1-01/F1-02 y la spec del ciclo.
 Implementá solo la pantalla pública para un caso válido con datos mock o contrato documentado.
-No inventes endpoints, no consultes backend real si no está aprobado y no muestres DNI completo ni token completo.
+No inventes endpoints, no consultes backend real si no está aprobado y usá DNI enmascarado, sin token completo.
 Si muestra_pagina/ no tiene diseño utilizable, usá una estructura accesible mínima y reportá el bloqueo visual.
 No toques PHP, base de datos, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
 Cerrá con tests/build disponibles, QA manual, sdd-archive y reporte final.
@@ -691,7 +712,7 @@ Validaciones automáticas:
 - [ ] `npm test` pasa o se reporta que no hay runner disponible.
 - [ ] `npm run build` pasa o queda bloqueo verificable.
 - [ ] La pantalla no depende de un endpoint no documentado.
-- [ ] No se expone DNI completo, token completo ni datos sensibles.
+- [ ] No se expone DNI completo en validación pública, token completo ni datos sensibles.
 
 QA manual:
 - [ ] La ruta pública de validación muestra estado válido con jerarquía clara.
@@ -714,7 +735,7 @@ Mensaje de commit sugerido: `feat(frontend): mostrar validacion publica valida`.
 ### Ciclo F2-02 — Estados revocada/no encontrada/error
 
 Objetivo: cubrir estados no válidos de la validación pública: revocada, no encontrada y error técnico, sin confundirlos visualmente.
-Rama sugerida: `frontend/estados-validacion-publica`.
+Rama sugerida: `frontend/public-validation-flow`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/backend/01-contrato-api-certificados.md`, implementación de F2-01 y spec del ciclo activo.
 
 Comandos si aplica:
@@ -732,7 +753,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 docs/backend/01-contrato-api-certificados.md, lo hecho en F2-01 y la spec del ciclo.
 Implementá estados públicos diferenciados para certificación revocada, certificación no encontrada y error técnico.
 Tratá 404/CERTIFICATE_NOT_FOUND como certificado no verificable, no como error de sistema.
-No inventes backend, no expongas DNI completo ni token completo y no agregues dependencias.
+No inventes backend, no expongas DNI completo ni token completo en validación pública y no agregues dependencias.
 No toques PHP, base, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
 ```
 
@@ -762,7 +783,7 @@ Mensaje de commit sugerido: `feat(frontend): cubrir estados de validacion public
 ### Ciclo F2-03 — Login/admin shell
 
 Objetivo: crear el shell administrativo y un login visual mínimo para preparar flujos internos, sin implementar autenticación real si backend no existe.
-Rama sugerida: `frontend/admin-shell-login`.
+Rama sugerida: `frontend/admin-foundation`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/backend/01-contrato-api-certificados.md`, hallazgos F1-02 y spec del ciclo activo.
 
 Comandos si aplica:
@@ -810,7 +831,7 @@ Mensaje de commit sugerido: `feat(frontend): preparar shell administrativo`.
 ### Ciclo F2-04 — Cursos y fechas
 
 Objetivo: preparar vistas o componentes administrativos para cursos y fechas usando modelos/mocks de frontend hasta que exista integración real.
-Rama sugerida: `frontend/cursos-fechas-admin`.
+Rama sugerida: `frontend/admin-foundation`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, documentación backend disponible, F2-03 y spec del ciclo activo.
 
 Comandos si aplica:
@@ -857,7 +878,7 @@ Mensaje de commit sugerido: `feat(frontend): preparar cursos y fechas`.
 ### Ciclo F2-05 — Asistencias presentes
 
 Objetivo: preparar la UI para registrar o revisar asistencias presentes de un curso, sin persistencia real hasta que backend lo habilite.
-Rama sugerida: `frontend/asistencias-presentes`.
+Rama sugerida: `frontend/admin-foundation`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, documentación backend disponible, F2-04 y spec del ciclo activo.
 
 Comandos si aplica:
@@ -874,7 +895,7 @@ Trabajemos el ciclo F2-05 — Asistencias presentes.
 Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angular20-port-v0.md,
 documentación backend disponible, lo hecho en F2-04 y la spec del ciclo.
 Prepará UI para marcar o revisar asistencias presentes con datos mock explícitos.
-No persistas datos reales, no inventes API y no expongas DNI completo.
+No persistas datos reales, no inventes API y no muestres DNI completo salvo que una spec privada o administrativa lo apruebe.
 No toques PHP, base, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
 ```
 
@@ -882,7 +903,7 @@ Validaciones automáticas:
 - [ ] `npm test` pasa o se reporta ausencia de runner.
 - [ ] `npm run build` pasa o queda bloqueo verificable.
 - [ ] La UI no persiste datos reales.
-- [ ] No hay DNI completo ni datos sensibles en mocks.
+- [ ] No hay datos sensibles reales en mocks; DNI completo solo si una spec administrativa lo exige.
 
 QA manual:
 - [ ] Marcar/desmarcar presente es claro y accesible.
@@ -904,7 +925,7 @@ Mensaje de commit sugerido: `feat(frontend): preparar asistencias presentes`.
 ### Ciclo F2-06 — Certificaciones
 
 Objetivo: preparar la UI administrativa para emitir o listar certificaciones, dejando explícita la frontera con PDF, QR y backend real.
-Rama sugerida: `frontend/certificaciones-admin`.
+Rama sugerida: `frontend/admin-certifications`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/backend/01-contrato-api-certificados.md`, F2-04/F2-05 y spec del ciclo activo.
 
 Comandos si aplica:
@@ -922,7 +943,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 docs/backend/01-contrato-api-certificados.md, lo hecho en F2-04/F2-05 y la spec del ciclo.
 Prepará UI administrativa para listar/previsualizar certificaciones con mocks explícitos.
 No generes PDF real, no generes QR real y no inventes emisión backend si no está aprobada.
-No expongas DNI completo ni token completo. No toques PHP, base, deploy ni material_privado_no_versionar/.
+No expongas DNI completo en pantallas públicas ni token completo. No toques PHP, base, deploy ni material_privado_no_versionar/.
 No ejecutes commit, push, merge ni rebase.
 ```
 
@@ -954,7 +975,7 @@ Mensaje de commit sugerido: `feat(frontend): preparar certificaciones admin`.
 ### Ciclo F3-01 — Servicios mock y contratos frontend
 
 Objetivo: ordenar servicios, modelos y mocks del frontend para que la UI no dependa de datos hardcodeados en componentes.
-Rama sugerida: `frontend/servicios-mock-contratos`.
+Rama sugerida: `frontend/api-readiness`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/backend/01-contrato-api-certificados.md`, ciclos F2 completados y spec del ciclo activo.
 
 Comandos si aplica:
@@ -1001,7 +1022,7 @@ Mensaje de commit sugerido: `refactor(frontend): ordenar mocks y contratos`.
 ### Ciclo F3-02 — Preparar conexión futura con API PHP
 
 Objetivo: dejar la frontera frontend/API preparada detrás de servicios, sin activar llamadas reales si el backend no está listo.
-Rama sugerida: `frontend/preparar-api-php`.
+Rama sugerida: `frontend/api-readiness`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/backend/01-contrato-api-certificados.md`, F3-01 y spec del ciclo activo.
 
 Comandos si aplica:
@@ -1032,7 +1053,7 @@ Validaciones automáticas:
 QA manual:
 - [ ] La app sigue funcionando con mocks.
 - [ ] Errores de servicio están previstos sin romper UI.
-- [ ] No se exponen tokens, DNI completo ni errores técnicos crudos.
+- [ ] No se exponen tokens, DNI completo en validación pública ni errores técnicos crudos.
 - [ ] Consola sin errores nuevos.
 
 Documentación a actualizar en `sdd-archive`:
@@ -1049,7 +1070,7 @@ Mensaje de commit sugerido: `refactor(frontend): preparar frontera api php`.
 ### Ciclo F3-03 — Tests automáticos básicos
 
 Objetivo: agregar o ejecutar pruebas automáticas mínimas disponibles para proteger rutas, componentes o servicios tocados.
-Rama sugerida: `frontend/tests-basicos`.
+Rama sugerida: `qa/frontend-release-readiness`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `package.json` de Angular si existe, ciclos F2/F3 previos y spec del ciclo activo.
 
 Comandos si aplica:
@@ -1095,7 +1116,7 @@ Mensaje de commit sugerido: `test(frontend): agregar pruebas basicas`.
 ### Ciclo F3-04 — QA manual completo
 
 Objetivo: ejecutar una pasada manual transversal de la experiencia frontend antes del build de entrega.
-Rama sugerida: `qa/frontend-manual-completo`.
+Rama sugerida: `qa/frontend-release-readiness`.
 Archivos a leer: `docs/frontend/00-angular20-port-v0.md`, reportes F2/F3, `apps/frontend-angular/AGENTS.md` y spec del ciclo activo.
 
 Comandos si aplica:
@@ -1127,7 +1148,7 @@ QA manual:
 - [ ] Contraste y legibilidad revisados.
 - [ ] Estados carga/vacío/error/éxito revisados.
 - [ ] Consola sin errores nuevos.
-- [ ] No se muestran DNI completo, tokens completos ni datos reales.
+- [ ] No se muestran DNI completo en validación pública, tokens completos ni datos reales.
 
 Documentación a actualizar en `sdd-archive`:
 - `docs/frontend/00-angular20-port-v0.md` con resumen de QA, pendientes y riesgos.
@@ -1143,7 +1164,7 @@ Mensaje de commit sugerido: `test(frontend): documentar qa manual completo`.
 ### Ciclo F3-05 — Build para `/certificados/`
 
 Objetivo: verificar build de producción con base href `/certificados/` y documentar artefactos esperados, sin desplegar al servidor.
-Rama sugerida: `frontend/build-certificados`.
+Rama sugerida: `qa/frontend-release-readiness`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `deploy/AGENTS.md`, `docs/deploy/00-cpanel-certificados.md` si existe y spec del ciclo activo.
 
 Comandos si aplica:
@@ -1188,7 +1209,7 @@ Mensaje de commit sugerido: `build(frontend): validar build certificados`.
 ### Ciclo F3-06 — Handoff a Marcos
 
 Objetivo: entregar a Marcos un reporte revisable con estado, evidencia, riesgos, pendientes, handoff a Fase 2 y comandos Git propuestos para decisión humana.
-Rama sugerida: `docs/handoff-frontend-matias`.
+Rama sugerida: `qa/frontend-release-readiness`.
 Archivos a leer: esta guía, reportes de F2/F3, `docs/frontend/00-angular20-port-v0.md`, `docs/00-indice-general.md` y spec del ciclo activo.
 
 Comandos si aplica:
@@ -1280,7 +1301,7 @@ Usá estos comandos solo cuando el ciclo lo indique. No convierten por sí solos
 | `docs/frontend/00-angular20-port-v0.md` | Antes de tocar UI, Angular, build frontend o port desde `muestra_pagina/`. |
 | `MATIAS_PROMPTS_SDD_FASE2.md` | Para continuar prompts 11-22 después de F3-06. |
 | `apps/frontend-angular/AGENTS.md` | Antes de editar la app Angular. |
-| `muestra_pagina/README.md` y `muestra_pagina/AGENTS.md` | Antes de auditar o portar la referencia visual. |
+| `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md` y `muestra_pagina/MANIFIESTO_V0.md` | Antes de auditar o portar la referencia visual. |
 | `openspec/changes/<cambio>/specs/` | Para validar el contrato del ciclo activo. |
 | `openspec/specs/` | Para consultar contratos ya archivados. |
 
@@ -1312,7 +1333,8 @@ Antes de pedir revisión a Marcos, completá esta lista.
 
 - [ ] No se tocó `material_privado_no_versionar/`.
 - [ ] No se copiaron dumps, logs, credenciales ni datos reales a documentación o código.
-- [ ] No se muestran DNI completo, tokens completos ni datos sensibles.
+- [ ] La validación pública usa DNI enmascarado y no muestra tokens completos ni datos sensibles.
+- [ ] El DNI completo solo aparece en contextos privados o de entrega al estudiante si una spec aprobada lo exige.
 - [ ] No se instalaron dependencias nuevas sin aprobación.
 - [ ] No se inventaron endpoints ni contratos API.
 - [ ] OpenCode no ejecutó commit, push, merge, rebase ni deploy.
@@ -1323,13 +1345,13 @@ Usá esta tabla como control común para cada pantalla o estado visual tocado.
 
 | Pantalla/estado | Controles mínimos |
 |---|---|
-| Validación pública válida | Mensaje de autenticidad claro, datos mínimos, sin DNI/token completo, responsive, foco visible, consola limpia. |
+| Validación pública válida | Mensaje de autenticidad claro, datos mínimos, DNI enmascarado, sin token completo, responsive, foco visible, consola limpia. |
 | Certificación revocada | Comunica invalidez sin ambigüedad, no parece error técnico, contraste correcto, no expone datos sensibles. |
 | Certificación no encontrada | Indica “no verificable”, no culpa al usuario, no muestra stack/error crudo, funciona en móvil. |
 | Error técnico | Sugiere reintentar o contactar, no muestra detalles internos, mantiene navegación y foco. |
 | Login/admin shell | No promete autenticación real si no existe, no hardcodea credenciales, formulario accesible, estados visuales claros. |
 | Cursos y fechas | Estados vacío/carga/error/éxito, formularios con labels, listas legibles en móvil, sin persistencia real no aprobada. |
-| Asistencias presentes | Marcar/desmarcar es claro, tabla/lista usable con teclado, sin DNI completo, consola limpia. |
+| Asistencias presentes | Marcar/desmarcar es claro, tabla/lista usable con teclado, sin datos reales; DNI completo solo con spec administrativa aprobada. |
 | Certificaciones admin | Acciones habilitadas vs. placeholders diferenciadas, no genera PDF/QR real sin contrato, mocks explícitos. |
 
 ## Checklist de `sdd-archive`

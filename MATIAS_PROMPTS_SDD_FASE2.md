@@ -2,10 +2,12 @@
 
 Guía operativa para continuar los prompts 11-22 del port visual v0. Complementa `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`; no la reemplaza.
 
+> Estado: guía marco. Antes de que Matías ejecute F4-F6, el ciclo elegido debe expandirse con archivos a leer, validaciones, QA, límites y criterios de cierre si todavía no existe una spec/tarea detallada.
+
 ## Ruta rápida
 
 1. Leé `README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md` y `docs/frontend/00-angular20-port-v0.md`.
-2. Confirmá que `muestra_pagina/` sigue siendo la referencia v0 vigente.
+2. Confirmá que `muestra_pagina/` sigue siendo la referencia v0 vigente y que `muestra_pagina/MANIFIESTO_V0.md` coincide con la carpeta real.
 3. Elegí un ciclo F4-F6 y ejecutá SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 4. Si el ciclo depende de API, PDF, QR, permisos, auditoría o configuración no aprobada, primero pedí spec o bloqueá.
 5. No hagas commit, push, merge, rebase ni deploy desde OpenCode.
@@ -18,6 +20,20 @@ Guía operativa para continuar los prompts 11-22 del port visual v0. Complementa
 - No instalar dependencias sin aprobación explícita.
 - Mantener documentación breve: enlazar `docs/frontend/00-angular20-port-v0.md` como fuente visual.
 - Cerrar cada ciclo con verify y `sdd-archive`.
+- Validación pública: usar DNI enmascarado. Entrega o visualización privada para estudiantes: DNI completo solo si una spec aprobada lo exige.
+- Trabajar con ramas por capacidad revisable, no por prompt aislado.
+
+## Estrategia de ramas Fase 2
+
+| Rama | Ciclos incluidos | Criterio |
+|---|---|---|
+| `frontend/certificate-detail-pdf` | `F4-01`, `F4-02` | Detalle administrativo de certificación y vista previa PDF comparten datos permitidos, layout y permisos. |
+| `frontend/admin-courses` | `F4-03`, `F4-04` | Listado y detalle de cursos comparten contrato, filtros, fechas y navegación. |
+| `frontend/admin-certifications` | `F5-01`, `F5-04`, `F6-01`, `F6-03` | Certificaciones, envío/reenvío, revocación y auditoría son acciones críticas relacionadas. |
+| `frontend/admin-students` | `F5-02`, `F5-03` | Listado y detalle de alumno comparten reglas de datos personales y visibilidad de DNI. |
+| `frontend/admin-bulk-config` | `F6-02`, `F6-04` | Carga masiva placeholder y configuración institucional son capacidades administrativas no críticas para el flujo público. |
+
+Si una rama supera el presupuesto de revisión o mezcla permisos/datos personales con UI pública, dividir antes de `apply`. No mezclar Fase 2 con backend, deploy ni DB.
 
 ## Prompt base
 
@@ -28,6 +44,7 @@ Trabajemos el ciclo <ciclo> — <objetivo> del frontend Angular 20 para IFTS14.
 Usá SDD completo. Leé AGENTS.md, GUIA.md, docs/00-indice-general.md,
 docs/frontend/00-angular20-port-v0.md, muestra_pagina/README.md y la spec OpenSpec correspondiente.
 No copies React/Next literalmente. No inventes API, PDF, QR, permisos ni configuración.
+Si Fase 2 sigue como guía marco, expandí primero el ciclo elegido antes de implementar.
 No toques backend, base de datos, deploy ni material_privado_no_versionar/.
 No instales dependencias y no ejecutes commit, push, merge ni rebase.
 Cerrá con verify, sdd-archive y reporte final con archivos, validaciones, QA, bloqueos y riesgos.
@@ -54,7 +71,7 @@ Evidencia esperada:
 | Ciclo | Prompt | Objetivo | Bloqueo obligatorio |
 |---|---:|---|---|
 | F5-01 | 15 | Listado de certificaciones con filtros y estados. | Contrato de filtros, paginación y estados. |
-| F5-02 | 16 | Listado de alumnos. | Definir datos visibles; no exponer DNI completo. |
+| F5-02 | 16 | Listado de alumnos. | Definir datos visibles; DNI completo solo si la spec lo exige en contexto privado/administrativo. |
 | F5-03 | 17 | Detalle administrativo de alumno. | Spec previa de datos personales permitidos. |
 | F5-04 | 18 | Enviar o reenviar certificación. | Contrato de envío y mensajes aprobados. |
 
@@ -89,6 +106,7 @@ Evidencia esperada:
 | Falta spec de PDF o QR | No implementar. Pedir spec previa. |
 | Se necesitan permisos o auditoría | Pedir contrato de roles/eventos antes de tocar UI final. |
 | Aparecen datos personales en mock | Frenar, reemplazar por datos ficticios mínimos y reportar. |
+| Hay duda sobre DNI completo | En validación pública se enmascara; para certificado entregado o mostrado al estudiante, pedir spec del contexto privado. |
 | v0 cambió | Actualizar primero `docs/frontend/00-angular20-port-v0.md` mediante SDD. |
 | El ciclo se agranda | Dividir en otro ciclo SDD; no mezclar pantallas no relacionadas. |
 
@@ -98,6 +116,7 @@ Evidencia esperada:
 |---|---|
 | `docs/frontend/00-angular20-port-v0.md` | Inventario v0, tokens, componentes candidatos y riesgos. |
 | `muestra_pagina/README.md` | Estado de la referencia v0 y reglas de uso. |
+| `muestra_pagina/MANIFIESTO_V0.md` | Inventario declarado de la exportación v0. |
 | `apps/frontend-angular/AGENTS.md` | Reglas para código Angular. |
 | `docs/backend/01-contrato-api-certificados.md` | Contrato API cuando exista o esté aprobado. |
 | `openspec/changes/<cambio>/specs/` | Spec activa de cada ciclo. |

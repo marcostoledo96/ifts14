@@ -21,7 +21,7 @@ Esta guía es el punto de entrada para que Marcos trabaje ciclos chicos del mód
 | Frontend | No tocar Angular salvo coordinación explícita con el ciclo frontend. |
 | Material privado | No modificar ni copiar contenido de `material_privado_no_versionar/`; solo nombres y riesgos generales cuando el ciclo lo autorice. |
 | Datos sensibles | No imprimir credenciales, dumps, logs, DNI completo ni tokens completos. |
-| Git | OpenCode puede proponer comandos; commit, push, merge y rebase son manuales de Marcos. |
+| Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. OpenCode solo ejecuta commit, push, merge o rebase con confirmación explícita de Marcos. |
 
 ## Cuándo detenerse para QA manual
 
@@ -49,6 +49,19 @@ Reglas:
 - Si hay implementación y existe runner, aplicar TDD; si no hay runner, dejar QA manual verificable.
 - No declarar terminado un ciclo solo porque compila o porque el documento existe.
 - `sdd-archive` sincroniza la documentación que cambió durante el ciclo.
+- La rama Git agrupa trabajo revisable; el ciclo SDD agrupa planificación. Si dos ciclos forman una misma capacidad revisable y verificable, pueden compartir rama.
+
+### Estrategia de ramas recomendada
+
+| Rama | Ciclos incluidos | Criterio |
+|---|---|---|
+| `integration/angular-api-contract` | `M3-01` | Handoff contrato PHP/Angular, principalmente docs/specs. |
+| `deploy/cpanel-certificados` | `M3-02` + ajustes documentales de deploy de `M3-03` | Ruta `/certificados/`, `.htaccess`, config externa, rollback y checklist se revisan juntos. |
+| `qa/hardening-certificados` | `M3-03` seguridad, logs, privacidad, `.gitignore`, QA final | Auditoría final separada para no bloquear deploy ni mezclar riesgos. |
+| `backend/public-endpoint-hardening` | Futuro rate limiting + fault-injection de auditoría | Ambos endurecen el endpoint público ya implementado. |
+| `backend/admin-certificados` | Futuros ciclos de emisión, revocación y reenvío | Comparten permisos, escritura, auditoría y API administrativa. |
+
+No juntar deploy con integración Angular salvo cambio de ruta pública que obligue a ambos. No juntar endpoints administrativos con validación pública: tienen distinto riesgo y superficie de seguridad.
 
 ### Prompt base para iniciar un ciclo
 
@@ -235,7 +248,7 @@ Commit sugerido: `feat(backend): validar certificados por token`.
 ### Ciclo M3-01 — integración con Angular
 
 Objetivo: coordinar contrato PHP/Angular sin acoplar implementaciones ni tocar frontend salvo acuerdo.
-Rama sugerida: `docs/integracion-angular-api`.
+Rama sugerida: `integration/angular-api-contract`.
 Leer antes: `docs/backend/01-contrato-api-certificados.md`, `docs/frontend/00-angular20-port-v0.md`, `openspec/specs/backend-contrato-api-certificados/spec.md`, `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` como referencia de handoff.
 
 Pedir a OpenCode:
@@ -257,7 +270,7 @@ Commit sugerido: `docs(integracion): alinear contrato angular php`.
 
 ### Ciclo M3-02 — deploy cPanel
 
-Objetivo: documentar build/subida a `/certificados/`, `.htaccess`, configuración externa y rollback.
+Objetivo: documentar build/subida a `/certificados/`, `.htaccess`, configuración externa y rollback. Puede incluir ajustes documentales de deploy detectados durante M3-03 si son chicos y revisables.
 Rama sugerida: `deploy/cpanel-certificados`.
 Leer antes: `deploy/AGENTS.md`, `deploy/README.md`, `docs/deploy/00-cpanel-certificados.md`, `GUIA.md`.
 
@@ -280,7 +293,7 @@ Commit sugerido: `docs(deploy): documentar cpanel certificados`.
 
 ### Ciclo M3-03 — hardening final
 
-Objetivo: revisar seguridad, logs, backups, documentación, QA y cierre Git revisable.
+Objetivo: revisar seguridad, logs, backups, documentación, QA y cierre Git revisable. Mantener separado de deploy salvo hallazgos documentales mínimos ya previstos en `deploy/cpanel-certificados`.
 Rama sugerida: `qa/hardening-certificados`.
 Leer antes: `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/07-sdd-archive-y-mantenimiento-documentacion.md`, docs backend/database/deploy tocadas.
 
