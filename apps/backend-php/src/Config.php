@@ -28,6 +28,10 @@ final class Config
             }
         }
 
+        if (!isset($config['token_pepper']) || !is_string($config['token_pepper']) || trim($config['token_pepper']) === '') {
+            throw new RuntimeException('Configuration invalid.');
+        }
+
         return $config;
     }
 }
