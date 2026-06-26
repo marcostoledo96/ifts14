@@ -94,16 +94,28 @@ El contrato MUST indicar que Angular leerá `/certificados/validar/:tokenCertifi
 
 ### Requirement: Pendientes de capacidad operativa
 
-El endpoint público de verificación NO implementa rate limiting en este ciclo; esa capacidad queda documentada como pendiente. La falla del INSERT de auditoría MUST NOT romper la respuesta pública. Las pruebas fault-injection de la ruta de auditoría no fueron ejecutadas en runtime y quedan registradas como warning de verificación.
+El endpoint público de verificación MUST aplicar rate limiting mínimo y responder `429 RATE_LIMITED` al exceder el umbral configurado. La falla del INSERT de auditoría MUST NOT romper la respuesta pública: una validación válida conserva `200`, una no verificable conserva `404` y un token inválido conserva `400` si corresponde.
 
-#### Scenario: Auditoría no rompe la respuesta
+#### Scenario: Auditoría no rompe respuesta válida
 
-- **Given** una verificación pública en curso y un fallo del `INSERT` en `cert_eventos_auditoria`
+- **Given** un certificado verificable y un fallo del `INSERT` en `cert_eventos_auditoria`
 - **When** la API arma la respuesta pública
-- **Then** MUST devolver el resultado de validación (200 o 404) sin propagar la falla interna.
+- **Then** MUST devolver `200` con el DTO público válido sin exponer la falla interna.
 
-#### Scenario: Rate limiting ausente
+#### Scenario: Auditoría no rompe respuesta no verificable
 
-- **Given** múltiples consultas públicas desde el mismo origen
-- **When** la API recibe la segunda y sucesivas dentro de la ventana de tráfico
-- **Then** la API responde según el contrato normal (200/404) sin aplicar `429 RATE_LIMITED` todavía; esa respuesta queda pendiente para un ciclo posterior.
+- **Given** un token no verificable y un fallo del `INSERT` de auditoría
+- **When** se consulta la verificación pública
+- **Then** MUST devolver `404 CERTIFICATE_NOT_FOUND` sin propagar la falla interna.
+
+#### Scenario: Auditoría no rompe token inválido
+
+- **Given** un token ausente o con formato inválido y auditoría no disponible
+- **When** se consulta GET o POST
+- **Then** MUST devolver `400 VALIDATION_ERROR` si aplica por formato, sin exponer la falla interna.
+
+#### Scenario: Rate limiting aplicado
+
+- **Given** múltiples consultas públicas desde el mismo bucket hasta exceder la ventana configurada
+- **When** la API recibe una nueva consulta GET o POST dentro de esa ventana
+- **Then** MUST responder `429 RATE_LIMITED` con sobre de error seguro.
