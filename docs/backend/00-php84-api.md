@@ -26,6 +26,8 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 | `GET` | `/certificados/api/health` | Estado técnico básico, sin abrir configuración ni PDO. |
 | `GET` | `/certificados/api/certificados/{token}/verificacion` | Valida token público por hash `SHA-256(token + token_pepper)` y devuelve DTO público mínimo. |
 | `POST` | `/certificados/api/certificados/consulta` | Lee JSON `{ "token": "..." }` y reutiliza la misma validación que el GET. |
+| `POST` | `/certificados/api/admin/certificados` | Emite certificado y token persistido; requiere `X-Admin-Key` y devuelve DTO seguro sin DNI ni token completos. |
+| `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revoca certificado e invalida tokens activos; requiere `X-Admin-Key`. |
 
 La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_` o `-`. Los casos inexistentes, revocados, vencidos o fuera de ventana responden `404 CERTIFICATE_NOT_FOUND` sin revelar la causa. Los endpoints públicos aplican rate limiting mínimo por origen y responden `429 RATE_LIMITED` al superar el umbral configurado. El endpoint no devuelve DNI completo, token completo, SQL, rutas internas ni configuración.
 
@@ -37,14 +39,14 @@ El contrato público futuro de la API de certificados QR está documentado en:
 
 - `docs/backend/01-contrato-api-certificados.md`
 
-Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, reglas de seguridad y expectativas de integración. La implementación actual cubre la validación pública mínima; los endpoints administrativos siguen fuera de alcance.
+Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, reglas de seguridad y expectativas de integración. La implementación actual cubre la validación pública mínima y el slice administrativo mínimo de emisión/revocación protegido por `X-Admin-Key`.
 
 ## Pendientes
 
 - Confirmar si Composer está disponible.
 - Confirmar mecanismo de email.
 - Confirmar generación de PDF/QR viable en el hosting.
-- Definir endpoints administrativos de emisión, revocación y reenvío en un ciclo SDD posterior.
+- Definir mecanismo de reenvío/entrega de token en un ciclo SDD posterior; el endpoint de reenvío administrativo sigue fuera de alcance hasta confirmar email o canal seguro.
 - **Rate limiting público**: implementado como protección básica de nodo único con JSON temporal y `flock()`. No reemplaza controles anti-abuso distribuidos.
 - **Auditoría fault-injection**: disponible en `apps/backend-php/tests/fault-injection-audit.php` para DB demo ficticia; restaura `cert_eventos_auditoria` en `finally`.
 

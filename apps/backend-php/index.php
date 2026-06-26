@@ -7,6 +7,8 @@ require_once __DIR__ . '/src/Config.php';
 require_once __DIR__ . '/src/RateLimiter.php';
 require_once __DIR__ . '/src/Database.php';
 require_once __DIR__ . '/src/CertificateValidator.php';
+require_once __DIR__ . '/src/AuthGate.php';
+require_once __DIR__ . '/src/AdminCertificateService.php';
 
 $requestId = 'req_' . bin2hex(random_bytes(8));
 
@@ -67,7 +69,88 @@ if ($path === '/certificados/consulta') {
     return;
 }
 
+if ($path === '/admin/certificados') {
+    if ($method !== 'POST') {
+        header('Allow: POST');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    $config = Config::load();
+    if (!requireAdmin($config, $requestId)) {
+        return;
+    }
+
+    $body = json_decode(file_get_contents('php://input') ?: '', true);
+    $body = is_array($body) ? $body : [];
+
+    respondToAdmin(static function () use ($config, $requestId, $body): array {
+        $service = new AdminCertificateService(
+            Database::pdo($config),
+            (string) $config['token_pepper'],
+            $requestId,
+            null,
+            (string) $config['app_salt'],
+        );
+
+        return ['status' => 201, 'data' => $service->emitir($body)];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/certificados/(\d+)/revocar$#', $path, $matches) === 1) {
+    if ($method !== 'POST') {
+        header('Allow: POST');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    $config = Config::load();
+    if (!requireAdmin($config, $requestId)) {
+        return;
+    }
+
+    $body = json_decode(file_get_contents('php://input') ?: '', true);
+    $reason = is_array($body) && isset($body['reason']) && is_string($body['reason']) ? $body['reason'] : null;
+
+    respondToAdmin(static function () use ($config, $requestId, $matches, $reason): array {
+        $service = new AdminCertificateService(
+            Database::pdo($config),
+            (string) $config['token_pepper'],
+            $requestId,
+            null,
+            (string) $config['app_salt'],
+        );
+
+        return ['status' => 200, 'data' => $service->revocar($matches[1], $reason)];
+    }, $requestId);
+    return;
+}
+
 Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+
+/** @param array<string, mixed> $config */
+function requireAdmin(array $config, string $requestId): bool
+{
+    try {
+        AuthGate::requireAdmin($config, $_SERVER, $requestId);
+
+        return true;
+    } catch (UnauthorizedException) {
+        return false;
+    }
+}
+
+/** @param callable(): array{status:int,data:array<string,mixed>} $handler */
+function respondToAdmin(callable $handler, string $requestId): void
+{
+    try {
+        $result = $handler();
+        Response::json($result['status'], $result['data'], $requestId);
+    } catch (AdminCertificateException $exception) {
+        Response::error($exception->status, $exception->errorCode, $exception->getMessage(), $requestId);
+    }
+}
 
 /** @param array<string, mixed> $config */
 function allowPublicRequest(array $config, string $requestId): bool
