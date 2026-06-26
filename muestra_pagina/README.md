@@ -1,6 +1,6 @@
 # muestra_pagina
 
-Esta carpeta contiene la referencia visual v0 para portar el frontend del módulo `/certificados/` a Angular 20.
+Esta carpeta contiene la referencia visual v0 para portar el frontend del módulo `/certificados/` a Angular 20. Incluye código Next.js/React exportado y capturas como insumo visual; no es código definitivo del producto.
 
 ## Estado actual
 
@@ -10,6 +10,8 @@ Esta carpeta contiene la referencia visual v0 para portar el frontend del módul
 | Pantallas pendientes | 12 |
 
 Las pantallas disponibles cubren prompts 4-10. Los prompts 11-22 se planifican en `../MATIAS_PROMPTS_SDD_FASE2.md`.
+
+El commit que agregue o actualice contenido v0 debe mantener `MANIFIESTO_V0.md` sincronizado con el inventario real de esta carpeta.
 
 ## Uso permitido
 
