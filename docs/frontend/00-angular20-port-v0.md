@@ -4,12 +4,14 @@ Este documento es la fuente de verdad para portar a Angular 20 la referencia vis
 
 ## Estado de referencia
 
-`muestra_pagina/` ya contiene una referencia v0 utilizable generada en Next.js/React. Se usa solo como referencia visual y funcional: no se copian componentes, rutas, hooks ni estilos literalmente.
+`muestra_pagina/` contiene una referencia v0 utilizable generada en Next.js/React, con código fuente exportado y capturas para los prompts 4-10. Se usa solo como referencia visual y funcional: no se copian componentes, rutas, hooks ni estilos literalmente.
 
 | Estado | Cantidad | Uso |
 |---|---:|---|
 | Pantallas disponibles | 7 | Base visual para prompts 4-10. |
 | Pantallas pendientes | 12 | Planificadas en `MATIAS_PROMPTS_SDD_FASE2.md`. |
+
+La carpeta también debe incluir `muestra_pagina/MANIFIESTO_V0.md` para declarar origen, alcance, pantallas incluidas, capturas disponibles y pendientes antes de portar o auditar la referencia.
 
 ## Inventario disponible en v0
 
@@ -68,7 +70,9 @@ Este documento es la fuente de verdad para portar a Angular 20 la referencia vis
 - Extraer intención visual, no código React/Next.
 - Implementar componentes Angular propios bajo `apps/frontend-angular/` cuando el ciclo SDD lo apruebe.
 - No inventar contratos API, PDF, QR, permisos ni configuración institucional.
-- No mostrar DNI completo, tokens completos ni datos reales.
+- En validación pública, usar DNI enmascarado y no exponer tokens completos ni datos reales.
+- En contextos privados o de entrega al estudiante, el certificado enviado o mostrado puede requerir DNI completo; esa decisión debe quedar especificada fuera de la respuesta pública de validación.
+- Si la referencia v0 muestra DNI completo en un contexto público, no portarlo: prevalece el contrato de validación pública con documento enmascarado.
 - Usar mocks solo si el ciclo los declara explícitamente.
 - Priorizar foco visible, navegación por teclado, responsive y contraste.
 - No instalar dependencias visuales sin decisión documentada.
@@ -101,4 +105,5 @@ Cuando exista integración real:
 - endpoint esperado: `/certificados/api/certificados/{token}/verificacion`;
 - `404 CERTIFICATE_NOT_FOUND` se muestra como certificado no verificable, no como error técnico;
 - la UI pública no debe pedir DNI completo para validar un certificado;
+- la respuesta pública debe usar DNI enmascarado; la entrega privada o estudiantil del certificado puede requerir DNI completo según spec aprobada;
 - los modelos TypeScript futuros deben respetar `docs/backend/01-contrato-api-certificados.md`.
