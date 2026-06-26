@@ -27,7 +27,7 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 | `GET` | `/certificados/api/certificados/{token}/verificacion` | Valida token público por hash `SHA-256(token + token_pepper)` y devuelve DTO público mínimo. |
 | `POST` | `/certificados/api/certificados/consulta` | Lee JSON `{ "token": "..." }` y reutiliza la misma validación que el GET. |
 
-La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_` o `-`. Los casos inexistentes, revocados, vencidos o fuera de ventana responden `404 CERTIFICATE_NOT_FOUND` sin revelar la causa. El endpoint no devuelve DNI completo, token completo, SQL, rutas internas ni configuración.
+La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_` o `-`. Los casos inexistentes, revocados, vencidos o fuera de ventana responden `404 CERTIFICATE_NOT_FOUND` sin revelar la causa. Los endpoints públicos aplican rate limiting mínimo por origen y responden `429 RATE_LIMITED` al superar el umbral configurado. El endpoint no devuelve DNI completo, token completo, SQL, rutas internas ni configuración.
 
 `token_pepper` es obligatorio en la configuración externa real y debe mantenerse fuera de Git. El ejemplo versionable usa valores ficticios solo para demo local.
 
@@ -45,8 +45,8 @@ Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, 
 - Confirmar mecanismo de email.
 - Confirmar generación de PDF/QR viable en el hosting.
 - Definir endpoints administrativos de emisión, revocación y reenvío en un ciclo SDD posterior.
-- **Rate limiting público**: el contrato lo menciona (`429 RATE_LIMITED`) pero la implementación actual no lo aplica; queda pendiente para un ciclo posterior.
-- **Auditoría fault-injection**: el `try/catch` interno está implementado, pero no se ejecutó fault-injection en runtime sobre `cert_eventos_auditoria`.
+- **Rate limiting público**: implementado como protección básica de nodo único con JSON temporal y `flock()`. No reemplaza controles anti-abuso distribuidos.
+- **Auditoría fault-injection**: disponible en `apps/backend-php/tests/fault-injection-audit.php` para DB demo ficticia; restaura `cert_eventos_auditoria` en `finally`.
 
 ## Validación local con PHP 8.4
 
@@ -86,7 +86,7 @@ La implementación de `backend-validacion-publica-certificados` quedó validada 
 | DB-backed `POST .../consulta` con token demo válido | `PASS` — `200` con el mismo DTO que GET. |
 | DB-backed `GET .../verificacion` con token no verificable | `PASS` — `404 CERTIFICATE_NOT_FOUND` unificado. |
 
-Las respuestas capturadas no incluyen DNI completo, token completo, SQL, credenciales, rutas internas ni configuración sensible. La falla del `INSERT` de auditoría no fue probada con fault-injection en runtime; el `try/catch` interno está verificado estáticamente.
+Las respuestas capturadas no incluyen DNI completo, token completo, SQL, credenciales, rutas internas ni configuración sensible. La falla del `INSERT` de auditoría quedó probada con `apps/backend-php/tests/fault-injection-audit.php` contra DB demo ficticia: válido conserva `200`, no verificable conserva `404`, token inválido conserva `400` y `cert_eventos_auditoria` se restaura en `finally`.
 
 Detalle de uso en `docker/php84/README.md` y en `apps/backend-php/README.md` (sección "Smoke HTTP local con `sudo docker run`").
 

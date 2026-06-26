@@ -128,6 +128,39 @@ Toda respuesta de error debe usar este formato:
 - Mantener configuración real fuera de Git.
 - La verificación pública debe devolver solo datos mínimos necesarios para confirmar autenticidad.
 
+## Rate limiting público
+
+Los endpoints públicos `GET /certificados/{token}/verificacion` y `POST /certificados/consulta` aplican una protección mínima por origen antes de consultar certificados o auditar. Si se supera el umbral de la ventana configurada, la API responde:
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Demasiadas consultas. Intente nuevamente más tarde.",
+    "details": []
+  },
+  "meta": {
+    "requestId": "req_publico_no_sensible"
+  }
+}
+```
+
+Configuración externa opcional:
+
+| Clave | Uso |
+|---|---|
+| `rate_limit_threshold` | Cantidad de consultas permitidas por ventana. |
+| `rate_limit_window_seconds` | Duración de la ventana. |
+| `rate_limit_storage_path` | Archivo JSON temporal local. Por defecto usa `sys_get_temp_dir()`. |
+| `app_salt` | Salt para hashear el origen. Si no existe, se usa `token_pepper`. |
+
+Limitaciones operativas:
+
+- Es rate limiting básico de nodo único; no es distribuido.
+- Varios usuarios detrás de la misma NAT/IP compartida consumen el mismo bucket.
+- Si el archivo temporal no se puede leer, escribir o bloquear, el limiter falla abierto para no bloquear validaciones legítimas.
+- El archivo de buckets no guarda IP cruda, token completo ni DNI; solo conserva hash de bucket, contador y vencimiento.
+
 ## Conceptos de base esperados
 
 El modelo de datos inicial contempla tablas con prefijo `cert_`:
