@@ -12,6 +12,12 @@ El objetivo es mantener el trabajo ordenado, seguro y guiado por Spec-Driven Dev
 - Trabajar un ciclo SDD por vez y cerrarlo con `sdd-archive`.
 - Aplicar TDD cuando exista implementación.
 - No leer todo el repositorio por defecto.
+- No pegar salidas largas de terminal sin resumen operativo; usar `RTK` o compresión equivalente cuando corresponda.
+- Leer lo mínimo necesario: índice, ciclo activo, specs afectadas y documentación puntual.
+- Usar resúmenes Graphify aprobados si existen; ejecutar Graphify solo con `.graphifyignore` válido y nunca sobre material privado.
+- Compactar/prunear contexto al cerrar ciclos largos y guardar resumen de sesión.
+- Aplicar `Ponytail` y `karpathy-guidelines` para cambios chicos o quirúrgicos.
+- No procesar material privado, dumps, logs ni secretos fuera de auditorías explícitamente autorizadas.
 - No commitear, pushear ni mergear automáticamente.
 - No subir secretos.
 - No imprimir credenciales reales en respuestas.
@@ -36,10 +42,11 @@ Antes de trabajar:
 1. `README.md`.
 2. `GUIA.md`.
 3. `docs/00-indice-general.md`.
-4. `AGENTS.md` de la carpeta correspondiente.
-5. Prompt raíz del rol si aplica: `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` o `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`.
-6. Spec correspondiente en `openspec/specs/`, si existe.
-7. Fixture o contrato si aplica.
+4. `docs/opencode/optimizacion-tokens.md` cuando el ciclo use OpenCode/Gentle-AI.
+5. `AGENTS.md` de la carpeta correspondiente.
+6. Prompt raíz del rol si aplica: `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` o `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`.
+7. Spec correspondiente en `openspec/specs/`, si existe.
+8. Fixture o contrato si aplica.
 
 No leer documentación pesada ni carpetas descargadas del servidor salvo que la tarea sea auditoría.
 

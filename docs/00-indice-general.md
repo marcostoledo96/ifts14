@@ -7,7 +7,7 @@ No leer todo el repositorio por defecto. Empezar por la ruta mínima del rol y a
 | Para | Leer |
 |---|---|
 | Humanos | `README.md`, `GUIA.md`, `docs/00-indice-general.md` |
-| IA / OpenCode | `AGENTS.md`, `docs/00-indice-general.md`, `openspec/specs/repo-seguro/spec.md` |
+| IA / OpenCode | `AGENTS.md`, `docs/00-indice-general.md`, `docs/opencode/optimizacion-tokens.md`, `openspec/specs/repo-seguro/spec.md` |
 | Cierre de ciclo | `docs/07-sdd-archive-y-mantenimiento-documentacion.md` |
 
 ## Prompts operativos vigentes
@@ -32,10 +32,12 @@ Los prompts anteriores de `docs/opencode/` quedan archivados en `docs/opencode/a
 | Auditoría | `docs/auditoria/00-inventario-material-descargado.md`, `docs/auditoria/01-auditoria-material-original.md`, `docs/auditoria/02-hallazgos-dumps-sql.md` |
 | Scripts | `scripts/AGENTS.md` |
 | Specs | `openspec/AGENTS.md`, `openspec/specs/README.md`, `openspec/specs/repo-seguro/spec.md`, `openspec/specs/backend-contrato-api-certificados/spec.md`, `openspec/specs/backend-modelo-datos-certificados/spec.md` |
+| OpenCode / costos | `docs/opencode/optimizacion-tokens.md`, `docs/arquitectura/graphify/README.md` |
 
 ## Referencias condicionales
 
 - `.atl/skill-registry.md`: leer solo cuando el ciclo trabaje sobre skills, agentes o configuración de OpenCode. No forma parte de la lectura por defecto.
+- `graphify-out/`: salida local generada por Graphify; no se versiona ni se lee como documentación fuente.
 
 ## Planificación inicial archivada como referencia
 

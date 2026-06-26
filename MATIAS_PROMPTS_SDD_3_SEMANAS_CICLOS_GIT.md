@@ -4,9 +4,20 @@ Esta guía es el punto de entrada para que Matías trabaje el frontend Angular 2
 
 > Estado de esta guía: cubre F0-F3. `muestra_pagina/` ya tiene contenido v0 para 7 pantallas de prompts 4-10; los prompts 11-22 continúan en `MATIAS_PROMPTS_SDD_FASE2.md`.
 
+## Herramientas obligatorias antes de empezar
+
+Antes de cualquier ciclo F0-F3, Matías debe:
+
+- Leer `AGENTS.md`, `docs/00-indice-general.md`, `docs/opencode/optimizacion-tokens.md` y el ciclo activo.
+- Verificar herramientas F0 con `node --version`, `npm --version`, `git --version`, `code --version` y `ng version`.
+- Resumir salidas largas; no pegar terminal completa sin síntesis.
+- No ejecutar Graphify. Si necesita contexto de arquitectura, pedir resumen aprobado por Marcos.
+- No instalar dependencias ni herramientas sin aprobación explícita.
+- No tocar backend, base de datos, deploy ni `material_privado_no_versionar/`.
+
 ## Ruta rápida
 
-1. Leé primero `README.md`, `GUIA.md`, `AGENTS.md` y `docs/00-indice-general.md`.
+1. Leé primero `AGENTS.md`, `docs/00-indice-general.md`, `docs/opencode/optimizacion-tokens.md` y el ciclo activo.
 2. Confirmá que no estás trabajando directo sobre `main` salvo decisión explícita de Marcos.
 3. Verificá el entorno Windows con la sección [Preparación de entorno Windows](#preparación-de-entorno-windows).
 4. Elegí un ciclo F0-F3 y leé su objetivo, archivos, prompt, validaciones y límites.
@@ -120,8 +131,9 @@ No juntar Fase 2 crítica (`PDF`, `envío`, `revocación`, `auditoría`, `config
 
 ```txt
 Trabajemos el ciclo <ID> — <nombre> del frontend Angular 20 para IFTS14.
-Usá SDD completo. Primero leé AGENTS.md, GUIA.md, docs/00-indice-general.md,
-docs/frontend/00-angular20-port-v0.md y la spec OpenSpec correspondiente.
+Usá SDD completo. Primero leé AGENTS.md, docs/00-indice-general.md,
+docs/opencode/optimizacion-tokens.md, el ciclo activo, docs/frontend/00-angular20-port-v0.md
+y la spec OpenSpec correspondiente. No ejecutes Graphify; usá solo resúmenes aprobados por Marcos.
 No toques backend, base de datos, deploy ni material_privado_no_versionar/.
 No ejecutes commit, push, merge ni rebase. Proponé comandos Git al final.
 Al cerrar, ejecutá verify y sdd-archive, y entregá reporte final con archivos,

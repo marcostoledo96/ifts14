@@ -4,10 +4,21 @@ Esta guía es el punto de entrada para que Marcos trabaje ciclos chicos del mód
 
 > Regla base: un ciclo por vez. Cerrar siempre con `sdd-archive` antes de proponer commit.
 
+## Herramientas de reducción de tokens y costo
+
+Marcos debe aplicar estas reglas antes de iniciar ciclos con OpenCode/Gentle-AI:
+
+- Leer `docs/opencode/optimizacion-tokens.md` junto con el ciclo activo.
+- Usar `RTK` o resumen equivalente para salidas largas de terminal.
+- Ejecutar Graphify solo si `.graphifyignore` existe y excluye material privado, dumps, logs, `.env` y `graphify-out/`.
+- Versionar únicamente resúmenes Graphify aprobados; nunca `graphify-out/` ni artefactos pesados.
+- Compactar/prunear contexto y guardar resumen Engram al cerrar ciclos largos.
+- Reservar perfiles/modelos caros para arquitectura, seguridad y verificación crítica.
+
 ## Ruta rápida
 
-1. Leer `README.md`, `GUIA.md`, `AGENTS.md` y `docs/00-indice-general.md`.
-2. Elegir un ciclo M1-01..M3-03 y abrir sus archivos mínimos.
+1. Leer `AGENTS.md`, `docs/00-indice-general.md`, `docs/opencode/optimizacion-tokens.md` y el ciclo activo.
+2. Elegir un ciclo M1-01..M3-06 y abrir sus archivos mínimos.
 3. Pedir a OpenCode el ciclo SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 4. Frenar en cada checkpoint de QA manual y guardar evidencia breve del resultado.
 5. Entregar handoff final con archivos, validaciones, bloqueos, riesgos y comandos Git solo propuestos.
@@ -55,20 +66,20 @@ Reglas:
 
 | Rama | Ciclos incluidos | Criterio |
 |---|---|---|
-| `integration/angular-api-contract` | `M3-01` | Handoff contrato PHP/Angular, principalmente docs/specs. |
-| `deploy/cpanel-certificados` | `M3-02` + ajustes documentales de deploy de `M3-03` | Ruta `/certificados/`, `.htaccess`, config externa, rollback y checklist se revisan juntos. |
-| `qa/hardening-certificados` | `M3-03` seguridad, logs, privacidad, `.gitignore`, QA final | Auditoría final separada para no bloquear deploy ni mezclar riesgos. |
-| `backend/public-endpoint-hardening` | Futuro rate limiting + fault-injection de auditoría | Ambos endurecen el endpoint público ya implementado. |
-| `backend/admin-certificados` | Futuros ciclos de emisión, revocación y reenvío | Comparten permisos, escritura, auditoría y API administrativa. |
+| `backend/public-endpoint-hardening` | `M3-01`, `M3-02` | Rate limiting y fault-injection endurecen el endpoint público ya implementado. |
+| `backend/admin-certificados` | `M3-03` | Emisión, revocación y reenvío comparten permisos, escritura, auditoría y API administrativa. |
+| `qa/backend-hardening-certificados` | `M3-04` | Seguridad, privacidad, logs y QA backend antes de deploy. |
+| `deploy/cpanel-certificados` | `M3-05` | Ruta `/certificados/`, `.htaccess`, config externa, rollback y checklist se revisan juntos cuando backend esté listo. |
+| `integration/angular-api-contract` | `M3-06` | Checkpoint final PHP/Angular cuando Matías tenga flujo público y checklist compartida. |
 
-No juntar deploy con integración Angular salvo cambio de ruta pública que obligue a ambos. No juntar endpoints administrativos con validación pública: tienen distinto riesgo y superficie de seguridad.
+No juntar deploy con integración Angular salvo cambio de ruta pública que obligue a ambos. No juntar endpoints administrativos con validación pública: tienen distinto riesgo y superficie de seguridad. La integración real Angular/API queda al final; mientras tanto Matías puede avanzar con mocks y el contrato vigente sin bloquear a Marcos.
 
 ### Prompt base para iniciar un ciclo
 
 ```txt
 Trabajemos el ciclo <ID> — <nombre> para IFTS14.
 Usá SDD completo: explore, propose, spec, design, tasks, apply, verify y archive.
-Leé AGENTS.md, README.md, GUIA.md, docs/00-indice-general.md y los docs/specs indicados por el ciclo.
+Leé AGENTS.md, docs/00-indice-general.md, docs/opencode/optimizacion-tokens.md y los docs/specs indicados por el ciclo activo.
 No toques Angular salvo coordinación explícita. No modifiques material_privado_no_versionar/.
 No ejecutes commit, push, merge ni rebase; proponé comandos Git al final.
 Frená en los checkpoints de QA manual y reportá comando, resultado, bloqueos y riesgos.
@@ -243,41 +254,119 @@ No hacer: no probar con datos reales, no loguear secretos, no publicar endpoint 
 Archive: `docs/backend/01-contrato-api-certificados.md`, `docs/funcionalidades` o equivalente si se documenta capacidad pública.
 Commit sugerido: `feat(backend): validar certificados por token`.
 
-## Semana 3 — integración, deploy y cierre
+## Semana 3 — backend, base, seguridad, deploy e integración final
 
-### Ciclo M3-01 — integración con Angular
+Orden actualizado: `M3-01 — integración con Angular` deja de ser el próximo bloqueo. Como Matías todavía no completó Angular, Marcos continúa con backend, MariaDB, seguridad y deploy. Matías puede avanzar con mocks y el contrato vigente; la integración real Angular/API queda como checkpoint final no bloqueante.
 
-Objetivo: coordinar contrato PHP/Angular sin acoplar implementaciones ni tocar frontend salvo acuerdo.
-Rama sugerida: `integration/angular-api-contract`.
-Leer antes: `docs/backend/01-contrato-api-certificados.md`, `docs/frontend/00-angular20-port-v0.md`, `openspec/specs/backend-contrato-api-certificados/spec.md`, `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` como referencia de handoff.
+Estado operativo: `M3-01` y `M3-02` se resolvieron juntos en `backend/public-endpoint-hardening` y quedaron en PR pendiente de merge. No iniciar `M3-03` desde una rama vieja: primero mergear ese PR o crear la siguiente rama desde `main` actualizado cuando el merge esté confirmado.
+
+### Ciclo M3-01 — rate limiting del endpoint público
+
+Objetivo: implementar límite de consultas para validación pública y responder `429 RATE_LIMITED` según contrato.
+Rama sugerida: `backend/public-endpoint-hardening`.
+Leer antes: `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, `docs/database/01-modelo-datos-certificados.md`.
 
 Pedir a OpenCode:
 ```txt
-Trabajemos M3-01 — integración con Angular.
-Revisá contrato, DTOs y errores esperados para que frontend consuma la API.
-No modifiques Angular salvo coordinación explícita; dejá checklist de contrato para Matías.
+Trabajemos M3-01 — rate limiting del endpoint público.
+Usá SDD completo. Endurecé la validación pública sin exponer IP, token, DNI completo ni detalles internos.
+No toques Angular, deploy real ni material_privado_no_versionar/.
 ```
 
 Ejecutar/verificar:
 ```bash
-git diff -- docs/backend/01-contrato-api-certificados.md docs/frontend/00-angular20-port-v0.md
+php -l <archivo.php>
+curl -i http://localhost/certificados/api/certificados/TOKEN_FICTICIO/verificacion
 ```
 
-QA manual (checkpoint de parada): confirmar que DTOs, códigos de error, estados vacío/no encontrado y privacidad están documentados para frontend.
-No hacer: no cambiar componentes Angular, no inventar pantallas, no alterar endpoints sin actualizar spec. Commit, push, merge y rebase quedan manuales de Marcos.
-Archive: `docs/backend/`, `docs/frontend/`, `openspec/specs/backend-contrato-api-certificados/spec.md` si cambia contrato.
-Commit sugerido: `docs(integracion): alinear contrato angular php`.
+QA manual (checkpoint de parada): confirmar `429 RATE_LIMITED` reproducible con datos ficticios, sin logs sensibles.
+No hacer: no guardar IP cruda ni token completo. Commit, push, merge y rebase quedan manuales de Marcos.
+Archive: `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, docs de seguridad si aplica.
+Commit sugerido: `feat(backend): limitar validacion publica`.
 
-### Ciclo M3-02 — deploy cPanel
+### Ciclo M3-02 — fault-injection de auditoría pública
 
-Objetivo: documentar build/subida a `/certificados/`, `.htaccess`, configuración externa y rollback. Puede incluir ajustes documentales de deploy detectados durante M3-03 si son chicos y revisables.
-Rama sugerida: `deploy/cpanel-certificados`.
-Leer antes: `deploy/AGENTS.md`, `deploy/README.md`, `docs/deploy/00-cpanel-certificados.md`, `GUIA.md`.
+Objetivo: probar fallas de auditoría sobre `cert_eventos_auditoria` y confirmar que no rompen la respuesta pública.
+Rama sugerida: `backend/public-endpoint-hardening`.
+Leer antes: `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, `docs/database/01-modelo-datos-certificados.md`.
 
 Pedir a OpenCode:
 ```txt
-Trabajemos M3-02 — deploy cPanel.
-Documentá ruta /certificados/, .htaccess, base href, configuración real fuera de Git y rollback.
+Trabajemos M3-02 — fault-injection de auditoría pública.
+Usá SDD completo. Forzá una falla controlada de auditoría con entorno ficticio y verificá que el endpoint público siga respondiendo de forma segura.
+No uses base real, dumps, logs reales ni material_privado_no_versionar/.
+```
+
+Ejecutar/verificar:
+```bash
+php -l <archivo.php>
+curl -i http://localhost/certificados/api/certificados/TOKEN_FICTICIO/verificacion
+```
+
+QA manual (checkpoint de parada): registrar evidencia mínima de que la auditoría falla controladamente y la API no expone detalles internos.
+No hacer: no copiar logs reales ni credenciales. Commit, push, merge y rebase quedan manuales de Marcos.
+Archive: `docs/backend/00-php84-api.md`, `docs/database/01-modelo-datos-certificados.md` si cambia la auditoría documentada.
+Commit sugerido: `test(backend): validar auditoria tolerante a fallas`.
+
+### Ciclo M3-03 — endpoints administrativos de certificados
+
+Objetivo: definir e implementar, por SDD, endpoints/admin de emisión, revocación y reenvío con permisos, auditoría y privacidad.
+Rama sugerida: `backend/admin-certificados`.
+Leer antes: `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, `docs/database/01-modelo-datos-certificados.md`.
+
+Pedir a OpenCode:
+```txt
+Trabajemos M3-03 — endpoints administrativos de certificados.
+Primero definí contrato y permisos para emisión, revocación y reenvío; después implementá solo lo aprobado.
+No toques Angular ni simules seguridad falsa. No uses datos reales.
+```
+
+Ejecutar/verificar:
+```bash
+php -l <archivo.php>
+curl -i http://localhost/certificados/api/admin/<endpoint-ficticio>
+```
+
+QA manual (checkpoint de parada): confirmar permisos, errores, auditoría y privacidad antes de habilitar cualquier acción crítica.
+No hacer: no mezclar endpoints administrativos con validación pública ni con integración Angular. Commit, push, merge y rebase quedan manuales de Marcos.
+Archive: `docs/backend/01-contrato-api-certificados.md`, `docs/backend/00-php84-api.md`, `docs/database/01-modelo-datos-certificados.md`, specs administrativas.
+Commit sugerido: `feat(backend): agregar administracion de certificados`.
+
+### Ciclo M3-04 — hardening de seguridad y logs backend
+
+Objetivo: revisar seguridad, privacidad, logs, errores, `.gitignore`, documentación y QA backend antes de deploy.
+Rama sugerida: `qa/backend-hardening-certificados`.
+Leer antes: `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, `docs/database/01-modelo-datos-certificados.md`.
+
+Pedir a OpenCode:
+```txt
+Trabajemos M3-04 — hardening de seguridad y logs backend.
+Auditá respuestas, logs, privacidad, manejo de errores, documentación y specs backend/base.
+No ejecutes commit, push, merge ni rebase. No toques Angular ni deploy real.
+```
+
+Ejecutar/verificar:
+```bash
+git status --ignored --short
+php -l <archivo.php>
+curl -i http://localhost/certificados/api/certificados/TOKEN_FICTICIO/verificacion
+```
+
+QA manual (checkpoint de parada): confirmar que no hay datos sensibles en logs/respuestas/docs y que `.gitignore` cubre privados.
+No hacer: no cerrar si falta `sdd-archive`, no aceptar material privado staged. Commit, push, merge y rebase quedan manuales de Marcos.
+Archive: documentación afectada de backend, database, seguridad y `openspec/specs/`.
+Commit sugerido: `chore(qa): endurecer backend certificados`.
+
+### Ciclo M3-05 — deploy cPanel backend listo
+
+Objetivo: documentar y preparar deploy en `/certificados/` solo cuando backend, seguridad y contratos estén listos.
+Rama sugerida: `deploy/cpanel-certificados`.
+Leer antes: `deploy/AGENTS.md`, `deploy/README.md`, `docs/deploy/00-cpanel-certificados.md`, `docs/backend/00-php84-api.md`, `GUIA.md`.
+
+Pedir a OpenCode:
+```txt
+Trabajemos M3-05 — deploy cPanel backend listo.
+Documentá ruta /certificados/, .htaccess, config externa, backup, rollback y checklist de subida manual.
 No toques public_html ni subas archivos; todo deploy real queda manual y con backup.
 ```
 
@@ -286,35 +375,33 @@ Ejecutar/verificar:
 git status --ignored --short
 ```
 
-QA manual (checkpoint de parada): antes de subir, revisar `.htaccess`, base href `/certificados/`, lista de archivos, backup y plan de rollback.
+QA manual (checkpoint de parada): antes de subir, revisar `.htaccess`, lista de archivos, configuración externa, backup y rollback.
 No hacer: no tocar `public_html` sin backup, no subir configuración real, no ejecutar deploy automático desde OpenCode. Commit, push, merge y rebase quedan manuales de Marcos.
-Archive: `docs/deploy/00-cpanel-certificados.md`, `deploy/README.md`, docs backend/frontend si cambia la ruta pública.
-Commit sugerido: `docs(deploy): documentar cpanel certificados`.
+Archive: `docs/deploy/00-cpanel-certificados.md`, `deploy/README.md`, docs backend si cambia la ruta pública.
+Commit sugerido: `docs(deploy): preparar cpanel certificados`.
 
-### Ciclo M3-03 — hardening final
+### Ciclo M3-06 — checkpoint final de integración Angular/API
 
-Objetivo: revisar seguridad, logs, backups, documentación, QA y cierre Git revisable. Mantener separado de deploy salvo hallazgos documentales mínimos ya previstos en `deploy/cpanel-certificados`.
-Rama sugerida: `qa/hardening-certificados`.
-Leer antes: `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/07-sdd-archive-y-mantenimiento-documentacion.md`, docs backend/database/deploy tocadas.
+Objetivo: coordinar consumo real PHP/Angular recién cuando Matías tenga `frontend/public-validation-flow`, los contratos backend estén estables y exista checklist compartida.
+Rama sugerida: `integration/angular-api-contract`.
+Leer antes: `docs/backend/01-contrato-api-certificados.md`, `docs/frontend/00-angular20-port-v0.md`, `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`, reporte o handoff de `frontend/public-validation-flow`.
 
 Pedir a OpenCode:
 ```txt
-Trabajemos M3-03 — hardening final.
-Auditá seguridad, privacidad, logs, backups, .gitignore, documentación y specs.
-No ejecutes commit, push, merge ni rebase. Cerrá con verify, archive y handoff final.
+Trabajemos M3-06 — checkpoint final de integración Angular/API.
+Verificá consumo real solo si Matías ya tiene frontend/public-validation-flow, los contratos backend están estables y hay checklist compartida.
+Si falta alguna condición, dejá integración como pendiente no bloqueante. No modifiques Angular salvo coordinación explícita.
 ```
 
 Ejecutar/verificar:
 ```bash
-git status --ignored --short
-php -l <archivo.php>
-curl -i http://localhost/certificados/api/validar/TOKEN_FICTICIO
+git diff -- docs/backend/01-contrato-api-certificados.md docs/frontend/00-angular20-port-v0.md
 ```
 
-QA manual (checkpoint de parada): confirmar que no hay datos sensibles en logs/respuestas/docs, que `.gitignore` cubre privados y que `docs/` quedó sincronizado.
-No hacer: no cerrar si falta `sdd-archive`, no aceptar material privado staged. Commit, push, merge y rebase quedan manuales de Marcos.
-Archive: documentación afectada completa: backend, database, deploy, arquitectura, seguridad, `openspec/specs/`.
-Commit sugerido: `chore(qa): cerrar hardening certificados`.
+QA manual (checkpoint de parada): confirmar checklist compartida, DTOs, errores, estados no verificables y privacidad antes de activar llamadas reales.
+No hacer: no bloquear backend por falta de Angular, no inventar endpoints ni pantallas, no cambiar componentes Angular sin ciclo frontend coordinado. Commit, push, merge y rebase quedan manuales de Marcos.
+Archive: `docs/backend/`, `docs/frontend/`, specs de integración si cambia contrato.
+Commit sugerido: `docs(integracion): cerrar checklist angular api`.
 
 ## Handoff al cierre de cada ciclo
 
