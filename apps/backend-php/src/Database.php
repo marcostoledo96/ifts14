@@ -8,20 +8,21 @@ final class Database
 {
     private static ?PDO $pdo = null;
 
-    public static function pdo(): PDO
+    /** @param array<string, mixed>|null $config */
+    public static function pdo(?array $config = null): PDO
     {
         if (self::$pdo instanceof PDO) {
             return self::$pdo;
         }
 
-        $config = Config::load();
+        $config ??= Config::load();
         $dsn = sprintf(
             'mysql:host=%s;dbname=%s;charset=utf8mb4',
-            $config['db_host'],
-            $config['db_name'],
+            (string) $config['db_host'],
+            (string) $config['db_name'],
         );
 
-        self::$pdo = new PDO($dsn, $config['db_user'], $config['db_pass'], [
+        self::$pdo = new PDO($dsn, (string) $config['db_user'], (string) $config['db_pass'], [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,

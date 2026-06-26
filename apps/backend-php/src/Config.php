@@ -6,7 +6,7 @@ final class Config
 {
     private const string DEFAULT_PATH = '/home/usuario_demo/certificados_config/certificados-api.php';
 
-    /** @return array<string, string> */
+    /** @return array<string, mixed> */
     public static function load(): array
     {
         $envPath = getenv('CERTIFICADOS_CONFIG_PATH');
@@ -32,6 +32,32 @@ final class Config
             throw new RuntimeException('Configuration invalid.');
         }
 
+        $config['rate_limit_threshold'] = self::positiveInt($config['rate_limit_threshold'] ?? 60, 60);
+        $config['rate_limit_window_seconds'] = self::positiveInt($config['rate_limit_window_seconds'] ?? 60, 60);
+
+        if (!isset($config['rate_limit_storage_path']) || !is_string($config['rate_limit_storage_path']) || trim($config['rate_limit_storage_path']) === '') {
+            $config['rate_limit_storage_path'] = sys_get_temp_dir() . '/ifts14-cert-rate-limit.json';
+        }
+
+        if (!isset($config['app_salt']) || !is_string($config['app_salt']) || trim($config['app_salt']) === '') {
+            $config['app_salt'] = $config['token_pepper'];
+        }
+
         return $config;
+    }
+
+    private static function positiveInt(mixed $value, int $default): int
+    {
+        if (is_int($value)) {
+            return $value > 0 ? $value : $default;
+        }
+
+        if (is_string($value) && ctype_digit($value)) {
+            $number = (int) $value;
+
+            return $number > 0 ? $number : $default;
+        }
+
+        return $default;
     }
 }
