@@ -8,7 +8,7 @@ final class CertificateValidator
 {
     private const string TOKEN_PATTERN = '/\A[A-Za-z0-9_-]{32,128}\z/';
 
-    /** @param array<string, string> $config */
+    /** @param array<string, mixed> $config */
     public function __construct(private readonly array $config)
     {
     }
@@ -30,11 +30,12 @@ final class CertificateValidator
             ];
         }
 
-        $hashBinary = hash('sha256', $token . $this->config['token_pepper'], true);
-        $hashPrefix = substr(hash('sha256', $token . $this->config['token_pepper']), 0, 16);
+        $tokenPepper = (string) $this->config['token_pepper'];
+        $hashBinary = hash('sha256', $token . $tokenPepper, true);
+        $hashPrefix = substr(hash('sha256', $token . $tokenPepper), 0, 16);
 
         try {
-            $pdo = Database::pdo();
+            $pdo = Database::pdo($this->config);
             $row = $this->findCertificate($pdo, $hashBinary);
         } catch (Throwable $exception) {
             $this->audit(null, 'error', $requestId, $hashPrefix, 'Error técnico de verificación.');
@@ -104,7 +105,7 @@ final class CertificateValidator
     private function audit(?int $certificateId, string $result, string $requestId, ?string $hashPrefix, string $detail): void
     {
         try {
-            $statement = Database::pdo()->prepare(<<<'SQL'
+            $statement = Database::pdo($this->config)->prepare(<<<'SQL'
                 INSERT INTO cert_eventos_auditoria (
                   certificado_id,
                   tipo_evento,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/src/Response.php';
 require_once __DIR__ . '/src/Config.php';
+require_once __DIR__ . '/src/RateLimiter.php';
 require_once __DIR__ . '/src/Database.php';
 require_once __DIR__ . '/src/CertificateValidator.php';
 
@@ -38,7 +39,12 @@ if (preg_match('#^/certificados/([^/]*)/verificacion$#', $path, $matches) === 1)
         return;
     }
 
-    respondToValidation(rawurldecode($matches[1]), $requestId);
+    $config = Config::load();
+    if (!allowPublicRequest($config, $requestId)) {
+        return;
+    }
+
+    respondToValidation(rawurldecode($matches[1]), $requestId, $config);
     return;
 }
 
@@ -49,18 +55,36 @@ if ($path === '/certificados/consulta') {
         return;
     }
 
+    $config = Config::load();
+    if (!allowPublicRequest($config, $requestId)) {
+        return;
+    }
+
     $body = json_decode(file_get_contents('php://input') ?: '', true);
     $token = is_array($body) && isset($body['token']) && is_string($body['token']) ? $body['token'] : '';
 
-    respondToValidation($token, $requestId);
+    respondToValidation($token, $requestId, $config);
     return;
 }
 
 Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
 
-function respondToValidation(string $token, string $requestId): void
+/** @param array<string, mixed> $config */
+function allowPublicRequest(array $config, string $requestId): bool
 {
-    $validator = new CertificateValidator(Config::load());
+    if ((new RateLimiter($config, $_SERVER))->allow()) {
+        return true;
+    }
+
+    Response::error(429, 'RATE_LIMITED', 'Demasiadas consultas. Intente nuevamente más tarde.', $requestId);
+
+    return false;
+}
+
+/** @param array<string, mixed> $config */
+function respondToValidation(string $token, string $requestId, array $config): void
+{
+    $validator = new CertificateValidator($config);
     $result = $validator->verify($token, $requestId);
 
     if (isset($result['data'])) {
