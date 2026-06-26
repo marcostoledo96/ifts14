@@ -1,6 +1,9 @@
 -- Seed ficticio para demo local. No usar en producción.
 -- No contiene personas reales, DNI real ni token productivo.
 
+SET @token_demo = 'TOKEN_DEMO_FICTICIO_VALIDO_2026_0001';
+SET @token_pepper_demo = 'pepper_demo_ficticio_2026_no_usar';
+
 INSERT INTO cert_certificados (
   codigo_certificado,
   estado,
@@ -32,8 +35,8 @@ INSERT INTO cert_tokens_verificacion (
   vigente_hasta
 ) VALUES (
   @certificado_demo_id,
-  UNHEX(SHA2('TOKEN_DEMO_FICTICIO_NO_USAR', 256)),
-  'TOKEN_DEMO',
+  UNHEX(SHA2(CONCAT(@token_demo, @token_pepper_demo), 256)),
+  LEFT(@token_demo, 12),
   'activo',
   '2026-06-24 00:00:00',
   NULL
@@ -52,7 +55,7 @@ INSERT INTO cert_eventos_auditoria (
   'emision',
   'ok',
   'req_demo_no_sensible',
-  'demo_hash_pref',
+  LEFT(SHA2(CONCAT(@token_demo, @token_pepper_demo), 256), 16),
   NULL,
   'Evento ficticio de emisión para demo local'
 );

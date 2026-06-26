@@ -83,6 +83,8 @@ Registra eventos operativos sin exponer datos personales completos.
 
 `database/seeds/001_certificados_qr_demo.sql` contiene datos ficticios explícitos. No representa personas reales, DNIs reales ni tokens productivos.
 
+El seed demo usa un token ficticio válido para el contrato público y guarda `token_hash` como binario mediante `UNHEX(SHA2(CONCAT(token_demo, pepper_demo), 256))`, alineado con el cálculo PHP `hash('sha256', $token . $tokenPepper, true)`. La coherencia entre seed y lookup quedó verificada con un MariaDB 10.6 local ficticio durante el ciclo `backend-validacion-publica-certificados`: el token demo `TOKEN_DEMO_FICTICIO_VALIDO_2026_0001` y el pepper de ejemplo `pepper_demo_ficticio_2026_no_usar` resuelven correctamente a un certificado vigente y devuelven `200` con DTO público.
+
 ## Rollback
 
 La migración documenta `DROP TABLE` en orden inverso: primero `cert_eventos_auditoria`, luego `cert_tokens_verificacion`, finalmente `cert_certificados`.
