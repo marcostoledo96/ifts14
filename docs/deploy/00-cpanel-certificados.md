@@ -67,7 +67,7 @@ Subir la API PHP versionada a:
 public_html/certificados/api/
 ```
 
-La configuración real debe quedar fuera del repositorio y preferentemente fuera del webroot. Para validar certificados, el archivo externo debe incluir placeholders equivalentes a `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` y `TOKEN_PEPPER`; la guía no debe registrar valores reales. Sin ese valor, `Config::load()` debe fallar de forma segura con error genérico y la API no debe exponer stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable (`apps/backend-php/config/certificados-config.example.php`) y contra un config ficticio bajo `/tmp`; la configuración productiva permanece fuera de Git.
+La configuración real debe quedar fuera del repositorio y preferentemente fuera del webroot. Para validar certificados, el archivo externo debe devolver un array PHP con las claves reales esperadas por `Config::load()`: `db_host`, `db_name`, `db_user`, `db_pass` y `token_pepper`; la guía no debe registrar valores reales. Tomar como referencia de estructura el ejemplo versionable `apps/backend-php/config/certificados-config.example.php`, reemplazando sus valores ficticios fuera de Git. Sin `token_pepper`, `Config::load()` debe fallar de forma segura con error genérico y la API no debe exponer stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable y contra un config ficticio bajo `/tmp`; la configuración productiva permanece fuera de Git.
 
 ## .htaccess
 
@@ -96,10 +96,14 @@ RewriteRule . /certificados/index.html [L]
 
 ```apache
 Options -Indexes
+
+RewriteEngine On
+RewriteRule ^(src|config)/ - [F,L]
+
 FallbackResource /certificados/api/index.php
 ```
 
-Si cPanel no respeta `FallbackResource`, reemplazarlo por reglas mínimas equivalentes hacia `index.php`, sin exponer `src/`, `config/` ni archivos internos.
+La regla de denegación para `src/` y `config/` debe ir antes del fallback para que Apache no sirva archivos internos existentes. Si cPanel no respeta `FallbackResource`, reemplazarlo por reglas mínimas equivalentes hacia `index.php`, manteniendo primero la denegación explícita de `src/`, `config/` y cualquier directorio interno que se agregue en el futuro.
 
 ## Checklist imprimible
 
