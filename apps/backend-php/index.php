@@ -57,13 +57,21 @@ if ($path === '/certificados/consulta') {
         return;
     }
 
+    if (!requireJsonContentType($requestId)) {
+        return;
+    }
+
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
+    }
+
     $config = Config::load();
     if (!allowPublicRequest($config, $requestId)) {
         return;
     }
 
-    $body = json_decode(file_get_contents('php://input') ?: '', true);
-    $token = is_array($body) && isset($body['token']) && is_string($body['token']) ? $body['token'] : '';
+    $token = isset($body['token']) && is_string($body['token']) ? $body['token'] : '';
 
     respondToValidation($token, $requestId, $config);
     return;
@@ -76,13 +84,19 @@ if ($path === '/admin/certificados') {
         return;
     }
 
+    if (!requireJsonContentType($requestId)) {
+        return;
+    }
+
     $config = Config::load();
     if (!requireAdmin($config, $requestId)) {
         return;
     }
 
-    $body = json_decode(file_get_contents('php://input') ?: '', true);
-    $body = is_array($body) ? $body : [];
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
+    }
 
     respondToAdmin(static function () use ($config, $requestId, $body): array {
         $service = new AdminCertificateService(
@@ -105,20 +119,18 @@ if (preg_match('#^/admin/certificados/(\d+)/revocar$#', $path, $matches) === 1) 
         return;
     }
 
+    if (!requireJsonContentType($requestId)) {
+        return;
+    }
+
     $config = Config::load();
     if (!requireAdmin($config, $requestId)) {
         return;
     }
 
-    $rawBody = file_get_contents('php://input') ?: '';
-    $body = [];
-    if (trim($rawBody) !== '') {
-        $decoded = json_decode($rawBody, true);
-        if (!is_array($decoded) || json_last_error() !== JSON_ERROR_NONE) {
-            Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
-            return;
-        }
-        $body = $decoded;
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
     }
     $reason = isset($body['reason']) && is_string($body['reason']) ? $body['reason'] : null;
 
@@ -137,6 +149,34 @@ if (preg_match('#^/admin/certificados/(\d+)/revocar$#', $path, $matches) === 1) 
 }
 
 Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+
+function requireJsonContentType(string $requestId): bool
+{
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+    $mediaType = strtolower(trim(explode(';', is_string($contentType) ? $contentType : '', 2)[0]));
+
+    if ($mediaType === 'application/json') {
+        return true;
+    }
+
+    Response::error(415, 'UNSUPPORTED_MEDIA_TYPE', 'Content-Type no soportado.', $requestId);
+
+    return false;
+}
+
+/** @return array<string, mixed>|null */
+function readJsonBody(string $requestId): ?array
+{
+    $body = json_decode(file_get_contents('php://input') ?: '', true);
+
+    if (json_last_error() === JSON_ERROR_NONE && is_array($body)) {
+        return $body;
+    }
+
+    Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
+
+    return null;
+}
 
 /** @param array<string, mixed> $config */
 function requireAdmin(array $config, string $requestId): bool

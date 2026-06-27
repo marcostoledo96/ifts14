@@ -8,6 +8,7 @@ final class Response
     public static function json(int $status, array $data, ?string $requestId = null): void
     {
         http_response_code($status);
+        self::securityHeaders();
         header('Content-Type: application/json; charset=utf-8');
 
         echo json_encode([
@@ -21,6 +22,7 @@ final class Response
     public static function error(int $status, string $code, string $message, ?string $requestId = null): void
     {
         http_response_code($status);
+        self::securityHeaders();
         header('Content-Type: application/json; charset=utf-8');
 
         echo json_encode([
@@ -38,5 +40,11 @@ final class Response
     private static function requestId(): string
     {
         return 'req_' . bin2hex(random_bytes(8));
+    }
+
+    private static function securityHeaders(): void
+    {
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: SAMEORIGIN');
     }
 }

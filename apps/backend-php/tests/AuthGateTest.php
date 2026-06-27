@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../src/AuthGate.php';
 
-expectAllowed(['admin_api_key' => 'clave_demo'], ['HTTP_X_ADMIN_KEY' => 'clave_demo']);
-expectDenied(['admin_api_key' => 'clave_demo'], [], 'header faltante');
-expectDenied(['admin_api_key' => 'clave_demo'], ['HTTP_X_ADMIN_KEY' => 'otra'], 'header inválido');
-expectDenied(['admin_api_key' => ''], ['HTTP_X_ADMIN_KEY' => 'clave_demo'], 'config vacía');
+$validKey = 'clave_demo_segura_2026';
+$shortKey = 'clave_demo';
+
+expectAllowed(['admin_api_key' => $validKey], ['HTTP_X_ADMIN_KEY' => $validKey]);
+expectDenied(['admin_api_key' => $validKey], [], 'header faltante');
+expectDenied(['admin_api_key' => $validKey], ['HTTP_X_ADMIN_KEY' => 'otra'], 'header inválido');
+expectDenied(['admin_api_key' => ''], ['HTTP_X_ADMIN_KEY' => $validKey], 'config vacía');
+expectDenied(['admin_api_key' => $shortKey], ['HTTP_X_ADMIN_KEY' => $shortKey], 'config corta');
 
 echo "OK AuthGateTest\n";
 
