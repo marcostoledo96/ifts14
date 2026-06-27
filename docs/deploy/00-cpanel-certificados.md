@@ -2,11 +2,13 @@
 
 ## Objetivo
 
-Publicar el módulo en:
+Preparar el deploy manual futuro del módulo de certificaciones en cPanel, bajo:
 
 ```txt
 https://ifts14.com.ar/certificados/
 ```
+
+Este ciclo SDD **no ejecuta la subida**, no toca `public_html`, no crea `.env`, no instala dependencias y no modifica configuraciones reales del servidor. La guía deja el procedimiento revisable para una ventana operativa posterior.
 
 ## Estructura esperada en cPanel
 
@@ -17,31 +19,158 @@ public_html/
     ├── assets/
     ├── .htaccess
     └── api/
+        ├── index.php
+        ├── .htaccess
+        ├── src/
+        └── config/
 ```
+
+| Ruta | Rol | Observación |
+|---|---|---|
+| `/certificados/` | Raíz pública del frontend Angular. | Debe resolver rutas profundas sin capturar `/api/`. |
+| `/certificados/api/` | API PHP pública. | Debe responder endpoints controlados, empezando por `GET /certificados/api/health`. |
+| Configuración real | Archivo externo al repo y preferentemente fuera del webroot. | Usar placeholders o `.example`; nunca subir valores reales. |
+
+## Artefactos permitidos y prohibidos
+
+### Permitidos para preparar el paquete futuro
+
+- Build compilado del frontend, generado con base href `/certificados/`.
+- Código PHP versionado del backend.
+- `.htaccess` revisados para raíz y API.
+- Archivos `.example` sin secretos.
+- Documentación operativa versionada.
+
+### Prohibidos
+
+- Credenciales, configuraciones reales, tokens, peppers o claves privadas.
+- Archivos `.env`.
+- Dumps SQL, logs, backups y zips descargados del servidor.
+- Material privado fuera de versión o contenidos copiados de auditorías.
+- Carpetas `.git` internas provenientes de cPanel.
 
 ## Frontend Angular
 
-Compilar localmente con:
+Cuando el ciclo de frontend habilite el deploy, compilar localmente con:
 
 ```bash
 ng build --configuration production --base-href /certificados/
 ```
 
-Subir el contenido de `dist/...` a `public_html/certificados/`.
+Subir únicamente el contenido generado de `dist/...` a `public_html/certificados/`. Si todavía no existe frontend productivo, el deploy puede quedar API-only o esperar el ciclo correspondiente; no inventar pantallas para cubrir ese hueco.
 
 ## Backend PHP
 
-Subir API PHP a:
+Subir la API PHP versionada a:
 
 ```txt
 public_html/certificados/api/
 ```
 
-La configuración real debe quedar fuera del repositorio y fuera del webroot. Para validar certificados, el archivo externo debe incluir `token_pepper` además de las credenciales MariaDB; sin ese valor, `Config::load()` falla de forma segura con error genérico y la API no expone stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable (`apps/backend-php/config/certificados-config.example.php`) y contra un config ficticio bajo `/tmp`; la configuración real productiva permanece fuera de Git.
+La configuración real debe quedar fuera del repositorio y preferentemente fuera del webroot. Para validar certificados, el archivo externo debe devolver un array PHP con las claves reales esperadas por `Config::load()`: `db_host`, `db_name`, `db_user`, `db_pass` y `token_pepper`; la guía no debe registrar valores reales. Tomar como referencia de estructura el ejemplo versionable `apps/backend-php/config/certificados-config.example.php`, reemplazando sus valores ficticios fuera de Git. Sin `token_pepper`, `Config::load()` debe fallar de forma segura con error genérico y la API no debe exponer stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable y contra un config ficticio bajo `/tmp`; la configuración productiva permanece fuera de Git.
 
 ## .htaccess
 
-Debe permitir que Angular maneje rutas profundas y no capturar `/api/`.
+Los fragmentos siguientes son **orientativos y revisables**. Validar primero en una carpeta aislada o en una ventana controlada. La regla principal: el fallback SPA de `/certificados/` no debe capturar `/certificados/api/`.
+
+### Raíz `/certificados/.htaccess`
+
+```apache
+Options -Indexes
+RewriteEngine On
+RewriteBase /certificados/
+
+# La API se resuelve en su propia carpeta.
+RewriteRule ^api(/.*)?$ - [L]
+
+# Archivos y carpetas reales se sirven directo.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Rutas profundas del frontend Angular.
+RewriteRule . /certificados/index.html [L]
+```
+
+### API `/certificados/api/.htaccess`
+
+```apache
+Options -Indexes
+
+RewriteEngine On
+RewriteRule ^(src|config)/ - [F,L]
+
+FallbackResource /certificados/api/index.php
+```
+
+La regla de denegación para `src/` y `config/` debe ir antes del fallback para que Apache no sirva archivos internos existentes. Si cPanel no respeta `FallbackResource`, reemplazarlo por reglas mínimas equivalentes hacia `index.php`, manteniendo primero la denegación explícita de `src/`, `config/` y cualquier directorio interno que se agregue en el futuro.
+
+## Checklist imprimible
+
+### 1. Antes de subir
+
+- [ ] Confirmar responsable y ventana de aprobación.
+- [ ] Confirmar que este ciclo SDD solo prepara documentación: no ejecuta subida.
+- [ ] Confirmar ruta pública objetivo: `/certificados/`.
+- [ ] Confirmar API bajo `/certificados/api/`.
+- [ ] Confirmar que el paquete futuro no contiene `.env`, credenciales, dumps, logs, backups ni zips del servidor.
+- [ ] Confirmar que la configuración real queda fuera de Git y preferentemente fuera del webroot.
+- [ ] Confirmar backup manual previo desde cPanel File Manager.
+
+### 2. Subida manual futura
+
+- [ ] Subir frontend compilado con base href `/certificados/`, si ya está disponible.
+- [ ] Subir backend PHP versionado a `/certificados/api/`.
+- [ ] Subir `.htaccess` revisados para raíz y API.
+- [ ] No sobrescribir configuración real sin backup y aprobación explícita.
+- [ ] No subir material privado ni artefactos descargados del servidor.
+
+### 3. Validación posterior
+
+- [ ] Verificar `GET /certificados/api/health`.
+- [ ] Verificar una ruta profunda del frontend fuera de `/api/`.
+- [ ] Verificar endpoint público con token ficticio, sin base real ni certificados reales.
+- [ ] Confirmar que rutas internas de API no quedan expuestas.
+- [ ] Registrar resultado operativo sin pegar secretos ni datos reales.
+
+### 4. Cierre
+
+- [ ] Confirmar si se conserva el deploy o se ejecuta rollback.
+- [ ] Documentar hallazgos generales y pendientes.
+- [ ] Eliminar paquetes temporales de prueba si se usaron.
+- [ ] Mantener backups fuera de Git.
+
+## Backup manual y rollback
+
+### Backup previo
+
+1. Entrar a cPanel File Manager.
+2. Ubicar `public_html/certificados/` si existe.
+3. Comprimir la carpeta completa desde File Manager.
+4. Descargar o mover el backup a una ubicación segura fuera de Git.
+5. Registrar nombre, fecha y responsable sin incluir credenciales ni contenido sensible.
+
+### Rollback
+
+1. Detener cambios manuales en curso.
+2. Renombrar la carpeta afectada, por ejemplo `certificados_fallido_YYYYMMDD_HHMM`.
+3. Restaurar el backup previo en `public_html/certificados/`.
+4. Verificar `GET /certificados/api/health` y una ruta pública esperada.
+5. Si el rollback falla, no improvisar: conservar evidencia general y volver al responsable técnico.
+
+## Validación con datos ficticios
+
+Usar únicamente valores ficticios y endpoints públicos. Ejemplos de intención verificable:
+
+| Caso | Ruta | Resultado esperado |
+|---|---|---|
+| Health | `GET /certificados/api/health` | `200` con JSON controlado. |
+| Token inexistente | `GET /certificados/api/certificados/TOKEN_FICTICIO/verificacion` | Respuesta pública controlada, sin datos reales ni stack trace. |
+| Consulta pública | `POST /certificados/api/certificados/consulta` | Validación controlada con payload ficticio. |
+| Ruta frontend | `GET /certificados/validar/TOKEN_FICTICIO` | Fallback SPA, sin pasar por `/api/`. |
+| Archivo interno | Ruta interna de `src/` o `config/` | No expuesto públicamente. |
+
+No usar base real, certificados reales, DNI reales, logs productivos ni capturas con información sensible durante este ciclo.
 
 ## Seguridad
 
@@ -49,6 +178,20 @@ Debe permitir que Angular maneje rutas profundas y no capturar `/api/`.
 - No tocar `public_html` sin backup.
 - No sobrescribir la web oficial.
 - Probar primero en carpeta aislada.
+- No crear `.env` ni configuración real versionada.
+- No copiar contenidos privados a la documentación.
+
+## Trazabilidad OpenSpec
+
+| Requisito | Sección verificable |
+|---|---|
+| Checklist manual previo | `Checklist imprimible` |
+| Exclusiones de no subida | `Objetivo`, `Artefactos permitidos y prohibidos`, `Checklist imprimible` |
+| Guardia de material privado | `Artefactos permitidos y prohibidos`, `Seguridad` |
+| Rutas `.htaccess` para API | `.htaccess` |
+| Configuración externa con placeholders | `Backend PHP`, `Artefactos permitidos y prohibidos` |
+| Backup y rollback manual | `Backup manual y rollback` |
+| Validación posterior con datos ficticios | `Validación con datos ficticios` |
 
 ## Pendientes de capacidad pública
 
