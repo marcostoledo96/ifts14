@@ -5,6 +5,7 @@ declare(strict_types=1);
 final class Config
 {
     private const string DEFAULT_PATH = '/home/usuario_demo/certificados_config/certificados-api.php';
+    private const int MIN_ADMIN_KEY_LENGTH = 16;
 
     /** @return array<string, mixed> */
     public static function load(): array
@@ -43,7 +44,7 @@ final class Config
             $config['app_salt'] = $config['token_pepper'];
         }
 
-        $config['admin_api_key'] = self::stringOrEmpty($config['admin_api_key'] ?? '');
+        $config['admin_api_key'] = self::adminApiKey($config);
 
         return $config;
     }
@@ -51,7 +52,9 @@ final class Config
     /** @param array<string, mixed> $config */
     public static function adminApiKey(array $config): string
     {
-        return self::stringOrEmpty($config['admin_api_key'] ?? '');
+        $key = self::stringOrEmpty($config['admin_api_key'] ?? '');
+
+        return strlen($key) >= self::MIN_ADMIN_KEY_LENGTH ? $key : '';
     }
 
     private static function positiveInt(mixed $value, int $default): int

@@ -98,3 +98,25 @@ Detalle de uso en `docker/php84/README.md` y en `apps/backend-php/README.md` (se
 - **Observado**: existen archivos de conexión/configuración bajo `api/`; no fueron abiertos por riesgo de credenciales.
 - **Observado**: `api.zip` existe como artefacto comprimido y no fue descomprimido.
 - **Hipótesis**: el backend original parece procedural y desplegado en carpeta pública; el nuevo módulo debe separar configuración, servicios y acceso a datos.
+
+## Hardening aplicado (ciclo `qa-backend-hardening-certificados`)
+
+Cambios quirúrgicos implementados en el front controller PHP y las clases comunes, sin dependencias, migraciones ni nuevos módulos.
+
+| Comportamiento | Implementación | Spec |
+|---|---|---|
+| Headers de seguridad en toda respuesta JSON | `Response::json()` y `Response::error()` emiten `X-Content-Type-Options: nosniff` y `X-Frame-Options: SAMEORIGIN` antes de `Content-Type`. | `backend-base-php-certificados`, `backend-contrato-api-certificados`. |
+| `415 UNSUPPORTED_MEDIA_TYPE` por `Content-Type` no JSON | Helper local `requireJsonContentType()` en `index.php`: split por `;`, `trim`, `strtolower`, exige `application/json` exacto. Se aplica antes de cualquier side effect o rate-limit. | `backend-contrato-api-certificados`. |
+| `400 VALIDATION_ERROR` por JSON malformado en POST JSON | Helper local `readJsonBody()` exige `json_decode` como array sin `JSON_ERROR_NONE`. Aplica a `POST /certificados/consulta`, `POST /admin/certificados` y `POST /admin/certificados/{id}/revocar`. | `backend-contrato-api-certificados`, `admin-certificate-emission`. |
+| Falla cerrada para `admin_api_key` corta | `Config::adminApiKey()` devuelve `''` si la clave configurada está vacía o mide menos de 16 caracteres tras `trim`. Las rutas admin responden `401 UNAUTHORIZED` sin revelar causa; los endpoints públicos no se rompen. | `admin-auth`. |
+| Revocación sin motivo | Cuando no se envía `reason`, el cliente debe enviar un body JSON `{}`. Un body sin `Content-Type: application/json` o con JSON malformado responde `415`/`400` sin persistir. | `backend-contrato-api-certificados`. |
+
+### Pendientes diferidos (fuera de este ciclo)
+
+Los siguientes gaps quedan registrados en specs y deben abordarse en ciclos SDD posteriores:
+
+- **CORS / preflight**: no se implementan respuestas a `OPTIONS` ni cabeceras `Access-Control-*`.
+- **Límite de tamaño de body**: no se aplica `post_max_size` ni chequeo manual del largo de `php://input`.
+- **Rate limiting distribuido**: el `RateLimiter` actual es de nodo único con JSON temporal y `flock`; no escala horizontalmente.
+- **Observabilidad real**: no hay agregador de logs, métricas ni trazas; el backend solo emite eventos puntuales.
+- **`ultimo_uso_en` en verificación pública**: la columna existe en el modelo, pero la verificación pública no la actualiza todavía.
