@@ -85,7 +85,7 @@ Headers:
 
 | Header | Regla |
 |---|---|
-| `X-Admin-Key` | Requerido. Se compara contra configuración externa con `hash_equals()`. Si falta o no coincide, responde `401 UNAUTHORIZED` sin revelar causa. |
+| `X-Admin-Key` | Requerido. Se compara contra configuración externa con `hash_equals()`. Si la clave configurada falta, está vacía o mide menos de 16 caracteres, si falta el header o si el valor no coincide, responde `401 UNAUTHORIZED` sin revelar causa. |
 
 Request demo mínimo:
 
@@ -128,7 +128,7 @@ La emisión no devuelve DNI completo ni token completo. La entrega del token que
 
 ### `POST /admin/certificados/{id}/revocar`
 
-Request opcional:
+Request opcional. Si no se envía `reason`, el cliente debe enviar un body JSON `{}` con `Content-Type: application/json`; un body ausente, con `Content-Type` distinto o con JSON malformado responde `415`/`400` sin persistir nada.
 
 ```json
 {
@@ -171,11 +171,12 @@ Toda respuesta de error debe usar este formato:
 
 | HTTP | `code` | Uso |
 |---|---|---|
-| 400 | `VALIDATION_ERROR` | Token ausente o formato inválido. |
+| 400 | `VALIDATION_ERROR` | Token ausente o formato inválido, o body JSON malformado en POST. |
 | 401 | `UNAUTHORIZED` | Falta autorización administrativa válida. |
 | 404 | `CERTIFICATE_NOT_FOUND` | Token inexistente, revocado o no verificable públicamente. |
 | 405 | `METHOD_NOT_ALLOWED` | Método HTTP no permitido. |
 | 409 | `CERTIFICATE_NOT_REVOCABLE` | El certificado existe pero no puede revocarse en su estado actual. |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | POST JSON sin `Content-Type: application/json` (con o sin charset). |
 | 429 | `RATE_LIMITED` | Demasiadas consultas desde el mismo origen. |
 | 500 | `INTERNAL_ERROR` | Error no esperado sin datos internos. |
 
@@ -204,8 +205,21 @@ Toda respuesta de error debe usar este formato:
 - Usar PDO y prepared statements para toda consulta SQL futura.
 - Mantener configuración real fuera de Git.
 - La verificación pública debe devolver solo datos mínimos necesarios para confirmar autenticidad.
-- Los endpoints administrativos deben fallar cerrados si `admin_api_key` no existe o está vacío.
+- Los endpoints administrativos deben fallar cerrados si `admin_api_key` no existe, está vacío o mide menos de 16 caracteres tras `trim`.
 - La auditoría administrativa no debe guardar DNI completo, token completo, claves, SQL ni rutas internas.
+
+## Headers de seguridad y validación de request
+
+Toda respuesta JSON de la API emite los siguientes headers de seguridad centralizados en la capa común de respuesta:
+
+| Header | Valor | Aplica a |
+|---|---|---|
+| `X-Content-Type-Options` | `nosniff` | Éxitos y errores JSON. |
+| `X-Frame-Options` | `SAMEORIGIN` | Éxitos y errores JSON. |
+
+Los endpoints POST que esperan JSON (`POST /certificados/consulta`, `POST /admin/certificados`, `POST /admin/certificados/{id}/revocar`) deben recibir `Content-Type: application/json` (con o sin `; charset=...`). Si el header falta o no coincide, la API responde `415 UNSUPPORTED_MEDIA_TYPE` antes de cualquier side effect o rate-limit.
+
+Si el `Content-Type` es correcto pero el body está malformado, la API responde `400 VALIDATION_ERROR` antes de construir el servicio, abrir la base, auditar o consumir el bucket del `RateLimiter` en el endpoint público.
 
 ## Rate limiting público
 
@@ -265,3 +279,13 @@ La migración controlada es `database/migrations/001_certificados_qr.sql`. El to
 - `.htaccess` debe permitir rutas profundas de Angular sin capturar `/api/`.
 - Los errores 500 no deben imprimir stack traces ni rutas internas.
 - Probar en carpeta aislada antes de tocar `public_html` real.
+
+## Hardening diferido
+
+Los siguientes gaps del contrato quedan registrados y deben abordarse en ciclos SDD posteriores; este cambio no los cubre:
+
+- **CORS / preflight**: no se implementan respuestas a `OPTIONS` ni cabeceras `Access-Control-*`.
+- **Límite de tamaño de body**: no se aplica `post_max_size` ni chequeo del largo de `php://input`.
+- **Rate limiting distribuido**: el `RateLimiter` actual es de nodo único con JSON temporal y `flock`; no escala horizontalmente.
+- **Observabilidad real**: no hay agregador de logs, métricas ni trazas; el backend solo emite eventos puntuales.
+- **`ultimo_uso_en` en verificación pública**: la columna existe en el modelo, pero la verificación pública no la actualiza todavía.

@@ -1,14 +1,11 @@
-# Spec — admin-auth
+# Delta — admin-auth
 
-## Purpose
-
-Definir el gate administrativo mínimo de la API de certificados QR: autorización por header `X-Admin-Key` comparado en tiempo constante contra una clave administrativa externa a Git, con falla cerrada cuando la clave configurada falta, el header falta o el valor no coincide. Esta spec existe para que los endpoints administrativos no queden expuestos por configuración incompleta y para que la respuesta, auditoría y logs no filtren la clave ni fragmentos de la clave.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Autorización administrativa por `X-Admin-Key`
 
 Los endpoints administrativos MUST exigir el header `X-Admin-Key` y MUST comparar su valor contra una clave administrativa externa a Git. La autorización MUST fallar cerrada si la clave configurada falta, está vacía, tiene menos de 16 caracteres, el header falta o el valor no coincide. La comparación MUST ser de tiempo constante y las respuestas/logs MUST NOT exponer la clave ni fragmentos de la clave.
+(Previously: la clave configurada solo debía existir y no estar vacía.)
 
 #### Scenario: Header válido
 
