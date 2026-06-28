@@ -4,6 +4,37 @@ Esta guía es el punto de entrada para que Matías trabaje el frontend Angular 2
 
 > Estado de esta guía: cubre F0-F3. `muestra_pagina/` ya tiene contenido v0 para 7 pantallas de prompts 4-10; los prompts 11-22 continúan en `MATIAS_PROMPTS_SDD_FASE2.md`.
 
+## Índice de estado de fases (F0-F3)
+
+Estado actualizado al 2026-06-28. Convención: ✅ hecho, ⏳ pendiente, 🚫 bloqueado (por Marcos u otro).
+
+| Fase | # | Ciclo | Estado | Rama sugerida | Commit/Notas |
+|---|---|---|---|---|---|
+| F0 | F0-01 | Verificar entorno Windows | ✅ | docs/matias-onboarding-windows | `d7b523e` (merged en PR #6) |
+| F0 | F0-02 | Verificar OpenCode/Gentle-AI | ⏳ | docs/matias-onboarding-f0-02-f0-03 | — |
+| F0 | F0-03 | Leer documentación mínima y entender misión | ⏳ | docs/matias-onboarding-f0-02-f0-03 | — |
+| F1 | F1-01 | Auditar `muestra_pagina/` | ⏳ | frontend/v0-design-system | — |
+| F1 | F1-02 | Extraer sistema visual desde v0 | ⏳ | frontend/v0-design-system | — |
+| F1 | F1-03 | Crear app Angular 20 | ⏳ | frontend/angular-bootstrap | — |
+| F1 | F1-04 | Configurar Tailwind | ⏳ | frontend/angular-bootstrap | — |
+| F1 | F1-05 | Crear layout base público/admin | ⏳ | frontend/angular-bootstrap | — |
+| F2 | F2-01 | Pantalla pública de validación válida | ⏳ | frontend/public-validation | — |
+| F2 | F2-02 | Estados revocada/no encontrada/error | ⏳ | frontend/public-validation | — |
+| F2 | F2-03 | Login/admin shell | ⏳ | frontend/admin-shell | — |
+| F2 | F2-04 | Cursos y fechas | ⏳ | frontend/admin-courses | — |
+| F2 | F2-05 | Asistencias presentes | ⏳ | frontend/admin-attendance | — |
+| F2 | F2-06 | Certificaciones | ⏳ | frontend/admin-certifications | — |
+| F3 | F3-01 | Servicios mock y contratos frontend | ⏳ | frontend/contracts-mocks | — |
+| F3 | F3-02 | Preparar conexión futura con API PHP | ⏳ | frontend/contracts-mocks | — |
+| F3 | F3-03 | Tests automáticos básicos | ⏳ | qa/frontend-tests | — |
+| F3 | F3-04 | QA manual completo | ⏳ | qa/frontend-qa | — |
+| F3 | F3-05 | Build para `/certificados/` | ⏳ | frontend/build-certificados | — |
+| F3 | F3-06 | Handoff a Marcos | ⏳ | docs/handoff-fase1 | — |
+
+**Resumen**: 1 de 20 hecho. 19 pendientes. La rama actual es `docs/matias-onboarding-f0-02-f0-03` (mergeada desde main actualizado en PR #6). Cambios ad-hoc de governance también commiteados en PR #6: regla de commit con aprobación explícita (`d4589a1`), regla de push a ramas con aprobación explícita (`79a72ca`), fix de bugs de Codex (`e890c3c`). Fase 2 (F4-F6) en `MATIAS_PROMPTS_SDD_FASE2.md` está bloqueada hasta que Marcos apruebe continuar.
+
+Para actualizar este índice al cerrar cada ciclo, editá esta tabla y commiteá con mensaje `docs(governance): actualizar indice de fases de matias`. Mantener formato y columnas estables.
+
 ## Herramientas obligatorias antes de empezar
 
 Antes de cualquier ciclo F0-F3, Matías debe:
