@@ -33,6 +33,7 @@ Marcos debe aplicar estas reglas antes de iniciar ciclos con OpenCode/Gentle-AI:
 | Material privado | No modificar ni copiar contenido de `material_privado_no_versionar/`; solo nombres y riesgos generales cuando el ciclo lo autorice. |
 | Datos sensibles | No imprimir credenciales, dumps, logs, DNI completo ni tokens completos. |
 | Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. OpenCode solo ejecuta commit, push, merge o rebase con confirmación explícita de Marcos. |
+| Git — nota | La relajación de commits aprobados aplica solo al flujo de Matías. Los prompts y reglas de Marcos mantienen la prohibición absoluta. |
 
 ## Cuándo detenerse para QA manual
 
