@@ -150,7 +150,7 @@ deploy/<tema>
 qa/<tema>
 ```
 
-OpenCode puede ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno, con el mensaje exacto indicado. Push, merge, rebase y cambio de rama siguen siendo manuales. Marcos decide por separado para su flujo.
+OpenCode puede ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno, con el mensaje y comando exactos indicados. Merge, rebase, cambio de rama y push a `main` siguen siendo manuales. Marcos decide por separado para su flujo.
 
 ## 10. Regla principal
 
