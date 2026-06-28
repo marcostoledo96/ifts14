@@ -63,8 +63,9 @@ rules:
     - Agrupar por fase, usar numeración jerárquica
     - Mantener tareas completables en una sesión
   apply:
-    - Seguir patrones de código existentes
-    - No modificar archivos fuera del alcance del cambio activo
+    rules:
+      - Seguir patrones de código existentes
+      - No modificar archivos fuera del alcance del cambio activo
     tdd: false
     test_command: ""
   verify:
