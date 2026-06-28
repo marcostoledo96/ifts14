@@ -8,7 +8,7 @@ Definir los requisitos documentales para reescribir `MATIAS_PROMPTS_SDD_3_SEMANA
 
 ### Requirement: Contexto operativo y misión
 
-La guía DEBE explicar la misión de Matías, el alcance frontend Angular 20, las fuentes de verdad y las prohibiciones: no tocar backend, base, deploy, `material_privado_no_versionar/`, commits, push, merge ni dependencias no aprobadas.
+La guía DEBE explicar la misión de Matías, el alcance frontend Angular 20, las fuentes de verdad y las prohibiciones: no tocar backend, base, deploy, `material_privado_no_versionar/`, ni dependencias no aprobadas. Sobre la regla de Git: OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`) con aprobación explícita de Matías en el mismo turno del chat, con el mensaje y comando exactos, y siempre con un diff-confirmation gate previo (mostrar `git status --short` y `git diff --name-only` antes de stage, y `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat` antes de push). Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch`, `git checkout` (salvo lectura) y `git push` a `main`. Marcos mantiene autoridad total sobre su propio workflow.
 
 #### Scenario: Inicio correcto
 - DADO que Matías abre la guía
@@ -26,12 +26,12 @@ La guía DEBE incluir comandos PowerShell para verificar Node.js, npm, Angular C
 
 ### Requirement: Flujo OpenCode/Gentle-AI y SDD
 
-La guía DEBE describir el flujo OpenCode/Gentle-AI con ciclos pequeños, TDD cuando haya implementación, `sdd-archive` obligatorio y reporte final; OpenCode PUEDE proponer comandos Git, pero Matías DEBE ejecutarlos manualmente.
+La guía DEBE describir el flujo OpenCode/Gentle-AI con ciclos pequeños, TDD cuando haya implementación, `sdd-archive` obligatorio y reporte final. Política Git vigente (commit `79a72ca`): OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`) con aprobación explícita de Matías en el mismo turno del chat, con el mensaje y comando exactos, y siempre con un diff-confirmation gate previo. `git merge`, PR, `git rebase`, `git switch` y `git checkout` (salvo lectura) siguen prohibidos. Marcos decide por separado para su flujo.
 
 #### Scenario: Cierre de ciclo
 - DADO un ciclo terminado
 - CUANDO Matías sigue la guía
-- ENTONCES ejecuta validaciones, QA manual, `sdd-archive` y deja propuesta de commit sin hacer push ni merge
+- ENTONCES ejecuta validaciones, QA manual, `sdd-archive` y deja `git add` + `git commit` + `git push` bajo aprobación explícita de Matías por turno (con diff-confirmation gate); `git merge` y PR siguen siendo manuales de Marcos o de Mati según corresponda
 
 ### Requirement: Uso de `muestra_pagina/`
 
@@ -71,7 +71,7 @@ La guía DEBE reorganizar ciclos ejecutables F0-01 a F3-06. Cada ciclo DEBE incl
 
 ### Requirement: Reporte final y propuestas Git
 
-La guía DEBE exigir un reporte final por ciclo con resumen, archivos tocados, pruebas, QA, bloqueos, documentación actualizada, riesgos y comandos Git propuestos sin ejecutarlos automáticamente.
+La guía DEBE exigir un reporte final por ciclo con resumen, archivos tocados, pruebas, QA, bloqueos, documentación actualizada, riesgos y comandos Git ejecutables solo con aprobación explícita de Matías en el mismo turno del chat (con diff-confirmation gate previo). OpenCode no ejecuta `git add`, `git commit` ni `git push` sin esa aprobación. `git merge` y PR siguen siendo manuales.
 
 #### Scenario: Entrega revisable
 - DADO un ciclo listo para revisión

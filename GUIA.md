@@ -150,7 +150,7 @@ deploy/<tema>
 qa/<tema>
 ```
 
-OpenCode puede ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno, con el mensaje y comando exactos indicados. Merge, rebase, cambio de rama y push a `main` siguen siendo manuales. Marcos decide por separado para su flujo.
+OpenCode puede ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno, con el mensaje y comando exactos indicados. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, OpenCode debe correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debe correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Merge, rebase, cambio de rama y push a `main` siguen siendo manuales. Marcos decide por separado para su flujo.
 
 ## 10. Regla principal
 
