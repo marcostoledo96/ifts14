@@ -1,0 +1,77 @@
+# openspec/config.yaml — ifts14
+schema: spec-driven
+
+context: |
+  Proyecto: ifts14 — Módulo de validación de certificados del IFTS N.° 14
+  Stack: Angular 20 (frontend, sin scaffold), PHP 8.4.21 (backend, implementación parcial),
+    MariaDB 10.6.27, cPanel
+  Ruta pública: /certificados/
+  Estado del backend: funcional con endpoints de validación, emisión y revocación
+  Frontend: pendiente de diseño v0 (`muestra_pagina/`)
+  Host: Windows (Matías), Docker PHP 8.4 (backend), Angular CLI 20.3.30 instalado globalmente
+
+testing:
+  strict_tdd: false
+  note: >
+    No se detectó un runner de tests formal (PHPUnit/Pest). AGENTS.md indica
+    "Aplicar TDD cuando exista implementación" como regla general, no como TDD
+    estricto en pipeline. Existen scripts de prueba procedurales en
+    apps/backend-php/tests/ sin framework. El frontend Angular aún no se ha
+    scaffolded. Cuando se agregue un test runner, cambiar a strict_tdd: true
+    y configurar test_command.
+
+  test_runner:
+    framework: ninguno (scripts PHP procedurales manuales)
+    command: ""
+
+  test_layers:
+    unit:
+      available: false
+      tool: "Scripts PHP manuales en apps/backend-php/tests/ (AdminCertificateServiceTest.php, AuthGateTest.php, fault-injection-audit.php)"
+    integration:
+      available: false
+      tool: "—"
+    e2e:
+      available: false
+      tool: "—"
+
+  coverage:
+    available: false
+    command: ""
+
+  quality:
+    linter:
+      available: true
+      tool: "php -l (lint sintáctico via Docker, ver scripts/php-docker-lint.sh)"
+    type_checker:
+      available: false
+      tool: "—"
+    formatter:
+      available: false
+      tool: "—"
+
+rules:
+  proposal:
+    - Incluir plan de reversión para cambios riesgosos
+  specs:
+    - Usar Given/When/Then para escenarios funcionales
+    - Usar palabras clave RFC 2119 (DEBE, DEBERÍA, PUEDE)
+  design:
+    - Incluir diagramas de secuencia para flujos complejos
+    - Documentar decisiones de arquitectura con fundamento
+  tasks:
+    - Agrupar por fase, usar numeración jerárquica
+    - Mantener tareas completables en una sesión
+  apply:
+    rules:
+      - Seguir patrones de código existentes
+      - No modificar archivos fuera del alcance del cambio activo
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: "php -l apps/backend-php/src/*.php"
+    coverage_threshold: 0
+  archive:
+    - Advertir antes de fusionar deltas destructivos
+    - Actualizar docs/ según el tipo de cambio (frontend → docs/frontend/, backend → docs/backend/, etc.)
