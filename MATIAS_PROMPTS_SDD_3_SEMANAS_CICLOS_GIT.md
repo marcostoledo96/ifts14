@@ -24,7 +24,7 @@ Antes de cualquier ciclo F0-F3, Matías debe:
 5. Pedile a OpenCode un ciclo SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 6. Ejecutá pruebas automáticas disponibles y QA manual antes de cerrar.
 7. Al cerrar F3-06, continuá con `MATIAS_PROMPTS_SDD_FASE2.md` para F4-F6 si Marcos aprueba seguir; si Fase 2 sigue como guía marco, primero expandí el ciclo elegido antes de ejecutarlo.
-8. Dejale a Marcos un reporte final con archivos, verificaciones, bloqueos y comandos Git propuestos. OpenCode no ejecuta commit, push, merge ni rebase.
+8. Dejale a Marcos un reporte final con archivos, verificaciones, bloqueos y comandos Git propuestos. OpenCode puede ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique, tras `sdd-verify` PASS. `git push`, `git merge`, `git rebase`, `git switch` y `git checkout` (salvo lectura) siguen prohibidos.
 
 ## Misión y contexto operativo
 
@@ -135,7 +135,7 @@ Usá SDD completo. Primero leé AGENTS.md, docs/00-indice-general.md,
 docs/opencode/optimizacion-tokens.md, el ciclo activo, docs/frontend/00-angular20-port-v0.md
 y la spec OpenSpec correspondiente. No ejecutes Graphify; usá solo resúmenes aprobados por Marcos.
 No toques backend, base de datos, deploy ni material_privado_no_versionar/.
-No ejecutes commit, push, merge ni rebase. Proponé comandos Git al final.
+No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique. Proponé comandos Git al final.
 Al cerrar, ejecutá verify y sdd-archive, y entregá reporte final con archivos,
 pruebas, QA manual, documentación actualizada, bloqueos y riesgos.
 ```
@@ -341,7 +341,7 @@ Es documentación/preparación solamente. Leé README.md, GUIA.md, AGENTS.md y d
 No modifiques Angular, PHP, base de datos, deploy ni material_privado_no_versionar/.
 Ayudame a interpretar las versiones de Node.js, npm, Git, VS Code y Angular CLI que pego abajo.
 Si falta una herramienta, proponé instalación por winget y alternativa manual, sin ejecutar comandos destructivos.
-Cerrá con validaciones, bloqueos y reporte final. No hagas commit, push, merge ni rebase.
+Cerrá con validaciones, bloqueos y reporte final. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -382,7 +382,7 @@ Trabajemos el ciclo F0-02 — Verificar OpenCode/Gentle-AI.
 Quiero validar que el flujo SDD está claro antes de tocar frontend.
 Leé AGENTS.md, GUIA.md, docs/00-indice-general.md y MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md.
 Explicame qué harías en explore, propose, spec, design, tasks, apply, verify y archive para un ciclo chico de documentación.
-No modifiques código, no instales dependencias, no toques material_privado_no_versionar/ y no ejecutes commit, push, merge ni rebase.
+No modifiques código, no instales dependencias, no toques material_privado_no_versionar/ y no hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 Entregá un reporte con bloqueos, validaciones y comandos Git solo propuestos.
 ```
 
@@ -426,7 +426,7 @@ muestra_pagina/README.md, muestra_pagina/AGENTS.md y apps/frontend-angular/AGENT
 Devolveme un resumen operativo para Matías: misión, alcance permitido, fuera de alcance, fuentes de verdad,
 qué hacer si muestra_pagina/ está vacía y qué evidencia debo dejar al cerrar cada ciclo.
 No modifiques código ni documentación salvo que te pida explícitamente una corrección documental.
-No ejecutes commit, push, merge ni rebase.
+No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -560,7 +560,7 @@ Usá SDD completo y leé AGENTS.md, apps/frontend-angular/AGENTS.md, docs/fronte
 Primero verificá si apps/frontend-angular/ ya tiene una app. Si existe, no la recrees.
 Si no existe y el plan lo aprueba, proponé crear Angular 20 con routing, CSS y --skip-git bajo apps/frontend-angular/.
 No implementes pantallas finales si muestra_pagina/ no tiene diseño utilizable.
-No toques backend, base de datos, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques backend, base de datos, deploy ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 Cerrá con build/pruebas disponibles, QA manual y sdd-archive.
 ```
 
@@ -606,7 +606,7 @@ Trabajemos el ciclo F1-04 — Configurar Tailwind.
 Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angular20-port-v0.md, hallazgos de F1-02 y package.json si existe.
 Antes de instalar, verificá si Tailwind ya está configurado. Si no está, justificá la dependencia contra el sistema visual aprobado.
 Usá la guía oficial de Angular 20 para Tailwind: instalar tailwindcss, @tailwindcss/postcss y postcss, configurar .postcssrc.json e importar Tailwind en src/styles.css.
-No agregues librerías extra, no toques backend/base/deploy/material_privado_no_versionar/ y no ejecutes commit, push, merge ni rebase.
+No agregues librerías extra, no toques backend/base/deploy/material_privado_no_versionar/ y no hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 Cerrá con build, QA manual y sdd-archive.
 ```
 
@@ -653,7 +653,7 @@ Usá SDD completo y leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angul
 Implementá solo layout base y estructura por features para público/admin si la app Angular ya existe.
 No implementes pantallas finales ni inventes contratos API; si muestra_pagina/ está vacía, dejá placeholders estructurales mínimos y reportá el bloqueo visual.
 Priorizá accesibilidad, responsive y foco visible. No agregues dependencias nuevas.
-No toques backend, base, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques backend, base, deploy ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 Cerrá con pruebas/build disponibles, QA manual, sdd-archive y reporte final.
 ```
 
@@ -716,7 +716,7 @@ docs/backend/01-contrato-api-certificados.md, hallazgos F1-01/F1-02 y la spec de
 Implementá solo la pantalla pública para un caso válido con datos mock o contrato documentado.
 No inventes endpoints, no consultes backend real si no está aprobado y usá DNI enmascarado, sin token completo.
 Si muestra_pagina/ no tiene diseño utilizable, usá una estructura accesible mínima y reportá el bloqueo visual.
-No toques PHP, base de datos, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques PHP, base de datos, deploy ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 Cerrá con tests/build disponibles, QA manual, sdd-archive y reporte final.
 ```
 
@@ -766,7 +766,7 @@ docs/backend/01-contrato-api-certificados.md, lo hecho en F2-01 y la spec del ci
 Implementá estados públicos diferenciados para certificación revocada, certificación no encontrada y error técnico.
 Tratá 404/CERTIFICATE_NOT_FOUND como certificado no verificable, no como error de sistema.
 No inventes backend, no expongas DNI completo ni token completo en validación pública y no agregues dependencias.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -814,7 +814,7 @@ docs/backend/01-contrato-api-certificados.md, hallazgos F1-02 y la spec del cicl
 Prepará shell administrativo y pantalla de login visual mínima, sin autenticación real si no hay contrato aprobado.
 Dejá claro qué es mock/placeholder y qué falta para conectar con backend PHP.
 No guardes credenciales, no agregues librerías de auth y no implementes seguridad falsa.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -861,7 +861,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 documentación backend disponible, lo hecho en F2-03 y la spec del ciclo.
 Prepará UI administrativa para listar o cargar cursos y fechas con modelos/mocks explícitos de frontend.
 No conectes API real ni inventes campos fuera del contrato documentado. Marcá todo mock como temporal.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -908,7 +908,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 documentación backend disponible, lo hecho en F2-04 y la spec del ciclo.
 Prepará UI para marcar o revisar asistencias presentes con datos mock explícitos.
 No persistas datos reales, no inventes API y no muestres DNI completo salvo que una spec privada o administrativa lo apruebe.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -956,7 +956,7 @@ docs/backend/01-contrato-api-certificados.md, lo hecho en F2-04/F2-05 y la spec 
 Prepará UI administrativa para listar/previsualizar certificaciones con mocks explícitos.
 No generes PDF real, no generes QR real y no inventes emisión backend si no está aprobada.
 No expongas DNI completo en pantallas públicas ni token completo. No toques PHP, base, deploy ni material_privado_no_versionar/.
-No ejecutes commit, push, merge ni rebase.
+No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -1005,7 +1005,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 docs/backend/01-contrato-api-certificados.md, ciclos F2 completados y la spec del ciclo.
 Mové datos mock a servicios/modelos claros de frontend y documentá qué contrato representan.
 No conectes API real, no agregues dependencias y no uses datos sensibles reales.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -1053,7 +1053,7 @@ docs/backend/01-contrato-api-certificados.md, F3-01 y la spec del ciclo.
 Prepará la frontera de servicios para futura API PHP bajo /certificados/api/ usando solo contratos documentados.
 Si no hay backend disponible, mantené mocks y dejá TODO o documentación de integración futura, sin llamadas reales.
 No inventes endpoints, no agregues interceptores complejos ni auth real sin contrato.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -1100,7 +1100,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 package.json si existe, ciclos F2/F3 previos y la spec del ciclo.
 Agregá o ajustá solo tests básicos para lo ya implementado si el runner existe.
 Si no hay runner configurado, no inventes evidencia: reportá bloqueo y proponé el mínimo siguiente paso.
-No agregues frameworks nuevos, no toques backend/base/deploy/material_privado_no_versionar/ y no ejecutes commit, push, merge ni rebase.
+No agregues frameworks nuevos, no toques backend/base/deploy/material_privado_no_versionar/ y no hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -1146,7 +1146,7 @@ apps/frontend-angular/AGENTS.md y la spec del ciclo.
 Prepará y ejecutá una checklist manual transversal: responsive, teclado, foco, contraste, estados,
 consola, no regresión visual, datos sensibles y comparación con muestra_pagina/ si existe.
 No modifiques producto salvo correcciones menores aprobadas por el ciclo. No toques backend/base/deploy/material_privado_no_versionar/.
-No ejecutes commit, push, merge ni rebase.
+No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -1193,7 +1193,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 deploy/AGENTS.md y docs/deploy/00-cpanel-certificados.md si existe.
 Verificá el build de producción con base href /certificados/ y documentá resultado, carpeta generada y bloqueos.
 No despliegues, no copies archivos a cPanel, no toques public_html y no modifiques configuración real del servidor.
-No toques PHP, base de datos ni material_privado_no_versionar/. No ejecutes commit, push, merge ni rebase.
+No toques PHP, base de datos ni material_privado_no_versionar/. No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -1237,7 +1237,7 @@ Usá SDD completo. Leé esta guía, reportes de F2/F3, docs/frontend/00-angular2
 docs/00-indice-general.md y la spec del ciclo.
 Prepará un handoff para Marcos con resumen, archivos tocados, pruebas, QA, documentación actualizada,
 bloqueos, riesgos, próximos pasos, referencia a MATIAS_PROMPTS_SDD_FASE2.md y comandos Git propuestos sin ejecutarlos.
-No hagas commit, push, merge ni rebase. No despliegues y no toques backend/base/material_privado_no_versionar/.
+No hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique. No despliegues y no toques backend/base/material_privado_no_versionar/.
 ```
 
 Validaciones automáticas:
@@ -1349,7 +1349,7 @@ Antes de pedir revisión a Marcos, completá esta lista.
 - [ ] El DNI completo solo aparece en contextos privados o de entrega al estudiante si una spec aprobada lo exige.
 - [ ] No se instalaron dependencias nuevas sin aprobación.
 - [ ] No se inventaron endpoints ni contratos API.
-- [ ] OpenCode no ejecutó commit, push, merge, rebase ni deploy.
+- [ ] OpenCode no ejecutó `git push`, `git merge`, `git rebase`, `git switch`, `git checkout` ni deploy. `git add` + `git commit` solo se ejecutan tras aprobación explícita de Matías en el mismo turno, con el mensaje exacto que indique, tras `sdd-verify` PASS.
 
 ## Checklist manual por pantalla
 

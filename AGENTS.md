@@ -18,7 +18,7 @@ El objetivo es mantener el trabajo ordenado, seguro y guiado por Spec-Driven Dev
 - Compactar/prunear contexto al cerrar ciclos largos y guardar resumen de sesión.
 - Aplicar `Ponytail` y `karpathy-guidelines` para cambios chicos o quirúrgicos.
 - No procesar material privado, dumps, logs ni secretos fuera de auditorías explícitamente autorizadas.
-- No commitear, pushear ni mergear automáticamente.
+- En ciclos SDD verificados (post `sdd-verify` PASS), OpenCode PUEDE ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto propuesto. Permanecen PROHIBIDOS `git push`, `git merge`, `git rebase`, `git switch`, `git checkout` (excepto lectura de rama) y cualquier operación sobre el remoto o `main`. El workflow de Marcos se mantiene intacto.
 - No subir secretos.
 - No imprimir credenciales reales en respuestas.
 - No copiar dumps SQL ni logs a documentación.
