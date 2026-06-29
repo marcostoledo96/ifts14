@@ -3,14 +3,23 @@ import { provideRouter, Router } from '@angular/router';
 import { routes } from './app.routes';
 import { NotFoundPage } from './features/not-found/not-found-page';
 import { PublicValidationPage } from './features/public-validation/public-validation-page';
+import { LandingPage } from './features/landing/landing-page';
 
-// Verifica que las rutas mal formadas no redirijan a un token de demo válido,
-// evitando que una URL inválida parezca un certificado verificado.
+// Verifica que ninguna ruta apunte a un token de demo salvo la validación
+// explícita en validar/:tokenCertificacion, evitando que una URL inválida
+// o la raíz disparen validación con token de demo.
 describe('app.routes', () => {
-  it("raíz redirige a validar/demo-valido", () => {
+  it("raíz carga LandingPage (no redirige a demo-valido)", () => {
     const root = routes.find((r) => r.path === '');
-    expect(root?.redirectTo).toBe('validar/demo-valido');
+    expect(root?.redirectTo).toBeUndefined();
+    expect(root?.loadComponent).toBeDefined();
     expect(root?.pathMatch).toBe('full');
+  });
+
+  it("raíz no carga PublicValidationPage", () => {
+    const root = routes.find((r) => r.path === '');
+    const validar = routes.find((r) => r.path === 'validar/:tokenCertificacion');
+    expect(root?.loadComponent).not.toBe(validar?.loadComponent);
   });
 
   it("ruta válida carga PublicValidationPage", () => {
@@ -34,6 +43,22 @@ describe('app.routes', () => {
     // loadComponent ya aplica .then((m) => m.NotFoundPage): devuelve la clase.
     const cmp = await (wildcard!.loadComponent as () => Promise<unknown>)();
     expect(typeof cmp).toBe('function');
+  });
+
+  it("ninguna ruta redirige a demo-valido", () => {
+    for (const r of routes) {
+      expect(r.redirectTo).not.toContain('demo-valido');
+    }
+  });
+
+  it("navegación real: raíz no termina en demo-valido ni en validar", async () => {
+    await TestBed.configureTestingModule({
+      providers: [provideRouter(routes)],
+    }).compileComponents();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
+    expect(router.url).not.toContain('demo-valido');
+    expect(router.url).not.toContain('/validar/');
   });
 
   it("navegación real: wildcard no termina en demo-valido", async () => {

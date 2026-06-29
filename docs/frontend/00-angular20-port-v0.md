@@ -106,6 +106,22 @@ ng build --configuration production --base-href /certificados/
 
 No desplegar ni copiar artefactos a cPanel desde OpenCode.
 
+## Estado de la app Angular 20 (ciclo `frontend-angular-shell-public-validation-api-readiness`)
+
+App creada en `apps/frontend-angular/` con Angular CLI 20.3.30 standalone. Desplegable bajo `/certificados/`. Shell semántico + página pública con `resource()` (tres bloques: `valid` / `not-verifiable` / `technical-error`, `aria-live="polite"`). Verificación: 35/35 tests, build prod verde (252.97 kB initial / 71.88 kB transfer, lazy 3.88 kB). Requiere `export PATH="$HOME/.local/bin:$PATH"`.
+
+### Estructura técnica
+
+`angular.json`: `baseHref: "/certificados/"` en `production` y `development` (presupuestos 500 kB warn / 1 MB error), `index` explícito y salida plana para cPanel. `environments/environment{,.development}.ts`: prod `useMockApi: false` (HTTP real), dev `useMockApi: true` (mock). `app.config.ts`: `provideRouter` + `withComponentInputBinding` + `provideHttpClient()` + `VALIDATION_SOURCE` seleccionado por `environment.useMockApi`. `app.routes.ts`: `''` carga landing sin validación, `validar/:tokenCertificacion` carga la validación pública, `**` carga página no encontrada sin validar tokens. `app.ts`: shell `header[role=banner]` / `main#contenido` / `footer` con skip link.
+
+### Shared certificates
+
+`dto.ts` (DTOs del contrato PHP, sin DNI completo/hash/pepper/tablas), `validation-source.ts` (interfaz + InjectionToken, frontera reemplazable), `mock-tokens.ts` (`MockValidationSource` + tokens `demo-valido|revocado|expirado|inexistente|error-tecnico`), `http-validation.source.ts` (`HttpValidationSource` con `HttpClient` + `firstValueFrom`, URL `/certificados/api/certificados/{token}/verificacion`), `result-mapper.ts` (404/revocado/expirado/inexistente → `not-verifiable`; 5xx/red/JSON → `technical-error`), `validation.service.ts` (`verify(token)` consume `VALIDATION_SOURCE`; sin cambios al swap).
+
+### Límites de UI final
+
+Base técnica, no diseño visual final. Diseño visual corresponde a Matías (F1-01/F1-02). Admin, PDF, QR, reenvío y configuración institucional quedan fuera de este ciclo.
+
 ## Contrato API esperado
 
 Cuando exista integración real:
