@@ -2,13 +2,13 @@
 
 ## Propósito
 
-Definir los requisitos documentales para mejorar `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` como guía operativa compacta: explica cómo ejecutar cada ciclo M1-01..M3-03, cuándo detenerse para QA manual y qué entregar al cierre, sin caer en el nivel pedagógico de la guía de Matías ni autorizar cambios de código, dependencias, deploy o Git automático.
+Definir los requisitos documentales para mejorar `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` como guía operativa compacta: explica cómo ejecutar cada ciclo M1-01..M3-06, cuándo detenerse para QA manual y qué entregar al cierre, sin caer en el nivel pedagógico de la guía de Matías ni autorizar cambios de código, dependencias, deploy o Git automático.
 
 ## Requirements
 
 ### Requirement: Rol y límites
 
-La guía DEBE recordar el rol de Marcos (PHP 8.4.21, MariaDB 10.6.27, integración, deploy cPanel, arquitectura, seguridad) y enumerar las prohibiciones explícitas: no tocar Angular salvo coordinación, no modificar `material_privado_no_versionar/`, no exponer credenciales ni DNI completo, no ejecutar commit/push/merge/rebase automáticamente.
+La guía DEBE recordar el rol de Marcos (PHP 8.4.21, MariaDB 10.6.27, integración, deploy cPanel, arquitectura, seguridad y desbloqueos frontend técnicos) y enumerar las prohibiciones explícitas: no tocar Angular fuera de los desbloqueos frontend autorizados o coordinación explícita, no modificar `material_privado_no_versionar/`, no exponer credenciales ni DNI completo, no ejecutar commit/push/merge/rebase automáticamente.
 
 #### Scenario: Lectura inicial
 
@@ -28,23 +28,23 @@ La guía DEBE incluir una tabla de hitos de parada con el comando concreto a eje
 
 ### Requirement: Plantilla de ciclo repetible
 
-La guía DEBE definir una plantilla única aplicada a los 9 ciclos, con los campos: objetivo, rama sugerida, archivos a leer, prompt para OpenCode, ejecutar/verificar, QA manual específico, qué no hacer, archive, commit sugerido.
+La guía DEBE definir una plantilla única aplicada a los 12 ciclos, con los campos: objetivo, rama sugerida, archivos a leer, prompt para OpenCode, ejecutar/verificar, QA manual específico, qué no hacer, archive, commit sugerido.
 
 #### Scenario: Ciclo autocontenido
 
-- DADO cualquier ciclo entre M1-01 y M3-03
+- DADO cualquier ciclo entre M1-01 y M3-06
 - CUANDO Marcos lo abre
 - ENTONCES encuentra los nueve campos de la plantilla sin tener que leer otra sección
 
-### Requirement: Ciclos M1-01 a M3-03 sin renumerar
+### Requirement: Ciclos M1-01 a M3-06 sin renumerar
 
-La guía DEBE mantener los identificadores y el orden existentes: M1-01 limpieza final, M1-02 auditoría, M1-03 modelo MariaDB; M2-01 contrato API, M2-02 base PHP, M2-03 validación pública; M3-01 integración con Angular, M3-02 deploy cPanel, M3-03 hardening final. Cada ciclo DEBE quedar alineado con la plantilla repetible y con al menos un checkpoint de QA manual concreto.
+La guía DEBE mantener los identificadores vigentes de Marcos sin bloquear backend por Angular: M1/M2 para seguridad, auditoría, modelo, contrato API, base PHP y validación pública; M3 para hardening backend/base, endpoints administrativos, seguridad/logs, deploy cPanel e integración Angular/API solo como checkpoint final. Cada uno de los 12 ciclos DEBE quedar alineado con la plantilla repetible y con al menos un checkpoint de QA manual concreto.
 
 #### Scenario: Trazabilidad preservada
 
 - DADO el archivo actual de Marcos
 - CUANDO se compara con la versión mejorada
-- ENTONCES los IDs y el orden de los 9 ciclos siguen siendo los mismos
+- ENTONCES los IDs y el orden de los 12 ciclos siguen siendo los mismos
 
 ### Requirement: Handoff al cierre de ciclo
 
@@ -68,10 +68,10 @@ La guía DEBE incluir, si están verificables desde `~/.config/opencode/opencode
 
 ### Requirement: Comandos Git solo como propuesta
 
-La guía DEBE proponer comandos Git (`git status --ignored --short`, `git add`, `git commit`, `git push -u origin`, `gh pr create`) como ejemplo al cierre de cada ciclo, sin afirmar que OpenCode los ejecuta. DEBE recordarse en cada bloque "no hacer" que commit, push, merge y rebase son manuales de Marcos.
+La guía DEBE proponer comandos Git (`git status --ignored --short`, `git add`, `git commit`, `git push -u origin`, `gh pr create`) como ejemplo al cierre de cada ciclo, sin afirmar que OpenCode los ejecuta sin aprobación. DEBE recordarse en cada bloque "no hacer" que commit, push y PR requieren aprobación explícita de Marcos, y que `git merge`, `git rebase`, `git push` a `main` y merge de PR quedan fuera de OpenCode.
 
 #### Scenario: Comando propuesto
 
 - DADO un ciclo cerrado
 - CUANDO Marcos lee el cierre
-- ENTONCES ve el bloque de comandos Git como propuesta y la regla de que los ejecuta él manualmente
+- ENTONCES ve el bloque de comandos Git como propuesta, la regla de aprobación explícita para commit/push/PR y la prohibición de merge/rebase/push a `main` desde OpenCode
