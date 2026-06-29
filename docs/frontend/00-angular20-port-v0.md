@@ -13,6 +13,15 @@ Este documento es la fuente de verdad para portar a Angular 20 la referencia vis
 
 La carpeta también debe incluir `muestra_pagina/MANIFIESTO_V0.md` para declarar origen, alcance, pantallas incluidas, capturas disponibles y pendientes antes de portar o auditar la referencia.
 
+## División de responsabilidades frontend
+
+| Responsable | Ramas/ciclos | Alcance |
+|---|---|---|
+| Marcos | `frontend/angular-shell` (`F1-03`..`F1-05`), `frontend/public-validation-flow` (`F2-01`, `F2-02`), `frontend/api-readiness` (`F3-01`, `F3-02`, `F3-05`) | Fundación Angular, estructura semántica/accesible, validación pública con mocks ficticios, frontera de servicios y build `/certificados/`. No define el diseño visual final. |
+| Matías | `frontend/v0-design-system` (`F1-01`, `F1-02`), admin (`F2-03`..`F2-06`), QA/handoff (`F3-03`, `F3-04`, `F3-06`) y F4-F6 salvo nuevo acuerdo | Sistema visual desde v0, UI/UX final, admin, responsive, accesibilidad, QA visual y handoff. |
+
+Secuencia de desbloqueo: Marcos puede iniciar `frontend/angular-shell`; Matías trabaja `frontend/v0-design-system`; Marcos avanza `frontend/public-validation-flow`; Matías aplica sistema visual y admin; Marcos formaliza `frontend/api-readiness`; Matías cierra QA/handoff. Coordinar cambios en archivos globales Angular antes de editar `angular.json`, `package.json`, estilos globales o rutas raíz.
+
 ## Inventario disponible en v0
 
 | Prompt | Pantalla/flujo | Referencia v0 |

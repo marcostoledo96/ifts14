@@ -66,7 +66,7 @@ y nunca debe subirse a GitHub.
 
 ## 5. Carpeta `muestra_pagina/`
 
-`muestra_pagina/` será la carpeta donde Marcos deje el diseño generado en v0.
+`muestra_pagina/` será la carpeta donde se deje la referencia visual generada en v0.
 
 Puede estar vacía al inicio.
 
@@ -94,6 +94,7 @@ Responsable de:
 - backend PHP;
 - MariaDB;
 - integración front/back;
+- desbloqueos frontend técnicos cuando hagan falta: base Angular, validación pública, mocks/contratos y build `/certificados/`;
 - deploy en cPanel;
 - arquitectura;
 - seguridad;
@@ -104,12 +105,13 @@ Responsable de:
 
 Responsable de:
 
-- Angular 20;
+- liderazgo UI/UX del frontend Angular 20;
 - adaptación de `muestra_pagina/`;
 - UI/UX;
 - Tailwind o sistema visual elegido;
 - responsive;
-- accesibilidad.
+- accesibilidad;
+- admin, QA y handoff visual.
 
 ## 7. Metodología
 
@@ -150,7 +152,7 @@ deploy/<tema>
 qa/<tema>
 ```
 
-OpenCode puede ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno, con el mensaje y comando exactos indicados. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, OpenCode debe correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debe correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Merge, rebase, cambio de rama y push a `main` siguen siendo manuales. Marcos decide por separado para su flujo.
+OpenCode puede ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías o Marcos lo aprueben explícitamente en el mismo turno, con el mensaje y comando exactos indicados. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, OpenCode debe correr `git status --short` y `git diff --name-only`, presentar el resultado y esperar confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debe correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. `git switch`, `git checkout`, `git branch`, `git switch -c` y `git checkout -b` quedan permitidos solo para navegación o creación no destructiva de ramas, con árbol limpio, rama fuente explícita y actualizada, y aprobación explícita. PR solo se puede crear/abrir con aprobación explícita. Merge, rebase, push a `main` y merge de PR siguen prohibidos.
 
 ## 10. Regla principal
 

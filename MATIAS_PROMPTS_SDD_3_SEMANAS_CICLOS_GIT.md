@@ -11,27 +11,33 @@ Estado actualizado al 2026-06-28. Convención: ✅ hecho, ⏳ pendiente, 🚫 bl
 | Fase | # | Ciclo | Estado | Rama sugerida | Commit/Notas |
 |---|---|---|---|---|---|
 | F0 | F0-01 | Verificar entorno Windows | ✅ | docs/matias-onboarding-windows | `d7b523e` (merged en PR #6) |
-| F0 | F0-02 | Verificar OpenCode/Gentle-AI | ✅ | docs/matias-onboarding-f0-02-f0-03 | archive cerrado; commit pendiente (HEAD `11e0d3e`) |
-| F0 | F0-03 | Leer documentación mínima y entender misión | ⏳ | docs/matias-onboarding-f0-02-f0-03 | — |
-| F1 | F1-01 | Auditar `muestra_pagina/` | ⏳ | frontend/v0-design-system | — |
-| F1 | F1-02 | Extraer sistema visual desde v0 | ⏳ | frontend/v0-design-system | — |
-| F1 | F1-03 | Crear app Angular 20 | ⏳ | frontend/angular-bootstrap | — |
-| F1 | F1-04 | Configurar Tailwind | ⏳ | frontend/angular-bootstrap | — |
-| F1 | F1-05 | Crear layout base público/admin | ⏳ | frontend/angular-bootstrap | — |
-| F2 | F2-01 | Pantalla pública de validación válida | ⏳ | frontend/public-validation | — |
-| F2 | F2-02 | Estados revocada/no encontrada/error | ⏳ | frontend/public-validation | — |
-| F2 | F2-03 | Login/admin shell | ⏳ | frontend/admin-shell | — |
-| F2 | F2-04 | Cursos y fechas | ⏳ | frontend/admin-courses | — |
-| F2 | F2-05 | Asistencias presentes | ⏳ | frontend/admin-attendance | — |
-| F2 | F2-06 | Certificaciones | ⏳ | frontend/admin-certifications | — |
-| F3 | F3-01 | Servicios mock y contratos frontend | ⏳ | frontend/contracts-mocks | — |
-| F3 | F3-02 | Preparar conexión futura con API PHP | ⏳ | frontend/contracts-mocks | — |
-| F3 | F3-03 | Tests automáticos básicos | ⏳ | qa/frontend-tests | — |
-| F3 | F3-04 | QA manual completo | ⏳ | qa/frontend-qa | — |
-| F3 | F3-05 | Build para `/certificados/` | ⏳ | frontend/build-certificados | — |
-| F3 | F3-06 | Handoff a Marcos | ⏳ | docs/handoff-fase1 | — |
+| F0 | F0-02 | Verificar OpenCode/Gentle-AI | ✅ | docs/matias-onboarding-f0-02-f0-03 | archive cerrado; commit del PR sin fijar HEAD transitorio |
+| F0 | F0-03 | Leer documentación mínima y entender misión | ⏳ | docs/matias-onboarding-f0-02-f0-03 | Matías. |
+| F1 | F1-01 | Auditar `muestra_pagina/` | ⏳ | frontend/v0-design-system | Matías. |
+| F1 | F1-02 | Extraer sistema visual desde v0 | ⏳ | frontend/v0-design-system | Matías. |
+| F1 | F1-03 | Crear app Angular 20 | ⏳ | frontend/angular-shell | Marcos si hace falta destrabar backend. |
+| F1 | F1-04 | Configurar Tailwind | ⏳ | frontend/angular-shell | Marcos si hace falta; coordinar sistema visual. |
+| F1 | F1-05 | Crear layout base público/admin | ⏳ | frontend/angular-shell | Marcos estructura; Matías diseño final. |
+| F2 | F2-01 | Pantalla pública de validación válida | ⏳ | frontend/public-validation-flow | Marcos si hace falta; Matías no tocar sin coordinación. |
+| F2 | F2-02 | Estados revocada/no encontrada/error | ⏳ | frontend/public-validation-flow | Marcos si hace falta; Matías no tocar sin coordinación. |
+| F2 | F2-03 | Login/admin shell | ⏳ | frontend/admin-foundation | Matías. |
+| F2 | F2-04 | Cursos y fechas | ⏳ | frontend/admin-foundation | Matías. |
+| F2 | F2-05 | Asistencias presentes | ⏳ | frontend/admin-foundation | Matías. |
+| F2 | F2-06 | Certificaciones | ⏳ | frontend/admin-certifications | Matías. |
+| F3 | F3-01 | Servicios mock y contratos frontend | ⏳ | frontend/api-readiness | Marcos si hace falta; Matías no tocar sin coordinación. |
+| F3 | F3-02 | Preparar conexión futura con API PHP | ⏳ | frontend/api-readiness | Marcos si hace falta; Matías no tocar sin coordinación. |
+| F3 | F3-03 | Tests automáticos básicos | ⏳ | qa/frontend-release-readiness | Matías. |
+| F3 | F3-04 | QA manual completo | ⏳ | qa/frontend-release-readiness | Matías. |
+| F3 | F3-05 | Build para `/certificados/` | ⏳ | frontend/api-readiness | Marcos si hace falta. |
+| F3 | F3-06 | Handoff a Marcos | ⏳ | qa/frontend-release-readiness | Matías. |
 
 **Resumen**: 2 de 20 hecho. 18 pendientes. La rama actual es `docs/matias-onboarding-f0-02-f0-03` (mergeada desde main actualizado en PR #6). Cambios ad-hoc de governance también commiteados en PR #6: regla de commit con aprobación explícita (`d4589a1`), regla de push a ramas con aprobación explícita (`79a72ca`), fix de bugs de Codex (`e890c3c`). Fase 2 (F4-F6) en `MATIAS_PROMPTS_SDD_FASE2.md` está bloqueada hasta que Marcos apruebe continuar.
+
+### División operativa frontend
+
+- Marcos puede tomar `frontend/angular-shell`, `frontend/public-validation-flow` y `frontend/api-readiness` para destrabar backend: estructura, contratos, mocks ficticios y build `/certificados/`.
+- Matías conserva `frontend/v0-design-system`, admin (`F2-03`..`F2-06`), `F3-03`, `F3-04`, `F3-06` y F4-F6 salvo acuerdo posterior.
+- Matías no debe tocar `frontend/public-validation-flow` ni `frontend/api-readiness` sin coordinación explícita con Marcos. Si Marcos tomó `frontend/angular-shell`, coordinar antes de modificar `angular.json`, `package.json`, estilos globales o rutas raíz.
 
 Para actualizar este índice al cerrar cada ciclo, editá esta tabla y commiteá con mensaje `docs(governance): actualizar indice de fases de matias`. Mantener formato y columnas estables.
 
@@ -55,19 +61,19 @@ Antes de cualquier ciclo F0-F3, Matías debe:
 5. Pedile a OpenCode un ciclo SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 6. Ejecutá pruebas automáticas disponibles y QA manual antes de cerrar.
 7. Al cerrar F3-06, continuá con `MATIAS_PROMPTS_SDD_FASE2.md` para F4-F6 si Marcos aprueba seguir; si Fase 2 sigue como guía marco, primero expandí el ciclo elegido antes de ejecutarlo.
-8. Dejale a Marcos un reporte final con archivos, verificaciones, bloqueos y comandos Git propuestos. OpenCode puede ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique, tras `sdd-verify` PASS. **Previo al `git add`**: correr `git status --short` y `git diff --name-only`, presentar a Matías y esperar confirmación del diff. **Previo al `git push`**: correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. `git merge`, PR, `git rebase`, `git switch` y `git checkout` (salvo lectura) siguen prohibidos.
+8. Dejale a Marcos un reporte final con archivos, verificaciones, bloqueos y comandos Git propuestos. Tras `sdd-verify` PASS y `sdd-archive`, OpenCode puede proponer cerrar la rama actual con commit/push/PR y luego crear o cambiar a la siguiente rama aprobada mientras la PR anterior espera revisión/merge de Marcos. `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) solo se ejecutan cuando Matías lo apruebe explícitamente en el mismo turno, con el mensaje y comando exactos. **Previo al `git add`**: correr `git status --short` y `git diff --name-only`, presentar a Matías y esperar confirmación del diff. **Previo al `git push`**: correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. PR, `git switch`, `git checkout`, `git branch`, `git switch -c` y `git checkout -b` requieren aprobación explícita, árbol limpio y rama fuente explícita/actualizada. `git merge`, `git rebase`, `git push` a `main` y merge de PR siguen prohibidos.
 
 ## Misión y contexto operativo
 
 | Tema | Regla |
 |---|---|
-| Rol | Matías trabaja frontend Angular 20, UI/UX, responsive y accesibilidad. |
+| Rol | Matías lidera UI/UX del frontend Angular 20, responsive, accesibilidad, admin, QA y handoff visual. Marcos puede tomar estructura/backend-facing según la división operativa. |
 | Producto | Módulo público `/certificados/` para validar certificaciones mediante QR o link. |
 | Fuente visual | `muestra_pagina/` contiene referencia v0 utilizable para prompts 4-10, con código Next.js/React exportado, capturas y manifiesto; prompts 11-22 quedan pendientes. |
 | Fuente documental | `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md` y specs OpenSpec vigentes. |
 | Backend/API | No inventar contratos. Usar solo lo documentado por Marcos. |
 | Seguridad | No tocar `material_privado_no_versionar/`, dumps, logs, credenciales ni archivos `.env`. |
-| Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. **Para el flujo de Matías**: OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`) con aprobación explícita de Matías en el mismo turno del chat y diff-confirmation gate previo; ver sección "Ruta rápida" punto 8 para la regla vigente. **Para el flujo de Marcos**: ver `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` — Marcos mantiene autoridad total sobre su propio workflow. |
+| Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. **Para el flujo de Matías**: OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`) y crear/cambiar ramas con aprobación explícita de Matías en el mismo turno, diff-confirmation gate previo cuando corresponda, árbol limpio y rama fuente explícita/actualizada; ver sección "Ruta rápida" punto 8. **Para el flujo de Marcos**: ver `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` — Marcos mantiene autoridad total sobre su propio workflow. |
 
 ### Alcance permitido
 
@@ -80,7 +86,7 @@ Antes de cualquier ciclo F0-F3, Matías debe:
 ### Fuera de alcance
 
 - Backend PHP, MariaDB, deploy cPanel y material privado.
-- Commits, push, merge, rebase, cambios destructivos automáticos o PR.
+- Commits, push y PR sin aprobación explícita; `git merge`, `git rebase`, `git push` a `main`, merge de PR o cambios destructivos automáticos.
 - Instalación de dependencias no aprobadas.
 - Copia literal de React, Next.js, hooks, rutas o componentes generados por v0.
 - Pantallas finales inventadas cuando `muestra_pagina/` esté vacía.
@@ -149,14 +155,16 @@ Reglas:
 |---|---|---|
 | `docs/matias-onboarding-windows` | `F0-01`, `F0-02`, `F0-03` | Preparación de entorno, OpenCode y lectura mínima; todo es documentación/onboarding. |
 | `frontend/v0-design-system` | `F1-01`, `F1-02` | Auditoría de `muestra_pagina/` y extracción de sistema visual se revisan juntos. |
-| `frontend/angular-shell` | `F1-03`, `F1-04`, `F1-05` | Crear app, configurar estilos y layout base forman la fundación Angular inicial. |
-| `frontend/public-validation-flow` | `F2-01`, `F2-02` | Pantalla pública válida y estados no exitosos comparten contrato, privacidad y QA. |
+| `frontend/angular-shell` | `F1-03`, `F1-04`, `F1-05` | Marcos puede tomarla para crear fundación Angular, estilos aprobados y layout semántico mínimo. |
+| `frontend/public-validation-flow` | `F2-01`, `F2-02` | Marcos puede tomarla para validar contrato público, privacidad y estados con mocks ficticios. |
 | `frontend/admin-foundation` | `F2-03`, `F2-04`, `F2-05` | Login/admin shell, cursos y asistencias son base operativa administrativa. |
 | `frontend/admin-certifications` | `F2-06` + futuros ciclos F5/F6 de certificaciones, envío, revocación y auditoría | Mantener acciones críticas de certificados en una rama separada por riesgo. |
-| `frontend/api-readiness` | `F3-01`, `F3-02` | Servicios mock y preparación de API PHP se verifican como contrato frontend/backend. |
-| `qa/frontend-release-readiness` | `F3-03`, `F3-04`, `F3-05`, `F3-06` | Tests, QA manual, build `/certificados/` y handoff cierran una unidad de release. |
+| `frontend/api-readiness` | `F3-01`, `F3-02`, `F3-05` | Marcos puede tomarla para servicios mock, frontera API PHP y build `/certificados/`. |
+| `qa/frontend-release-readiness` | `F3-03`, `F3-04`, `F3-06` | Matías cierra tests, QA manual y handoff visual. |
 
-No juntar Fase 2 crítica (`PDF`, `envío`, `revocación`, `auditoría`, `configuración`) con la rama pública si requiere permisos, datos personales o contratos no aprobados. No mezclar cambios backend/deploy con ramas frontend.
+No juntar Fase 2 crítica (`PDF`, `envío`, `revocación`, `auditoría`, `configuración`) con la rama pública si requiere permisos, datos personales o contratos no aprobados. No mezclar cambios backend/deploy con ramas frontend. Matías no debe abrir `frontend/public-validation-flow` ni `frontend/api-readiness` sin coordinación explícita cuando Marcos las esté usando para destrabar backend.
+
+Al cerrar una rama con `sdd-verify` PASS y `sdd-archive`, el flujo recomendado es: proponer commit/push/PR de la rama cerrada, esperar aprobación explícita para cada acción y, si Marcos todavía revisa la PR, crear o cambiar a la siguiente rama aprobada desde una fuente explícita y actualizada. Esto permite que Matías avance sin mergear ni pushear a `main` automáticamente.
 
 ### Prompt base para iniciar un ciclo con OpenCode
 
@@ -166,7 +174,7 @@ Usá SDD completo. Primero leé AGENTS.md, docs/00-indice-general.md,
 docs/opencode/optimizacion-tokens.md, el ciclo activo, docs/frontend/00-angular20-port-v0.md
 y la spec OpenSpec correspondiente. No ejecutes Graphify; usá solo resúmenes aprobados por Marcos.
 No toques backend, base de datos, deploy ni material_privado_no_versionar/.
-No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura). Proponé comandos Git al final.
+No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS y `sdd-archive`, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`), abrir PR, o crear/cambiar a la siguiente rama aprobada SOLO cuando Matías lo apruebe explícitamente en el mismo turno, con el comando exacto. Para crear/cambiar rama, verificá árbol limpio y rama fuente explícita/actualizada. Permanecen PROHIBIDOS `git merge`, `git rebase`, `git push` a `main` y merge de PR. Proponé comandos Git al final.
 Al cerrar, ejecutá verify y sdd-archive, y entregá reporte final con archivos,
 pruebas, QA manual, documentación actualizada, bloqueos y riesgos.
 ```
@@ -372,7 +380,7 @@ Es documentación/preparación solamente. Leé README.md, GUIA.md, AGENTS.md y d
 No modifiques Angular, PHP, base de datos, deploy ni material_privado_no_versionar/.
 Ayudame a interpretar las versiones de Node.js, npm, Git, VS Code y Angular CLI que pego abajo.
 Si falta una herramienta, proponé instalación por winget y alternativa manual, sin ejecutar comandos destructivos.
-Cerrá con validaciones, bloqueos y reporte final. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+Cerrá con validaciones, bloqueos y reporte final. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -413,7 +421,7 @@ Trabajemos el ciclo F0-02 — Verificar OpenCode/Gentle-AI.
 Quiero validar que el flujo SDD está claro antes de tocar frontend.
 Leé AGENTS.md, GUIA.md, docs/00-indice-general.md y MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md.
 Explicame qué harías en explore, propose, spec, design, tasks, apply, verify y archive para un ciclo chico de documentación.
-No modifiques código, no instales dependencias, no toques material_privado_no_versionar/ y no hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
+No modifiques código, no instales dependencias, no toques material_privado_no_versionar/ y no hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con diff-confirmation gate previo (`git status --short` y `git diff --name-only`) y el mensaje exacto que indique.
 Entregá un reporte con bloqueos, validaciones y comandos Git solo propuestos.
 ```
 
@@ -424,7 +432,7 @@ Validaciones automáticas:
 
 QA manual:
 - [ ] La respuesta de OpenCode respeta las prohibiciones del repo.
-- [ ] Queda claro que Git lo ejecuta Matías o Marcos manualmente.
+- [ ] Queda claro qué acciones Git requieren aprobación explícita y cuáles quedan fuera de OpenCode.
 - [ ] No se generó ni modificó código del producto.
 
 Documentación a actualizar en `sdd-archive`:
@@ -434,7 +442,7 @@ Documentación a actualizar en `sdd-archive`:
 Qué NO hacer:
 - No pedir “implementá todo”.
 - No aprobar acciones destructivas.
-- No aceptar que OpenCode haga push o merge.
+- No aceptar que OpenCode haga push sin aprobación explícita ni merge/rebase.
 
 Mensaje de commit sugerido: `docs(matias): documentar verificacion de opencode sdd`.
 
@@ -457,7 +465,7 @@ muestra_pagina/README.md, muestra_pagina/AGENTS.md y apps/frontend-angular/AGENT
 Devolveme un resumen operativo para Matías: misión, alcance permitido, fuera de alcance, fuentes de verdad,
 qué hacer si muestra_pagina/ está vacía y qué evidencia debo dejar al cerrar cada ciclo.
 No modifiques código ni documentación salvo que te pida explícitamente una corrección documental.
-No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -591,7 +599,7 @@ Usá SDD completo y leé AGENTS.md, apps/frontend-angular/AGENTS.md, docs/fronte
 Primero verificá si apps/frontend-angular/ ya tiene una app. Si existe, no la recrees.
 Si no existe y el plan lo aprueba, proponé crear Angular 20 con routing, CSS y --skip-git bajo apps/frontend-angular/.
 No implementes pantallas finales si muestra_pagina/ no tiene diseño utilizable.
-No toques backend, base de datos, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques backend, base de datos, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 Cerrá con build/pruebas disponibles, QA manual y sdd-archive.
 ```
 
@@ -637,7 +645,7 @@ Trabajemos el ciclo F1-04 — Configurar Tailwind.
 Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angular20-port-v0.md, hallazgos de F1-02 y package.json si existe.
 Antes de instalar, verificá si Tailwind ya está configurado. Si no está, justificá la dependencia contra el sistema visual aprobado.
 Usá la guía oficial de Angular 20 para Tailwind: instalar tailwindcss, @tailwindcss/postcss y postcss, configurar .postcssrc.json e importar Tailwind en src/styles.css.
-No agregues librerías extra, no toques backend/base/deploy/material_privado_no_versionar/ y no hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
+No agregues librerías extra, no toques backend/base/deploy/material_privado_no_versionar/ y no hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con diff-confirmation gate previo (`git status --short` y `git diff --name-only`) y el mensaje exacto que indique.
 Cerrá con build, QA manual y sdd-archive.
 ```
 
@@ -684,7 +692,7 @@ Usá SDD completo y leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angul
 Implementá solo layout base y estructura por features para público/admin si la app Angular ya existe.
 No implementes pantallas finales ni inventes contratos API; si muestra_pagina/ está vacía, dejá placeholders estructurales mínimos y reportá el bloqueo visual.
 Priorizá accesibilidad, responsive y foco visible. No agregues dependencias nuevas.
-No toques backend, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques backend, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 Cerrá con pruebas/build disponibles, QA manual, sdd-archive y reporte final.
 ```
 
@@ -747,7 +755,7 @@ docs/backend/01-contrato-api-certificados.md, hallazgos F1-01/F1-02 y la spec de
 Implementá solo la pantalla pública para un caso válido con datos mock o contrato documentado.
 No inventes endpoints, no consultes backend real si no está aprobado y usá DNI enmascarado, sin token completo.
 Si muestra_pagina/ no tiene diseño utilizable, usá una estructura accesible mínima y reportá el bloqueo visual.
-No toques PHP, base de datos, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques PHP, base de datos, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 Cerrá con tests/build disponibles, QA manual, sdd-archive y reporte final.
 ```
 
@@ -797,7 +805,7 @@ docs/backend/01-contrato-api-certificados.md, lo hecho en F2-01 y la spec del ci
 Implementá estados públicos diferenciados para certificación revocada, certificación no encontrada y error técnico.
 Tratá 404/CERTIFICATE_NOT_FOUND como certificado no verificable, no como error de sistema.
 No inventes backend, no expongas DNI completo ni token completo en validación pública y no agregues dependencias.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -845,7 +853,7 @@ docs/backend/01-contrato-api-certificados.md, hallazgos F1-02 y la spec del cicl
 Prepará shell administrativo y pantalla de login visual mínima, sin autenticación real si no hay contrato aprobado.
 Dejá claro qué es mock/placeholder y qué falta para conectar con backend PHP.
 No guardes credenciales, no agregues librerías de auth y no implementes seguridad falsa.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -892,7 +900,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 documentación backend disponible, lo hecho en F2-03 y la spec del ciclo.
 Prepará UI administrativa para listar o cargar cursos y fechas con modelos/mocks explícitos de frontend.
 No conectes API real ni inventes campos fuera del contrato documentado. Marcá todo mock como temporal.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -939,7 +947,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 documentación backend disponible, lo hecho en F2-04 y la spec del ciclo.
 Prepará UI para marcar o revisar asistencias presentes con datos mock explícitos.
 No persistas datos reales, no inventes API y no muestres DNI completo salvo que una spec privada o administrativa lo apruebe.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -987,7 +995,7 @@ docs/backend/01-contrato-api-certificados.md, lo hecho en F2-04/F2-05 y la spec 
 Prepará UI administrativa para listar/previsualizar certificaciones con mocks explícitos.
 No generes PDF real, no generes QR real y no inventes emisión backend si no está aprobada.
 No expongas DNI completo en pantallas públicas ni token completo. No toques PHP, base, deploy ni material_privado_no_versionar/.
-No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -1036,7 +1044,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 docs/backend/01-contrato-api-certificados.md, ciclos F2 completados y la spec del ciclo.
 Mové datos mock a servicios/modelos claros de frontend y documentá qué contrato representan.
 No conectes API real, no agregues dependencias y no uses datos sensibles reales.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -1084,7 +1092,7 @@ docs/backend/01-contrato-api-certificados.md, F3-01 y la spec del ciclo.
 Prepará la frontera de servicios para futura API PHP bajo /certificados/api/ usando solo contratos documentados.
 Si no hay backend disponible, mantené mocks y dejá TODO o documentación de integración futura, sin llamadas reales.
 No inventes endpoints, no agregues interceptores complejos ni auth real sin contrato.
-No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -1131,7 +1139,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 package.json si existe, ciclos F2/F3 previos y la spec del ciclo.
 Agregá o ajustá solo tests básicos para lo ya implementado si el runner existe.
 Si no hay runner configurado, no inventes evidencia: reportá bloqueo y proponé el mínimo siguiente paso.
-No agregues frameworks nuevos, no toques backend/base/deploy/material_privado_no_versionar/ y no hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje exacto que indique.
+No agregues frameworks nuevos, no toques backend/base/deploy/material_privado_no_versionar/ y no hagas commit, push, merge ni rebase por tu cuenta. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con diff-confirmation gate previo (`git status --short` y `git diff --name-only`) y el mensaje exacto que indique.
 ```
 
 Validaciones automáticas:
@@ -1177,7 +1185,7 @@ apps/frontend-angular/AGENTS.md y la spec del ciclo.
 Prepará y ejecutá una checklist manual transversal: responsive, teclado, foco, contraste, estados,
 consola, no regresión visual, datos sensibles y comparación con muestra_pagina/ si existe.
 No modifiques producto salvo correcciones menores aprobadas por el ciclo. No toques backend/base/deploy/material_privado_no_versionar/.
-No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -1207,7 +1215,7 @@ Mensaje de commit sugerido: `test(frontend): documentar qa manual completo`.
 ### Ciclo F3-05 — Build para `/certificados/`
 
 Objetivo: verificar build de producción con base href `/certificados/` y documentar artefactos esperados, sin desplegar al servidor.
-Rama sugerida: `qa/frontend-release-readiness`.
+Rama sugerida: `frontend/api-readiness` si lo toma Marcos; `qa/frontend-release-readiness` solo si Matías lo coordina como parte del cierre.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `deploy/AGENTS.md`, `docs/deploy/00-cpanel-certificados.md` si existe y spec del ciclo activo.
 
 Comandos si aplica:
@@ -1224,7 +1232,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 deploy/AGENTS.md y docs/deploy/00-cpanel-certificados.md si existe.
 Verificá el build de producción con base href /certificados/ y documentá resultado, carpeta generada y bloqueos.
 No despliegues, no copies archivos a cPanel, no toques public_html y no modifiques configuración real del servidor.
-No toques PHP, base de datos ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura).
+No toques PHP, base de datos ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR.
 ```
 
 Validaciones automáticas:
@@ -1268,7 +1276,7 @@ Usá SDD completo. Leé esta guía, reportes de F2/F3, docs/frontend/00-angular2
 docs/00-indice-general.md y la spec del ciclo.
 Prepará un handoff para Marcos con resumen, archivos tocados, pruebas, QA, documentación actualizada,
 bloqueos, riesgos, próximos pasos, referencia a MATIAS_PROMPTS_SDD_FASE2.md y comandos Git propuestos sin ejecutarlos.
-No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch` y `git checkout` (excepto lectura). No despliegues y no toques backend/base/material_privado_no_versionar/.
+No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, debés correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`, y esperar confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR. No despliegues y no toques backend/base/material_privado_no_versionar/.
 ```
 
 Validaciones automáticas:
@@ -1380,7 +1388,7 @@ Antes de pedir revisión a Marcos, completá esta lista.
 - [ ] El DNI completo solo aparece en contextos privados o de entrega al estudiante si una spec aprobada lo exige.
 - [ ] No se instalaron dependencias nuevas sin aprobación.
 - [ ] No se inventaron endpoints ni contratos API.
-- [ ] OpenCode no ejecutó `git merge`, PR, `git rebase`, `git switch`, `git checkout`, `git push` a `main` ni deploy. `git add` + `git commit` + `git push` (a la rama de trabajo actual) solo se ejecutan tras aprobación explícita de Matías en el mismo turno, con el mensaje y comando exactos que indique, tras `sdd-verify` PASS.
+- [ ] OpenCode no ejecutó `git merge`, `git rebase`, `git push` a `main`, merge de PR ni deploy. `git add` + `git commit` + `git push` (a la rama de trabajo actual), PR y creación/cambio de rama solo se ejecutan tras aprobación explícita de Matías en el mismo turno, con el comando exacto, `sdd-verify` PASS/`sdd-archive`, árbol limpio y rama fuente explícita/actualizada cuando corresponda.
 
 ## Checklist manual por pantalla
 

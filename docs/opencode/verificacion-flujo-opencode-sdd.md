@@ -6,7 +6,7 @@
 
 ## Objetivo del ciclo
 
-F0-02 es un ciclo de documentación pura que verifica, mediante una corrida real, que OpenCode/Gentle-AI respeta las reglas operativas ya codificadas en `AGENTS.md:21` y `GUIA.md:153` (commits `79a72ca` y `e890c3c`, merge de PR #6). El objetivo es confirmar que el agente identifica correctamente el repositorio `ifts14` y la rama activa, recorre las ocho fases SDD sin saltear a implementación de producto, respeta las prohibiciones Git vigentes y deja evidencia autocontenida.
+F0-02 es un ciclo de documentación pura que verifica, mediante una corrida real, que OpenCode/Gentle-AI respeta las reglas operativas codificadas en ese momento en `AGENTS.md:21` y `GUIA.md:153` (commits `79a72ca` y `e890c3c`, merge de PR #6). El objetivo es confirmar que el agente identifica correctamente el repositorio `ifts14` y la rama activa, recorre las ocho fases SDD sin saltear a implementación de producto, respeta las prohibiciones Git vigentes al momento de la verificación y deja evidencia autocontenida.
 
 ## Comandos ejecutados y resultados
 
@@ -38,10 +38,10 @@ F0-02 es un ciclo de documentación pura que verifica, mediante una corrida real
 | Scenario | Evidencia | Resultado |
 |---|---|---|
 | 1. Identificación correcta del repositorio y la rama | `git rev-parse --abbrev-ref HEAD` → `docs/matias-onboarding-f0-02-f0-03`; `git rev-parse HEAD` → `11e0d3e` (descendiente de `9c631d0`, merge PR #6); `git remote get-url origin` → `https://github.com/marcostoledo96/ifts14.git` | PASS |
-| 2. Recorrido completo de las 8 fases SDD | Listado de `openspec/changes/f0-02-verificar-opencode-gentle-ai/` contiene artefactos de `explore`, `propose`, `spec`, `design`, `tasks` y `apply`; Engram registra observaciones #28–#32 para las fases previas; `verify-report.md` y `archive-report.md` están reservados para `sdd-verify` y `sdd-archive` | PASS |
-| 3. Respeto de las prohibiciones y la política Git vigente | No se ejecutó `git merge`, PR, `git rebase`, `git switch`, `git checkout` (salvo lectura) ni `git push origin main`; los comandos Git figuran solo como propuesta textual en este archivo; se respetan los diff-confirmation gates de `AGENTS.md:21` y `GUIA.md:153` | PASS |
+| 2. Recorrido completo de las 8 fases SDD | El archive `openspec/changes/archive/2026-06-28-f0-02-verificar-opencode-gentle-ai/` contiene artefactos de `explore`, `propose`, `spec`, `design`, `tasks`, `apply`, `verify-report.md` y `archive-report.md`; `verify-report.md` registra PASS | PASS |
+| 3. Respeto de las prohibiciones y la política Git vigente al momento de F0-02 | No se ejecutó `git merge`, PR, `git rebase`, `git switch`, `git checkout` (salvo lectura) ni `git push origin main`; los comandos Git figuran solo como propuesta textual en este archivo; se respetaron los diff-confirmation gates de `AGENTS.md:21` y `GUIA.md:153` entonces vigentes | PASS |
 | 4. Cero modificaciones de producto | `git status --short` solo muestra `?? openspec/changes/f0-02-verificar-opencode-gentle-ai/`; no hay cambios bajo `apps/`, `muestra_pagina/`, `material_privado_no_versionar/`, `database/`, `deploy/`, `.htaccess`, `Dockerfile*` ni `docker-compose*` | PASS |
-| 5. Evidencia de cierre | Existe `docs/opencode/verificacion-flujo-opencode-sdd.md` con las secciones requeridas; existe `openspec/changes/f0-02-verificar-opencode-gentle-ai/apply-progress.md`; se propone el mensaje de commit `docs(matias): verificar flujo opencode sdd (F0-02)`; `verify-report.md` será producido por `sdd-verify` | PASS |
+| 5. Evidencia de cierre | Existe `docs/opencode/verificacion-flujo-opencode-sdd.md` con las secciones requeridas; existe `openspec/changes/archive/2026-06-28-f0-02-verificar-opencode-gentle-ai/verify-report.md` con PASS y `archive-report.md` de cierre; se propone el mensaje de commit `docs(matias): verificar flujo opencode sdd (F0-02)` | PASS |
 
 ## Bloqueos / riesgos materializados
 

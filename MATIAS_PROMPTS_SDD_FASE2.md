@@ -21,7 +21,7 @@ Antes de cualquier ciclo F4-F6, Matías debe:
 2. Confirmá que `muestra_pagina/` sigue siendo la referencia v0 vigente y que `muestra_pagina/MANIFIESTO_V0.md` coincide con la carpeta real.
 3. Elegí un ciclo F4-F6 y ejecutá SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 4. Si el ciclo depende de API, PDF, QR, permisos, auditoría o configuración no aprobada, primero pedí spec o bloqueá.
-5. No hagas commit, push, merge, rebase ni deploy desde OpenCode.
+5. Commit/push/PR solo con aprobación explícita; merge, rebase, push a `main` y deploy quedan fuera de OpenCode.
 
 ## Reglas de Fase 2
 
@@ -58,7 +58,7 @@ muestra_pagina/README.md y la spec OpenSpec correspondiente. No ejecutes Graphif
 No copies React/Next literalmente. No inventes API, PDF, QR, permisos ni configuración.
 Si Fase 2 sigue como guía marco, expandí primero el ciclo elegido antes de implementar.
 No toques backend, base de datos, deploy ni material_privado_no_versionar/.
-No instales dependencias y no ejecutes commit, push, merge ni rebase.
+No instales dependencias. Commit/push/PR solo con aprobación explícita; merge, rebase y push a `main` quedan fuera de OpenCode.
 Cerrá con verify, sdd-archive y reporte final con archivos, validaciones, QA, bloqueos y riesgos.
 ```
 
