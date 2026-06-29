@@ -1,0 +1,46 @@
+<section class="validation" aria-labelledby="validation-title">
+  <h1 id="validation-title">Validación de certificado</h1>
+
+  <div aria-live="polite" aria-atomic="true">
+    @if (isLoading()) {
+      <p class="state state-loading">Verificando…</p>
+    } @else if (hasError(); as err) {
+      <!-- ponytail: error de resource (no del mapper) → técnico genérico -->
+      <p class="state state-error">No se pudo completar la verificación. Intente nuevamente.</p>
+    } @else if (view(); as v) {
+      @switch (v.kind) {
+        @case ('valid') {
+          <article class="state state-valid" aria-labelledby="valid-title">
+            <h2 id="valid-title">Certificado verificable</h2>
+            <dl>
+              <dt>Curso</dt>
+              <dd>{{ v.certificate.course.name }}</dd>
+
+              <dt>Fecha de emisión</dt>
+              <dd>{{ v.certificate.course.issuedAt }}</dd>
+
+              <dt>Estudiante</dt>
+              <dd>{{ v.certificate.student.displayName }}</dd>
+
+              <dt>Documento</dt>
+              <dd>{{ v.certificate.student.documentMasked }}</dd>
+
+              <dt>Código de certificado</dt>
+              <dd>{{ v.certificate.certificateCode }}</dd>
+            </dl>
+          </article>
+        }
+        @case ('not-verifiable') {
+          <p class="state state-not-verifiable">
+            El certificado no es verificable.
+          </p>
+        }
+        @case ('technical-error') {
+          <p class="state state-error">
+            No se pudo completar la verificación. Intente nuevamente.
+          </p>
+        }
+      }
+    }
+  </div>
+</section>
