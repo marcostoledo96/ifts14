@@ -15,13 +15,60 @@ export function mapResponseToViewState(
   return mapErrorToViewState(result.error);
 }
 
+// Defensiva de forma: un 200 con JSON malformado (sin data, sin meta,
+// sin requestId o con valid ausente/no-boolean) no debe exponer un
+// certificado a medio armar ni colapsar falsamente a not-verifiable.
+// Colapsa a technical-error antes de desreferenciar cualquier campo.
 function mapValid(envelope: ApiEnvelope<CertificateVerificationDto>): ValidationViewState {
-  const dto = envelope.data;
-  // Defensiva: el contrato dice valid:true. Si llegara false, no es verificable.
-  if (!dto.valid) {
-    return { kind: 'not-verifiable', reason: 'valid:false', requestId: envelope.meta.requestId };
+  if (!envelope || typeof envelope !== 'object') {
+    return { kind: 'technical-error' };
   }
-  return { kind: 'valid', certificate: dto, requestId: envelope.meta.requestId };
+  const meta = (envelope as { meta?: unknown }).meta;
+  const requestId =
+    meta && typeof meta === 'object' && isNonEmptyString((meta as { requestId?: unknown }).requestId)
+      ? (meta as { requestId: string }).requestId
+      : undefined;
+  if (requestId === undefined) {
+    return { kind: 'technical-error' };
+  }
+  const dto = (envelope as { data?: unknown }).data;
+  if (!dto || typeof dto !== 'object') {
+    return { kind: 'technical-error', requestId };
+  }
+  // valid debe ser boolean explícito. Ausente o no-boolean → técnico.
+  if (typeof (dto as { valid?: unknown }).valid !== 'boolean') {
+    return { kind: 'technical-error', requestId };
+  }
+  // Defensiva: el contrato dice valid:true. Si llegara false, no es verificable.
+  if (!(dto as { valid: boolean }).valid) {
+    return { kind: 'not-verifiable', reason: 'valid:false', requestId };
+  }
+  // Guardia de forma: si el anuncio 200/valid:true trae un anidamiento
+  // incompleto (student, course o strings requeridos ausentes), el template
+  // lanzaría al renderizar. Colapsamos a technical-error en lugar de exponer
+  // un certificado a medio armar.
+  if (!hasValidCertificateShape(dto as Partial<CertificateVerificationDto>)) {
+    return { kind: 'technical-error', requestId };
+  }
+  return { kind: 'valid', certificate: dto as CertificateVerificationDto, requestId };
+}
+
+function isNonEmptyString(v: unknown): v is string {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+function hasValidCertificateShape(dto: Partial<CertificateVerificationDto> | null | undefined): boolean {
+  if (!dto) return false;
+  return (
+    isNonEmptyString(dto.certificateCode) &&
+    isNonEmptyString(dto.verifiedAt) &&
+    !!dto.student &&
+    isNonEmptyString(dto.student.displayName) &&
+    isNonEmptyString(dto.student.documentMasked) &&
+    !!dto.course &&
+    isNonEmptyString(dto.course.name) &&
+    isNonEmptyString(dto.course.issuedAt)
+  );
 }
 
 export function mapErrorToViewState(error: ApiErrorEnvelope | null): ValidationViewState {

@@ -10,7 +10,7 @@ Crear una app Angular 20 standalone mínima en `apps/frontend-angular/`, despleg
 |---|---|---|---|
 | Scaffold | Angular CLI 20 standalone con routing | Scaffold manual | Reduce configuración propia y respeta el stack confirmado. |
 | Estado de carga | `resource()` sobre servicio mock async; `httpResource()` queda preparado para el adapter real | Servicio síncrono | Permite probar `idle/loading/resolved/error` sin inventar HTTP falso. |
-| Rutas | `''` redirige a `validar/demo-valido`; `validar/:tokenCertificacion` carga la feature pública | Ruta única con query param | Coincide con QR esperado `/certificados/validar/{token}`. |
+| Rutas | `''` carga landing no validante; `validar/:tokenCertificacion` carga la feature pública; `**` carga página no encontrada | Ruta única con query param | Evita validar tokens demo por accidente y conserva el QR esperado `/certificados/validar/{token}`. |
 | UI | Shell semántico mínimo, sin sistema visual final | Portar v0 ahora | Matías mantiene UI/UX final; Marcos solo desbloquea integración. |
 | Tailwind | Setup técnico opcional y acotado | Tokens/componentes finales | Sirve como utilidad futura sin fijar diseño. |
 
