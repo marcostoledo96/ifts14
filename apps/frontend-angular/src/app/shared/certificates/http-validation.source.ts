@@ -9,7 +9,7 @@
 // - 5xx, red, JSON inválido, timeout → { ok: false, error: null } (technical-error).
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ApiEnvelope, ApiErrorEnvelope, CertificateVerificationDto } from './dto';
 import { ValidationSource, ValidationSourceResult } from './validation-source';
 
@@ -22,15 +22,55 @@ export class HttpValidationSource implements ValidationSource {
 
   async fetch(token: string, signal?: AbortSignal): Promise<ValidationSourceResult> {
     const url = `/certificados/api/certificados/${encodeURIComponent(token)}/verificacion`;
+    // ponytail: Angular 20 HttpClient no tiene opción `signal` nativa, pero
+    // desuscribir el Observable aborta el request en curso (docs Angular 20).
+    // Contrato abort: rechaza con AbortError como MockValidationSource;
+    // ValidationService lo atrapa y colapsa a technical-error.
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
     try {
-      const envelope = await firstValueFrom(
+      const envelope = await cancellableFirst(
         this.http.get<ApiEnvelope<CertificateVerificationDto>>(url),
+        signal,
       );
       return { ok: true, envelope };
     } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        throw e;
+      }
       return { ok: false, error: toErrorEnvelope(e) };
     }
   }
+}
+
+// ponytail: suscripción manual + unsubscribe on abort. Mínimo viable para
+// cancelar HTTP en Angular 20 sin fetch paralelo ni wrappers nuevos.
+function cancellableFirst<T>(source$: Observable<T>, signal?: AbortSignal): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const sub = source$.subscribe({
+      next: (v) => {
+        cleanup();
+        resolve(v);
+      },
+      error: (e) => {
+        cleanup();
+        reject(e);
+      },
+    });
+    const onAbort = () => {
+      sub.unsubscribe();
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    function cleanup() {
+      signal?.removeEventListener('abort', onAbort);
+    }
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 // HTTP error → envelope de error del contrato, o null si no es parseable.

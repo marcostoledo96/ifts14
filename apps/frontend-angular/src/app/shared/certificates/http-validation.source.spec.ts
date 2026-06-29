@@ -165,4 +165,56 @@ describe('HttpValidationSource', () => {
     if (r.ok) throw new Error('no ok');
     expect(r.error?.error.code).toBe('CERTIFICATE_NOT_FOUND');
   });
+
+  // Codex PR #10: el AbortSignal debe cancelar el HttpClient en curso.
+  describe('abort cancellation', () => {
+    it('AbortSignal ya abortado antes de fetch → no genera request HTTP y rechaza AbortError', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      let err: unknown = null;
+      try {
+        await source.fetch('abortado-previo', controller.signal);
+      } catch (e) {
+        err = e;
+      }
+      // No hay request pendiente: el adapter sale temprano.
+      httpMock.verify();
+      expect(err).toBeInstanceOf(DOMException);
+      expect((err as DOMException).name).toBe('AbortError');
+    });
+
+    it('AbortSignal disparado en vuelo cancela el request y rechaza con AbortError', async () => {
+      const controller = new AbortController();
+      const p = source.fetch('lento', controller.signal);
+      // El request existe mientras está pendiente.
+      const req = httpMock.expectOne('/certificados/api/certificados/lento/verificacion');
+      // No flusheamos: simulamos latencia. Abortamos.
+      controller.abort();
+      // La promesa rechaza con AbortError (igual que MockValidationSource).
+      let err: unknown = null;
+      try {
+        await p;
+      } catch (e) {
+        err = e;
+      }
+      expect(err).toBeInstanceOf(DOMException);
+      expect((err as DOMException).name).toBe('AbortError');
+      expect(req.cancelled).toBeTrue();
+    });
+
+    it('request abortado no queda como ok:true ni como envelope válido', async () => {
+      const controller = new AbortController();
+      const p = source.fetch('otro-lento', controller.signal);
+      const req = httpMock.expectOne('/certificados/api/certificados/otro-lento/verificacion');
+      controller.abort();
+      let result: { ok?: boolean } | null = null;
+      try {
+        result = await p;
+      } catch {
+        result = null;
+      }
+      expect(req.cancelled).toBeTrue();
+      expect(result === null || result.ok === false).toBe(true);
+    });
+  });
 });
