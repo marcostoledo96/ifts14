@@ -4,18 +4,25 @@ import {
   provideZoneChangeDetection,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
 
 import { routes } from './app.routes';
 import { VALIDATION_SOURCE } from './shared/certificates/validation-source';
 import { MockValidationSource } from './shared/certificates/mock-tokens';
+import { HttpValidationSource } from './shared/certificates/http-validation.source';
+import { environment } from '../environments/environment';
 
-// ponytail: provideHttpClient diferido a Fase 3. La fuente mock satisface
-// VALIDATION_SOURCE para que ValidationService tenga su dependencia concreta.
+// provideHttpClient habilita HttpClient para HttpValidationSource.
+// La fuente se selecciona por entorno: mock en desarrollo, HTTP real en producción.
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    { provide: VALIDATION_SOURCE, useClass: MockValidationSource },
+    provideHttpClient(),
+    {
+      provide: VALIDATION_SOURCE,
+      useClass: environment.useMockApi ? MockValidationSource : HttpValidationSource,
+    },
   ],
 };

@@ -20,7 +20,8 @@ export function isMockToken(token: string): token is MockToken {
   );
 }
 
-const VALID_DTO: CertificateVerificationDto = {
+// Exportado para reuso en tests del adapter HTTP (sin duplicar el fixture).
+export const VALID_VALID_DTO: CertificateVerificationDto = {
   valid: true,
   status: 'vigente',
   certificateCode: 'CERT-2025-0001',
@@ -64,7 +65,7 @@ export class MockValidationSource implements ValidationSource {
 
     switch (token) {
       case 'demo-valido':
-        return { ok: true, envelope: envelope(VALID_DTO, 'req-valido') };
+        return { ok: true, envelope: envelope(VALID_VALID_DTO, 'req-valido') };
       case 'demo-revocado':
         return {
           ok: false,
