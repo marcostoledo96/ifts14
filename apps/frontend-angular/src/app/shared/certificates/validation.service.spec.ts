@@ -81,4 +81,21 @@ describe('ValidationService', () => {
     const view = await configure(nullErrorResult()).verify('demo-error-tecnico');
     expect(view.kind).toBe('technical-error');
   });
+
+  it('fuente que rechaza (fetch throw) → technical-error, no propaga el reject', async () => {
+    class ThrowingSource implements ValidationSource {
+      async fetch(_token: string, _signal?: AbortSignal): Promise<ValidationSourceResult> {
+        throw new Error('network down');
+      }
+    }
+    TestBed.configureTestingModule({
+      providers: [
+        ValidationService,
+        { provide: VALIDATION_SOURCE, useValue: new ThrowingSource() },
+      ],
+    });
+    const service = TestBed.inject(ValidationService);
+    const view = await service.verify('demo-valido');
+    expect(view.kind).toBe('technical-error');
+  });
 });
