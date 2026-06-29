@@ -11,7 +11,14 @@ export class ValidationService {
   private readonly source = inject(VALIDATION_SOURCE);
 
   async verify(token: string, signal?: AbortSignal): Promise<ValidationViewState> {
-    const result = await this.source.fetch(token, signal);
+    let result;
+    try {
+      result = await this.source.fetch(token, signal);
+    } catch {
+      // La fuente rechaza (red caída, excepción inesperada): técnico genérico,
+      // sin propagar el reject al resource/loader.
+      return { kind: 'technical-error' };
+    }
     return mapResponseToViewState(result);
   }
 }

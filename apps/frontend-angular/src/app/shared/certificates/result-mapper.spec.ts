@@ -67,6 +67,14 @@ describe('result-mapper', () => {
       expect(view.kind).toBe('not-verifiable');
     });
 
+    it('VALIDATION_ERROR (token ausente/mal formado) → not-verifiable', () => {
+      const view = mapErrorToViewState(errorEnvelope('VALIDATION_ERROR'));
+      expect(view.kind).toBe('not-verifiable');
+      if (view.kind === 'not-verifiable') {
+        expect(view.reason).toBe('VALIDATION_ERROR');
+      }
+    });
+
     it('conserva reason interno para los cuatro colapsados', () => {
       expect((mapErrorToViewState(errorEnvelope('CERTIFICATE_NOT_FOUND')) as any).reason).toBe(
         'CERTIFICATE_NOT_FOUND',
