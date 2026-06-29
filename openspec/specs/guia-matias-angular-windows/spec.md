@@ -8,7 +8,7 @@ Definir los requisitos documentales para reescribir `MATIAS_PROMPTS_SDD_3_SEMANA
 
 ### Requirement: Contexto operativo y misión
 
-La guía DEBE explicar la misión de Matías, el alcance frontend Angular 20, las fuentes de verdad y las prohibiciones: no tocar backend, base, deploy, `material_privado_no_versionar/`, ni dependencias no aprobadas. Sobre la regla de Git: OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`) con aprobación explícita de Matías en el mismo turno del chat, con el mensaje y comando exactos, y siempre con un diff-confirmation gate previo (mostrar `git status --short` y `git diff --name-only` antes de stage, y `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat` antes de push). Permanecen PROHIBIDOS `git merge`, PR, `git rebase`, `git switch`, `git checkout` (salvo lectura) y `git push` a `main`. Marcos mantiene autoridad total sobre su propio workflow.
+La guía DEBE explicar la misión de Matías, el alcance frontend Angular 20, las fuentes de verdad y las prohibiciones: no tocar backend, base, deploy, `material_privado_no_versionar/`, ni dependencias no aprobadas. Sobre la regla de Git: OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`) y crear/cambiar ramas con aprobación explícita de Matías en el mismo turno del chat, con el mensaje o comando exacto, y siempre con un diff-confirmation gate previo cuando corresponda (mostrar `git status --short` y `git diff --name-only` antes de stage, y `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat` antes de push). La creación/cambio de rama requiere árbol limpio y rama fuente explícita/actualizada. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR. Marcos mantiene autoridad total sobre su propio workflow.
 
 #### Scenario: Inicio correcto
 - DADO que Matías abre la guía
@@ -26,12 +26,12 @@ La guía DEBE incluir comandos PowerShell para verificar Node.js, npm, Angular C
 
 ### Requirement: Flujo OpenCode/Gentle-AI y SDD
 
-La guía DEBE describir el flujo OpenCode/Gentle-AI con ciclos pequeños, TDD cuando haya implementación, `sdd-archive` obligatorio y reporte final. Política Git vigente (commit `79a72ca`): OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`) con aprobación explícita de Matías en el mismo turno del chat, con el mensaje y comando exactos, y siempre con un diff-confirmation gate previo. `git merge`, PR, `git rebase`, `git switch` y `git checkout` (salvo lectura) siguen prohibidos. Marcos decide por separado para su flujo.
+La guía DEBE describir el flujo OpenCode/Gentle-AI con ciclos pequeños, TDD cuando haya implementación, `sdd-archive` obligatorio y reporte final. Política Git vigente: OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`), abrir PR y crear/cambiar ramas con aprobación explícita de Matías en el mismo turno del chat, con el mensaje o comando exacto, y siempre con un diff-confirmation gate previo cuando corresponda. `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR siguen prohibidos. Marcos decide por separado para su flujo.
 
 #### Scenario: Cierre de ciclo
 - DADO un ciclo terminado
 - CUANDO Matías sigue la guía
-- ENTONCES ejecuta validaciones, QA manual, `sdd-archive` y deja `git add` + `git commit` + `git push` bajo aprobación explícita de Matías por turno (con diff-confirmation gate); `git merge` y PR siguen siendo manuales de Marcos o de Mati según corresponda
+- ENTONCES ejecuta validaciones, QA manual, `sdd-archive` y deja `git add` + `git commit` + `git push`, PR y creación/cambio de rama bajo aprobación explícita de Matías por turno (con diff-confirmation gate y árbol limpio cuando corresponda); `git merge` queda manual de Marcos
 
 ### Requirement: Uso de `muestra_pagina/`
 
@@ -71,7 +71,7 @@ La guía DEBE reorganizar ciclos ejecutables F0-01 a F3-06. Cada ciclo DEBE incl
 
 ### Requirement: Reporte final y propuestas Git
 
-La guía DEBE exigir un reporte final por ciclo con resumen, archivos tocados, pruebas, QA, bloqueos, documentación actualizada, riesgos y comandos Git ejecutables solo con aprobación explícita de Matías en el mismo turno del chat (con diff-confirmation gate previo). OpenCode no ejecuta `git add`, `git commit` ni `git push` sin esa aprobación. `git merge` y PR siguen siendo manuales.
+La guía DEBE exigir un reporte final por ciclo con resumen, archivos tocados, pruebas, QA, bloqueos, documentación actualizada, riesgos y comandos Git ejecutables solo con aprobación explícita de Matías en el mismo turno del chat (con diff-confirmation gate previo cuando corresponda). OpenCode no ejecuta `git add`, `git commit`, `git push`, PR ni creación/cambio de rama sin esa aprobación. `git merge` queda manual de Marcos.
 
 #### Scenario: Entrega revisable
 - DADO un ciclo listo para revisión
@@ -80,7 +80,7 @@ La guía DEBE exigir un reporte final por ciclo con resumen, archivos tocados, p
 
 ### Requirement: Verificación del flujo OpenCode/Gentle-AI
 
-El ciclo F0-02 DEBE producir evidencia documental de que OpenCode/Gentle-AI respeta, en una corrida real, las reglas operativas ya codificadas en `AGENTS.md` y `GUIA.md`. La evidencia DEBE consistir en un reporte verificable en `docs/opencode/verificacion-flujo-opencode-sdd.md` y un verify-report en `openspec/changes/f0-02-verificar-opencode-gentle-ai/verify-report.md`.
+El ciclo F0-02 DEBE producir evidencia documental de que OpenCode/Gentle-AI respeta, en una corrida real, las reglas operativas ya codificadas en `AGENTS.md` y `GUIA.md`. La evidencia DEBE consistir en un reporte verificable en `docs/opencode/verificacion-flujo-opencode-sdd.md` y un verify-report archivado en `openspec/changes/archive/2026-06-28-f0-02-verificar-opencode-gentle-ai/verify-report.md`.
 
 #### Scenario: Identificación correcta del repositorio y la rama
 - DADO que OpenCode arranca una sesión de trabajo
@@ -95,12 +95,12 @@ El ciclo F0-02 DEBE producir evidencia documental de que OpenCode/Gentle-AI resp
 #### Scenario: Respeto de las prohibiciones y la política Git vigente
 - DADO cualquier acción Git propuesta por OpenCode
 - CUANDO Matías evalúa la propuesta
-- ENTONCES OpenCode NUNCA propone `git merge`, PR, `git rebase`, `git switch`, `git checkout` (salvo lectura) ni `git push` a `main`; y solo propone `git add` + `git commit` + `git push` (a la rama actual) bajo el diff-confirmation gate y la aprobación explícita de Matías en el mismo turno del chat.
+- ENTONCES OpenCode NUNCA propone `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` ni merge de PR; y solo propone `git add` + `git commit` + `git push` (a la rama actual), PR o creación/cambio de rama bajo el diff-confirmation gate, árbol limpio cuando corresponda y aprobación explícita de Matías en el mismo turno del chat.
 
 #### Scenario: Cero modificaciones de producto
 - DADO que F0-02 es un ciclo de documentación pura
 - CUANDO el ciclo termina
-- ENTONCES el diff de la rama NO incluye cambios en `apps/`, `muestra_pagina/`, `material_privado_no_versionar/`, `database/`, `deploy/`, ni en archivos de configuración de runtime (Dockerfile, docker-compose, `.htaccess`, etc.); solo cambios documentales en `openspec/changes/f0-02-verificar-opencode-gentle-ai/` y `docs/opencode/verificacion-flujo-opencode-sdd.md`.
+- ENTONCES el diff de producto/runtime NO incluye cambios en `apps/`, `muestra_pagina/`, `material_privado_no_versionar/`, `database/`, `deploy/`, ni en archivos de configuración de runtime (Dockerfile, docker-compose, `.htaccess`, etc.).
 
 #### Scenario: Evidencia de cierre
 - DADO el ciclo F0-02 cerrado

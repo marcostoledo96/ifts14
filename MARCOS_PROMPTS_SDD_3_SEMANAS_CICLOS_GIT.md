@@ -18,7 +18,7 @@ Marcos debe aplicar estas reglas antes de iniciar ciclos con OpenCode/Gentle-AI:
 ## Ruta rápida
 
 1. Leer `AGENTS.md`, `docs/00-indice-general.md`, `docs/opencode/optimizacion-tokens.md` y el ciclo activo.
-2. Elegir un ciclo M1-01..M3-06 y abrir sus archivos mínimos.
+2. Elegir un ciclo M1-01..M3-06 o un desbloqueo frontend autorizado y abrir sus archivos mínimos.
 3. Pedir a OpenCode el ciclo SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 4. Frenar en cada checkpoint de QA manual y guardar evidencia breve del resultado.
 5. Entregar handoff final con archivos, validaciones, bloqueos, riesgos y comandos Git solo propuestos.
@@ -27,13 +27,13 @@ Marcos debe aplicar estas reglas antes de iniciar ciclos con OpenCode/Gentle-AI:
 
 | Tema | Regla |
 |---|---|
-| Rol | Backend PHP 8.4.21, MariaDB 10.6.27, integración front/back, deploy cPanel, arquitectura, seguridad y documentación. |
+| Rol | Backend PHP 8.4.21, MariaDB 10.6.27, integración front/back, deploy cPanel, arquitectura, seguridad, documentación y desbloqueos frontend técnicos. |
 | Ruta pública | `/certificados/`. |
-| Frontend | No tocar Angular salvo coordinación explícita con el ciclo frontend. |
+| Frontend | Puede tomar solo fundación Angular, validación pública, mocks/contratos frontend y build `/certificados/` cuando Matías esté bloqueado o se necesite destrabar backend. No inventar diseño final. |
 | Material privado | No modificar ni copiar contenido de `material_privado_no_versionar/`; solo nombres y riesgos generales cuando el ciclo lo autorice. |
 | Datos sensibles | No imprimir credenciales, dumps, logs, DNI completo ni tokens completos. |
-| Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. OpenCode solo ejecuta commit, push, merge o rebase con confirmación explícita de Marcos. |
-| Git — nota | La relajación de commits aprobados aplica solo al flujo de Matías. Los prompts y reglas de Marcos mantienen la prohibición absoluta. |
+| Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. OpenCode puede crear o cambiar ramas (`git switch`, `git checkout`, `git branch`, `git switch -c`, `git checkout -b`) solo con aprobación explícita de Marcos, árbol limpio y rama fuente explícita/actualizada. |
+| Git — nota | Commit, push y PR requieren aprobación explícita de Marcos en el mismo turno. `git merge`, `git rebase`, `git push` a `main` y merge de PR quedan fuera de OpenCode. |
 
 ## Cuándo detenerse para QA manual
 
@@ -71,9 +71,22 @@ Reglas:
 | `backend/admin-certificados` | `M3-03` | Emisión, revocación y reenvío comparten permisos, escritura, auditoría y API administrativa. |
 | `qa/backend-hardening-certificados` | `M3-04` | Seguridad, privacidad, logs y QA backend antes de deploy. |
 | `deploy/cpanel-certificados` | `M3-05` | Ruta `/certificados/`, `.htaccess`, config externa, rollback y checklist se revisan juntos cuando backend esté listo. |
-| `integration/angular-api-contract` | `M3-06` | Checkpoint final PHP/Angular cuando Matías tenga flujo público y checklist compartida. |
+| `integration/angular-api-contract` | `M3-06` | Checkpoint final PHP/Angular cuando exista flujo público y checklist compartida. |
+| `frontend/angular-shell` | `F1-03`, `F1-04`, `F1-05` | Desbloqueo técnico: app Angular, Tailwind aprobado y layout semántico mínimo. |
+| `frontend/public-validation-flow` | `F2-01`, `F2-02` | Desbloqueo técnico: pantalla pública y estados con mocks ficticios y contrato vigente. |
+| `frontend/api-readiness` | `F3-01`, `F3-02`, `F3-05` | Desbloqueo técnico: servicios mock, frontera futura API PHP y build `/certificados/`. |
 
 No juntar deploy con integración Angular salvo cambio de ruta pública que obligue a ambos. No juntar endpoints administrativos con validación pública: tienen distinto riesgo y superficie de seguridad. La integración real Angular/API queda al final; mientras tanto Matías puede avanzar con mocks y el contrato vigente sin bloquear a Marcos.
+
+### Desbloqueo frontend que puede tomar Marcos
+
+Marcos puede ejecutar trabajo frontend backend-facing/estructural para que el backend no quede bloqueado por espera visual:
+
+- `F1-03` Crear app Angular 20, `F1-04` Configurar Tailwind y `F1-05` Layout base público/admin en `frontend/angular-shell`.
+- `F2-01` Pantalla pública válida y `F2-02` estados revocada/no encontrada/error en `frontend/public-validation-flow`.
+- `F3-01` servicios mock/contratos frontend, `F3-02` conexión futura API PHP y `F3-05` build `/certificados/` en `frontend/api-readiness`.
+
+Límites: no inventar diseño final, no copiar React/Next, no usar datos reales, coordinar archivos globales Angular y dejar a Matías la UI/UX final, admin, QA visual y handoff. Secuencia sugerida: Marcos `frontend/angular-shell` → Matías `frontend/v0-design-system` → Marcos `frontend/public-validation-flow` → Matías visual/admin → Marcos `frontend/api-readiness` → Matías QA/handoff.
 
 ### Prompt base para iniciar un ciclo
 
@@ -81,8 +94,8 @@ No juntar deploy con integración Angular salvo cambio de ruta pública que obli
 Trabajemos el ciclo <ID> — <nombre> para IFTS14.
 Usá SDD completo: explore, propose, spec, design, tasks, apply, verify y archive.
 Leé AGENTS.md, docs/00-indice-general.md, docs/opencode/optimizacion-tokens.md y los docs/specs indicados por el ciclo activo.
-No toques Angular salvo coordinación explícita. No modifiques material_privado_no_versionar/.
-No ejecutes commit, push, merge ni rebase; proponé comandos Git al final.
+No toques Angular salvo que el ciclo sea uno de los desbloqueos frontend autorizados. No modifiques material_privado_no_versionar/.
+No ejecutes commit, push ni PR sin aprobación explícita de Marcos. No ejecutes `git merge`, `git rebase`, `git push` a `main` ni merge de PR. Para cambiar o crear rama, primero verificá árbol limpio y rama fuente explícita/actualizada.
 Frená en los checkpoints de QA manual y reportá comando, resultado, bloqueos y riesgos.
 ```
 
@@ -106,7 +119,7 @@ Ejecutar/verificar:
 ```
 
 QA manual (checkpoint de parada): <qué validar, con qué comando y qué hacer si falla>.
-No hacer: <límites concretos del ciclo>. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: <límites concretos del ciclo>. Commit, push y PR requieren aprobación explícita de Marcos; `git merge`, `git rebase`, `git push` a `main` y merge de PR quedan fuera de OpenCode. Cambio o creación de rama solo con árbol limpio, aprobación explícita y rama fuente explícita/actualizada.
 Archive: <docs/specs a sincronizar durante sdd-archive>.
 Commit sugerido: `<tipo>(<scope>): <resultado>`.
 ~~~
@@ -132,7 +145,7 @@ git status --ignored --short
 ```
 
 QA manual (checkpoint de parada): antes de cualquier cambio, confirmar que no hay dumps, zips, logs, `.env` ni material privado listos para commit.
-No hacer: no limpiar a ciegas, no tocar `material_privado_no_versionar/`. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no limpiar a ciegas, no tocar `material_privado_no_versionar/`. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/00-indice-general.md`, `docs/07-sdd-archive-y-mantenimiento-documentacion.md` si cambia el flujo.
 Commit sugerido: `docs(repo): ordenar cierre seguro inicial`.
 
@@ -155,7 +168,7 @@ git status --ignored --short
 ```
 
 QA manual (checkpoint de parada): revisar que el reporte no incluya credenciales, fragmentos de dumps, logs reales, DNI completo ni tokens completos.
-No hacer: no versionar material privado, no mover secretos a docs, no abrir contenido sensible salvo auditoría local autorizada. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no versionar material privado, no mover secretos a docs, no abrir contenido sensible salvo auditoría local autorizada. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/auditoria/`, `docs/00-indice-general.md` si cambia el mapa documental.
 Commit sugerido: `docs(auditoria): registrar riesgos del material servidor`.
 
@@ -178,7 +191,7 @@ mysqldump --no-data <db_fixture> > /tmp/cert_schema_check.sql
 ```
 
 QA manual (checkpoint de parada): confirmar que la salida contiene solo estructura ficticia y que no se agrega al repo si no corresponde.
-No hacer: no tocar bases reales, no versionar dumps, no guardar tokens públicos en texto plano si hay persistencia real. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no tocar bases reales, no versionar dumps, no guardar tokens públicos en texto plano si hay persistencia real. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/database/`, `database/docs/`, `openspec/specs/backend-modelo-datos-certificados/spec.md`.
 Commit sugerido: `docs(database): definir modelo certificados`.
 
@@ -203,7 +216,7 @@ git diff -- openspec/specs/backend-contrato-api-certificados/spec.md docs/backen
 ```
 
 QA manual (checkpoint de parada): revisar que request/response, errores y privacidad queden claros para Angular sin exponer DNI ni tokens completos.
-No hacer: no inventar comportamiento no especificado, no acoplar a Angular. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no inventar comportamiento no especificado, no acoplar a Angular. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `openspec/specs/backend-contrato-api-certificados/spec.md`, `docs/backend/01-contrato-api-certificados.md`.
 Commit sugerido: `docs(api): definir contrato certificados`.
 
@@ -227,7 +240,7 @@ php -m
 ```
 
 QA manual (checkpoint de parada): cada archivo PHP modificado pasa `php -l`; `php -m` muestra `pdo_mysql`, `openssl` y `mbstring` si el ciclo los requiere.
-No hacer: no subir `.env`, no registrar credenciales, no crear abstracciones para futuro sin uso real. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no subir `.env`, no registrar credenciales, no crear abstracciones para futuro sin uso real. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, `docs/02-arquitectura.md` si cambia estructura.
 Commit sugerido: `feat(backend): crear base php certificados`.
 
@@ -251,7 +264,7 @@ php -l <archivo.php>
 ```
 
 QA manual (checkpoint de parada): la respuesta de `curl` coincide con el contrato y no expone datos sensibles; logs sin DNI/token completo.
-No hacer: no probar con datos reales, no loguear secretos, no publicar endpoint sin manejo de errores documentado. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no probar con datos reales, no loguear secretos, no publicar endpoint sin manejo de errores documentado. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/backend/01-contrato-api-certificados.md`, `docs/funcionalidades` o equivalente si se documenta capacidad pública.
 Commit sugerido: `feat(backend): validar certificados por token`.
 
@@ -259,7 +272,7 @@ Commit sugerido: `feat(backend): validar certificados por token`.
 
 Orden actualizado: `M3-01 — integración con Angular` deja de ser el próximo bloqueo. Como Matías todavía no completó Angular, Marcos continúa con backend, MariaDB, seguridad y deploy. Matías puede avanzar con mocks y el contrato vigente; la integración real Angular/API queda como checkpoint final no bloqueante.
 
-Estado operativo: `M3-01` y `M3-02` se resolvieron juntos en `backend/public-endpoint-hardening` y quedaron en PR pendiente de merge. No iniciar `M3-03` desde una rama vieja: primero mergear ese PR o crear la siguiente rama desde `main` actualizado cuando el merge esté confirmado.
+Estado operativo: `M3-01` y `M3-02` se resolvieron juntos en `backend/public-endpoint-hardening` y quedaron en PR pendiente de merge. Mientras Marcos revisa/autoriza ese merge, se puede iniciar `M3-03` en otra rama solo si el árbol está limpio y la rama fuente aprobada está explícita y actualizada; no iniciar desde una rama vieja.
 
 ### Ciclo M3-01 — rate limiting del endpoint público
 
@@ -281,7 +294,7 @@ curl -i http://localhost/certificados/api/certificados/TOKEN_FICTICIO/verificaci
 ```
 
 QA manual (checkpoint de parada): confirmar `429 RATE_LIMITED` reproducible con datos ficticios, sin logs sensibles.
-No hacer: no guardar IP cruda ni token completo. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no guardar IP cruda ni token completo. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, docs de seguridad si aplica.
 Commit sugerido: `feat(backend): limitar validacion publica`.
 
@@ -305,7 +318,7 @@ curl -i http://localhost/certificados/api/certificados/TOKEN_FICTICIO/verificaci
 ```
 
 QA manual (checkpoint de parada): registrar evidencia mínima de que la auditoría falla controladamente y la API no expone detalles internos.
-No hacer: no copiar logs reales ni credenciales. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no copiar logs reales ni credenciales. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/backend/00-php84-api.md`, `docs/database/01-modelo-datos-certificados.md` si cambia la auditoría documentada.
 Commit sugerido: `test(backend): validar auditoria tolerante a fallas`.
 
@@ -329,7 +342,7 @@ curl -i http://localhost/certificados/api/admin/<endpoint-ficticio>
 ```
 
 QA manual (checkpoint de parada): confirmar permisos, errores, auditoría y privacidad antes de habilitar cualquier acción crítica.
-No hacer: no mezclar endpoints administrativos con validación pública ni con integración Angular. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no mezclar endpoints administrativos con validación pública ni con integración Angular. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/backend/01-contrato-api-certificados.md`, `docs/backend/00-php84-api.md`, `docs/database/01-modelo-datos-certificados.md`, specs administrativas.
 Commit sugerido: `feat(backend): agregar administracion de certificados`.
 
@@ -343,7 +356,7 @@ Pedir a OpenCode:
 ```txt
 Trabajemos M3-04 — hardening de seguridad y logs backend.
 Auditá respuestas, logs, privacidad, manejo de errores, documentación y specs backend/base.
-No ejecutes commit, push, merge ni rebase. No toques Angular ni deploy real.
+No ejecutes commit ni push sin aprobación explícita de Marcos. No ejecutes merge ni rebase. No toques Angular ni deploy real.
 ```
 
 Ejecutar/verificar:
@@ -354,7 +367,7 @@ curl -i http://localhost/certificados/api/certificados/TOKEN_FICTICIO/verificaci
 ```
 
 QA manual (checkpoint de parada): confirmar que no hay datos sensibles en logs/respuestas/docs y que `.gitignore` cubre privados.
-No hacer: no cerrar si falta `sdd-archive`, no aceptar material privado staged. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no cerrar si falta `sdd-archive`, no aceptar material privado staged. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: documentación afectada de backend, database, seguridad y `openspec/specs/`.
 Commit sugerido: `chore(qa): endurecer backend certificados`.
 
@@ -377,20 +390,20 @@ git status --ignored --short
 ```
 
 QA manual (checkpoint de parada): antes de subir, revisar `.htaccess`, lista de archivos, configuración externa, backup y rollback.
-No hacer: no tocar `public_html` sin backup, no subir configuración real, no ejecutar deploy automático desde OpenCode. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no tocar `public_html` sin backup, no subir configuración real, no ejecutar deploy automático desde OpenCode. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/deploy/00-cpanel-certificados.md`, `deploy/README.md`, docs backend si cambia la ruta pública.
 Commit sugerido: `docs(deploy): preparar cpanel certificados`.
 
 ### Ciclo M3-06 — checkpoint final de integración Angular/API
 
-Objetivo: coordinar consumo real PHP/Angular recién cuando Matías tenga `frontend/public-validation-flow`, los contratos backend estén estables y exista checklist compartida.
+Objetivo: coordinar consumo real PHP/Angular recién cuando exista `frontend/public-validation-flow`, los contratos backend estén estables y haya checklist compartida.
 Rama sugerida: `integration/angular-api-contract`.
 Leer antes: `docs/backend/01-contrato-api-certificados.md`, `docs/frontend/00-angular20-port-v0.md`, `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`, reporte o handoff de `frontend/public-validation-flow`.
 
 Pedir a OpenCode:
 ```txt
 Trabajemos M3-06 — checkpoint final de integración Angular/API.
-Verificá consumo real solo si Matías ya tiene frontend/public-validation-flow, los contratos backend están estables y hay checklist compartida.
+Verificá consumo real solo si ya existe `frontend/public-validation-flow`, los contratos backend están estables y hay checklist compartida.
 Si falta alguna condición, dejá integración como pendiente no bloqueante. No modifiques Angular salvo coordinación explícita.
 ```
 
@@ -400,7 +413,7 @@ git diff -- docs/backend/01-contrato-api-certificados.md docs/frontend/00-angula
 ```
 
 QA manual (checkpoint de parada): confirmar checklist compartida, DTOs, errores, estados no verificables y privacidad antes de activar llamadas reales.
-No hacer: no bloquear backend por falta de Angular, no inventar endpoints ni pantallas, no cambiar componentes Angular sin ciclo frontend coordinado. Commit, push, merge y rebase quedan manuales de Marcos.
+No hacer: no bloquear backend por falta de Angular, no inventar endpoints ni pantallas, no cambiar componentes Angular sin ciclo frontend coordinado. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/backend/`, `docs/frontend/`, specs de integración si cambia contrato.
 Commit sugerido: `docs(integracion): cerrar checklist angular api`.
 
@@ -454,7 +467,7 @@ Si una skill/agente no aparece en la sesión activa, pedir a OpenCode que lea `.
 
 ## Reglas finales
 
-- Git real queda en manos de Marcos.
+- Git real queda en manos de Marcos; cambio/creación de ramas solo con aprobación explícita, árbol limpio y rama fuente explícita/actualizada.
 - No usar datos reales para fixtures, QA ni documentación.
 - No copiar contenido de `material_privado_no_versionar/`.
 - No cerrar un ciclo sin `verify`, `sdd-archive` y handoff final.

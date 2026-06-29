@@ -32,7 +32,7 @@ Los prompts anteriores de `docs/opencode/` quedan archivados en `docs/opencode/a
 | Auditoría | `docs/auditoria/00-inventario-material-descargado.md`, `docs/auditoria/01-auditoria-material-original.md`, `docs/auditoria/02-hallazgos-dumps-sql.md` |
 | Scripts | `scripts/AGENTS.md` |
 | Specs | `openspec/AGENTS.md`, `openspec/specs/README.md`, `openspec/specs/repo-seguro/spec.md`, `openspec/specs/backend-contrato-api-certificados/spec.md`, `openspec/specs/backend-modelo-datos-certificados/spec.md` |
-| OpenCode / costos | `docs/opencode/optimizacion-tokens.md`, `docs/arquitectura/graphify/README.md` |
+| OpenCode / costos | `docs/opencode/optimizacion-tokens.md`, `docs/opencode/verificacion-flujo-opencode-sdd.md`, `docs/arquitectura/graphify/README.md` |
 
 ## Referencias condicionales
 

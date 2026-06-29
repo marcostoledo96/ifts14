@@ -30,15 +30,16 @@ El desarrollo del producto comienza después de que el repositorio quede seguro,
 - Backend PHP.
 - Base de datos MariaDB.
 - Integración backend/frontend.
+- Desbloqueos frontend técnicos cuando haga falta: base Angular, validación pública, mocks/contratos y build `/certificados/`.
 - Deploy en cPanel.
 - Arquitectura, seguridad y documentación.
 
 ### Matías
 
-- Frontend Angular 20.
+- Liderazgo UI/UX del frontend Angular 20.
 - Adaptación del diseño generado en v0.
 - Uso de `muestra_pagina/` como referencia visual.
-- UI/UX, responsive y accesibilidad.
+- Admin, sistema visual, responsive, accesibilidad, QA y handoff visual.
 
 ## Carpetas principales
 
