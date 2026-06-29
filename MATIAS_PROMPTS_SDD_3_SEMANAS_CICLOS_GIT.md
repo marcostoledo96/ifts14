@@ -11,7 +11,7 @@ Estado actualizado al 2026-06-28. Convención: ✅ hecho, ⏳ pendiente, 🚫 bl
 | Fase | # | Ciclo | Estado | Rama sugerida | Commit/Notas |
 |---|---|---|---|---|---|
 | F0 | F0-01 | Verificar entorno Windows | ✅ | docs/matias-onboarding-windows | `d7b523e` (merged en PR #6) |
-| F0 | F0-02 | Verificar OpenCode/Gentle-AI | ⏳ | docs/matias-onboarding-f0-02-f0-03 | — |
+| F0 | F0-02 | Verificar OpenCode/Gentle-AI | ✅ | docs/matias-onboarding-f0-02-f0-03 | archive cerrado; commit pendiente (HEAD `11e0d3e`) |
 | F0 | F0-03 | Leer documentación mínima y entender misión | ⏳ | docs/matias-onboarding-f0-02-f0-03 | — |
 | F1 | F1-01 | Auditar `muestra_pagina/` | ⏳ | frontend/v0-design-system | — |
 | F1 | F1-02 | Extraer sistema visual desde v0 | ⏳ | frontend/v0-design-system | — |
@@ -31,7 +31,7 @@ Estado actualizado al 2026-06-28. Convención: ✅ hecho, ⏳ pendiente, 🚫 bl
 | F3 | F3-05 | Build para `/certificados/` | ⏳ | frontend/build-certificados | — |
 | F3 | F3-06 | Handoff a Marcos | ⏳ | docs/handoff-fase1 | — |
 
-**Resumen**: 1 de 20 hecho. 19 pendientes. La rama actual es `docs/matias-onboarding-f0-02-f0-03` (mergeada desde main actualizado en PR #6). Cambios ad-hoc de governance también commiteados en PR #6: regla de commit con aprobación explícita (`d4589a1`), regla de push a ramas con aprobación explícita (`79a72ca`), fix de bugs de Codex (`e890c3c`). Fase 2 (F4-F6) en `MATIAS_PROMPTS_SDD_FASE2.md` está bloqueada hasta que Marcos apruebe continuar.
+**Resumen**: 2 de 20 hecho. 18 pendientes. La rama actual es `docs/matias-onboarding-f0-02-f0-03` (mergeada desde main actualizado en PR #6). Cambios ad-hoc de governance también commiteados en PR #6: regla de commit con aprobación explícita (`d4589a1`), regla de push a ramas con aprobación explícita (`79a72ca`), fix de bugs de Codex (`e890c3c`). Fase 2 (F4-F6) en `MATIAS_PROMPTS_SDD_FASE2.md` está bloqueada hasta que Marcos apruebe continuar.
 
 Para actualizar este índice al cerrar cada ciclo, editá esta tabla y commiteá con mensaje `docs(governance): actualizar indice de fases de matias`. Mantener formato y columnas estables.
 
@@ -399,7 +399,7 @@ Mensaje de commit sugerido: `docs(matias): registrar verificacion de entorno win
 ### Ciclo F0-02 — Verificar OpenCode/Gentle-AI
 
 Objetivo: confirmar que Matías sabe iniciar OpenCode, pedir ciclos SDD y cerrar con evidencia sin delegar Git automático.
-Rama sugerida: `docs/matias-onboarding-windows`.
+Rama sugerida: `docs/matias-onboarding-f0-02-f0-03`.
 Archivos a leer: `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, esta guía.
 
 Comandos si aplica:
@@ -441,7 +441,7 @@ Mensaje de commit sugerido: `docs(matias): documentar verificacion de opencode s
 ### Ciclo F0-03 — Leer documentación mínima y entender misión
 
 Objetivo: dejar evidencia de que Matías entendió rol, alcance, fuentes de verdad y límites antes del trabajo frontend.
-Rama sugerida: `docs/matias-onboarding-windows`.
+Rama sugerida: `docs/matias-onboarding-f0-02-f0-03`.
 Archivos a leer: `README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md`, `apps/frontend-angular/AGENTS.md`.
 
 Comandos si aplica:
