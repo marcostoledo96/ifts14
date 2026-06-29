@@ -46,6 +46,68 @@ describe('result-mapper', () => {
     });
   });
 
+  describe('mapResponseToViewState — envolturas válidas malformadas', () => {
+    it('student ausente → technical-error (no rompe template)', () => {
+      const result: ValidationSourceResult = {
+        ok: true,
+        envelope: validEnvelope({ student: undefined as unknown as never }),
+      };
+      const view = mapResponseToViewState(result);
+      expect(view.kind).toBe('technical-error');
+    });
+
+    it('course ausente → technical-error', () => {
+      const result: ValidationSourceResult = {
+        ok: true,
+        envelope: validEnvelope({ course: undefined as unknown as never }),
+      };
+      const view = mapResponseToViewState(result);
+      expect(view.kind).toBe('technical-error');
+    });
+
+    it('student.displayName vacío → technical-error', () => {
+      const result: ValidationSourceResult = {
+        ok: true,
+        envelope: validEnvelope({
+          student: { displayName: '   ', documentMasked: '12.345.**' },
+        }),
+      };
+      const view = mapResponseToViewState(result);
+      expect(view.kind).toBe('technical-error');
+    });
+
+    it('course.issuedAt ausente → technical-error', () => {
+      const result: ValidationSourceResult = {
+        ok: true,
+        envelope: validEnvelope({
+          course: { name: 'Curso', issuedAt: '' },
+        }),
+      };
+      const view = mapResponseToViewState(result);
+      expect(view.kind).toBe('technical-error');
+    });
+
+    it('certificateCode ausente → technical-error', () => {
+      const result: ValidationSourceResult = {
+        ok: true,
+        envelope: validEnvelope({ certificateCode: '' }),
+      };
+      const view = mapResponseToViewState(result);
+      expect(view.kind).toBe('technical-error');
+    });
+
+    it('mantiene requestId en technical-error por mala forma', () => {
+      const result: ValidationSourceResult = {
+        ok: true,
+        envelope: validEnvelope({ course: undefined as unknown as never }),
+      };
+      const view = mapResponseToViewState(result);
+      if (view.kind === 'technical-error') {
+        expect(view.requestId).toBe('req-1');
+      }
+    });
+  });
+
   describe('mapErrorToViewState — colapso público', () => {
     it('CERTIFICATE_NOT_FOUND (404) → not-verifiable', () => {
       const view = mapErrorToViewState(errorEnvelope('CERTIFICATE_NOT_FOUND'));

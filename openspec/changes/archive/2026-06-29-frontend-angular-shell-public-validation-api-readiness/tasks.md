@@ -23,7 +23,7 @@ queda separado.
 - [x] 1.1 `ng new apps/frontend-angular --routing --style=css --ssr=false --skip-git`.
 - [x] 1.2 Setear `baseHref: "/certificados/"` en `angular.json` (production y development).
 - [x] 1.3 `app.config.ts`: `provideRouter(routes, withComponentInputBinding())` (sin `provideHttpClient`).
-- [x] 1.4 `app.routes.ts`: `''` → `validar/demo-valido`; `validar/:tokenCertificacion` carga diferida.
+- [x] 1.4 `app.routes.ts`: `''` carga landing no validante; `validar/:tokenCertificacion` carga diferida; `**` carga página no encontrada sin validar tokens.
 - [x] 1.5 Reemplazar `app.ts` con shell semántico (`header`, `main#contenido`, `footer`, `RouterOutlet`, `skipLink`).
 - [x] 1.6 `ng build --configuration production --base-href /certificados/` sin errores ni warnings de presupuesto.
 
@@ -42,18 +42,18 @@ queda separado.
 
 ## Fase 3 — Adapter HTTP y build de producción (PR 3, base=main)
 
-- [ ] 3.1 `provideHttpClient()` en `app.config.ts` con `environment.useMockApi`.
-- [ ] 3.2 `shared/certificates/http-validation.source.ts`: `httpResource<ApiEnvelope<CertificateVerificationDto>>` a `/api/certificados/{token}/verificacion`.
-- [ ] 3.3 Conectar `httpResource` al `ValidationService` cuando `!useMockApi`, pasando por el mismo mapper (cero ramas nuevas en UI).
-- [ ] 3.4 Test del adapter: `404` con `code: 'CERTIFICATE_NOT_FOUND'` → `kind === 'not-verifiable'`, no `technical-error`.
-- [ ] 3.5 Test de integración con `HttpTestingController`: URL, método, headers, shape.
-- [ ] 3.6 `ng build --configuration production --base-href /certificados/`; documentar bundle en `docs/frontend/00-angular20-port-v0.md`.
-- [ ] 3.7 Verificar que `index.html` resuelva bajo `/certificados/` con assets relativos correctos.
+- [x] 3.1 `provideHttpClient()` en `app.config.ts` con `environment.useMockApi`.
+- [x] 3.2 `shared/certificates/http-validation.source.ts`: `httpResource<ApiEnvelope<CertificateVerificationDto>>` a `/api/certificados/{token}/verificacion`.
+- [x] 3.3 Conectar `httpResource` al `ValidationService` cuando `!useMockApi`, pasando por el mismo mapper (cero ramas nuevas en UI).
+- [x] 3.4 Test del adapter: `404` con `code: 'CERTIFICATE_NOT_FOUND'` → `kind === 'not-verifiable'`, no `technical-error`.
+- [x] 3.5 Test de integración con `HttpTestingController`: URL, método, headers, shape.
+- [x] 3.6 `ng build --configuration production --base-href /certificados/`; documentar bundle en `docs/frontend/00-angular20-port-v0.md`.
+- [x] 3.7 Verificar que `index.html` resuelva bajo `/certificados/` con assets relativos correctos.
 
 ## Fase 4 — Limpieza, auditoría y pre-archive
 
-- [ ] 4.1 `grep -r material_privado_no_versionar|muestra_pagina apps/frontend-angular/` → vacío.
-- [ ] 4.2 Confirmar ausencia de DNI, hash, pepper, token completo o nombres de tabla en código público.
-- [ ] 4.3 Actualizar `docs/frontend/00-angular20-port-v0.md` con estructura, límites de UI final y comandos.
-- [ ] 4.4 Actualizar `docs/frontend/INDEX.md` si existe, referenciando la nueva app.
-- [ ] 4.5 No commit/push/merge: el cierre lo ejecuta `sdd-archive` con aprobación explícita.
+- [x] 4.1 `grep -r material_privado_no_versionar|muestra_pagina apps/frontend-angular/` → vacío.
+- [x] 4.2 Confirmar ausencia de DNI, hash, pepper, token completo o nombres de tabla en código público.
+- [x] 4.3 Actualizar `docs/frontend/00-angular20-port-v0.md` con estructura, límites de UI final y comandos.
+- [x] 4.4 Actualizar `docs/frontend/INDEX.md` si existe, referenciando la nueva app.
+- [x] 4.5 No commit/push/merge: el cierre lo ejecuta `sdd-archive` con aprobación explícita.

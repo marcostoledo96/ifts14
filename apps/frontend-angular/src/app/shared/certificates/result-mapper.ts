@@ -17,11 +17,37 @@ export function mapResponseToViewState(
 
 function mapValid(envelope: ApiEnvelope<CertificateVerificationDto>): ValidationViewState {
   const dto = envelope.data;
+  const requestId = envelope.meta.requestId;
   // Defensiva: el contrato dice valid:true. Si llegara false, no es verificable.
   if (!dto.valid) {
-    return { kind: 'not-verifiable', reason: 'valid:false', requestId: envelope.meta.requestId };
+    return { kind: 'not-verifiable', reason: 'valid:false', requestId };
   }
-  return { kind: 'valid', certificate: dto, requestId: envelope.meta.requestId };
+  // Guardia de forma: si el anuncio 200/valid:true trae un anidamiento
+  // incompleto (student, course o strings requeridos ausentes), el template
+  // lanzaría al renderizar. Colapsamos a technical-error en lugar de exponer
+  // un certificado a medio armar.
+  if (!hasValidCertificateShape(dto)) {
+    return { kind: 'technical-error', requestId };
+  }
+  return { kind: 'valid', certificate: dto, requestId };
+}
+
+function isNonEmptyString(v: unknown): v is string {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+function hasValidCertificateShape(dto: Partial<CertificateVerificationDto> | null | undefined): boolean {
+  if (!dto) return false;
+  return (
+    isNonEmptyString(dto.certificateCode) &&
+    isNonEmptyString(dto.verifiedAt) &&
+    !!dto.student &&
+    isNonEmptyString(dto.student.displayName) &&
+    isNonEmptyString(dto.student.documentMasked) &&
+    !!dto.course &&
+    isNonEmptyString(dto.course.name) &&
+    isNonEmptyString(dto.course.issuedAt)
+  );
 }
 
 export function mapErrorToViewState(error: ApiErrorEnvelope | null): ValidationViewState {
