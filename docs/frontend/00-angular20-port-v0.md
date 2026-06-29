@@ -112,7 +112,7 @@ App creada en `apps/frontend-angular/` con Angular CLI 20.3.30 standalone. Despl
 
 ### Estructura técnica
 
-`angular.json`: `baseHref: "/certificados/"` en `production` y `development` (presupuestos 500 kB warn / 1 MB error). `environments/environment{,.development}.ts`: prod `useMockApi: false` (HTTP real), dev `useMockApi: true` (mock). `app.config.ts`: `provideRouter` + `withComponentInputBinding` + `provideHttpClient()` + `VALIDATION_SOURCE` seleccionado por `environment.useMockApi`. `app.routes.ts`: `''` y `**` → `validar/demo-valido`; `validar/:tokenCertificacion` lazy. `app.ts`: shell `header[role=banner]` / `main#contenido` / `footer` con skip link.
+`angular.json`: `baseHref: "/certificados/"` en `production` y `development` (presupuestos 500 kB warn / 1 MB error), `index` explícito y salida plana para cPanel. `environments/environment{,.development}.ts`: prod `useMockApi: false` (HTTP real), dev `useMockApi: true` (mock). `app.config.ts`: `provideRouter` + `withComponentInputBinding` + `provideHttpClient()` + `VALIDATION_SOURCE` seleccionado por `environment.useMockApi`. `app.routes.ts`: `''` carga landing sin validación, `validar/:tokenCertificacion` carga la validación pública, `**` carga página no encontrada sin validar tokens. `app.ts`: shell `header[role=banner]` / `main#contenido` / `footer` con skip link.
 
 ### Shared certificates
 
