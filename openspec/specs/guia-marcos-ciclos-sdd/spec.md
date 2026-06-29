@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Definir los requisitos documentales para mejorar `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` como guía operativa compacta: explica cómo ejecutar cada ciclo M1-01..M3-03, cuándo detenerse para QA manual y qué entregar al cierre, sin caer en el nivel pedagógico de la guía de Matías ni autorizar cambios de código, dependencias, deploy o Git automático.
+Definir los requisitos documentales para mejorar `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` como guía operativa compacta: explica cómo ejecutar cada ciclo M1-01..M3-06, cuándo detenerse para QA manual y qué entregar al cierre, sin caer en el nivel pedagógico de la guía de Matías ni autorizar cambios de código, dependencias, deploy o Git automático.
 
 ## Requirements
 
@@ -28,23 +28,23 @@ La guía DEBE incluir una tabla de hitos de parada con el comando concreto a eje
 
 ### Requirement: Plantilla de ciclo repetible
 
-La guía DEBE definir una plantilla única aplicada a los 9 ciclos, con los campos: objetivo, rama sugerida, archivos a leer, prompt para OpenCode, ejecutar/verificar, QA manual específico, qué no hacer, archive, commit sugerido.
+La guía DEBE definir una plantilla única aplicada a los 12 ciclos, con los campos: objetivo, rama sugerida, archivos a leer, prompt para OpenCode, ejecutar/verificar, QA manual específico, qué no hacer, archive, commit sugerido.
 
 #### Scenario: Ciclo autocontenido
 
-- DADO cualquier ciclo entre M1-01 y M3-03
+- DADO cualquier ciclo entre M1-01 y M3-06
 - CUANDO Marcos lo abre
 - ENTONCES encuentra los nueve campos de la plantilla sin tener que leer otra sección
 
-### Requirement: Ciclos M1-01 a M3-03 sin renumerar
+### Requirement: Ciclos M1-01 a M3-06 sin renumerar
 
-La guía DEBE mantener los identificadores vigentes de Marcos sin bloquear backend por Angular: M1/M2 para seguridad, auditoría, modelo, contrato API, base PHP y validación pública; M3 para hardening backend/base, endpoints administrativos, seguridad/logs, deploy cPanel e integración Angular/API solo como checkpoint final. Cada ciclo DEBE quedar alineado con la plantilla repetible y con al menos un checkpoint de QA manual concreto.
+La guía DEBE mantener los identificadores vigentes de Marcos sin bloquear backend por Angular: M1/M2 para seguridad, auditoría, modelo, contrato API, base PHP y validación pública; M3 para hardening backend/base, endpoints administrativos, seguridad/logs, deploy cPanel e integración Angular/API solo como checkpoint final. Cada uno de los 12 ciclos DEBE quedar alineado con la plantilla repetible y con al menos un checkpoint de QA manual concreto.
 
 #### Scenario: Trazabilidad preservada
 
 - DADO el archivo actual de Marcos
 - CUANDO se compara con la versión mejorada
-- ENTONCES los IDs y el orden de los 9 ciclos siguen siendo los mismos
+- ENTONCES los IDs y el orden de los 12 ciclos siguen siendo los mismos
 
 ### Requirement: Handoff al cierre de ciclo
 
