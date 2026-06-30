@@ -20,6 +20,8 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'admin_api_key' => $adminKey,
     'rate_limit_storage_path' => $ratePath,
     'app_salt' => 'salt_demo_http_contract',
+    'public_base_url' => 'https://demo.example.edu.ar/certificados',
+    'certificate_storage_path' => $tmpDir . '/pdf-storage',
 ], true) . ';');
 
 $port = random_int(18080, 18999);
@@ -90,6 +92,28 @@ try {
         'X-Admin-Key: ' . $adminKey,
     ], '{');
     assertError($revokeBadJson, 400, 'VALIDATION_ERROR', 'revocación JSON malformado');
+
+    // Endpoint de descarga PDF: cubre contrato pre-DB (401, 405, 400 id no numérico).
+    // 200 y 404 PDF_NOT_FOUND requieren MariaDB real y quedan como verificación
+    // de integración diferida.
+    $pdfNoAuth = request($port, 'GET', '/admin/certificados/1/pdf');
+    assertError($pdfNoAuth, 401, 'UNAUTHORIZED', 'PDF sin X-Admin-Key');
+    assertSecurityHeaders($pdfNoAuth, 'PDF sin X-Admin-Key');
+
+    $pdfWrongMethod = request($port, 'POST', '/admin/certificados/1/pdf', [
+        'X-Admin-Key: ' . $adminKey,
+    ], '{}');
+    assertError($pdfWrongMethod, 405, 'METHOD_NOT_ALLOWED', 'PDF método no permitido');
+    assertSecurityHeaders($pdfWrongMethod, 'PDF método no permitido');
+    if (($pdfWrongMethod['headers']['allow'] ?? '') !== 'GET') {
+        throw new RuntimeException('PDF método no permitido: falta Allow: GET.');
+    }
+
+    $pdfNonNumericId = request($port, 'GET', '/admin/certificados/abc/pdf', [
+        'X-Admin-Key: ' . $adminKey,
+    ]);
+    assertError($pdfNonNumericId, 400, 'VALIDATION_ERROR', 'PDF id no numérico');
+    assertSecurityHeaders($pdfNonNumericId, 'PDF id no numérico');
 } finally {
     proc_terminate($process);
     proc_close($process);

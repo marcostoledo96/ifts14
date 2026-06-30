@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/src/Response.php';
 require_once __DIR__ . '/src/Config.php';
 require_once __DIR__ . '/src/RateLimiter.php';
 require_once __DIR__ . '/src/Database.php';
 require_once __DIR__ . '/src/CertificateValidator.php';
 require_once __DIR__ . '/src/AuthGate.php';
+require_once __DIR__ . '/src/CertificatePdfService.php';
 require_once __DIR__ . '/src/AdminCertificateService.php';
 
 $requestId = 'req_' . bin2hex(random_bytes(8));
@@ -105,6 +107,8 @@ if ($path === '/admin/certificados') {
             $requestId,
             null,
             (string) $config['app_salt'],
+            new CertificatePdfService((string) $config['certificate_storage_path']),
+            (string) $config['public_base_url'],
         );
 
         return ['status' => 201, 'data' => $service->emitir($body)];
@@ -145,6 +149,28 @@ if (preg_match('#^/admin/certificados/(\d+)/revocar$#', $path, $matches) === 1) 
 
         return ['status' => 200, 'data' => $service->revocar($matches[1], $reason)];
     }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/certificados/([^/]+)/pdf$#', $path, $matches) === 1) {
+    if ($method !== 'GET') {
+        header('Allow: GET');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    $certificateId = filter_var($matches[1], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if (!is_int($certificateId)) {
+        Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
+        return;
+    }
+
+    $config = Config::load();
+    if (!requireAdmin($config, $requestId)) {
+        return;
+    }
+
+    streamPdf($config, $certificateId, $requestId);
     return;
 }
 
@@ -238,4 +264,35 @@ function normalizePath(string $path): string
     $path = '/' . trim($path, '/');
 
     return $path === '/' ? '/' : $path;
+}
+
+/** @param array<string, mixed> $config */
+function streamPdf(array $config, int $certificateId, string $requestId): void
+{
+    $statement = Database::pdo($config)->prepare('SELECT codigo_certificado FROM cert_certificados WHERE id = ? LIMIT 1');
+    $statement->execute([$certificateId]);
+    $code = $statement->fetchColumn();
+
+    if (!is_string($code) || $code === '') {
+        Response::error(404, 'PDF_NOT_FOUND', 'PDF no encontrado.', $requestId);
+        return;
+    }
+
+    $path = (new CertificatePdfService((string) $config['certificate_storage_path']))->pathForCode($code);
+
+    if (!is_file($path)) {
+        Response::error(404, 'PDF_NOT_FOUND', 'PDF no encontrado.', $requestId);
+        return;
+    }
+
+    $filename = $code . '.pdf';
+
+    http_response_code(200);
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . (string) filesize($path));
+
+    readfile($path);
 }
