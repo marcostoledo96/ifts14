@@ -7,9 +7,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpValidationSource } from './http-validation.source';
 import { VALIDATION_SOURCE } from './validation-source';
 import { VALID_VALID_DTO } from './mock-tokens';
+import { environment } from '../../../environments/environment';
 
 // 3.4 + 3.5: adapter HTTP con HttpTestingController.
 // Verifica URL, método, shape y mapeo de 404 CERTIFICATE_NOT_FOUND → not-verifiable.
+// M3-06: la URL se construye desde environment.apiBaseUrl.
 describe('HttpValidationSource', () => {
   let source: HttpValidationSource;
   let httpMock: HttpTestingController;
@@ -32,6 +34,34 @@ describe('HttpValidationSource', () => {
   });
 
   afterEach(() => httpMock.verify());
+
+  // M3-06: la URL debe usar environment.apiBaseUrl como frontera única.
+  it('URL usa environment.apiBaseUrl como base', async () => {
+    expect(environment.apiBaseUrl).toBe('/certificados/api');
+    const p = source.fetch('demo-valido');
+    const req = httpMock.expectOne(
+      `${environment.apiBaseUrl}/certificados/demo-valido/verificacion`,
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({ data: VALID_VALID_DTO, meta: { requestId: 'r-base' } });
+    const r = await p;
+    expect(r.ok).toBe(true);
+  });
+
+  it('URL respeta apiBaseUrl distinto del default (stub)', async () => {
+    // Stub temporal del environment para validar que la URL sigue a apiBaseUrl.
+    const original = environment.apiBaseUrl;
+    (environment as { apiBaseUrl: string }).apiBaseUrl = '/api-prueba';
+    try {
+      const p = source.fetch('xyz');
+      const req = httpMock.expectOne('/api-prueba/certificados/xyz/verificacion');
+      req.flush({ data: VALID_VALID_DTO, meta: { requestId: 'r-stub' } });
+      const r = await p;
+      expect(r.ok).toBe(true);
+    } finally {
+      (environment as { apiBaseUrl: string }).apiBaseUrl = original;
+    }
+  });
 
   it('GET a /certificados/api/certificados/{token}/verificacion con token codificado', async () => {
     const p = source.fetch('abc_123-XYZ');

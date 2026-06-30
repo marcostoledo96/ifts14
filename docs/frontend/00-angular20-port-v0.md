@@ -110,13 +110,33 @@ No desplegar ni copiar artefactos a cPanel desde OpenCode.
 
 App creada en `apps/frontend-angular/` con Angular CLI 20.3.30 standalone. Desplegable bajo `/certificados/`. Shell semántico + página pública con `resource()` (tres bloques: `valid` / `not-verifiable` / `technical-error`, `aria-live="polite"`). Verificación: 35/35 tests, build prod verde (252.97 kB initial / 71.88 kB transfer, lazy 3.88 kB). Requiere `export PATH="$HOME/.local/bin:$PATH"`.
 
+### Checkpoint M3-06 — integración Angular/API local
+
+Conmutación local mock/API real sin reescribir la pantalla pública:
+
+- `environment.ts` (prod) y `environment.development.ts` (dev) exponen `useRealApi: false` + `apiBaseUrl: '/certificados/api'`. El modo real queda **desactivado por defecto** en ambos entornos; en dev se activa a mano (toggle local, no commitear `true`) para el smoke.
+- `app.config.ts` selecciona `HttpValidationSource` cuando `useRealApi: true`, `MockValidationSource` cuando `false`.
+- `http-validation.source.ts` construye la URL como `${apiBaseUrl}/certificados/{encodeURIComponent(token)}/verificacion` (frontera única mock/real).
+- `proxy.conf.json` reenvía `/certificados/api` → `http://127.0.0.1:8080` durante `ng serve` (`angular.json` `serve.options.proxyConfig`). **No** se habilita CORS/preflight en el backend por defecto (spec: "Preflight no requerido").
+- Separación `base href /certificados/` (rutas Angular) vs `apiBaseUrl` (endpoint API): `baseHref` nunca se usa para resolver la URL de la API en `ng serve`.
+
+Smoke local documentado (no ejecutado en este turno — PHP CLI no instalado localmente):
+
+1. Levantar API PHP local en `:8080` (`bash scripts/m3-06-smoke.sh` requiere `php` CLI + MariaDB local ficticia alcanzable; usa token ficticio BIEN formado de 32+ chars → 404 controlado cuando no hay certificado sembrado; 400 y 500 = FAIL conforme a spec).
+2. En `environment.development.ts`, pasar `useRealApi: true` (solo local).
+3. `ng serve` (proxy.conf.json activo) → abrir `http://localhost:4200/certificados/validar/<token-ficticio>`.
+4. Capturar evidencia con tokens ficticios; sin datos reales.
+5. Revertir `useRealApi` a `false`.
+
+Evidencia de verificación de este turno (sin PHP CLI): `npm test --watch=false` 70/70 SUCCESS (incluye 2 casos nuevos de `apiBaseUrl` y 2 de `app.config`), `npm run build` verde (253.42 kB initial / 72 kB transfer, dentro de presupuestos). Smoke `scripts/m3-06-smoke.sh` queda **BLOCKED** hasta disponer de `php` CLI; el script está creado y documentado para ejecución manual futura.
+
 ### Estructura técnica
 
-`angular.json`: `baseHref: "/certificados/"` en `production` y `development` (presupuestos 500 kB warn / 1 MB error), `index` explícito y salida plana para cPanel. `environments/environment{,.development}.ts`: prod `useMockApi: false` (HTTP real), dev `useMockApi: true` (mock). `app.config.ts`: `provideRouter` + `withComponentInputBinding` + `provideHttpClient()` + `VALIDATION_SOURCE` seleccionado por `environment.useMockApi`. `app.routes.ts`: `''` carga landing sin validación, `validar/:tokenCertificacion` carga la validación pública, `**` carga página no encontrada sin validar tokens. `app.ts`: shell `header[role=banner]` / `main#contenido` / `footer` con skip link.
+`angular.json`: `baseHref: "/certificados/"` en `production` y `development` (presupuestos 500 kB warn / 1 MB error), `index` explícito y salida plana para cPanel. `environments/environment{,.development}.ts`: ambos exponen `useRealApi: false` (mock por defecto) + `apiBaseUrl: '/certificados/api'`; en dev, `useRealApi: true` es un toggle local manual para smoke. `app.config.ts`: `provideRouter` + `withComponentInputBinding` + `provideHttpClient()` + `VALIDATION_SOURCE` seleccionado por `environment.useRealApi` (`true` → `HttpValidationSource`, `false` → `MockValidationSource`). `app.routes.ts`: `''` carga landing sin validación, `validar/:tokenCertificacion` carga la validación pública, `**` carga página no encontrada sin validar tokens. `app.ts`: shell `header[role=banner]` / `main#contenido` / `footer` con skip link.
 
 ### Shared certificates
 
-`dto.ts` (DTOs del contrato PHP, sin DNI completo/hash/pepper/tablas), `validation-source.ts` (interfaz + InjectionToken, frontera reemplazable), `mock-tokens.ts` (`MockValidationSource` + tokens `demo-valido|revocado|expirado|inexistente|error-tecnico`), `http-validation.source.ts` (`HttpValidationSource` con `HttpClient` + `firstValueFrom`, URL `/certificados/api/certificados/{token}/verificacion`), `result-mapper.ts` (404/revocado/expirado/inexistente → `not-verifiable`; 5xx/red/JSON → `technical-error`), `validation.service.ts` (`verify(token)` consume `VALIDATION_SOURCE`; sin cambios al swap).
+`dto.ts` (DTOs del contrato PHP, sin DNI completo/hash/pepper/tablas), `validation-source.ts` (interfaz + InjectionToken, frontera reemplazable), `mock-tokens.ts` (`MockValidationSource` + tokens `demo-valido|revocado|expirado|inexistente|error-tecnico`), `http-validation.source.ts` (`HttpValidationSource` con `HttpClient`, URL `${environment.apiBaseUrl}/certificados/{encodeURIComponent(token)}/verificacion`; usa suscripción cancelable vía `AbortSignal` en vez de `firstValueFrom`), `result-mapper.ts` (404/revocado/expirado/inexistente → `not-verifiable`; 5xx/red/JSON → `technical-error`), `validation.service.ts` (`verify(token)` consume `VALIDATION_SOURCE`; sin cambios al swap).
 
 ### Límites de UI final
 

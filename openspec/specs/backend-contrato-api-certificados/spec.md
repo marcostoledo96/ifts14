@@ -195,10 +195,34 @@ Los endpoints `POST /certificados/api/certificados/consulta`, `POST /certificado
 
 ### Requirement: Pendientes de hardening documentados
 
-La documentación backend SHOULD registrar como diferidos: CORS/preflight, límite de tamaño de body, rate limiting distribuido, observabilidad real y `ultimo_uso_en` en verificación pública.
+La documentación backend SHOULD registrar como diferidos: límite de tamaño de body, rate limiting distribuido, observabilidad real y `ultimo_uso_en` en verificación pública. CORS/preflight queda resuelto de forma acotada para el smoke local de este checkpoint y DEBE registrarse como excepción local, no como hardening productivo.
 
-#### Scenario: Gaps explícitos
+#### Scenario: Gaps explícitos restantes
 
 - **Given** este ciclo archivado
 - **When** se revisa la documentación backend
-- **Then** SHOULD listar esos pendientes como fuera de alcance de este cambio.
+- **Then** SHOULD listar límite de tamaño de body, rate limiting distribuido, observabilidad real y `ultimo_uso_en` como fuera de alcance.
+- **And** DEBE registrar CORS/preflight local como excepción resuelta del checkpoint, no como hardening productivo.
+
+### Requirement: Soporte de consumo browser local seguro
+
+La API DEBE permitir el consumo desde `ng serve` en local para el smoke de integración. Cuando se requiera CORS/preflight, la API PUEDE responder `Access-Control-Allow-Origin` acotado al origen local de Angular y DEBE limitar los headers/methods expuestos a los del contrato público. El soporte DEBE quedar restringido a configuración local y NO DEBE habilitar CORS abierto en producción.
+
+#### Scenario: Preflight local exitoso
+
+- **Given** Angular en `ng serve` sobre `http://localhost:4200` y API PHP local configurada para aceptar ese origen
+- **When** el navegador envía `OPTIONS /certificados/api/certificados/{token}/verificacion`
+- **Then** la API DEBE responder preflight exitoso con `Access-Control-Allow-Origin: http://localhost:4200`.
+- **And** DEBE NO exponer headers administrativos ni `X-Admin-Key` en el preflight público.
+
+#### Scenario: CORS abierto prohibido en producción
+
+- **Given** la configuración de producción de la API
+- **When** llega un request con `Origin` no autorizado
+- **Then** la API DEBE NO devolver `Access-Control-Allow-Origin: *` para endpoints públicos.
+
+#### Scenario: Preflight no requerido
+
+- **Given** que el smoke local se resuelve vía proxy/base URL sin CORS
+- **When** Angular consume la API PHP local
+- **Then** la API PUEDE no agregar headers CORS y el smoke DEBE completarse sin preflight.

@@ -13,7 +13,9 @@ import { HttpValidationSource } from './shared/certificates/http-validation.sour
 import { environment } from '../environments/environment';
 
 // provideHttpClient habilita HttpClient para HttpValidationSource.
-// La fuente se selecciona por entorno: mock en desarrollo, HTTP real en producción.
+// Conmutación mock/API real vía environment.useRealApi (M3-06).
+// useRealApi=true → HttpValidationSource contra environment.apiBaseUrl.
+// useRealApi=false → MockValidationSource con tokens demo.
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -22,7 +24,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     {
       provide: VALIDATION_SOURCE,
-      useClass: environment.useMockApi ? MockValidationSource : HttpValidationSource,
+      useClass: environment.useRealApi ? HttpValidationSource : MockValidationSource,
     },
   ],
 };
