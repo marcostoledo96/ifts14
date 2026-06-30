@@ -73,6 +73,17 @@ La configuración real debe quedar fuera del repositorio y preferentemente fuera
 
 Los fragmentos siguientes son **orientativos y revisables**. Validar primero en una carpeta aislada o en una ventana controlada. La regla principal: el fallback SPA de `/certificados/` no debe capturar `/certificados/api/`.
 
+### Separación `base href` vs `apiBaseUrl` (checkpoint M3-06)
+
+| Concepto | Valor | Aplica a | No mezclar con |
+|---|---|---|---|
+| `base href` Angular | `/certificados/` | Rutas del frontend (SPA, assets, rutas profundas) | URL de la API |
+| `apiBaseUrl` frontend | `/certificados/api` | Endpoint de la API PHP consumido por `HttpValidationSource` | Rutas Angular |
+
+- En `ng serve` (desarrollo local), `apiBaseUrl` se resuelve vía `apps/frontend-angular/proxy.conf.json` (`/certificados/api` → `127.0.0.1:8080`); **no** se deriva de `baseHref`.
+- En cPanel, `base href /certificados/` resuelve rutas Angular y `apiBaseUrl /certificados/api` resuelve la API PHP pública bajo la misma carpeta, sin solaparse.
+- `.htaccess` de raíz aplica fallback SPA **solo fuera de `/api/`** (ver regla `RewriteRule ^api(/.*)?$ - [L]` más abajo).
+
 ### Raíz `/certificados/.htaccess`
 
 ```apache

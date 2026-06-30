@@ -284,7 +284,7 @@ La migración controlada es `database/migrations/001_certificados_qr.sql`. El to
 
 Los siguientes gaps del contrato quedan registrados y deben abordarse en ciclos SDD posteriores; este cambio no los cubre:
 
-- **CORS / preflight**: no se implementan respuestas a `OPTIONS` ni cabeceras `Access-Control-*`.
+- **CORS / preflight**: no se implementan respuestas a `OPTIONS` ni cabeceras `Access-Control-*`. Resuelto como **excepción local** del checkpoint M3-06: el smoke local Angular↔PHP usa el proxy de `ng serve` (`apps/frontend-angular/proxy.conf.json` → `127.0.0.1:8080`), por lo que **no se requiere preflight** y el backend productivo permanece sin CORS abierto. Si en el futuro el proxy no cubriera el smoke, se habilitaría CORS local acotado a `http://localhost:4200` (nunca `Access-Control-Allow-Origin: *` en producción).
 - **Límite de tamaño de body**: no se aplica `post_max_size` ni chequeo del largo de `php://input`.
 - **Rate limiting distribuido**: el `RateLimiter` actual es de nodo único con JSON temporal y `flock`; no escala horizontalmente.
 - **Observabilidad real**: no hay agregador de logs, métricas ni trazas; el backend solo emite eventos puntuales.
