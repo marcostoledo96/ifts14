@@ -88,7 +88,7 @@ El trabajo de producto frontend arranca en los ciclos F1+:
 - A partir de F3: validación pública refinada, QA visual, handoff y cierre de la fase.
 
 Antes de F1-01 conviene releer `docs/frontend/00-angular20-port-v0.md` y `muestra_pagina/README.md` para confirmar el inventario vigente.
-Durante F1/F2 la rama de trabajo sugerida es `frontend/v0-design-system`.
+Durante F1-01 y F1-02 la rama de trabajo sugerida es `frontend/v0-design-system`. Para F2, usar las ramas específicas de la tabla "Estrategia de ramas recomendada".
 La integración con backend y la publicación final siempre quedan en manos de Marcos salvo acuerdo explícito.
 
 Cada ciclo futuro debe cerrarse con `sdd-archive`, actualizar la documentación correspondiente y proponer commit solo con aprobación explícita de Matías o Marcos.
@@ -105,7 +105,7 @@ Al cerrar cada ciclo Matías debe dejar:
 - Documentación actualizada en `docs/frontend/` u otra área correspondiente.
 - Registro de decisiones de diseño que afecten el sistema visual o la experiencia de usuario.
 - `verify-report.md` con veredicto PASS y escenarios mapeados a evidencia.
-- En `sdd-archive` se fusiona el delta de spec con `openspec/specs/guia-matias-angular-windows/spec.md`.
+- En `sdd-archive` se fusiona el delta de spec con la spec principal de la capacidad trabajada.
 - Comandos Git propuestos (no ejecutados) con diff-confirmation gate.
 - Mensaje de commit sugerido, por ejemplo: `docs(matias): registrar onboarding frontend`.
 

@@ -92,7 +92,7 @@
 ## Comandos Git propuestos a Mati (NO ejecutados)
 
 ```bash
-git add openspec/changes/f0-03-leer-documentacion-minima-y-mision/ docs/opencode/onboarding-matias-frontend.md
+git add openspec/specs/guia-matias-angular-windows/spec.md MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md docs/opencode/onboarding-matias-frontend.md openspec/changes/archive/2026-06-28-f0-03-leer-documentacion-minima-y-mision/
 git commit -m "docs(matias): registrar onboarding frontend"
 git push origin docs/matias-onboarding-f0-03
 ```
