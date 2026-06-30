@@ -67,7 +67,32 @@ Subir la API PHP versionada a:
 public_html/certificados/api/
 ```
 
-La configuración real debe quedar fuera del repositorio y preferentemente fuera del webroot. Para validar certificados, el archivo externo debe devolver un array PHP con las claves reales esperadas por `Config::load()`: `db_host`, `db_name`, `db_user`, `db_pass` y `token_pepper`; la guía no debe registrar valores reales. Tomar como referencia de estructura el ejemplo versionable `apps/backend-php/config/certificados-config.example.php`, reemplazando sus valores ficticios fuera de Git. Sin `token_pepper`, `Config::load()` debe fallar de forma segura con error genérico y la API no debe exponer stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable y contra un config ficticio bajo `/tmp`; la configuración productiva permanece fuera de Git.
+La configuración real debe quedar fuera del repositorio y preferentemente fuera del webroot. Para validar certificados, el archivo externo debe devolver un array PHP con las claves reales esperadas por `Config::load()`: `db_host`, `db_name`, `db_user`, `db_pass`, `token_pepper`, `public_base_url` y `certificate_storage_path`; la guía no debe registrar valores reales. Tomar como referencia de estructura el ejemplo versionable `apps/backend-php/config/certificados-config.example.php`, reemplazando sus valores ficticios fuera de Git. Sin `token_pepper`, `public_base_url` o `certificate_storage_path`, `Config::load()` debe fallar de forma segura con error genérico y la API no debe exponer stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable y contra un config ficticio bajo `/tmp`; la configuración productiva permanece fuera de Git.
+
+### Almacenamiento de PDFs de certificados
+
+`certificate_storage_path` es la ruta absoluta donde se persisten los PDFs generados durante la emisión administrativa. Cada PDF se guarda como `{certificateCode}.pdf` (ej. `CERT-2026-AB12CD34.pdf`); el nombre nunca incluye el token de verificación.
+
+Recomendación preferente: ubicar `certificate_storage_path` **fuera del webroot** (ej. `/home/usuario_demo/certificados_storage/`) para que los PDFs no sean accesibles por URL pública directa. El endpoint administrativo `GET /certificados/api/admin/certificados/{id}/pdf` es la única vía de descarga y exige `X-Admin-Key`.
+
+Alternativa si el hosting obliga a colocar el storage dentro de `public_html`: proteger la carpeta con `.htaccess`:
+
+```apache
+Options -Indexes
+Deny from all
+```
+
+Registrar la excepción con justificación operativa. En ningún caso los PDFs deben listarse ni servirse por URL pública directa.
+
+#### Rollback de PDFs de prueba
+
+Si se revierte el cambio PDF/QR:
+
+1. Eliminar los PDFs ficticios generados en pruebas del storage (identificables por `certificateCode` de prueba).
+2. Retirar la ruta `GET /admin/certificados/{id}/pdf` del frontend/backend sin afectar certificados emitidos previamente.
+3. Los certificados previos permanecen intactos: el rollback no toca `cert_certificados` ni `cert_tokens_verificacion`.
+
+No requiere migraciones de base.
 
 ## .htaccess
 

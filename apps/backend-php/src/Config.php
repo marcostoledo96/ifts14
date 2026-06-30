@@ -33,6 +33,15 @@ final class Config
             throw new RuntimeException('Configuration invalid.');
         }
 
+        foreach (['public_base_url', 'certificate_storage_path'] as $key) {
+            if (!isset($config[$key]) || !is_string($config[$key]) || trim($config[$key]) === '') {
+                throw new RuntimeException('Configuration invalid.');
+            }
+        }
+
+        $config['public_base_url'] = rtrim(trim($config['public_base_url']), '/');
+        $config['certificate_storage_path'] = rtrim(trim($config['certificate_storage_path']), '/');
+
         $config['rate_limit_threshold'] = self::positiveInt($config['rate_limit_threshold'] ?? 60, 60);
         $config['rate_limit_window_seconds'] = self::positiveInt($config['rate_limit_window_seconds'] ?? 60, 60);
 
