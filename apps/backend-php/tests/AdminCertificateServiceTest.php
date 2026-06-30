@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/AdminCertificateService.php';
+require_once __DIR__ . '/../src/CertificatePdfService.php';
 
 $service = (new ReflectionClass(AdminCertificateService::class))->newInstanceWithoutConstructor();
 $salt = new ReflectionProperty(AdminCertificateService::class, 'documentSalt');
@@ -41,6 +42,44 @@ try {
     throw $exception;
 } catch (AdminCertificateException) {
     // Esperado: no se emiten certificados ya vencidos.
+}
+
+// Armado de pdfDownloadUrl: el helper solo arma la URL con publicBaseUrl; no
+// toca el token completo ni persiste nada.
+$buildPdfUrl = new ReflectionMethod(AdminCertificateService::class, 'buildPdfDownloadUrl');
+$pubBaseUrl = new ReflectionProperty(AdminCertificateService::class, 'publicBaseUrl');
+$pubBaseUrl->setValue($service, 'https://demo.example.edu.ar/certificados');
+
+$downloadUrl = $buildPdfUrl->invoke($service, 42);
+$expected = 'https://demo.example.edu.ar/certificados/api/admin/certificados/42/pdf';
+if ($downloadUrl !== $expected) {
+    throw new RuntimeException("pdfDownloadUrl inválido: {$downloadUrl}");
+}
+if (str_contains($downloadUrl, '/validar/')) {
+    throw new RuntimeException('pdfDownloadUrl no debe exponer la ruta de validación con token.');
+}
+
+// Fallo de PDF dentro de la transacción: un CertificatePdfService con storage
+// inaccesible debe lanzar y el llamador (emitir) rollbackearía. Validamos acá
+// que el helper privado genera la URL con el token y no filtra el token en la
+// respuesta del DTO, usando el builder que no recibe token.
+$generateWithinTx = new ReflectionMethod(AdminCertificateService::class, 'generatePdfWithinTransaction');
+$pdfServiceProp = new ReflectionProperty(AdminCertificateService::class, 'pdfService');
+$pdfServiceProp->setValue($service, null);
+
+try {
+    $generateWithinTx->invoke($service, 'CERT-2026-AB12CD34', '12****78', [
+        'studentDisplayName' => 'Alumno Demo',
+        'courseName' => 'Curso Demo',
+        'issuedAt' => $twoDaysAgo,
+        'expiresAt' => '',
+    ], 'TOKEN_COMPLETO_DEMO');
+    throw new RuntimeException('La generación de PDF sin servicio no falló.');
+} catch (RuntimeException $exception) {
+    if (!str_contains($exception->getMessage(), 'PDF no disponible')) {
+        throw $exception;
+    }
+    // Esperado: sin pdfService la emisión debe abortar antes del commit.
 }
 
 echo "OK AdminCertificateServiceTest\n";

@@ -19,8 +19,9 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | `GET` | `/certificados/api/health` | Verificar disponibilidad básica de la API. | Público técnico, sin datos sensibles. |
 | `GET` | `/certificados/api/certificados/{token}/verificacion` | Validar un token leído desde QR o link. | Público, respuesta mínima. |
 | `POST` | `/certificados/api/certificados/consulta` | Consulta alternativa cuando el cliente no pueda usar path param. | Público, respuesta mínima. |
-| `POST` | `/certificados/api/admin/certificados` | Emitir certificado y token verificable. | Admin con `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/certificados` | Emitir certificado y token verificable; genera PDF/QR sincrónico. | Admin con `X-Admin-Key`. |
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revocar certificado e invalidar tokens activos. | Admin con `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/certificados/{id}/pdf` | Descargar el PDF persistido del certificado. | Admin con `X-Admin-Key`. |
 
 No existe endpoint de reenvío: `POST /certificados/api/admin/certificados/{id}/reenviar` debe responder como ruta no encontrada mientras no haya mecanismo de email definido.
 
@@ -116,7 +117,8 @@ Respuesta `201`:
     },
     "issuedAt": "2026-06-26",
     "expiresAt": "2026-12-31",
-    "tokenPrefix": "prefijo_demo"
+    "tokenPrefix": "prefijo_demo",
+    "pdfDownloadUrl": "https://demo.example.edu.ar/certificados/api/admin/certificados/10/pdf"
   },
   "meta": {
     "requestId": "req_admin_no_sensible"
@@ -124,7 +126,7 @@ Respuesta `201`:
 }
 ```
 
-La emisión no devuelve DNI completo ni token completo. La entrega del token queda pendiente hasta definir email/reenvío u otro canal seguro.
+La emisión no devuelve DNI completo ni token completo. `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. La entrega del token queda pendiente hasta definir email/reenvío u otro canal seguro. Si la generación o persistencia del PDF falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional).
 
 ### `POST /admin/certificados/{id}/revocar`
 
@@ -152,6 +154,44 @@ Respuesta `200`:
 }
 ```
 
+### `GET /admin/certificados/{id}/pdf`
+
+Descarga el PDF persistido del certificado emitido. El PDF se genera sincrónicamente durante `POST /admin/certificados` y se almacena como `{certificateCode}.pdf` en `certificate_storage_path` (configuración externa, preferentemente fuera del webroot).
+
+Headers:
+
+| Header | Regla |
+|---|---|
+| `X-Admin-Key` | Requerido. Se valida igual que en emisión/revocación. |
+| `Content-Type` | No se exige; el endpoint es `GET`. |
+
+Parámetros:
+
+| Campo | Ubicación | Regla |
+|---|---|---|
+| `id` | path | Requerido. Numérico entero mayor a 0. Si no es numérico, responde `400 VALIDATION_ERROR`. |
+
+Respuesta `200` con body binario PDF y headers:
+
+| Header | Valor |
+|---|---|
+| `Content-Type` | `application/pdf` |
+| `Content-Disposition` | `attachment; filename="{certificateCode}.pdf"` |
+| `Content-Length` | Tamaño del archivo |
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `SAMEORIGIN` |
+
+Errores:
+
+| HTTP | `code` | Uso |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | `id` no numérico o fuera de rango. |
+| 401 | `UNAUTHORIZED` | Falta `X-Admin-Key` o valor inválido. |
+| 404 | `PDF_NOT_FOUND` | Certificado inexistente o PDF no persistido. |
+| 405 | `METHOD_NOT_ALLOWED` | Método distinto de `GET` (con `Allow: GET`). |
+
+La descarga no expone el token completo ni rutas internas en la respuesta.
+
 ## Sobre de errores
 
 Toda respuesta de error debe usar este formato:
@@ -171,9 +211,10 @@ Toda respuesta de error debe usar este formato:
 
 | HTTP | `code` | Uso |
 |---|---|---|
-| 400 | `VALIDATION_ERROR` | Token ausente o formato inválido, o body JSON malformado en POST. |
+| 400 | `VALIDATION_ERROR` | Token ausente o formato inválido, o body JSON malformado en POST, o `id` no numérico en `GET /admin/certificados/{id}/pdf`. |
 | 401 | `UNAUTHORIZED` | Falta autorización administrativa válida. |
 | 404 | `CERTIFICATE_NOT_FOUND` | Token inexistente, revocado o no verificable públicamente. |
+| 404 | `PDF_NOT_FOUND` | Certificado inexistente o PDF no persistido en `GET /admin/certificados/{id}/pdf`. |
 | 405 | `METHOD_NOT_ALLOWED` | Método HTTP no permitido. |
 | 409 | `CERTIFICATE_NOT_REVOCABLE` | El certificado existe pero no puede revocarse en su estado actual. |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | POST JSON sin `Content-Type: application/json` (con o sin charset). |

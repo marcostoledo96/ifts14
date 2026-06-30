@@ -29,6 +29,8 @@ final class AdminCertificateService
         private readonly string $requestId,
         private readonly ?LoggerInterface $logger = null,
         private readonly ?string $documentSalt = null,
+        private readonly ?CertificatePdfService $pdfService = null,
+        private readonly ?string $publicBaseUrl = null,
     ) {
     }
 
@@ -79,6 +81,9 @@ final class AdminCertificateService
             $statement->bindValue(3, $tokenPrefix);
             $statement->bindValue(4, $data['expiresAt'] === null ? null : $data['expiresAt'] . ' 23:59:59');
             $statement->execute();
+
+            $pdfPath = $this->generatePdfWithinTransaction($code, $documentMasked, $data, $token);
+
             $this->pdo->commit();
         } catch (AdminCertificateException $exception) {
             throw $exception;
@@ -101,7 +106,51 @@ final class AdminCertificateService
             'issuedAt' => $data['issuedAt'],
             'expiresAt' => $data['expiresAt'],
             'tokenPrefix' => $tokenPrefix,
+            'pdfDownloadUrl' => $this->buildPdfDownloadUrl($id),
         ];
+    }
+
+    /**
+     * Genera el PDF dentro de la transacción antes del commit. Si falla, la
+     * transacción se revierte en el catch del llamador y no queda certificado
+     * emitido sin PDF. El token completo solo se usa acá para armar la URL del
+     * QR y nunca se persiste ni se devuelve.
+     *
+     * @param array<string, mixed> $data Datos validados (sin documentNumber).
+     * @throws RuntimeException Si el servicio PDF o el storage fallan.
+     */
+    private function generatePdfWithinTransaction(string $code, string $documentMasked, array $data, string $token): string
+    {
+        if ($this->pdfService === null || $this->publicBaseUrl === null) {
+            throw new RuntimeException('Configuración PDF no disponible.');
+        }
+
+        $validationUrl = rtrim($this->publicBaseUrl, '/') . '/validar/' . $token;
+        $viewData = [
+            'certificateCode' => $code,
+            'studentDisplayName' => $data['studentDisplayName'],
+            'documentMasked' => $documentMasked,
+            'courseName' => $data['courseName'],
+            'issuedAt' => $data['issuedAt'],
+            'expiresAt' => $data['expiresAt'] ?? '',
+        ];
+
+        $pdfPath = $this->pdfService->generate($code, $viewData, $validationUrl);
+
+        if (!is_file($pdfPath)) {
+            throw new RuntimeException('PDF no persistido.');
+        }
+
+        return $pdfPath;
+    }
+
+    private function buildPdfDownloadUrl(int $id): string
+    {
+        if ($this->publicBaseUrl === null) {
+            return '';
+        }
+
+        return rtrim($this->publicBaseUrl, '/') . '/api/admin/certificados/' . $id . '/pdf';
     }
 
     /** @return array<string, mixed> */

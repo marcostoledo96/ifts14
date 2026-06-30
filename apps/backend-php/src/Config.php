@@ -49,6 +49,29 @@ final class Config
         return $config;
     }
 
+    /**
+     * Valida y normaliza las claves requeridas solo para flujos PDF (emisión y
+     * descarga). Las configs de validación pública existentes pueden omitir
+     * estas claves sin romper `Config::load()`.
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, mixed> Config con public_base_url y certificate_storage_path normalizados.
+     * @throws RuntimeException Si alguna clave PDF falta o es inválida.
+     */
+    public static function requirePdfConfig(array $config): array
+    {
+        foreach (['public_base_url', 'certificate_storage_path'] as $key) {
+            if (!isset($config[$key]) || !is_string($config[$key]) || trim($config[$key]) === '') {
+                throw new RuntimeException('Configuration invalid.');
+            }
+        }
+
+        $config['public_base_url'] = rtrim(trim($config['public_base_url']), '/');
+        $config['certificate_storage_path'] = rtrim(trim($config['certificate_storage_path']), '/');
+
+        return $config;
+    }
+
     /** @param array<string, mixed> $config */
     public static function adminApiKey(array $config): string
     {
