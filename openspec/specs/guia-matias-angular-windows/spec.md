@@ -8,7 +8,7 @@ Definir los requisitos documentales para reescribir `MATIAS_PROMPTS_SDD_3_SEMANA
 
 ### Requirement: Contexto operativo y misión
 
-La guía DEBE explicar la misión de Matías, el alcance frontend Angular 20, las fuentes de verdad y las prohibiciones: no tocar backend, base, deploy, `material_privado_no_versionar/`, ni dependencias no aprobadas. Sobre la regla de Git: OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`) y crear/cambiar ramas con aprobación explícita de Matías en el mismo turno del chat, con el mensaje o comando exacto, y siempre con un diff-confirmation gate previo cuando corresponda (mostrar `git status --short` y `git diff --name-only` antes de stage, y `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat` antes de push). La creación/cambio de rama requiere árbol limpio y rama fuente explícita/actualizada. Permanecen PROHIBIDOS `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR. Marcos mantiene autoridad total sobre su propio workflow.
+La guía DEBE explicar la misión de Matías, el alcance frontend Angular 20, las fuentes de verdad y las prohibiciones: no tocar backend, base, deploy, `material_privado_no_versionar/`, ni dependencias no aprobadas. Sobre la regla de Git: OpenCode PUEDE ejecutar operaciones Git con aprobación explícita de Matías en el mismo turno del chat, comando exacto y evidencia previa. `git add` + `git commit` + `git push` a la rama actual requieren `sdd-verify` PASS, diff-confirmation gate antes de stage y pre-push safety antes de push. La preparación de rama o PR puede ocurrir antes de `sdd-verify` cuando el ciclo lo necesita. La creación/cambio de rama requiere árbol limpio o decisión explícita de stash/commit/abortar, y rama fuente explícita/actualizada. La única prohibición dura para Matías es `git push` directo a `main`. Marcos mantiene autoridad total sobre su propio workflow.
 
 #### Scenario: Inicio correcto
 - DADO que Matías abre la guía
@@ -26,12 +26,12 @@ La guía DEBE incluir comandos PowerShell para verificar Node.js, npm, Angular C
 
 ### Requirement: Flujo OpenCode/Gentle-AI y SDD
 
-La guía DEBE describir el flujo OpenCode/Gentle-AI con ciclos pequeños, TDD cuando haya implementación, `sdd-archive` obligatorio y reporte final. Política Git vigente: OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`), abrir PR y crear/cambiar ramas con aprobación explícita de Matías en el mismo turno del chat, con el mensaje o comando exacto, y siempre con un diff-confirmation gate previo cuando corresponda. `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` y merge de PR siguen prohibidos. Marcos decide por separado para su flujo.
+La guía DEBE describir el flujo OpenCode/Gentle-AI con ciclos pequeños, TDD cuando haya implementación, `sdd-archive` obligatorio y reporte final. Política Git vigente: OpenCode PUEDE ejecutar `git add` + `git commit` + `git push` (a la rama actual, nunca a `main`), abrir PR, crear/cambiar ramas, hacer merge o rebase solo con aprobación explícita de Matías en el mismo turno del chat, con comando exacto y evidencia previa. La única prohibición dura para Matías es `git push` directo a `main`. Marcos decide por separado para su flujo.
 
 #### Scenario: Cierre de ciclo
 - DADO un ciclo terminado
 - CUANDO Matías sigue la guía
-- ENTONCES ejecuta validaciones, QA manual, `sdd-archive` y deja `git add` + `git commit` + `git push`, PR y creación/cambio de rama bajo aprobación explícita de Matías por turno (con diff-confirmation gate y árbol limpio cuando corresponda); `git merge` queda manual de Marcos
+- ENTONCES ejecuta validaciones, QA manual, `sdd-archive` y deja `git add` + `git commit` + `git push`, PR, creación/cambio de rama, merge o rebase bajo aprobación explícita de Matías por turno, con comando exacto, evidencia previa y árbol limpio o decisión explícita de stash/commit/abortar cuando corresponda
 
 ### Requirement: Uso de `muestra_pagina/`
 
@@ -71,12 +71,31 @@ La guía DEBE reorganizar ciclos ejecutables F0-01 a F3-06. Cada ciclo DEBE incl
 
 ### Requirement: Reporte final y propuestas Git
 
-La guía DEBE exigir un reporte final por ciclo con resumen, archivos tocados, pruebas, QA, bloqueos, documentación actualizada, riesgos y comandos Git ejecutables solo con aprobación explícita de Matías en el mismo turno del chat (con diff-confirmation gate previo cuando corresponda). OpenCode no ejecuta `git add`, `git commit`, `git push`, PR ni creación/cambio de rama sin esa aprobación. `git merge` queda manual de Marcos.
+La guía DEBE exigir un reporte final por ciclo con resumen, archivos tocados, pruebas, QA, bloqueos, documentación actualizada, riesgos y comandos Git ejecutables solo con aprobación explícita de Matías en el mismo turno del chat, con comando exacto y evidencia previa. OpenCode no ejecuta `git add`, `git commit`, `git push`, PR, creación/cambio de rama, merge ni rebase sin esa aprobación. La única prohibición dura para Matías es `git push` directo a `main`.
 
 #### Scenario: Entrega revisable
 - DADO un ciclo listo para revisión
 - CUANDO Matías prepara la entrega
 - ENTONCES Marcos recibe evidencia suficiente para revisar y decidir commit, push o merge
+
+### Requirement: Política Git menos restrictiva para el flujo de Matías
+
+La guía DEBE indicar que, para el flujo de Matías, la única operación Git siempre prohibida es `git push` directo a `main`. El resto de las operaciones Git puede permitirse cuando Matías las aprueba explícitamente en el mismo turno, con comando exacto, evidencia previa y el gate práctico que corresponda. Para `git add` + `git commit` + `git push` a la rama de trabajo, el gate incluye `sdd-verify` PASS, `git status --short`, `git diff --name-only` y pre-push safety. Si existe `origin/<rama>`, el pre-push safety usa `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`; si es primer push, la guía DEBE declarar que la ref remota no existe y comparar contra la base aprobada con `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat`. Para crear o cambiar ramas, abrir PR, mergear o rebasear, la guía DEBE exigir aprobación explícita, comando exacto, evidencia previa y árbol limpio, o una decisión explícita de stash/commit/abortar. Para leer un archivo histórico sin modificar el working tree, la guía DEBE usar `git show <commit>:<archivo>`; `git checkout <commit> -- <archivo>` no se documenta como lectura read-only y requiere el gate normal si se usa para restaurar un path.
+
+#### Scenario: Preparación de rama antes de `sdd-verify`
+- DADO que un ciclo nuevo necesita crear o cambiar rama antes de iniciar implementación
+- CUANDO OpenCode propone `git switch`, `git checkout`, `git branch`, `git switch -c` o `git checkout -b`
+- ENTONCES presenta rama actual, estado del working tree, base o destino, confirma que el árbol está limpio o pide decisión explícita de stash/commit/abortar, y espera aprobación de Matías antes de ejecutar.
+
+#### Scenario: Primer push de una rama sin ref remota
+- DADO que `origin/<rama>` todavía no existe
+- CUANDO OpenCode prepara el pre-push safety
+- ENTONCES no marca como PASS un `fatal: ambiguous argument`; declara primer push y muestra `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat` contra la base aprobada.
+
+#### Scenario: Lectura histórica de archivo sin tocar el working tree
+- DADO que OpenCode necesita consultar un archivo en otro commit
+- CUANDO la operación es solo lectura
+- ENTONCES usa `git show <commit>:<archivo>`; si propone `git checkout <commit> -- <archivo>`, lo trata como restauración de path y requiere aprobación explícita con el gate normal.
 
 ### Requirement: Verificación del flujo OpenCode/Gentle-AI
 
@@ -95,7 +114,7 @@ El ciclo F0-02 DEBE producir evidencia documental de que OpenCode/Gentle-AI resp
 #### Scenario: Respeto de las prohibiciones y la política Git vigente
 - DADO cualquier acción Git propuesta por OpenCode
 - CUANDO Matías evalúa la propuesta
-- ENTONCES OpenCode NUNCA propone `git merge`, PR sin aprobación explícita, `git rebase`, `git push` a `main` ni merge de PR; y solo propone `git add` + `git commit` + `git push` (a la rama actual), PR o creación/cambio de rama bajo el diff-confirmation gate, árbol limpio cuando corresponda y aprobación explícita de Matías en el mismo turno del chat.
+- ENTONCES OpenCode nunca propone `git push` directo a `main`; las demás operaciones Git solo se proponen con aprobación explícita de Matías, comando exacto, evidencia previa, diff-confirmation gate o pre-push safety cuando corresponda, y árbol limpio o decisión explícita de stash/commit/abortar.
 
 #### Scenario: Cero modificaciones de producto
 - DADO que F0-02 es un ciclo de documentación pura
