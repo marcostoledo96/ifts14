@@ -193,10 +193,14 @@ No usar base real, certificados reales, DNI reales, logs productivos ni capturas
 | Backup y rollback manual | `Backup manual y rollback` |
 | Validación posterior con datos ficticios | `Validación con datos ficticios` |
 
-## Pendientes de capacidad pública
+## Estado de capacidad pública
 
-- **Rate limiting (`429 RATE_LIMITED`)**: el contrato de API lo menciona, pero el endpoint público de validación no lo implementa todavía. Queda pendiente para un ciclo SDD posterior; antes de producción conviene definir la estrategia (origen, ventana, backend de contador) para no abusar del endpoint público.
-- **Auditoría fault-injection**: el `INSERT` en `cert_eventos_auditoria` está envuelto en `try/catch` y no rompe la respuesta pública, pero no se ejecutó fault-injection en runtime.
+Rate limiting y fault-injection ya fueron implementados y verificados en el ciclo `backend-public-endpoint-hardening` (archivado en `openspec/changes/archive/2026-06-26-backend-public-endpoint-hardening/`):
+
+- **Rate limiting (`429 RATE_LIMITED`)**: aplicado a `GET /certificados/api/certificados/{token}/verificacion` y `POST /certificados/api/certificados/consulta` antes del lookup y la auditoría. Rate limiter de nodo único basado en JSON temporal con `flock()`, bucket hasheado con salt, fail-open ante problemas de storage. Detalle del contrato y limitaciones operativas (NAT, permisos de temporales) en `docs/backend/01-contrato-api-certificados.md`.
+- **Auditoría fault-injection**: el `INSERT` en `cert_eventos_auditoria` está envuelto en `try/catch`. Se ejecutó fault-injection en runtime (renombrando la tabla en DB demo ficticia y restaurándola en `finally`) demostrando que la falla de auditoría no rompe las respuestas `200`, `404` ni `400` del contrato público.
+
+Limitación documentada: el rate limiting es de nodo único y no distribuido. Antes de producción conviene confirmar la estrategia si el entorno usa balanceo de carga o múltiples nodos.
 
 ## Smoke aislado (`certificados_qa`)
 
