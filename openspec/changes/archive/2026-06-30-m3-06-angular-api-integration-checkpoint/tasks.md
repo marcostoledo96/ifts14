@@ -45,7 +45,7 @@ Chain strategy: pending
 
 ## Phase 5: Smoke manual documentado
 
-- [x] 5.1 Crear `scripts/m3-06-smoke.sh`: arranca `php -S 127.0.0.1:8080 -t apps/backend-php apps/backend-php/index.php` con `CERTIFICADOS_CONFIG_PATH=/tmp/cfg.php` ficticio; `curl` a `/health` y `/certificados/{token}/verificacion` con token ficticio BIEN formado (32–128 chars, sin datos reales); sale 0 si health=200 y verificación=200/404 únicamente (404 controlado cuando no hay certificado sembrado); 400 y 500 = FAIL conforme a spec. Spec: "Smoke de health exitoso" + "Smoke de verificación con token ficticio" + "HTTP 404 no verificable".
+- [x] 5.1 Crear `scripts/m3-06-smoke.sh`: arranca `php -S 127.0.0.1:8080 -t apps/backend-php apps/backend-php/index.php` con `CERTIFICADOS_CONFIG_PATH=/tmp/cfg.php` ficticio; `curl` a `/certificados/api/health` y `/certificados/api/certificados/{token}/verificacion` con token ficticio BIEN formado (32–128 chars, sin datos reales); sale 0 si health=200 con JSON esperado y verificación=200 DTO público o 404 `CERTIFICATE_NOT_FOUND`; 400, 404 genérico y 500 = FAIL conforme a spec. Spec: "Smoke de health exitoso" + "Smoke de verificación con token ficticio" + "HTTP 404 no verificable".
 - [x] 5.2 En `apps/frontend-angular/src/environments/environment.development.ts`, dejar comentario con flujo de smoke: toggle `useRealApi: true`, `ng serve`, abrir `http://localhost:4200/certificados/validar/demo-valido`, capturar evidencia sin datos reales.
 
 ## Phase 6: Documentación

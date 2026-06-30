@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # M3-06: smoke local Angular↔API PHP real con datos ficticios.
-# Arranca la API PHP en 127.0.0.1:8080 con config ficticia, consulta
-# /health y /certificados/{token}/verificacion, y sale 0 si las respuestas
-# son controladas: health=200 y verificación=200|404 únicamente.
+# Arranca la API PHP en 127.0.0.1:8080 con config ficticia, consulta las
+# mismas rutas que usa Angular vía proxy (`/certificados/api/...`) y sale 0 si
+# las respuestas son controladas: health=200 y verificación=200|404 únicamente.
 # 400 (VALIDATION_ERROR) y 500 (INTERNAL_ERROR) se tratan como FAIL,
 # conforme a spec frontend-api-readiness "Smoke de verificación con token
 # ficticio" (DEBE recibir 200 o 404 según el fixture).
@@ -41,7 +41,7 @@ fi
 # Config ficticia: no usar en producción. Sin DB real de producción.
 # CertificateValidator valida el formato del token (32–128 chars,
 # [A-Za-z0-9_-]) antes de abrir PDO. El smoke usa un token ficticio BIEN
-# formado (32 chars, sin datos reales) para forzar el flujo de búsqueda: si la
+# formado (32–128 chars, sin datos reales) para forzar el flujo de búsqueda: si la
 # DB local está disponible pero no hay certificado sembrado para ese hash,
 # findCertificate devuelve null → 404 controlado. Si la DB no está disponible,
 # PDO lanza → 500 → FAIL. /health cubre 200. 400 y 500 siempre se tratan
@@ -53,7 +53,7 @@ declare(strict_types=1);
 // Config ficticia M3-06. Sin credenciales reales.
 return [
     'db_host' => '127.0.0.1',
-    'db_name' => 'ifts14_demo_ficticio',
+    'db_name' => getenv('M3_06_DB_NAME') ?: 'ifts14_certificados_demo',
     'db_user' => 'usuario_demo',
     'db_pass' => 'clave_demo_no_real',
     'token_pepper' => 'pepper_demo_ficticio_2026_no_usar',
@@ -69,19 +69,51 @@ PID=$!
 
 # Esperar a que el server responda.
 for _ in $(seq 1 20); do
-  if curl -fsS "http://$PORT/health" >/dev/null 2>&1; then
+  if curl -fsS "http://$PORT/certificados/api/health" >/dev/null 2>&1; then
     break
   fi
   sleep 0.25
 done
 
-echo "[m3-06-smoke] GET /health"
-HEALTH_STATUS=$(curl -s -o /tmp/m3-06-health.json -w '%{http_code}' "http://$PORT/health")
+echo "[m3-06-smoke] GET /certificados/api/health"
+HEALTH_STATUS=$(curl -s -o /tmp/m3-06-health.json -w '%{http_code}' "http://$PORT/certificados/api/health")
 echo "  status=$HEALTH_STATUS body=$(cat /tmp/m3-06-health.json)"
 if [[ "$HEALTH_STATUS" != "200" ]]; then
-  echo "[m3-06-smoke] FAIL: /health esperaba 200, got $HEALTH_STATUS" >&2
+  echo "[m3-06-smoke] FAIL: /certificados/api/health esperaba 200, got $HEALTH_STATUS" >&2
   exit 1
 fi
+
+assert_json_path() {
+  local file="$1"
+  local path="$2"
+  local expected="$3"
+  php -r '
+    $data = json_decode(file_get_contents($argv[1]), true);
+    if (!is_array($data)) { exit(1); }
+    $value = $data;
+    foreach (explode(".", $argv[2]) as $key) {
+      if (!is_array($value) || !array_key_exists($key, $value)) { exit(1); }
+      $value = $value[$key];
+    }
+    exit((string) $value === $argv[3] ? 0 : 1);
+  ' "$file" "$path" "$expected"
+}
+
+assert_200_dto() {
+  local file="$1"
+  php -r '
+    $data = json_decode(file_get_contents($argv[1]), true);
+    $dto = is_array($data) ? ($data["data"] ?? null) : null;
+    $ok = is_array($dto)
+      && ($dto["valid"] ?? null) === true
+      && ($dto["status"] ?? null) === "vigente"
+      && isset($dto["certificateCode"], $dto["student"]["displayName"], $dto["student"]["documentMasked"], $dto["course"]["name"], $dto["course"]["issuedAt"], $dto["verifiedAt"], $data["meta"]["requestId"]);
+    exit($ok ? 0 : 1);
+  ' "$file"
+}
+
+assert_json_path /tmp/m3-06-health.json data.status ok
+assert_json_path /tmp/m3-06-health.json data.service certificados-api
 
 # Verificación con token ficticio BIEN formado (32 chars, charset válido, sin
 # datos reales): pasa la validación de formato y llega a la búsqueda en DB.
@@ -92,14 +124,22 @@ fi
 # 400 (token mal formado) y 500 (error técnico) siempre se tratan como FAIL,
 # conforme a la spec: el smoke solo acepta 200 o 404 como éxito controlado.
 TOKEN_FICTICIO="m3-06-token-ficticio-smoke-2026-abcdef0123456789"
-echo "[m3-06-smoke] GET /certificados/$TOKEN_FICTICIO/verificacion (token ficticio bien formado, 32+ chars)"
-VERIF_STATUS=$(curl -s -o /tmp/m3-06-verif.json -w '%{http_code}' "http://$PORT/certificados/$TOKEN_FICTICIO/verificacion")
+echo "[m3-06-smoke] GET /certificados/api/certificados/$TOKEN_FICTICIO/verificacion (token ficticio bien formado, 32+ chars)"
+VERIF_STATUS=$(curl -s -o /tmp/m3-06-verif.json -w '%{http_code}' "http://$PORT/certificados/api/certificados/$TOKEN_FICTICIO/verificacion")
 echo "  status=$VERIF_STATUS body=$(cat /tmp/m3-06-verif.json)"
 case "$VERIF_STATUS" in
   200)
+    if ! assert_200_dto /tmp/m3-06-verif.json; then
+      echo "[m3-06-smoke] FAIL: verificación 200 sin DTO público esperado." >&2
+      exit 1
+    fi
     echo "[m3-06-smoke] OK: verificación 200 (certificado existente mapeado al DTO público)."
     ;;
   404)
+    if ! assert_json_path /tmp/m3-06-verif.json error.code CERTIFICATE_NOT_FOUND; then
+      echo "[m3-06-smoke] FAIL: verificación 404 sin error.code CERTIFICATE_NOT_FOUND." >&2
+      exit 1
+    fi
     echo "[m3-06-smoke] OK: token ficticio bien formado inexistente → 404 CERTIFICATE_NOT_FOUND (controlado, sin DB de producción)."
     ;;
   400)
