@@ -2,14 +2,12 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/src/Response.php';
 require_once __DIR__ . '/src/Config.php';
 require_once __DIR__ . '/src/RateLimiter.php';
 require_once __DIR__ . '/src/Database.php';
 require_once __DIR__ . '/src/CertificateValidator.php';
 require_once __DIR__ . '/src/AuthGate.php';
-require_once __DIR__ . '/src/CertificatePdfService.php';
 require_once __DIR__ . '/src/AdminCertificateService.php';
 
 $requestId = 'req_' . bin2hex(random_bytes(8));
@@ -95,6 +93,17 @@ if ($path === '/admin/certificados') {
         return;
     }
 
+    if (!loadPdfDependencies($requestId)) {
+        return;
+    }
+
+    try {
+        $config = Config::requirePdfConfig($config);
+    } catch (RuntimeException) {
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return;
+    }
+
     $body = readJsonBody($requestId);
     if ($body === null) {
         return;
@@ -167,6 +176,17 @@ if (preg_match('#^/admin/certificados/([^/]+)/pdf$#', $path, $matches) === 1) {
 
     $config = Config::load();
     if (!requireAdmin($config, $requestId)) {
+        return;
+    }
+
+    if (!loadPdfDependencies($requestId)) {
+        return;
+    }
+
+    try {
+        $config = Config::requirePdfConfig($config);
+    } catch (RuntimeException) {
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
         return;
     }
 
@@ -280,7 +300,16 @@ function streamPdf(array $config, int $certificateId, string $requestId): void
 
     $path = (new CertificatePdfService((string) $config['certificate_storage_path']))->pathForCode($code);
 
-    if (!is_file($path)) {
+    // Validaciones previas a headers: existencia, legibilidad y no vacío.
+    // Si el archivo existe pero no es legible o está vacío, respondemos error
+    // seguro en vez de emitir 200 application/pdf y fallar en readfile().
+    if (!is_file($path) || !is_readable($path)) {
+        Response::error(404, 'PDF_NOT_FOUND', 'PDF no encontrado.', $requestId);
+        return;
+    }
+
+    $size = filesize($path);
+    if ($size === false || $size <= 0) {
         Response::error(404, 'PDF_NOT_FOUND', 'PDF no encontrado.', $requestId);
         return;
     }
@@ -292,7 +321,35 @@ function streamPdf(array $config, int $certificateId, string $requestId): void
     header('X-Frame-Options: SAMEORIGIN');
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . (string) filesize($path));
+    header('Content-Length: ' . (string) $size);
 
-    readfile($path);
+    if (readfile($path) === false) {
+        // readfile falló después de headers 200: no podemos cambiar el status,
+        // pero al menos limpiamos el buffer para no enviar basura mixta.
+        if (ob_get_length() !== false) {
+            ob_end_clean();
+        }
+    }
+}
+
+/**
+ * Carga diferida de dependencias PDF (Composer autoload y CertificatePdfService).
+ * Solo se invoca para rutas que requieren generación/descarga de PDF.
+ * Si vendor/autoload.php no existe (deploy sin Composer), responde error seguro
+ * sin romper rutas no-PDF como /health ni validación pública.
+ *
+ * @return bool True si las dependencias están listas; false si ya se respondió error.
+ */
+function loadPdfDependencies(string $requestId): bool
+{
+    $autoloadPath = __DIR__ . '/vendor/autoload.php';
+    if (!is_file($autoloadPath) || !is_readable($autoloadPath)) {
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return false;
+    }
+
+    require_once $autoloadPath;
+    require_once __DIR__ . '/src/CertificatePdfService.php';
+
+    return true;
 }
