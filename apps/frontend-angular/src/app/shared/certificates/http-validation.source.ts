@@ -12,16 +12,17 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiEnvelope, ApiErrorEnvelope, CertificateVerificationDto } from './dto';
 import { ValidationSource, ValidationSourceResult } from './validation-source';
+import { environment } from '../../../environments/environment';
 
 // ponytail: HttpClient observable → Promise. No inventamos fetch paralelo.
-// La API vive bajo /certificados/api/ en el deploy cPanel; la URL es relativa
-// al dominio y resuelve contra la base del documento (no contra baseHref).
+// La URL base viene de environment.apiBaseUrl (frontera única mock/real, M3-06).
+// En ng serve el proxy.conf.json reenvía /certificados/api → PHP local :8080.
 @Injectable({ providedIn: 'root' })
 export class HttpValidationSource implements ValidationSource {
   private readonly http = inject(HttpClient);
 
   async fetch(token: string, signal?: AbortSignal): Promise<ValidationSourceResult> {
-    const url = `/certificados/api/certificados/${encodeURIComponent(token)}/verificacion`;
+    const url = `${environment.apiBaseUrl}/certificados/${encodeURIComponent(token)}/verificacion`;
     // ponytail: Angular 20 HttpClient no tiene opción `signal` nativa, pero
     // desuscribir el Observable aborta el request en curso (docs Angular 20).
     // Contrato abort: rechaza con AbortError como MockValidationSource;

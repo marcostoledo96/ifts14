@@ -1,5 +1,8 @@
 // Entorno de producción por defecto.
-// useMockApi=false → ValidationService usa HttpValidationSource contra la API PHP.
+// useRealApi=false → ValidationService usa MockValidationSource.
+// apiBaseUrl apunta a la API PHP pública en cPanel.
+// En producción el modo real no se habilita desde este archivo.
 export const environment = {
-  useMockApi: false,
+  useRealApi: false,
+  apiBaseUrl: '/certificados/api',
 };
