@@ -12,7 +12,7 @@ Estado actualizado al 2026-06-28. Convención: ✅ hecho, ⏳ pendiente, 🚫 bl
 |---|---|---|---|---|---|
 | F0 | F0-01 | Verificar entorno Windows | ✅ | docs/matias-onboarding-windows | `d7b523e` (merged en PR #6) |
 | F0 | F0-02 | Verificar OpenCode/Gentle-AI | ✅ | docs/matias-onboarding-f0-02-f0-03 | archive cerrado; commit del PR sin fijar HEAD transitorio |
-| F0 | F0-03 | Leer documentación mínima y entender misión | ⏳ | docs/matias-onboarding-f0-02-f0-03 | Matías. |
+| F0 | F0-03 | Leer documentación mínima y entender misión | ✅ | docs/matias-onboarding-f0-03 | Archive cerrado en PR #12; onboarding frontend registrado. |
 | F1 | F1-01 | Auditar `muestra_pagina/` | ⏳ | frontend/v0-design-system | Matías. |
 | F1 | F1-02 | Extraer sistema visual desde v0 | ⏳ | frontend/v0-design-system | Matías. |
 | F1 | F1-03 | Crear app Angular 20 | ⏳ | frontend/angular-shell | Marcos si hace falta destrabar backend. |
@@ -31,7 +31,7 @@ Estado actualizado al 2026-06-28. Convención: ✅ hecho, ⏳ pendiente, 🚫 bl
 | F3 | F3-05 | Build para `/certificados/` | ⏳ | frontend/api-readiness | Marcos si hace falta. |
 | F3 | F3-06 | Handoff a Marcos | ⏳ | qa/frontend-release-readiness | Matías. |
 
-**Resumen**: 2 de 20 hecho. 18 pendientes. La rama actual es `docs/matias-onboarding-f0-02-f0-03` (mergeada desde main actualizado en PR #6). Cambios ad-hoc de governance también commiteados en PR #6: regla de commit con aprobación explícita (`d4589a1`), regla de push a ramas con aprobación explícita (`79a72ca`), fix de bugs de Codex (`e890c3c`). Fase 2 (F4-F6) en `MATIAS_PROMPTS_SDD_FASE2.md` está bloqueada hasta que Marcos apruebe continuar.
+**Resumen**: 3 de 20 hechos. 17 pendientes. F0 queda cerrado con F0-03 registrado en PR #12. Cambios ad-hoc de governance también commiteados en PR #6: regla de commit con aprobación explícita (`d4589a1`), regla de push a ramas con aprobación explícita (`79a72ca`), fix de bugs de Codex (`e890c3c`). Fase 2 (F4-F6) en `MATIAS_PROMPTS_SDD_FASE2.md` está bloqueada hasta que Marcos apruebe continuar.
 
 ### División operativa frontend
 
@@ -449,7 +449,7 @@ Mensaje de commit sugerido: `docs(matias): documentar verificacion de opencode s
 ### Ciclo F0-03 — Leer documentación mínima y entender misión
 
 Objetivo: dejar evidencia de que Matías entendió rol, alcance, fuentes de verdad y límites antes del trabajo frontend.
-Rama sugerida: `docs/matias-onboarding-f0-02-f0-03`.
+Rama sugerida: `docs/matias-onboarding-f0-03`.
 Archivos a leer: `README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md`, `apps/frontend-angular/AGENTS.md`.
 
 Comandos si aplica:
