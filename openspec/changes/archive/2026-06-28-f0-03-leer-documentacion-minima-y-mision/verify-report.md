@@ -20,7 +20,7 @@ El ciclo F0-03 produjo exitosamente la síntesis operativa `docs/opencode/onboar
 | 3 | `git rev-parse --abbrev-ref HEAD` | `docs/matias-onboarding-f0-03` | `docs/matias-onboarding-f0-03` | PASS |
 | 4 | `git rev-parse HEAD` | `711e3ca` (sin commits del agente) | `711e3cafc8aef6fa992248cb77d5df5a5e7db6d3` | PASS |
 | 5 | `git remote get-url origin` | URL contiene `ifts14` | `https://github.com/marcostoledo96/ifts14.git` | PASS |
-| 6 | `git log origin/docs/matias-onboarding-f0-03..docs/matias-onboarding-f0-03 --oneline` | Vacío (pre-push: la rama no fue pusheada aún) | `fatal: ambiguous argument` — la rama remota no existe (nunca fue pusheada), equivalente a vacío | PASS |
+| 6 | Pre-push contra `origin/docs/matias-onboarding-f0-03` | Si existe rama remota, listar commits pendientes; si no existe, tratar como primer push manual. | La rama remota no existía; el comando `git log origin/docs/matias-onboarding-f0-03..docs/matias-onboarding-f0-03 --oneline` falló con `fatal: ambiguous argument`. No se considera PASS: queda como condición manual de primer push. | MANUAL |
 | 7 | `grep -c "mision-matias-sintetizada" docs/opencode/onboarding-matias-frontend.md` | ≥ 1 | 1 ocurrencia (línea 76: "Este documento es la evidencia del capability `mision-matias-sintetizada`") | PASS |
 | 8 | `grep -c "muestra_pagina" docs/opencode/onboarding-matias-frontend.md` | ≥ 1 | 12 ocurrencias (líneas 12, 19, 25, 54, 55, 63, 64, 77, 84, 90, 144, 146) | PASS |
 | 9 | `grep -c "apps/frontend-angular" docs/opencode/onboarding-matias-frontend.md` | ≥ 1 | 5 ocurrencias (líneas 18, 36, 56, 71, 148) | PASS |
@@ -91,7 +91,7 @@ Ambos patches están pendientes y reservados para `sdd-archive`. **NO se aplicar
 ## Comandos Git PROPUESTOS al operador (NO ejecutados)
 
 ```powershell
-git add openspec/changes/f0-03-leer-documentacion-minima-y-mision/ docs/opencode/onboarding-matias-frontend.md
+git add openspec/specs/guia-matias-angular-windows/spec.md MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md docs/opencode/onboarding-matias-frontend.md openspec/changes/archive/2026-06-28-f0-03-leer-documentacion-minima-y-mision/
 git commit -m "docs(matias): registrar onboarding frontend"
 git push origin docs/matias-onboarding-f0-03
 ```
@@ -102,10 +102,11 @@ git status --short
 git diff --name-only
 ```
 
-**Pre-push safety**: antes de `git push`, Mati debe correr y revisar:
+**Pre-push safety**: antes de `git push`, Mati debe correr y revisar. Si la rama remota todavía no existe, usar la comparación segura contra la base y luego `git push -u` con aprobación explícita:
 ```powershell
-git log origin/docs/matias-onboarding-f0-03..docs/matias-onboarding-f0-03 --oneline
-git diff origin/docs/matias-onboarding-f0-03..docs/matias-onboarding-f0-03 --stat
+git log origin/main..docs/matias-onboarding-f0-03 --oneline
+git diff origin/main...docs/matias-onboarding-f0-03 --stat
+git push -u origin docs/matias-onboarding-f0-03
 ```
 
 Estos comandos requieren aprobación explícita de Matías en el mismo turno del chat, conforme `AGENTS.md:21` y `GUIA.md:153`.
