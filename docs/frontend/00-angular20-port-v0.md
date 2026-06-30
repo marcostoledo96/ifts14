@@ -122,7 +122,7 @@ Conmutación local mock/API real sin reescribir la pantalla pública:
 
 Smoke local documentado (no ejecutado en este turno — PHP CLI no instalado localmente):
 
-1. Levantar API PHP local en `:8080` (`bash scripts/m3-06-smoke.sh` requiere `php` CLI + MariaDB local ficticia alcanzable; usa token ficticio BIEN formado de 32+ chars → 404 controlado cuando no hay certificado sembrado; 400 y 500 = FAIL conforme a spec).
+1. Levantar API PHP local en `:8080` (`bash scripts/m3-06-smoke.sh` requiere `php` CLI + MariaDB local ficticia alcanzable; prueba las rutas `/certificados/api/health` y `/certificados/api/certificados/{token}/verificacion`, valida el JSON de respuesta, usa token ficticio BIEN formado de 32+ chars → 404 `CERTIFICATE_NOT_FOUND` controlado cuando no hay certificado sembrado; 400, 404 genérico y 500 = FAIL conforme a spec).
 2. En `environment.development.ts`, pasar `useRealApi: true` (solo local).
 3. `ng serve` (proxy.conf.json activo) → abrir `http://localhost:4200/certificados/validar/<token-ficticio>`.
 4. Capturar evidencia con tokens ficticios; sin datos reales.

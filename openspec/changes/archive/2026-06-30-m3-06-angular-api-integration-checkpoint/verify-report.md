@@ -68,7 +68,7 @@ Resultado: /bin/bash: openspec: orden no encontrada
 | Check | Result |
 |---|---|
 | Conteo de tasks | ✅ `checked=18 unchecked=0` |
-| Política del smoke | ✅ token ficticio de 48 caracteres, patrón `[A-Za-z0-9_-]{32,128}`, no acepta `400` ni `500` como éxito |
+| Política del smoke | ✅ token ficticio con patrón `[A-Za-z0-9_-]{32,128}`, prueba `/certificados/api/...`, valida JSON de health/404/200 y no acepta `400`, `404` genérico ni `500` como éxito |
 | CORS abierto en backend | ✅ No se detectaron headers `Access-Control-*` ni soporte `OPTIONS` agregado; el diseño usa proxy local |
 | Archivos backend modificados | ✅ Ninguno en el diff de producto |
 
@@ -79,8 +79,8 @@ Resultado: /bin/bash: openspec: orden no encontrada
 | Conmutación local mock/API real | Modo API real habilitado en local | `http-validation.source.spec.ts` cubre `HttpValidationSource` con `HttpTestingController`; `app.config.ts` usa `environment.useRealApi ? HttpValidationSource : MockValidationSource`. Smoke E2E bloqueado por falta de PHP CLI. | ⚠️ PARTIAL |
 | Conmutación local mock/API real | Modo mock preservado por defecto | `environment.ts` y `environment.development.ts` mantienen `useRealApi:false`; `app.config.spec.ts` pasó y verifica `MockValidationSource` por defecto. | ✅ COMPLIANT |
 | Conmutación local mock/API real | Conmutación sin cambio de pantalla | `ValidationService` consume `VALIDATION_SOURCE`; tests de servicio/página siguen verdes dentro de los 70 tests. | ✅ COMPLIANT |
-| Smoke local de integración con datos ficticios | Smoke de health exitoso | `scripts/m3-06-smoke.sh` consulta `/health`, pero la ejecución quedó bloqueada por `php` CLI ausente. | ⚠️ BLOCKED |
-| Smoke local de integración con datos ficticios | Smoke de verificación con token ficticio | Script usa token ficticio bien formado y solo acepta `200`/`404`; ejecución runtime bloqueada por `php` CLI ausente. | ⚠️ BLOCKED |
+| Smoke local de integración con datos ficticios | Smoke de health exitoso | `scripts/m3-06-smoke.sh` consulta `/certificados/api/health` y valida `data.status=ok`/`data.service=certificados-api`; ejecución runtime bloqueada por `php` CLI ausente. | ⚠️ BLOCKED |
+| Smoke local de integración con datos ficticios | Smoke de verificación con token ficticio | Script usa token ficticio bien formado, consulta `/certificados/api/certificados/{token}/verificacion` y solo acepta `200` con DTO público o `404 CERTIFICATE_NOT_FOUND`; ejecución runtime bloqueada por `php` CLI ausente. | ⚠️ BLOCKED |
 | Servicio reemplazable de validación | Mocks ficticios durante el desbloqueo | Tests de `MockValidationSource`, `ValidationService` y página pública pasaron dentro de los 70 tests. | ✅ COMPLIANT |
 | Servicio reemplazable de validación | Cambio a API PHP real en local | `HttpValidationSource` probado con `HttpTestingController`; provider real por entorno verificado por inspección estática. Smoke E2E bloqueado. | ⚠️ PARTIAL |
 | Servicio reemplazable de validación | Frontera única para mock y real | `validation-source.ts`, `ValidationService` y `http-validation.source.spec.ts` prueban la frontera común y URL desde `apiBaseUrl`. | ✅ COMPLIANT |
@@ -105,7 +105,7 @@ Resultado: /bin/bash: openspec: orden no encontrada
 | `HttpValidationSource` usa `apiBaseUrl` | ✅ Implemented | URL construida desde `${environment.apiBaseUrl}/certificados/${encodeURIComponent(token)}/verificacion`. |
 | Proxy local Angular | ✅ Implemented | `proxy.conf.json` apunta `/certificados/api` a `127.0.0.1:8080`; `angular.json` registra `serve.options.proxyConfig`. |
 | Mapeo 404/500/red | ✅ Implemented | `404 CERTIFICATE_NOT_FOUND` conserva envelope; mapper lo colapsa a `not-verifiable`; `500`/red → `technical-error`. |
-| Smoke script seguro | ✅ Implemented with blocked runtime | Token ficticio bien formado; config ficticia bajo `/tmp`; no datos reales; éxito solo `200`/`404`. |
+| Smoke script seguro | ✅ Implemented with blocked runtime | Token ficticio bien formado; config ficticia bajo `/tmp`; no datos reales; éxito solo `200` con DTO público o `404 CERTIFICATE_NOT_FOUND`. |
 | Documentación de frontend/backend/deploy | ✅ Implemented | Docs actualizadas con límites, proxy, separación de rutas y caveat de PHP CLI. |
 
 ### Coherence (Design)

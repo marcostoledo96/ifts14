@@ -64,7 +64,7 @@ El contrato de vista no cambia: `ValidationService.verify()` sigue devolviendo `
 |---|---|---|
 | Unit frontend | Mapper y `ValidationService` preservan `404 CERTIFICATE_NOT_FOUND → not-verifiable` y `500`/red → `technical-error`. | `npm test -- --watch=false` o specs puntuales si el runner lo permite. |
 | Integración frontend | `HttpValidationSource` usa `apiBaseUrl`, encodea token y conserva envelopes. | `HttpTestingController`. |
-| Smoke local | `GET /health` y validación con token ficticio vía `ng serve` + proxy contra PHP local. | Backend con config example/ficticia, sin cPanel ni datos reales. |
+| Smoke local | `GET /certificados/api/health` y validación con token ficticio vía `ng serve` + proxy contra PHP local. | Backend con config example/ficticia, sin cPanel ni datos reales. |
 | Backend | Sin CORS: lint/tests existentes. Con CORS: agregar caso `OPTIONS` local seguro. | `php -l`/`HttpContractTest.php` según runtime disponible. |
 
 ## Migración / rollout
