@@ -159,6 +159,13 @@ try {
     ], '{');
     assertError($resendBadJson, 400, 'VALIDATION_ERROR', 'reenvío JSON malformado');
 
+    // 400 email inválido antes de validar transporte: debe ganar incluso en modo stub.
+    $resendInvalidEmailStub = request($port, 'POST', '/admin/certificados/1/reenviar', [
+        'Content-Type: application/json',
+        'X-Admin-Key: ' . $adminKey,
+    ], '{"destinatarioEmail":"no-es-email"}');
+    assertError($resendInvalidEmailStub, 400, 'VALIDATION_ERROR', 'reenvío email inválido con stub');
+
     // 503 con transporte stub (default del config de ejemplo no incluye delivery_transport,
     // pero el config de test hereda el default 'stub' de Config::requireDeliveryConfig).
     $resendStub = request($port, 'POST', '/admin/certificados/1/reenviar', [
@@ -215,6 +222,12 @@ try {
 
     try {
         waitForServer($port2);
+
+        $resendInvalidEmailSmtpIncomplete = request($port2, 'POST', '/admin/certificados/1/reenviar', [
+            'Content-Type: application/json',
+            'X-Admin-Key: ' . $adminKey,
+        ], '{"destinatarioEmail":"no-es-email"}');
+        assertError($resendInvalidEmailSmtpIncomplete, 400, 'VALIDATION_ERROR', 'reenvío email inválido con smtp incompleto');
 
         $resendSmtpIncomplete = request($port2, 'POST', '/admin/certificados/1/reenviar', [
             'Content-Type: application/json',

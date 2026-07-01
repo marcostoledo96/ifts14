@@ -226,6 +226,11 @@ if (preg_match('#^/admin/certificados/([^/]+)/reenviar$#', $path, $matches) === 
     }
 
     $recipient = isset($body['destinatarioEmail']) && is_string($body['destinatarioEmail']) ? $body['destinatarioEmail'] : '';
+    $recipient = trim($recipient);
+    if ($recipient === '' || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
+        Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
+        return;
+    }
 
     // Normaliza y valida config de entrega ANTES de despachar. Si falla
     // (modo inválido o SMTP incompleto), respondemos 503 seguro sin dejar
