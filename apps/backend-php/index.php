@@ -9,6 +9,10 @@ require_once __DIR__ . '/src/Database.php';
 require_once __DIR__ . '/src/CertificateValidator.php';
 require_once __DIR__ . '/src/AuthGate.php';
 require_once __DIR__ . '/src/AdminCertificateService.php';
+require_once __DIR__ . '/src/EmailDeliveryTransport.php';
+require_once __DIR__ . '/src/StubEmailDeliveryTransport.php';
+require_once __DIR__ . '/src/SmtpEmailDeliveryTransport.php';
+require_once __DIR__ . '/src/EmailDeliveryTransportFactory.php';
 
 $requestId = 'req_' . bin2hex(random_bytes(8));
 
@@ -191,6 +195,71 @@ if (preg_match('#^/admin/certificados/([^/]+)/pdf$#', $path, $matches) === 1) {
     }
 
     streamPdf($config, $certificateId, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/certificados/([^/]+)/reenviar$#', $path, $matches) === 1) {
+    if ($method !== 'POST') {
+        header('Allow: POST');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    if (!requireJsonContentType($requestId)) {
+        return;
+    }
+
+    $certificateId = filter_var($matches[1], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if (!is_int($certificateId)) {
+        Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
+        return;
+    }
+
+    $config = Config::load();
+    if (!requireAdmin($config, $requestId)) {
+        return;
+    }
+
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
+    }
+
+    $recipient = isset($body['destinatarioEmail']) && is_string($body['destinatarioEmail']) ? $body['destinatarioEmail'] : '';
+
+    // Normaliza y valida config de entrega ANTES de despachar. Si falla
+    // (modo inválido o SMTP incompleto), respondemos 503 seguro sin dejar
+    // config sin normalizar al factory/transporte.
+    try {
+        $config = Config::requireDeliveryConfig($config);
+    } catch (RuntimeException) {
+        Response::error(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.', $requestId);
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $certificateId, $recipient): array {
+        $transport = EmailDeliveryTransportFactory::make($config);
+
+        // Valida el transporte antes de abrir PDO: si no está configurado,
+        // responde 503 sin tocar la base ni rotar token.
+        try {
+            $transport->assertConfigured();
+        } catch (RuntimeException) {
+            throw new AdminCertificateException(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.');
+        }
+
+        $service = new AdminCertificateService(
+            Database::pdo($config),
+            (string) $config['token_pepper'],
+            $requestId,
+            null,
+            (string) $config['app_salt'],
+            null,
+            (string) ($config['public_base_url'] ?? ''),
+        );
+
+        return ['status' => 200, 'data' => $service->reenviar($certificateId, $recipient, $transport)];
+    }, $requestId);
     return;
 }
 

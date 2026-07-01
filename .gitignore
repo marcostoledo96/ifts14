@@ -18,6 +18,8 @@ pnpm-debug.log*
 # PHP / Composer
 vendor/
 composer.lock
+# Excepción: se versiona el lock del backend para fijar tcpdf + phpmailer.
+!apps/backend-php/composer.lock
 
 # Entornos y secretos
 .env

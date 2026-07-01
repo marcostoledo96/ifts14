@@ -1,6 +1,6 @@
 # Contrato de API — Certificados QR
 
-Este contrato define la API PHP bajo `/certificados/api/` para validar certificados por QR o enlace. Tras el ciclo `backend-admin-certificados`, la API suma endpoints administrativos mínimos para emitir y revocar certificados con `X-Admin-Key`. El reenvío queda fuera de alcance hasta definir un mecanismo de email/entrega.
+Este contrato define la API PHP bajo `/certificados/api/` para validar certificados por QR o enlace. Tras el ciclo `backend-admin-certificados`, la API suma endpoints administrativos mínimos para emitir, revocar, descargar PDF y reenviar certificados con `X-Admin-Key`. El reenvío entrega el certificado por email mediante un enlace público de validación, con rotación de token y transporte configurable `stub|smtp`.
 
 ## Alcance
 
@@ -10,7 +10,7 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | Formato | JSON UTF-8 |
 | Persistencia | MariaDB 10.6.27 con PDO y prepared statements cuando se implemente. Modelo documentado en `docs/database/01-modelo-datos-certificados.md`. |
 | Exposición pública | Mínima: autenticidad, estado y datos no sensibles del certificado |
-| Fuera de alcance | Angular, migraciones nuevas, generación PDF/QR, envío de mails y reenvío administrativo |
+| Fuera de alcance | Angular, migraciones nuevas, generación PDF/QR fuera de emisión, envío masivo, adjuntos PDF en email, cola de jobs y operaciones reales sobre cPanel/public_html |
 
 ## Endpoints previstos
 
@@ -22,8 +22,9 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | `POST` | `/certificados/api/admin/certificados` | Emitir certificado y token verificable; genera PDF/QR sincrónico. | Admin con `X-Admin-Key`. |
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revocar certificado e invalidar tokens activos. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/certificados/{id}/pdf` | Descargar el PDF persistido del certificado. | Admin con `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/certificados/{id}/reenviar` | Reenviar certificado por email con rotación de token y enlace público. | Admin con `X-Admin-Key`. |
 
-No existe endpoint de reenvío: `POST /certificados/api/admin/certificados/{id}/reenviar` debe responder como ruta no encontrada mientras no haya mecanismo de email definido.
+El reenvío está cubierto por el contrato `admin-certificate-delivery`: rota el token activo, envía el enlace `/certificados/validar/{token}` por email y responde `200` con DTO de entrega sin token completo. Mientras el transporte esté en modo `stub` o SMTP sin credenciales, responde `503 DELIVERY_NOT_CONFIGURED` sin rotar token ni abrir transacción.
 
 ## DTOs
 
@@ -192,6 +193,60 @@ Errores:
 
 La descarga no expone el token completo ni rutas internas en la respuesta.
 
+### `POST /admin/certificados/{id}/reenviar`
+
+Reenvía el certificado por email: rota el token activo (revoca el anterior, emite uno nuevo), envía únicamente el enlace público de validación `/certificados/validar/{token}` por el transporte configurado y responde con un DTO de entrega que NO contiene el token completo, el email completo ni credenciales. El token completo viaja exclusivamente dentro del email del destinatario.
+
+Headers:
+
+| Header | Regla |
+|---|---|
+| `X-Admin-Key` | Requerido. Se valida igual que en emisión/revocación/descarga. |
+| `Content-Type` | `application/json` (con o sin `; charset=...`). |
+
+Parámetros:
+
+| Campo | Ubicación | Regla |
+|---|---|---|
+| `id` | path | Requerido. Numérico entero mayor a 0. Si no es numérico, responde `400 VALIDATION_ERROR`. |
+| `destinatarioEmail` | body | Requerido. Email válido. |
+
+Request demo:
+
+```json
+{
+  "destinatarioEmail": "persona@example.edu.ar"
+}
+```
+
+Respuesta `200`:
+
+```json
+{
+  "data": {
+    "certificadoId": 10,
+    "enviadoEn": "2026-06-30T19:00:00-03:00",
+    "destinatarioEnmascarado": "p***a@example.edu.ar"
+  },
+  "meta": {
+    "requestId": "req_admin_no_sensible"
+  }
+}
+```
+
+Errores:
+
+| HTTP | `code` | Uso |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | `id` no numérico, `destinatarioEmail` ausente o inválido, o body JSON malformado. |
+| 401 | `UNAUTHORIZED` | Falta `X-Admin-Key` o valor inválido. |
+| 404 | `CERTIFICATE_NOT_FOUND` | Certificado inexistente o no vigente. |
+| 405 | `METHOD_NOT_ALLOWED` | Método distinto de `POST` (con `Allow: POST`). |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | POST sin `Content-Type: application/json`. |
+| 503 | `DELIVERY_NOT_CONFIGURED` | Transporte en modo `stub` o SMTP sin credenciales. No rota token ni envía email. |
+
+El DTO de entrega nunca incluye el token completo, el email completo ni credenciales SMTP. La auditoría del evento `reenvio` guarda `certificado_id`, `tipo_evento`, `resultado`, `request_id` y `destinatario_enmascarado` en `detalle_seguro`; nunca guarda el token completo, DNI completo ni credenciales. El envío real solo ocurre si el transporte está configurado en modo `smtp` con credenciales externas válidas; el modo `stub` es el default seguro y nunca envía email real.
+
 ## Sobre de errores
 
 Toda respuesta de error debe usar este formato:
@@ -211,7 +266,7 @@ Toda respuesta de error debe usar este formato:
 
 | HTTP | `code` | Uso |
 |---|---|---|
-| 400 | `VALIDATION_ERROR` | Token ausente o formato inválido, o body JSON malformado en POST, o `id` no numérico en `GET /admin/certificados/{id}/pdf`. |
+| 400 | `VALIDATION_ERROR` | Token ausente o formato inválido, o body JSON malformado en POST, o `id` no numérico en `GET /admin/certificados/{id}/pdf` o `POST /admin/certificados/{id}/reenviar`. |
 | 401 | `UNAUTHORIZED` | Falta autorización administrativa válida. |
 | 404 | `CERTIFICATE_NOT_FOUND` | Token inexistente, revocado o no verificable públicamente. |
 | 404 | `PDF_NOT_FOUND` | Certificado inexistente o PDF no persistido en `GET /admin/certificados/{id}/pdf`. |
@@ -220,6 +275,7 @@ Toda respuesta de error debe usar este formato:
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | POST JSON sin `Content-Type: application/json` (con o sin charset). |
 | 429 | `RATE_LIMITED` | Demasiadas consultas desde el mismo origen. |
 | 500 | `INTERNAL_ERROR` | Error no esperado sin datos internos. |
+| 503 | `DELIVERY_NOT_CONFIGURED` | Transporte de email en modo `stub` o SMTP sin credenciales. No rota token ni envía email. |
 
 ## Reglas de validación
 
@@ -258,7 +314,7 @@ Toda respuesta JSON de la API emite los siguientes headers de seguridad centrali
 | `X-Content-Type-Options` | `nosniff` | Éxitos y errores JSON. |
 | `X-Frame-Options` | `SAMEORIGIN` | Éxitos y errores JSON. |
 
-Los endpoints POST que esperan JSON (`POST /certificados/consulta`, `POST /admin/certificados`, `POST /admin/certificados/{id}/revocar`) deben recibir `Content-Type: application/json` (con o sin `; charset=...`). Si el header falta o no coincide, la API responde `415 UNSUPPORTED_MEDIA_TYPE` antes de cualquier side effect o rate-limit.
+Los endpoints POST que esperan JSON (`POST /certificados/consulta`, `POST /admin/certificados`, `POST /admin/certificados/{id}/revocar`, `POST /admin/certificados/{id}/reenviar`) deben recibir `Content-Type: application/json` (con o sin `; charset=...`). Si el header falta o no coincide, la API responde `415 UNSUPPORTED_MEDIA_TYPE` antes de cualquier side effect o rate-limit.
 
 Si el `Content-Type` es correcto pero el body está malformado, la API responde `400 VALIDATION_ERROR` antes de construir el servicio, abrir la base, auditar o consumir el bucket del `RateLimiter` en el endpoint público.
 
