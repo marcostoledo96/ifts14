@@ -246,7 +246,7 @@ La guía de staging DEBE exigir backup previo si ya existe `/certificados_stagin
 
 ### Requisito: Dependencias Composer de staging sin versionar vendor
 
-La guía de staging DEBE documentar que `vendor/` no se versiona y que las dependencias se instalan con Composer en hosting o se suben como artefacto operativo generado desde `composer.lock` si el hosting no tiene Composer.
+La guía de staging DEBE documentar que `vendor/` no se versiona y que las dependencias se instalan con Composer en hosting (requiere `composer.json` y `composer.lock`) o se suben como artefacto operativo generado desde `composer.json`/`composer.lock` si el hosting no tiene Composer.
 
 #### Escenario: Dependencias resueltas antes del paquete
 

@@ -33,12 +33,12 @@ Sin los 7 gates: el cambio queda en preparación local/documental. No subir, no 
 ## Phase 3 — Ejecución real en cPanel (MANUAL, Marcos, NO agente)
 
 - [ ] 3.1 Backup de `/certificados_staging/` si existe.
-- [ ] 3.2 Subir `dist/frontend-angular/browser/` a `public_html/certificados_staging/`.
+- [ ] 3.2 Subir `dist/frontend-angular/` a `public_html/certificados_staging/`.
 - [ ] 3.3 Subir backend PHP (sin `vendor/`) a `public_html/certificados_staging/api/`.
 - [ ] 3.4 Instalar `.htaccess-root` y `.htaccess-api` desde plantillas.
 - [ ] 3.5 `SetEnv CERTIFICADOS_CONFIG_PATH` en `.htaccess-api` con ruta externa staging.
 - [ ] 3.6 Migración + seed en DB staging (datos ficticios).
-- [ ] 3.7 Composer en hosting o `vendor/` local (nunca commitear).
+- [ ] 3.7 Subir `composer.json` + `composer.lock`; Composer en hosting o `vendor/` local (nunca commitear).
 - [ ] 3.8 SMTP `stub`; SMTP real solo si gate 0.g lo aprobó.
 - [ ] 3.9 Smoke: `curl /certificados_staging/api/health` → 200; sin 404.
 - [ ] 3.10 Si falla, rollback limitado a `/certificados_staging/`. Nunca tocar `/certificados/`.

@@ -73,6 +73,7 @@ certificados_staging/
     ├── .htaccess      ← desde deploy/staging/.htaccess-api
     ├── src/
     ├── config/        ← solo .example
+    ├── composer.json
     └── composer.lock
 ```
 
@@ -83,7 +84,7 @@ cd apps/frontend-angular
 npm run build -- --configuration production-staging
 ```
 
-El output queda en `apps/frontend-angular/dist/frontend-angular/browser/` con `baseHref /certificados_staging/` y `apiBaseUrl /certificados_staging/api`. Verificar `href="/certificados_staging/"` en `index.html`.
+El output queda en `apps/frontend-angular/dist/frontend-angular/` con `baseHref /certificados_staging/` y `apiBaseUrl /certificados_staging/api`. `angular.json` define `outputPath.browser: ""`, por lo que no se genera subcarpeta `browser/`. Verificar `href="/certificados_staging/"` en `index.html`.
 
 ## API PHP compatible con staging y producción
 
@@ -112,8 +113,10 @@ Exclusiones obligatorias:
 
 `vendor/` no se versiona ni se incorpora al repo. Resolver de una de estas dos formas operativas:
 
-1. Preferente: ejecutar en el hosting `composer install --no-dev --no-interaction` junto al `composer.lock` versionado.
-2. Si el hosting no tiene Composer: generar `vendor/` localmente desde el `composer.lock` y subirlo solo como artefacto operativo del deploy, sin agregarlo a Git.
+1. Preferente: ejecutar en el hosting `composer install --no-dev --no-interaction` junto a `composer.json` y `composer.lock` versionados. El lock fija versiones; el `composer.json` es requerido por `composer install`.
+2. Si el hosting no tiene Composer: generar `vendor/` localmente desde `composer.json`/`composer.lock` y subirlo solo como artefacto operativo del deploy, sin agregarlo a Git.
+
+`.htaccess-api` bloquea el acceso directo a `vendor/`, `composer.json` y `composer.lock` por si quedan bajo el webroot; la opción preferente sigue siendo mantener `vendor/` y los manifiestos fuera del webroot público.
 
 Sin una de estas dos opciones confirmada, la API de staging puede quedar incompleta y el paquete no debe considerarse listo.
 
@@ -166,6 +169,8 @@ Después de una instalación autorizada, validar únicamente con datos ficticios
 | Token inexistente | `GET /certificados_staging/api/certificados/TOKEN_FICTICIO/verificacion` | Respuesta pública controlada, sin datos reales. |
 | Internos API | `GET /certificados_staging/api/src/Response.php` | Bloqueado (403). |
 | Config example | `GET /certificados_staging/api/config/certificados-config.example.php` | Bloqueado (403). |
+| Vendor | `GET /certificados_staging/api/vendor/` | Bloqueado (403). |
+| Manifiestos Composer | `GET /certificados_staging/api/composer.json` | Bloqueado (403). |
 
 No consultar certificados reales, DNI reales, tokens reales ni bitácoras productivas durante este smoke.
 

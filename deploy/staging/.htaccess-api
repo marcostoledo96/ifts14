@@ -12,8 +12,12 @@
 RewriteEngine On
 RewriteBase /certificados_staging/api/
 
-# Bloquear acceso directo a código y configuración.
+# Bloquear acceso directo a código, configuración y artefactos de dependencias.
+# vendor/ no debería versionarse ni subirse, pero si llega a quedar bajo el webroot,
+# se niega su acceso directo. composer.json/composer.lock también se bloquean.
 RewriteRule ^(src|config)/ - [F,L]
+RewriteRule ^vendor/ - [F,L]
+RewriteRule ^composer\.(json|lock)$ - [F,L]
 
 # Fallback a index.php para todas las rutas API no existentes.
 RewriteCond %{REQUEST_FILENAME} !-f
