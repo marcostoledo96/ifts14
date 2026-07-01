@@ -5,7 +5,10 @@ Mapa operativo para deploy cPanel del módulo `/certificados/`.
 ## Guía vigente
 
 - Procedimiento manual principal: [`docs/deploy/00-cpanel-certificados.md`](../docs/deploy/00-cpanel-certificados.md).
-- Alcance de este ciclo: documentación y criterios de validación; no se ejecuta deploy ni se sube contenido a `public_html`.
+- Staging documental: [`docs/deploy/01-staging-cpanel-certificados.md`](../docs/deploy/01-staging-cpanel-certificados.md), para preparación futura bajo `/certificados_staging/`.
+- Alcance de este ciclo: documentación y criterios de validación; no se ejecuta deploy ni se sube contenido al servidor.
+
+> Producción usa `/certificados/`. Staging usa `/certificados_staging/`. No mezclar rutas, configuración ni smoke checks entre ambos entornos.
 
 ## Artefactos permitidos
 
@@ -16,8 +19,8 @@ Mapa operativo para deploy cPanel del módulo `/certificados/`.
 
 ## Artefactos prohibidos
 
-- Zips descargados del servidor.
-- Backups de cPanel o de base de datos.
+- Paquetes comprimidos descargados del servidor.
+- Copias de resguardo de cPanel o de base de datos.
 - Credenciales, tokens, peppers o claves privadas.
 - Configuraciones reales de conexión.
 - Dumps SQL, logs productivos y material privado fuera de versión.
