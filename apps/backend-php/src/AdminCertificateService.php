@@ -231,32 +231,38 @@ final class AdminCertificateService
 
         $now = new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires'));
         $sentAtIso = $now->format('Y-m-d\TH:i:sP');
-        $nowSql = $now->format('Y-m-d H:i:s');
         $destinatarioEnmascarado = $this->maskEmail($recipient);
 
         $this->pdo->beginTransaction();
         try {
             // Lock del certificado para evitar concurrencia sobre la rotación.
-            $statement = $this->pdo->prepare('SELECT id, estado, vence_en FROM cert_certificados WHERE id = ? LIMIT 1 FOR UPDATE');
+            $statement = $this->pdo->prepare(<<<'SQL'
+                SELECT id, estado, vence_en,
+                       (vence_en IS NULL OR vence_en >= CURRENT_DATE) AS vence_en_vigente
+                FROM cert_certificados
+                WHERE id = ?
+                LIMIT 1 FOR UPDATE
+                SQL);
             $statement->execute([$certificateId]);
             $certificate = $statement->fetch();
 
             if ($certificate === false) {
                 $this->pdo->rollBack();
-                $this->safeAudit('reenvio', 'rechazado', ['certificado_id' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado]);
+                $this->safeAudit('reenvio', 'rechazado', ['certificado_id_consultado' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado]);
                 throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
             }
 
             $estado = (string) ($certificate['estado'] ?? '');
-            if ($estado !== 'vigente') {
+            $venceEnVigente = (int) ($certificate['vence_en_vigente'] ?? 0) === 1;
+            if ($estado !== 'vigente' || !$venceEnVigente) {
                 $this->pdo->rollBack();
                 $this->safeAudit('reenvio', 'rechazado', ['certificado_id' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado]);
                 throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
             }
 
             // Rotación: revoca token activo anterior.
-            $statement = $this->pdo->prepare("UPDATE cert_tokens_verificacion SET estado = 'revocado', revocado_en = ? WHERE certificado_id = ? AND estado = 'activo' AND revocado_en IS NULL");
-            $statement->execute([$nowSql, $certificateId]);
+            $statement = $this->pdo->prepare("UPDATE cert_tokens_verificacion SET estado = 'revocado', revocado_en = CURRENT_TIMESTAMP WHERE certificado_id = ? AND estado = 'activo' AND revocado_en IS NULL");
+            $statement->execute([$certificateId]);
 
             // Emite token nuevo. Solo se persiste hash+prefijo; el token completo
             // se usa únicamente para armar el enlace del email.
@@ -270,13 +276,12 @@ final class AdminCertificateService
             $statement = $this->pdo->prepare(<<<'SQL'
                 INSERT INTO cert_tokens_verificacion (
                   certificado_id, token_hash, token_prefijo, estado, vigente_desde, vigente_hasta
-                ) VALUES (?, ?, ?, 'activo', ?, ?)
+                ) VALUES (?, ?, ?, 'activo', CURRENT_TIMESTAMP, ?)
                 SQL);
             $statement->bindValue(1, $certificateId, PDO::PARAM_INT);
             $statement->bindValue(2, $tokenHash, PDO::PARAM_LOB);
             $statement->bindValue(3, $tokenPrefix);
-            $statement->bindValue(4, $nowSql);
-            $statement->bindValue(5, $vigenteHasta);
+            $statement->bindValue(4, $vigenteHasta);
             $statement->execute();
 
             // Envío dentro de la transacción: si falla, rollback + auditoría.
@@ -348,12 +353,16 @@ final class AdminCertificateService
     private function safeAudit(string $action, string $result, array $meta = []): void
     {
         try {
-            // Para reenvío, el detalle_seguro lleva el destinatario enmascarado.
+            $detallePartes = [];
             if ($action === 'reenvio' && isset($meta['destinatario_enmascarado']) && is_string($meta['destinatario_enmascarado'])) {
-                $detalleSeguro = 'destinatarioEnmascarado=' . $meta['destinatario_enmascarado'];
-            } else {
-                $detalleSeguro = $result === 'ok' ? 'Operación administrativa correcta.' : 'Operación administrativa rechazada.';
+                $detallePartes[] = 'destinatarioEnmascarado=' . $meta['destinatario_enmascarado'];
             }
+            if (isset($meta['certificado_id_consultado']) && is_int($meta['certificado_id_consultado'])) {
+                $detallePartes[] = 'certificadoConsultado=' . $meta['certificado_id_consultado'];
+            }
+            $detalleSeguro = $detallePartes === []
+                ? ($result === 'ok' ? 'Operación administrativa correcta.' : 'Operación administrativa rechazada.')
+                : implode('; ', $detallePartes);
 
             $statement = $this->pdo->prepare(<<<'SQL'
                 INSERT INTO cert_eventos_auditoria (

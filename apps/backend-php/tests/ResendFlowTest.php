@@ -38,6 +38,8 @@ final class FakePdoForResend extends PDO
     public array $tokens = [];
     /** @var array<int, array<string, mixed>> */
     public array $audits = [];
+    /** @var list<string> */
+    public array $queries = [];
     public bool $inTx = false;
     private int $certSeq = 1;
     private int $tokenSeq = 1;
@@ -73,6 +75,7 @@ final class FakePdoForResend extends PDO
 
     public function prepare(string $query, array $options = []): PDOStatement|false
     {
+        $this->queries[] = $query;
         return new FakeStmtForResend($query, $this);
     }
 
@@ -82,10 +85,14 @@ final class FakePdoForResend extends PDO
     }
 
     // Helpers internos para los statements.
-    public function selectCertForUpdate(int $id): array|false
+    public function selectCertForUpdate(int $id, bool $includeCurrentDateFlag): array|false
     {
         foreach ($this->certs as $row) {
             if ((int) $row['id'] === $id) {
+                if ($includeCurrentDateFlag) {
+                    $row['vence_en_vigente'] = $row['vence_en'] === null || (string) $row['vence_en'] >= date('Y-m-d') ? 1 : 0;
+                }
+
                 return $row;
             }
         }
@@ -202,13 +209,14 @@ final class FakeStmtForResend extends PDOStatement
 
         if (str_contains($q, 'SELECT id, estado, vence_en') && str_contains($q, 'FOR UPDATE')) {
             $id = (int) $this->bindings[1];
-            $this->result = $this->pdo->selectCertForUpdate($id);
+            $this->result = $this->pdo->selectCertForUpdate($id, str_contains($q, 'CURRENT_DATE'));
             return;
         }
 
         if (str_contains($q, "SET estado = 'revocado'") && str_contains($q, 'cert_tokens_verificacion')) {
-            $when = (string) $this->bindings[1];
-            $certId = (int) $this->bindings[2];
+            $usesCurrentTimestamp = str_contains($q, 'revocado_en = CURRENT_TIMESTAMP');
+            $when = $usesCurrentTimestamp ? 'CURRENT_TIMESTAMP' : (string) $this->bindings[1];
+            $certId = (int) $this->bindings[$usesCurrentTimestamp ? 1 : 2];
             $this->rowCount = $this->pdo->revokeActiveTokens($certId, $when);
             $this->result = false;
             return;
@@ -218,8 +226,10 @@ final class FakeStmtForResend extends PDOStatement
             $certId = (int) $this->bindings[1];
             $tokenHash = (string) $this->bindings[2];
             $prefix = (string) $this->bindings[3];
-            $vigenteDesde = (string) $this->bindings[4];
-            $vigenteHasta = $this->bindings[5] === null ? null : (string) $this->bindings[5];
+            $usesCurrentTimestamp = str_contains($q, 'CURRENT_TIMESTAMP');
+            $vigenteDesde = $usesCurrentTimestamp ? 'CURRENT_TIMESTAMP' : (string) $this->bindings[4];
+            $vigenteHastaParam = $usesCurrentTimestamp ? 4 : 5;
+            $vigenteHasta = $this->bindings[$vigenteHastaParam] === null ? null : (string) $this->bindings[$vigenteHastaParam];
             $this->pdo->insertToken($certId, $tokenHash, $prefix, $vigenteDesde, $vigenteHasta);
             $this->result = false;
             return;
@@ -329,6 +339,9 @@ if ($prev['estado'] !== 'revocado' || $prev['revocado_en'] === null) {
 if ($new['estado'] !== 'activo') {
     throw new RuntimeException('Token nuevo no quedó activo.');
 }
+if ($new['vigente_desde'] !== 'CURRENT_TIMESTAMP') {
+    throw new RuntimeException('Token nuevo no usa CURRENT_TIMESTAMP de base para vigente_desde.');
+}
 if ($new['token_prefijo'] === 'PREV_PREFIX_') {
     throw new RuntimeException('Token nuevo tiene el mismo prefijo que el previo.');
 }
@@ -389,6 +402,13 @@ $rechazado = array_filter($pdo2->audits, static fn (array $a): bool => $a['tipo_
 if (count($rechazado) !== 1) {
     throw new RuntimeException('No se persistió evento reenvio/rechazado para 404.');
 }
+$auditRechazado = array_values($rechazado)[0];
+if ($auditRechazado['certificado_id'] !== null) {
+    throw new RuntimeException('Auditoría de certificado inexistente guardó un FK no existente.');
+}
+if (!str_contains((string) $auditRechazado['detalle_seguro'], 'certificadoConsultado=999')) {
+    throw new RuntimeException('Auditoría de certificado inexistente no guardó el id consultado en detalle seguro.');
+}
 // El transporte no debe haber enviado nada.
 if ($transport2->url !== null) {
     throw new RuntimeException('El transporte envió email en un 404.');
@@ -413,6 +433,31 @@ if (!$got404NonVigente) {
 }
 if ($transport3->url !== null) {
     throw new RuntimeException('El transporte envió email en un 404 no vigente.');
+}
+
+// =====================================================
+// Escenario 3b: 404 con certificado vigente pero vencido antes de rotar/enviar
+// =====================================================
+$pdoExpired = new FakePdoForResend();
+$pdoExpired->seedCert(30, 'vigente', '2000-01-01');
+$pdoExpired->insertToken(30, str_repeat("\x02", 32), 'OLD_EXPIRED_', '1999-01-01 00:00:00', '2000-01-01 23:59:59');
+$serviceExpired = buildService($pdoExpired);
+$transportExpired = new CapturingTransport();
+
+$got404Expired = false;
+try {
+    $serviceExpired->reenviar(30, 'persona@example.edu.ar', $transportExpired);
+} catch (AdminCertificateException $e) {
+    $got404Expired = $e->status === 404 && $e->errorCode === 'CERTIFICATE_NOT_FOUND';
+}
+if (!$got404Expired) {
+    throw new RuntimeException('Reenvío de certificado vencido no respondió 404 CERTIFICATE_NOT_FOUND.');
+}
+if (count($pdoExpired->tokens) !== 1 || $pdoExpired->tokens[0]['estado'] !== 'activo') {
+    throw new RuntimeException('Certificado vencido rotó o revocó tokens antes de rechazar.');
+}
+if ($transportExpired->url !== null) {
+    throw new RuntimeException('Certificado vencido disparó envío de email.');
 }
 
 // =====================================================
