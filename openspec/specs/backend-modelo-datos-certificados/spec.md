@@ -17,9 +17,9 @@ El sistema MUST definir tablas nuevas con prefijo `cert_` para certificados, tok
 - **Then** MUST crear `cert_certificados`, `cert_tokens_verificacion` y `cert_eventos_auditoria`.
 - **And** MUST ser compatible con MariaDB 10.6.
 
-### Requirement: Token QR sin texto plano
+### Requirement: Token QR sin texto plano y recuperable para reenvío
 
-El sistema MUST almacenar tokens públicos como hash no reversible y MUST NOT guardar el token completo en texto plano.
+El sistema MUST almacenar tokens públicos como hash no reversible (`token_hash` con pepper externo a Git) y MUST NOT guardar el token completo en texto plano. El reenvío normal conserva el token permanente y requiere reconstruir el enlace `/certificados/validar/{token}`, por lo que el sistema MUST mantener un artefacto recuperable (`token_cifrado` cifrado con clave externa a Git, o equivalente reversible) además del hash. Hash-only es insuficiente para reenvío permanente. El sistema MAY conservar `token_prefijo` para soporte seguro y lookup.
 
 #### Scenario: Token verificable por hash
 
@@ -28,26 +28,55 @@ El sistema MUST almacenar tokens públicos como hash no reversible y MUST NOT gu
 - **Then** MUST calcular hash con pepper externo a Git y comparar contra `cert_tokens_verificacion.token_hash`.
 - **And** MAY conservar solo `token_prefijo` para soporte seguro.
 
-### Requirement: Exposición pública mínima
+#### Scenario: Token recuperable para reenvío permanente
 
-El modelo MUST sostener el DTO público del contrato de API sin requerir DNI completo ni token completo.
+- **Given** un certificado con token activo y un reenvío solicitado
+- **When** el backend reconstruye el enlace público
+- **Then** MUST recuperar el token desde `token_cifrado` (cifrado reversible con clave externa a Git) usando lookup por `token_hash` + `token_prefijo`.
+- **And** MUST NOT regenerar token ni revocar en reenvío normal.
+
+### Requirement: Exposición pública definida y modelo D0 vs estado migrado
+
+El modelo MUST sostener el DTO público del contrato de API con DNI completo visible por decisión institucional y fechas asistidas del curso, sin exponer token completo, hashes, pepper, nombres de tablas ni datos internos. La migración actual `001_certificados_qr.sql` define el modelo verificado hoy (`documento_hash` + `documento_enmascarado`, sin `documento_completo`); el modelo D0 futuro agrega DNI completo visible en DTO público de validación y requiere almacenamiento seguro de DNI (`dni_hash` + `dni_cifrado` con clave externa a Git, más campo de visualización opcional o atajo MVP con riesgo aceptado). El modelo D0 es target, no estado migrado. Las tablas futuras para cursos, alumnos, asistencias y configuración institucional SHOULD usar prefijo `cert_` y migraciones controladas; la creación de esas tablas queda fuera del ciclo documental actual.
 
 #### Scenario: Certificado vigente
 
 - **Given** un certificado `vigente` con token `activo`
 - **When** se resuelva una verificación pública
-- **Then** la respuesta futura SHOULD usar código, estado, curso, fecha y `documento_enmascarado`.
-- **And** MUST NOT exponer `documento_hash`, `token_hash` ni datos internos.
+- **Then** la respuesta futura SHOULD usar código, estado, curso, fecha, DNI completo y fechas asistidas del curso.
+- **And** MUST NOT exponer `documento_hash`, `token_hash`, pepper ni datos internos.
+
+#### Scenario: Estado migrado actual vs modelo D0 futuro
+
+- **Given** la migración `001_certificados_qr.sql` vigente
+- **When** se inspecciona el modelo actual
+- **Then** MUST distinguir que el modelo migrado usa `documento_hash` + `documento_enmascarado` (sin `documento_completo`).
+- **And** el modelo D0 futuro (no migrado) agrega DNI completo visible en DTO público con almacenamiento seguro (`dni_hash` + `dni_cifrado` o atajo MVP con riesgo aceptado).
+
+#### Scenario: Tablas futuras documentadas
+
+- **Given** la planificación de cursos, alumnos, asistencias y configuración institucional
+- **When** se documenten tablas futuras
+- **Then** SHOULD declararse como futuras, con prefijo `cert_` y sin migración en este ciclo.
+
+#### Scenario: Asistencias por fila y snapshot de fechas diferido a M4-01A/M4-02
+
+- **Given** la planificación de tablas futuras de asistencias y fechas de curso
+- **When** se documente el modelo de asistencias
+- **Then** la presencia MUST representarse por existencia de fila (una fila por asistencia), sin booleano de presencia, con `UNIQUE` por alumno/fecha/curso.
+- **And** las fechas asistidas del curso MUST representarse como snapshot de fechas (no rango calculado en runtime).
+- **And** el diseño detallado de estas tablas queda explícitamente diferido a M4-01A (contrato) / M4-02.
 
 ### Requirement: Persistencia de entrega con reutilización de tablas `cert_`
 
-El sistema MUST registrar la entrega/reenvío reutilizando `cert_tokens_verificacion` (rotación: token anterior revocado, token nuevo activo) y `cert_eventos_auditoria` (evento `reenvio`). El sistema MUST NOT crear migraciones nuevas salvo que el diseño justifique una tabla `cert_entregas` mínima y versionada; en ese caso la migración MUST usar prefijo `cert_` y ser compatible con MariaDB 10.6.
+El sistema MUST registrar la entrega/reenvío reutilizando `cert_tokens_verificacion` (token permanente: el reenvío normal conserva el token activo y NO rota; solo la revocación explícita invalida el token, y la regeneración es excepcional y auditada) y `cert_eventos_auditoria` (evento `reenvio`). El sistema MUST NOT crear migraciones nuevas salvo que el diseño justifique una tabla `cert_entregas` mínima y versionada; en ese caso la migración MUST usar prefijo `cert_` y ser compatible con MariaDB 10.6.
 
-#### Scenario: Rotación sobre tabla existente
+#### Scenario: Reenvío conserva token sobre tabla existente
 
 - **Given** un certificado con token activo en `cert_tokens_verificacion`
-- **When** se ejecuta un reenvío
-- **Then** el sistema MUST marcar el token anterior como `revocado` y crear un nuevo registro activo.
+- **When** se ejecuta un reenvío normal
+- **Then** el sistema MUST conservar el token activo sin rotar.
+- **And** MUST NOT crear un nuevo token ni revocar el previo salvo revocación explícita.
 - **And** MUST NOT almacenar el token completo en texto plano.
 
 #### Scenario: Auditoría de reenvío sobre tabla existente

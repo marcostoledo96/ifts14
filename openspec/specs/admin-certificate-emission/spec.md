@@ -2,21 +2,21 @@
 
 ## Purpose
 
-Definir la emisión administrativa mínima de certificados QR con generación de PDF/QR: el endpoint `POST /certificados/api/admin/certificados` crea un certificado y un token de verificación sobre el esquema `cert_` existente, sin migraciones nuevas, exige autorización administrativa, valida un payload mínimo ficticio/demo, persiste con PDO y prepared statements, genera y persiste el PDF/QR durante la emisión (antes del alta lógico) y responde con un DTO seguro que oculta DNI completo y token completo, incluyendo `pdfDownloadUrl` para descarga administrativa del PDF. Esta spec separa explícitamente el acto de "token activo persistido + PDF emitido" (cubierto en este ciclo) de la "verificación pública del token recién emitido" (dependiente del mecanismo de entrega/reenvío, fuera de alcance).
+Definir la emisión administrativa mínima de certificados QR con generación de PDF/QR: el endpoint `POST /certificados/api/admin/certificados` crea un certificado y un token de verificación permanente sobre el esquema `cert_` existente, sin migraciones nuevas, exige autorización administrativa, valida un payload mínimo ficticio/demo, persiste con PDO y prepared statements, genera y persiste el PDF/QR durante la emisión (antes del alta lógico) y responde con un DTO operativo seguro que NO expone el token completo; las respuestas operativas administrativas, logs y auditoría NO DEBEN exponer el DNI completo ni el token completo (salvo DTOs explícitamente públicos cuando la decisión institucional lo requiera), incluyendo `pdfDownloadUrl` para descarga administrativa del PDF. Esta spec separa explícitamente el acto de "token activo persistido + PDF emitido" (cubierto en este ciclo) de la "verificación pública del token recién emitido" (dependiente del mecanismo de entrega/reenvío, fuera de alcance).
 
 ## Requirements
 
 ### Requirement: Emisión administrativa mínima de certificados
 
-La API MUST exponer `POST /certificados/api/admin/certificados` para emitir un certificado y un token de verificación usando el esquema `cert_` existente, sin migraciones nuevas. El endpoint MUST requerir autorización administrativa, validar un payload mínimo ficticio/demo, persistir con PDO y prepared statements, auditar la acción, generar el PDF/QR durante la emisión (antes de confirmar el alta lógico) y responder con un DTO seguro sin DNI completo ni token completo. El DTO de emisión exitosa MUST incluir `pdfDownloadUrl` apuntando a `GET /certificados/api/admin/certificados/{id}/pdf` y MUST NOT exponer el token completo.
-(Previously: la emisión devolvía identificadores y datos enmascarados sin generar PDF ni exponer `pdfDownloadUrl`.)
+La API MUST exponer `POST /certificados/api/admin/certificados` para emitir un certificado y un token de verificación permanente usando el esquema `cert_` existente, sin migraciones nuevas. El endpoint MUST requerir autorización administrativa, validar un payload mínimo ficticio/demo, persistir con PDO y prepared statements, auditar la acción, generar el PDF/QR durante la emisión (antes de confirmar el alta lógico) y responder con un DTO operativo seguro sin token completo. Las respuestas operativas administrativas, logs y auditoría MUST NOT exponer el DNI completo ni el token completo, salvo DTOs explícitamente públicos cuando la decisión institucional lo requiera. El DTO de emisión exitosa MUST incluir `pdfDownloadUrl` apuntando a `GET /certificados/api/admin/certificados/{id}/pdf` y MUST NOT exponer el token completo. `X-Admin-Key` es un mecanismo de API server-to-server y MUST NOT estar embebido ni expuesto desde bundles de Angular, `localStorage`, `sessionStorage` ni ningún almacenamiento del navegador. La UI administrativa en navegador para el MVP MUST usar cPanel Basic Auth o una sesión PHP simple con cookie `HttpOnly`+`Secure`+`SameSite`; el cliente navegador no DEBE conocer ni transportar `X-Admin-Key`.
+(Previously: la emisión devolvía identificadores y datos enmascarados sin generar PDF ni exponer `pdfDownloadUrl`; el token no se declaraba permanente; no se separaba autenticación browser de API key.)
 
 #### Scenario: Emisión exitosa
 
 - **Given** un request autorizado con payload mínimo válido y `public_base_url`/`certificate_storage_path` configurados
 - **When** se emite el certificado administrativo
 - **Then** la API MUST crear certificado y token activo persistido en el esquema `cert_` existente, generar y persistir el PDF/QR antes de confirmar la operación, y dejar el certificado listo para verificación pública una vez que el token sea entregado al destinatario.
-- **And** MUST responder `201` con identificadores, estado, datos enmascarados y `pdfDownloadUrl`.
+- **And** MUST responder `201` con identificadores, estado, DTO operativo seguro (sin token completo; sin DNI completo en respuesta operativa/logs/auditoría salvo DTO explícitamente público) y `pdfDownloadUrl`.
 - **And** MUST NOT devolver el token completo; la entrega o reenvío del token queda fuera de este ciclo.
 
 #### Scenario: Falla la generación de PDF durante la emisión
@@ -43,6 +43,13 @@ La API MUST exponer `POST /certificados/api/admin/certificados` para emitir un c
 - **Given** un payload de emisión aceptado
 - **When** la API consulta o escribe datos
 - **Then** MUST usar PDO con prepared statements y MUST NOT construir SQL con valores concatenados.
+
+#### Scenario: `X-Admin-Key` no expuesta desde el navegador
+
+- **Given** la UI administrativa en navegador Angular consumiendo el endpoint de emisión
+- **When** se inspecciona el bundle, `localStorage`, `sessionStorage` y cookies del navegador
+- **Then** MUST NOT aparecer `X-Admin-Key` ni su valor en ningún almacenamiento del navegador ni en el bundle JS.
+- **And** la UI admin MUST usar cPanel Basic Auth o sesión PHP `HttpOnly` para el MVP.
 
 ### Requirement: DTO de emisión ampliado con `pdfDownloadUrl`
 

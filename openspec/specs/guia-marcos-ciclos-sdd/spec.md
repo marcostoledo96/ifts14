@@ -8,7 +8,7 @@ Definir los requisitos documentales para mejorar `MARCOS_PROMPTS_SDD_3_SEMANAS_C
 
 ### Requirement: Rol y límites
 
-La guía DEBE recordar el rol de Marcos (PHP 8.4.21, MariaDB 10.6.27, integración, deploy cPanel, arquitectura, seguridad y desbloqueos frontend técnicos) y enumerar las prohibiciones explícitas: no tocar Angular fuera de los desbloqueos frontend autorizados o coordinación explícita, no modificar `material_privado_no_versionar/`, no exponer credenciales ni DNI completo, no ejecutar commit/push/merge/rebase automáticamente.
+La guía DEBE recordar el rol de Marcos (PHP 8.4.21, MariaDB 10.6.27, integración, deploy cPanel, arquitectura, seguridad, modelo de datos y desbloqueos frontend técnicos) y la división operativa con Matías: Marcos lidera backend, MariaDB, integración, deploy, arquitectura, seguridad y desbloqueos frontend técnicos; Matías lidera UI/UX Angular 20, adaptación de `muestra_pagina/`, sistema visual, responsive, accesibilidad, admin y QA visual. La guía DEBE enumerar las prohibiciones explícitas: no tocar Angular fuera de los desbloqueos frontend autorizados o coordinación explícita, no modificar `material_privado_no_versionar/`, no exponer credenciales ni DNI completo en logs/auditoría/errores/respuestas administrativas, no ejecutar commit/push/merge/rebase automáticamente.
 
 #### Scenario: Lectura inicial
 
@@ -36,15 +36,23 @@ La guía DEBE definir una plantilla única aplicada a los 12 ciclos, con los cam
 - CUANDO Marcos lo abre
 - ENTONCES encuentra los nueve campos de la plantilla sin tener que leer otra sección
 
-### Requirement: Ciclos M1-01 a M3-06 sin renumerar
+### Requirement: Ciclos M1-01 a M3-06 sin renumerar y bloque M4 de sincronización D0
 
-La guía DEBE mantener los identificadores vigentes de Marcos sin bloquear backend por Angular: M1/M2 para seguridad, auditoría, modelo, contrato API, base PHP y validación pública; M3 para hardening backend/base, endpoints administrativos, seguridad/logs, deploy cPanel e integración Angular/API solo como checkpoint final. Cada uno de los 12 ciclos DEBE quedar alineado con la plantilla repetible y con al menos un checkpoint de QA manual concreto.
+La guía DEBE mantener los identificadores vigentes de Marcos sin bloquear backend por Angular: M1/M2 para seguridad, auditoría, modelo, contrato API, base PHP y validación pública; M3 para hardening backend/base, endpoints administrativos, seguridad/logs, deploy cPanel e integración Angular/API solo como checkpoint final. La guía DEBE agregar un bloque M4 para sincronización D0 que codifique: QR/token permanente, DNI completo público, certificado de curso con fechas asistidas, auth admin simple temporal (`X-Admin-Key`), firmantes PDF (Rector/a y Asesor/a Pedagógica), Composer/SMTP como gates, staging bajo `/certificados_staging/` y coordinación con Matías sobre v0 actualizada. Cada uno de los 12 ciclos M1-M3 DEBE quedar alineado con la plantilla repetible y con al menos un checkpoint de QA manual concreto; el bloque M4 no habilita implementación fuera de ciclo.
 
 #### Scenario: Trazabilidad preservada
 
 - DADO el archivo actual de Marcos
-- CUANDO se compara con la versión mejorada
-- ENTONCES los IDs y el orden de los 12 ciclos siguen siendo los mismos
+- CUANDO se compara con la versión ajustada
+- ENTONCES los IDs y el orden de los ciclos M1-01 a M3-06 siguen siendo los mismos
+- **Y** el bloque M4 aparece como planificación D0 sin habilitar implementación fuera de ciclo.
+
+#### Scenario: Decisiones D0 visibles
+
+- DADO que Marcos inicia un ciclo backend o deploy
+- CUANDO consulta la guía
+- ENTONCES encuentra QR/token permanente, DNI completo público, fechas asistidas, auth admin simple temporal y gates Composer/SMTP.
+- **Y** distingue documentación de implementación runtime.
 
 ### Requirement: Handoff al cierre de ciclo
 
