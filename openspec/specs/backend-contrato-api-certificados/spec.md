@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Definir el contrato de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper, más el slice administrativo mínimo de emisión y revocación protegido por `X-Admin-Key`. El reenvío administrativo sigue fuera de alcance hasta definir un mecanismo de email/entrega.
+Definir el contrato de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper, más el slice administrativo de emisión, revocación, descarga PDF y reenvío por email protegido por `X-Admin-Key`.
 
 ## Requirements
 
@@ -122,8 +122,8 @@ El endpoint público de verificación MUST aplicar rate limiting mínimo y respo
 
 ### Requirement: Contrato administrativo mínimo de certificados
 
-La API MUST documentar y sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión (con generación PDF/QR sincrónica y `pdfDownloadUrl` en la respuesta `201`), `POST /admin/certificados/{id}/revocar` para revocación y `GET /admin/certificados/{id}/pdf` para descarga del PDF persistido. Las respuestas MUST usar envelopes JSON existentes, DTOs seguros y errores sin DNI completo, token completo, secretos, SQL ni rutas internas. El endpoint de descarga MUST responder `Content-Type: application/pdf` y `Content-Disposition: attachment` ante autorización válida, `401 UNAUTHORIZED` sin autorización y `404 PDF_NOT_FOUND` si el PDF no existe.
-(Previously: el contrato administrativo solo cubría emisión y revocación; no incluía descarga PDF ni `pdfDownloadUrl` en el DTO de emisión.)
+La API MUST documentar y sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión (con generación PDF/QR sincrónica y `pdfDownloadUrl` en la respuesta `201`), `POST /admin/certificados/{id}/revocar` para revocación, `GET /admin/certificados/{id}/pdf` para descarga del PDF persistido y `POST /admin/certificados/{id}/reenviar` para entrega/reenvío por email con rotación de token. Las respuestas MUST usar envelopes JSON existentes, DTOs seguros y errores sin DNI completo, token completo, secretos, SQL ni rutas internas. El endpoint de descarga MUST responder `Content-Type: application/pdf` y `Content-Disposition: attachment` ante autorización válida, `401 UNAUTHORIZED` sin autorización y `404 PDF_NOT_FOUND` si el PDF no existe. El endpoint de reenvío MUST responder `200` con DTO de entrega sin token completo, `401 UNAUTHORIZED` sin autorización, `404 CERTIFICATE_NOT_FOUND` si el certificado no existe y `503 DELIVERY_NOT_CONFIGURED` si el transporte no está configurado.
+(Previously: el contrato administrativo cubría emisión, revocación y descarga PDF; el reenvío estaba explícitamente excluido.)
 
 #### Scenario: Admin sin autorización
 
@@ -162,16 +162,18 @@ La API MUST documentar y sostener endpoints administrativos bajo `/certificados/
 - **When** se invoca `POST /certificados/api/admin/certificados/{id}/revocar`
 - **Then** el contrato MUST indicar revocación del certificado e invalidación de tokens activos.
 
-### Requirement: Reenvío administrativo excluido
+#### Scenario: Reenvío documentado
 
-El contrato MUST dejar explícitamente fuera de alcance `POST /certificados/api/admin/certificados/{id}/reenviar` hasta definir mecanismo de email/reenvío. La implementación MUST NOT crear endpoint, DTO ni lógica de reenvío en este ciclo.
+- **Given** un request autorizado a `POST /certificados/api/admin/certificados/{id}/reenviar` con transporte configurado
+- **When** se invoca el endpoint
+- **Then** el contrato MUST indicar `200` con DTO de entrega `{ certificadoId, enviadoEn, destinatarioEnmascarado }`.
+- **And** MUST NOT incluir el token completo en la respuesta.
 
-#### Scenario: Reenvío no disponible
+#### Scenario: Reenvío sin transporte configurado
 
-- **Given** este ciclo finalizado
-- **When** se inspecciona o invoca una ruta de reenvío administrativo
-- **Then** MUST no existir como capacidad implementada/documentada para uso operativo.
-- **And** SHOULD quedar registrada como pendiente hasta definir email.
+- **Given** un request autorizado al reenvío sin transporte SMTP configurado
+- **When** se invoca el endpoint
+- **Then** el contrato MUST indicar `503 DELIVERY_NOT_CONFIGURED` sin rotar token ni enviar email.
 
 ### Requirement: Headers de seguridad en respuestas JSON
 

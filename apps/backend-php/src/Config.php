@@ -72,6 +72,59 @@ final class Config
         return $config;
     }
 
+    /**
+     * Valida y normaliza la configuración de entrega por email. El transporte
+     * se normaliza a `stub|smtp`. En modo `smtp` exige host, puerto, usuario,
+     * pass, from y `public_base_url`. En modo `stub` no exige credenciales.
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, mixed> Config con delivery_transport y claves SMTP normalizadas.
+     * @throws RuntimeException Si el modo es inválido o falta una clave SMTP requerida.
+     */
+    public static function requireDeliveryConfig(array $config): array
+    {
+        $transport = strtolower(trim((string) ($config['delivery_transport'] ?? 'stub')));
+        if ($transport !== 'stub' && $transport !== 'smtp') {
+            throw new RuntimeException('Configuration invalid.');
+        }
+
+        $config['delivery_transport'] = $transport;
+
+        if ($transport === 'stub') {
+            return $config;
+        }
+
+        foreach (['smtp_host', 'smtp_username', 'smtp_password', 'mail_from', 'public_base_url'] as $key) {
+            if (!isset($config[$key]) || !is_string($config[$key]) || trim($config[$key]) === '') {
+                throw new RuntimeException('Configuration invalid.');
+            }
+        }
+
+        $port = $config['smtp_port'] ?? null;
+        if (!is_int($port) || $port <= 0 || $port > 65535) {
+            if (is_string($port) && ctype_digit($port)) {
+                $port = (int) $port;
+            } else {
+                throw new RuntimeException('Configuration invalid.');
+            }
+        }
+        $config['smtp_port'] = $port;
+
+        // ponytail: smtp exige transporte cifrado (tls|ssl). Vacío desactiva TLS
+        // con credenciales activas: riesgo de credenciales en claro. No hay caso
+        // legítimo de SMTP plano en este flujo (solo enlace de validación).
+        $secure = strtolower(trim((string) ($config['smtp_secure'] ?? 'tls')));
+        if (!in_array($secure, ['ssl', 'tls'], true)) {
+            throw new RuntimeException('Configuration invalid.');
+        }
+        $config['smtp_secure'] = $secure;
+
+        $config['public_base_url'] = rtrim(trim($config['public_base_url']), '/');
+        $config['mail_from_name'] = trim((string) ($config['mail_from_name'] ?? $config['mail_from']));
+
+        return $config;
+    }
+
     /** @param array<string, mixed> $config */
     public static function adminApiKey(array $config): string
     {
