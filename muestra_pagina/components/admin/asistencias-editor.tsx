@@ -42,18 +42,18 @@ const CURSO = {
 }
 
 const ALUMNOS: Alumno[] = [
-  { id: "a1", legajo: "STD-2024-001", apellido: "Ejemplo A001", nombre: "Alumno Ficticio", dni: "DNI-FICT-A001", email: "a001@example.invalid" },
-  { id: "a2", legajo: "STD-2024-002", apellido: "Ejemplo A002", nombre: "Alumno Ficticio", dni: "DNI-FICT-A002", email: "a002@example.invalid" },
-  { id: "a3", legajo: "STD-2024-003", apellido: "Ejemplo A003", nombre: "Alumna Ficticia", dni: "DNI-FICT-A003", email: "a003@example.invalid" },
-  { id: "a4", legajo: "STD-2024-004", apellido: "Ejemplo A004", nombre: "Alumno Ficticio", dni: "DNI-FICT-A004", email: "a004@example.invalid" },
-  { id: "a5", legajo: "STD-2024-005", apellido: "Ejemplo A005", nombre: "Alumna Ficticia", dni: "DNI-FICT-A005", email: "a005@example.invalid" },
-  { id: "a6", legajo: "STD-2024-006", apellido: "Ejemplo A006", nombre: "Alumno Ficticio", dni: "DNI-FICT-A006", email: "a006@example.invalid" },
-  { id: "a7", legajo: "STD-2024-007", apellido: "Ejemplo A007", nombre: "Alumna Ficticia", dni: "DNI-FICT-A007", email: "a007@example.invalid" },
-  { id: "a8", legajo: "STD-2024-008", apellido: "Ejemplo A008", nombre: "Alumno Ficticio", dni: "DNI-FICT-A008", email: "a008@example.invalid" },
-  { id: "a9", legajo: "STD-2024-009", apellido: "Ejemplo A009", nombre: "Alumna Ficticia", dni: "DNI-FICT-A009", email: "a009@example.invalid" },
-  { id: "a10", legajo: "STD-2024-010", apellido: "Ejemplo A010", nombre: "Alumno Ficticio", dni: "DNI-FICT-A010", email: "a010@example.invalid" },
-  { id: "a11", legajo: "STD-2024-011", apellido: "Ejemplo A011", nombre: "Alumna Ficticia", dni: "DNI-FICT-A011", email: "a011@example.invalid" },
-  { id: "a12", legajo: "STD-2024-012", apellido: "Ejemplo A012", nombre: "Alumno Ficticio", dni: "DNI-FICT-A012", email: "a012@example.invalid" },
+  { id: "a1", legajo: "STD-2024-001", apellido: "Alvarez", nombre: "Martina Soledad", dni: "38.456.123", email: "m.alvarez@ifts14.edu.ar" },
+  { id: "a2", legajo: "STD-2024-002", apellido: "Benítez", nombre: "Carlos Miguel", dni: "39.123.456", email: "c.benitez@ifts14.edu.ar" },
+  { id: "a3", legajo: "STD-2024-003", apellido: "Domínguez", nombre: "Laura Inés", dni: "40.789.012", email: "l.dominguez@ifts14.edu.ar" },
+  { id: "a4", legajo: "STD-2024-004", apellido: "Fernández", nombre: "Julián", dni: "41.345.678", email: "j.fernandez@ifts14.edu.ar" },
+  { id: "a5", legajo: "STD-2024-005", apellido: "Gómez", nombre: "Sofía Belén", dni: "42.011.984", email: "s.gomez@ifts14.edu.ar" },
+  { id: "a6", legajo: "STD-2024-006", apellido: "Herrera", nombre: "Maximiliano", dni: "39.874.220", email: "m.herrera@ifts14.edu.ar" },
+  { id: "a7", legajo: "STD-2024-007", apellido: "Ibáñez", nombre: "Rocío Daniela", dni: "43.298.551", email: "r.ibanez@ifts14.edu.ar" },
+  { id: "a8", legajo: "STD-2024-008", apellido: "López", nombre: "Tomás Agustín", dni: "40.512.337", email: "t.lopez@ifts14.edu.ar" },
+  { id: "a9", legajo: "STD-2024-009", apellido: "Martínez", nombre: "Valentina", dni: "41.998.704", email: "v.martinez@ifts14.edu.ar" },
+  { id: "a10", legajo: "STD-2024-010", apellido: "Núñez", nombre: "Federico Ariel", dni: "38.220.165", email: "f.nunez@ifts14.edu.ar" },
+  { id: "a11", legajo: "STD-2024-011", apellido: "Ortega", nombre: "Camila", dni: "42.654.890", email: "c.ortega@ifts14.edu.ar" },
+  { id: "a12", legajo: "STD-2024-012", apellido: "Paz", nombre: "Lucas Emanuel", dni: "43.110.472", email: "l.paz@ifts14.edu.ar" },
 ]
 
 const FECHAS: FechaCurso[] = [

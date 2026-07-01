@@ -80,3 +80,6 @@ tmp_deploy/
 # Cache local de tooling IA
 .atl/*.cache.json
 graphify-out/
+
+# CodeGraph: metadata local de indexado, no se versiona
+.codegraph/

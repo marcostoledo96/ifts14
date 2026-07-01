@@ -10,6 +10,16 @@ https://ifts14.com.ar/certificados/
 
 Este ciclo SDD **no ejecuta la subida**, no toca `public_html`, no crea `.env`, no instala dependencias y no modifica configuraciones reales del servidor. La guía deja el procedimiento revisable para una ventana operativa posterior.
 
+### Gates D0 confirmados
+
+| Gate | Regla |
+|---|---|
+| Staging | `/certificados_staging/` separado de producción `/certificados/`. Ver `docs/deploy/01-staging-cpanel-certificados.md`. |
+| Composer/vendor | Gate: si Composer no está disponible en cPanel, generar `vendor/` localmente y subir como artefacto operativo. Nunca versionar `vendor/`. |
+| SMTP | Cuenta de prueba / `stub`. Producción queda gated hasta aprobación. |
+| Auth admin | `X-Admin-Key` temporal. Login real es fase posterior. |
+| Token/QR | Permanente. El reenvío normal no rota token. |
+
 ## Estructura esperada en cPanel
 
 ```txt

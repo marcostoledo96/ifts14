@@ -8,9 +8,9 @@ Este documento define el esquema MariaDB para la verificación pública de certi
 |---|---|
 | Motor | MariaDB 10.6.27, `InnoDB`, `utf8mb4` |
 | Prefijo | Todas las tablas nuevas usan `cert_` |
-| Token QR | El token público no se guarda en texto plano; se guarda `SHA-256(token + pepper_servidor)` como `BINARY(32)` |
+| Token QR | Permanente. El token público no se guarda en texto plano; se guarda `SHA-256(token + pepper_servidor)` como `BINARY(32)`. El reenvío normal no rota token. |
 | Pepper | Debe vivir fuera de Git, en configuración real del servidor |
-| Datos públicos | Solo autenticidad, estado, código, curso, fecha y documento enmascarado |
+| Datos públicos | DNI completo visible por decisión institucional (D0), estado, código, curso, fecha de emisión y fechas asistidas |
 | Auditoría | Eventos mínimos sin DNI completo, token completo, SQL ni credenciales |
 
 ## Tablas
@@ -26,7 +26,8 @@ Registra el certificado emitido y los datos mínimos necesarios para la respuest
 | `estado` | `ENUM` | `borrador`, `vigente`, `revocado`, `vencido` |
 | `alumno_nombre_mostrar` | `VARCHAR(160)` | Nombre de visualización para respuesta pública |
 | `documento_hash` | `BINARY(32)` | Huella no reversible para control interno futuro |
-| `documento_enmascarado` | `VARCHAR(20)` | Ejemplo: `12******90` |
+| `documento_enmascarado` | `VARCHAR(20)` | Ejemplo: `12******90`. Columna legacy; el DTO público usa DNI completo por D0. |
+| `documento_completo` | `VARCHAR(20)` | DNI completo visible en validación pública (decisión D0). No se loguea ni audita. |
 | `curso_nombre` | `VARCHAR(180)` | Nombre del curso o trayecto |
 | `emitido_en` | `DATE` | Fecha de emisión |
 | `vence_en` | `DATE NULL` | Vencimiento opcional |
@@ -88,3 +89,19 @@ El seed demo usa un token ficticio válido para el contrato público y guarda `t
 ## Rollback
 
 La migración documenta `DROP TABLE` en orden inverso: primero `cert_eventos_auditoria`, luego `cert_tokens_verificacion`, finalmente `cert_certificados`.
+
+## Tablas futuras (planificación D0, no migrar en este ciclo)
+
+Las siguientes tablas quedan planificadas para ciclos SDD posteriores (M4-02 y siguientes). Usan prefijo `cert_`, migraciones controladas y no se crean en este ciclo documental.
+
+| Tabla | Propósito |
+|---|---|
+| `cert_alumnos` | Alumnos: id, nombre, apellido, dni, email, estado, timestamps. |
+| `cert_cursos` | Cursos: id, codigo, nombre, estado, timestamps. |
+| `cert_curso_fechas` | Fechas de cada curso: id, curso_id, fecha, descripcion opcional, estado, created_at. |
+| `cert_asistencias` | Asistencias: id, alumno_id, curso_fecha_id, presente, timestamps. Unique por alumno+fecha. |
+| `cert_configuracion_institucional` | Firmantes y config institucional (Rector/a, Asesor/a Pedagógica). |
+| `cert_entregas_email` | Entregas/reenvíos por email (opcional, futuro). |
+| `cert_admin_usuarios` | Usuarios admin para login real futuro (opcional, fuera de este ciclo). |
+
+Reglas: FK correctas, índices por DNI/curso/fecha, unique para evitar asistencia duplicada, seeds ficticios, compatible MariaDB 10.6, sin datos reales.

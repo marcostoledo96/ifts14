@@ -79,9 +79,11 @@ Secuencia de desbloqueo: Marcos puede iniciar `frontend/angular-shell`; Matías 
 - Extraer intención visual, no código React/Next.
 - Implementar componentes Angular propios bajo `apps/frontend-angular/` cuando el ciclo SDD lo apruebe.
 - No inventar contratos API, PDF, QR, permisos ni configuración institucional.
-- En validación pública, usar DNI enmascarado y no exponer tokens completos ni datos reales.
-- En contextos privados o de entrega al estudiante, el certificado enviado o mostrado puede requerir DNI completo; esa decisión debe quedar especificada fuera de la respuesta pública de validación.
-- Si la referencia v0 muestra DNI completo en un contexto público, no portarlo: prevalece el contrato de validación pública con documento enmascarado.
+- En validación pública, mostrar DNI completo por decisión institucional (D0); no exponer tokens completos ni datos reales.
+- El certificado es de curso y debe mostrar fechas asistidas (`attendedDates`).
+- QR/token permanente: las pantallas de reenvío deben indicar "mismo QR"; no portar rotación de QR desde v0.
+- Auth admin simple temporal (`X-Admin-Key`); no portar credenciales demo de `login-form.tsx`.
+- Firmantes PDF: Rector/a y Asesor/a Pedagógica vía configuración institucional.
 - Usar mocks solo si el ciclo los declara explícitamente.
 - Priorizar foco visible, navegación por teclado, responsive y contraste.
 - No instalar dependencias visuales sin decisión documentada.
@@ -136,7 +138,7 @@ Evidencia de verificación de este turno (sin PHP CLI): `npm test --watch=false`
 
 ### Shared certificates
 
-`dto.ts` (DTOs del contrato PHP, sin DNI completo/hash/pepper/tablas), `validation-source.ts` (interfaz + InjectionToken, frontera reemplazable), `mock-tokens.ts` (`MockValidationSource` + tokens `demo-valido|revocado|expirado|inexistente|error-tecnico`), `http-validation.source.ts` (`HttpValidationSource` con `HttpClient`, URL `${environment.apiBaseUrl}/certificados/{encodeURIComponent(token)}/verificacion`; usa suscripción cancelable vía `AbortSignal` en vez de `firstValueFrom`), `result-mapper.ts` (404/revocado/expirado/inexistente → `not-verifiable`; 5xx/red/JSON → `technical-error`), `validation.service.ts` (`verify(token)` consume `VALIDATION_SOURCE`; sin cambios al swap).
+`dto.ts` (DTOs del contrato PHP: incluye `documentNumber` completo y `attendedDates` por D0; sin hash/pepper/tablas internas), `validation-source.ts` (interfaz + InjectionToken, frontera reemplazable), `mock-tokens.ts` (`MockValidationSource` + tokens `demo-valido|revocado|expirado|inexistente|error-tecnico`), `http-validation.source.ts` (`HttpValidationSource` con `HttpClient`, URL `${environment.apiBaseUrl}/certificados/{encodeURIComponent(token)}/verificacion`; usa suscripción cancelable vía `AbortSignal` en vez de `firstValueFrom`), `result-mapper.ts` (404/revocado/expirado/inexistente → `not-verifiable`; 5xx/red/JSON → `technical-error`), `validation.service.ts` (`verify(token)` consume `VALIDATION_SOURCE`; sin cambios al swap).
 
 ### Límites de UI final
 
@@ -149,6 +151,7 @@ Cuando exista integración real:
 - ruta pública conceptual: `/certificados/validar/:tokenCertificacion`;
 - endpoint esperado: `/certificados/api/certificados/{token}/verificacion`;
 - `404 CERTIFICATE_NOT_FOUND` se muestra como certificado no verificable, no como error técnico;
-- la UI pública no debe pedir DNI completo para validar un certificado;
-- la respuesta pública debe usar DNI enmascarado; la entrega privada o estudiantil del certificado puede requerir DNI completo según spec aprobada;
+- la UI pública muestra DNI completo por decisión institucional (D0) y fechas asistidas (`attendedDates`);
+- la UI pública no debe pedir DNI como input de búsqueda pública;
+- QR/token permanente: pantallas de reenvío indican "mismo QR", no rotación;
 - los modelos TypeScript futuros deben respetar `docs/backend/01-contrato-api-certificados.md`.

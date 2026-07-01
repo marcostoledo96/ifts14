@@ -68,11 +68,12 @@ Antes de cualquier ciclo F0-F3, Matías debe:
 | Tema | Regla |
 |---|---|
 | Rol | Matías lidera UI/UX del frontend Angular 20, responsive, accesibilidad, admin, QA y handoff visual. Marcos puede tomar estructura/backend-facing según la división operativa. |
-| Producto | Módulo público `/certificados/` para validar certificaciones mediante QR o link. |
-| Fuente visual | `muestra_pagina/` contiene referencia v0 utilizable para prompts 4-10, con código Next.js/React exportado, capturas y manifiesto; prompts 11-22 quedan pendientes. |
+| Producto | Módulo público `/certificados/` para validar certificados de curso mediante QR o link. |
+| Fuente visual | `muestra_pagina/` contiene referencia v0 actualizada (Next.js/React) para prompts 4-17, con código exportado, capturas y manifiesto. Se usa solo como referencia visual: no compilar, no portar literalmente, no copiar credenciales demo. |
 | Fuente documental | `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md` y specs OpenSpec vigentes. |
 | Backend/API | No inventar contratos. Usar solo lo documentado por Marcos. |
 | Seguridad | No tocar `material_privado_no_versionar/`, dumps, logs, credenciales ni archivos `.env`. |
+| Decisiones D0 | QR/token permanente (reenvío no rota); DNI completo visible en validación pública; certificado de curso con fechas asistidas; auth admin simple `X-Admin-Key` temporal; firmantes PDF Rector/a + Asesor/a Pedagógica; staging `/certificados_staging/`. |
 | Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. **Para el flujo de Matías**: OpenCode PUEDE ejecutar operaciones Git con aprobación explícita de Matías en el mismo turno, comando exacto, evidencia previa, diff-confirmation gate cuando corresponda, árbol limpio o decisión explícita de stash/commit/abortar; la única prohibición dura es `git push` directo a `main`; ver sección "Ruta rápida" punto 8. **Para el flujo de Marcos**: ver `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` — Marcos mantiene autoridad total sobre su propio workflow. |
 
 ### Alcance permitido
@@ -251,8 +252,8 @@ Si un comando no existe, no lo inventes como evidencia. Informá: “No hay runn
 - [ ] Consola del navegador sin errores nuevos.
 - [ ] Comparación visual contra `muestra_pagina/` cuando exista.
 - [ ] No regresión visual en pantallas tocadas.
-- [ ] Validación pública con DNI enmascarado, sin tokens completos ni datos sensibles reales.
-- [ ] Si una pantalla privada o de entrega al estudiante requiere DNI completo, existe spec aprobada y no se mezcla con validación pública.
+- [ ] Validación pública con DNI completo por decisión institucional (D0); logs, auditoría, errores y respuestas administrativas sin DNI completo; mocks solo con DNI ficticios; sin tokens completos ni datos sensibles reales.
+- [ ] El DNI completo en validación pública aplica solo como respuesta de autenticidad (D0); no se usa DNI como input de búsqueda pública.
 
 ## Errores comunes y límites
 
@@ -714,7 +715,7 @@ Documentación a actualizar en `sdd-archive`:
 
 Qué NO hacer:
 - No crear flujo de validación real sin contrato API.
-- No exponer DNI completo en pantallas públicas, tokens ni datos sensibles.
+- No exponer DNI completo fuera de la validación pública (D0); logs, auditoría, errores y respuestas administrativas sin DNI completo; sin tokens ni datos sensibles reales.
 - No convertir placeholders en pantallas finales sin diseño aprobado.
 
 Mensaje de commit sugerido: `feat(frontend): crear layout base publico admin`.
@@ -753,7 +754,7 @@ Trabajemos el ciclo F2-01 — Pantalla pública de validación válida.
 Usá SDD completo. Leé AGENTS.md, apps/frontend-angular/AGENTS.md, docs/frontend/00-angular20-port-v0.md,
 docs/backend/01-contrato-api-certificados.md, hallazgos F1-01/F1-02 y la spec del ciclo.
 Implementá solo la pantalla pública para un caso válido con datos mock o contrato documentado.
-No inventes endpoints, no consultes backend real si no está aprobado y usá DNI enmascarado, sin token completo.
+No inventes endpoints, no consultes backend real si no está aprobado y mostrá DNI completo solo en la validación pública (D0); sin token completo en UI, logs ni consola.
 Si muestra_pagina/ no tiene diseño utilizable, usá una estructura accesible mínima y reportá el bloqueo visual.
 No toques PHP, base de datos, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, si existe `origin/<rama>`, corré `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`; si es primer push, declaralo y compará contra la base aprobada con `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat`; esperá confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. La única prohibición dura es `git push` directo a `main`; PR, `git merge`, `git rebase` y merge de PR requieren aprobación explícita de Matías, comando exacto y evidencia previa.
 Cerrá con tests/build disponibles, QA manual, sdd-archive y reporte final.
@@ -763,7 +764,7 @@ Validaciones automáticas:
 - [ ] `npm test` pasa o se reporta que no hay runner disponible.
 - [ ] `npm run build` pasa o queda bloqueo verificable.
 - [ ] La pantalla no depende de un endpoint no documentado.
-- [ ] No se expone DNI completo en validación pública, token completo ni datos sensibles.
+- [ ] La validación pública muestra DNI completo (D0); logs, auditoría, errores y respuestas administrativas no exponen DNI completo; sin token completo ni datos sensibles reales.
 
 QA manual:
 - [ ] La ruta pública de validación muestra estado válido con jerarquía clara.
@@ -804,7 +805,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 docs/backend/01-contrato-api-certificados.md, lo hecho en F2-01 y la spec del ciclo.
 Implementá estados públicos diferenciados para certificación revocada, certificación no encontrada y error técnico.
 Tratá 404/CERTIFICATE_NOT_FOUND como certificado no verificable, no como error de sistema.
-No inventes backend, no expongas DNI completo ni token completo en validación pública y no agregues dependencias.
+No inventes backend, no expongas DNI completo fuera de la validación pública (D0) ni token completo en UI, y no agregues dependencias.
 No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, si existe `origin/<rama>`, corré `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`; si es primer push, declaralo y compará contra la base aprobada con `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat`; esperá confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. La única prohibición dura es `git push` directo a `main`; PR, `git merge`, `git rebase` y merge de PR requieren aprobación explícita de Matías, comando exacto y evidencia previa.
 ```
 
@@ -1104,7 +1105,7 @@ Validaciones automáticas:
 QA manual:
 - [ ] La app sigue funcionando con mocks.
 - [ ] Errores de servicio están previstos sin romper UI.
-- [ ] No se exponen tokens, DNI completo en validación pública ni errores técnicos crudos.
+- [ ] No se exponen tokens completos, DNI completo fuera de la validación pública (D0), ni errores técnicos crudos.
 - [ ] Consola sin errores nuevos.
 
 Documentación a actualizar en `sdd-archive`:
@@ -1199,7 +1200,7 @@ QA manual:
 - [ ] Contraste y legibilidad revisados.
 - [ ] Estados carga/vacío/error/éxito revisados.
 - [ ] Consola sin errores nuevos.
-- [ ] No se muestran DNI completo en validación pública, tokens completos ni datos reales.
+- [ ] La validación pública muestra DNI completo (D0) y no muestra tokens completos ni datos sensibles reales; logs, auditoría, errores y respuestas administrativas sin DNI completo.
 
 Documentación a actualizar en `sdd-archive`:
 - `docs/frontend/00-angular20-port-v0.md` con resumen de QA, pendientes y riesgos.
@@ -1384,7 +1385,7 @@ Antes de pedir revisión a Marcos, completá esta lista.
 
 - [ ] No se tocó `material_privado_no_versionar/`.
 - [ ] No se copiaron dumps, logs, credenciales ni datos reales a documentación o código.
-- [ ] La validación pública usa DNI enmascarado y no muestra tokens completos ni datos sensibles.
+- [ ] La validación pública muestra DNI completo (D0) y no muestra tokens completos ni datos sensibles; logs, auditoría, errores y respuestas administrativas sin DNI completo.
 - [ ] El DNI completo solo aparece en contextos privados o de entrega al estudiante si una spec aprobada lo exige.
 - [ ] No se instalaron dependencias nuevas sin aprobación.
 - [ ] No se inventaron endpoints ni contratos API.
@@ -1396,7 +1397,7 @@ Usá esta tabla como control común para cada pantalla o estado visual tocado.
 
 | Pantalla/estado | Controles mínimos |
 |---|---|
-| Validación pública válida | Mensaje de autenticidad claro, datos mínimos, DNI enmascarado, sin token completo, responsive, foco visible, consola limpia. |
+| Validación pública válida | Mensaje de autenticidad claro, datos mínimos, DNI completo (D0) solo como respuesta de autenticidad, sin token completo, responsive, foco visible, consola limpia. |
 | Certificación revocada | Comunica invalidez sin ambigüedad, no parece error técnico, contraste correcto, no expone datos sensibles. |
 | Certificación no encontrada | Indica “no verificable”, no culpa al usuario, no muestra stack/error crudo, funciona en móvil. |
 | Error técnico | Sugiere reintentar o contactar, no muestra detalles internos, mantiene navegación y foco. |

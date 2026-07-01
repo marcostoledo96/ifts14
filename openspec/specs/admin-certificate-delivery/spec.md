@@ -2,27 +2,28 @@
 
 ## Purpose
 
-Definir la entrega y reenvío administrativo de certificados por email mediante un enlace público de validación. El flujo conserva el token completo fuera de la base, los logs y la respuesta JSON; rota el token en cada reenvío y deja el transporte de email como adaptador configurable, bloqueando el envío real mientras no exista configuración SMTP confirmada.
+Definir la entrega y reenvío administrativo de certificados por email mediante un enlace público de validación. El flujo conserva el token completo fuera de la base, los logs y la respuesta JSON; el QR/token se trata como permanente durante la vida del certificado y se conserva en un reenvío normal (no rota en flujo normal). El transporte de email queda como adaptador configurable con modo `stub` o `smtp`, y SMTP real queda bloqueado por gate humano mientras Composer/vendor y credenciales externas no estén confirmadas.
 
 ## Requirements
 
 ### Requirement: Reenvío administrativo por email
 
-La API MUST exponer `POST /certificados/api/admin/certificados/{id}/reenviar` protegido por `X-Admin-Key`. El endpoint MUST rotar el token de verificación activo del certificado (revocar el anterior y emitir uno nuevo), enviar por email únicamente el enlace público de validación con el token nuevo y responder `200` con un DTO de entrega que NO contenga el token completo.
+La API MUST exponer `POST /certificados/api/admin/certificados/{id}/reenviar` protegido por `X-Admin-Key`. El endpoint MUST conservar el token de verificación activo del certificado en un reenvío normal, enviar o simular por email el enlace público de validación y responder `200` con un DTO de entrega que NO contenga el token completo. La revocación explícita es la única vía válida para invalidar el token; el reenvío normal NO rota token.
 
 #### Scenario: Reenvío exitoso
 
 - **Given** un certificado emitido con token activo, email del destinatario disponible y transporte configurado
 - **When** se invoca `POST /certificados/api/admin/certificados/{id}/reenviar` con `X-Admin-Key` válido
-- **Then** la API MUST rotar el token activo, enviar el enlace público por email y responder `200` con `{ data: { certificadoId, enviadoEn, destinatarioEnmascarado } }`.
+- **Then** la API MUST conservar el token activo, enviar o simular el enlace público y responder `200` con `{ data: { certificadoId, enviadoEn, destinatarioEnmascarado } }`.
 - **And** MUST NOT incluir el token completo en la respuesta JSON, en logs ni en auditoría.
+- **And** MUST NOT rotar token ni revocar el token previo en flujo normal.
 
-#### Scenario: Rotación revoca token anterior
+#### Scenario: Token conservado tras reenvío
 
-- **Given** un certificado con un token activo `T_viejo`
+- **Given** un certificado con un token activo `T_vigente`
 - **When** se ejecuta el reenvío
-- **Then** la API MUST marcar `T_viejo` como revocado y MUST crear un nuevo token `T_nuevo` activo.
-- **And** una verificación posterior con `T_viejo` MUST responder `404 CERTIFICATE_NOT_FOUND`.
+- **Then** la API MUST mantener `T_vigente` activo para verificaciones posteriores.
+- **And** una verificación posterior con `T_vigente` MUST responder `200` con DTO público válido.
 
 #### Scenario: Reenvío sin autorización
 
@@ -39,9 +40,9 @@ La API MUST exponer `POST /certificados/api/admin/certificados/{id}/reenviar` pr
 
 #### Scenario: Transporte no configurado
 
-- **Given** el transporte de email sin configuración SMTP válida
+- **Given** el transporte de email en modo `stub` o SMTP no confirmado
 - **When** se invoca el reenvío autorizado
-- **Then** la API MUST responder `503 DELIVERY_NOT_CONFIGURED` sin rotar token ni emitir email.
+- **Then** la API MUST responder `503 DELIVERY_NOT_CONFIGURED` o un DTO con `canal: stub` sin rotar token ni emitir email real.
 - **And** el mensaje MUST indicar explícitamente que el envío real está deshabilitado.
 
 ### Requirement: Privacidad del token en el canal de entrega
@@ -64,7 +65,7 @@ El sistema MUST transportar el token completo únicamente dentro del email del d
 
 ### Requirement: Adaptador de transporte configurable
 
-El sistema MUST usar un adaptador de transporte de email desacoplado del servicio de entrega, configurable por variable externa a Git. El adaptador MUST ofrecer al menos un modo `stub` que no envíe email real y un modo `smtp` que requiera credenciales externas. El sistema MUST NOT declarar una entrega como exitosa cuando opera en modo `stub`.
+El sistema MUST usar un adaptador de transporte de email desacoplado del servicio de entrega, configurable por variable externa a Git. El adaptador MUST ofrecer al menos un modo `stub` que no envíe email real y un modo `smtp` que requiera credenciales externas. El sistema MUST NOT declarar una entrega como exitosa cuando opera en modo `stub`. El sistema MUST bloquear el envío real por gate humano mientras Composer/vendor y credenciales SMTP no estén confirmadas; este ciclo documental NO agrega dependencias ni habilita SMTP real.
 
 #### Scenario: Modo stub explícito
 
@@ -81,9 +82,16 @@ El sistema MUST usar un adaptador de transporte de email desacoplado del servici
 
 #### Scenario: Modo SMTP con credenciales
 
-- **Given** credenciales SMTP válidas en configuración externa
+- **Given** credenciales SMTP válidas en configuración externa y Composer/vendor confirmado en hosting
 - **When** se invoca el reenvío autorizado
 - **Then** la API MAY enviar el email real y responder `200` con `destinatarioEnmascarado`.
+
+#### Scenario: Gate Composer/SMTP
+
+- **Given** que Composer/vendor o SMTP real no están confirmados en hosting
+- **When** se documenta entrega por email
+- **Then** el envío real MUST quedar bloqueado por gate humano.
+- **And** el modo de prueba MUST usar datos ficticios.
 
 ### Requirement: Contenido del email limitado a enlace
 
