@@ -21,11 +21,12 @@ Base de datos: MariaDB 10.6.27
 Hosting: cPanel
 Gestión DB: phpMyAdmin / MySQL Databases de cPanel
 Ruta final: /certificados/
+Staging: /certificados_staging/
 ```
 
 ## 3. Alcance del módulo `/certificados/`
 
-El módulo debe permitir que una persona externa valide una certificación/constancia mediante QR o link.
+El módulo debe permitir que una persona externa valide un certificado de curso mediante QR o link.
 
 Ruta pública conceptual:
 
@@ -38,12 +39,25 @@ El flujo esperado es:
 ```txt
 Bedelía carga curso y fechas
 → registra asistencias presentes
-→ emite certificación
-→ genera PDF horizontal con QR
-→ envía o reenvía al alumno
+→ emite certificación (certificado de curso con fechas asistidas)
+→ genera PDF horizontal con QR (token permanente)
+→ envía o reenvía al alumno (mismo QR/token, no rota)
 → usuario externo escanea QR
-→ verifica autenticidad
+→ verifica autenticidad (ve DNI completo del alumno)
 ```
+
+### Decisiones vigentes (D0)
+
+| Tema | Regla |
+|---|---|
+| QR / token | Permanente. Reenvío normal no rota token. Solo revocación o regeneración excepcional auditada. |
+| DNI en validación pública | DNI completo visible por decisión institucional. Logs/auditoría/errores sin DNI completo. |
+| Certificado | Certificado de curso con fechas asistidas del alumno. |
+| Auth admin | `X-Admin-Key` temporal. Login real es fase posterior. |
+| Email | Cuenta de prueba / `stub`. Producción gated. |
+| Composer | Gate: si no disponible en cPanel, `vendor/` local como artefacto, nunca versionado. |
+| Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |
+| Staging | `/certificados_staging/` separado de `/certificados/`. |
 
 ## 4. Estado actual
 
@@ -66,24 +80,16 @@ y nunca debe subirse a GitHub.
 
 ## 5. Carpeta `muestra_pagina/`
 
-`muestra_pagina/` será la carpeta donde se deje la referencia visual generada en v0.
+`muestra_pagina/` contiene la referencia visual exportada desde v0 (Next.js/React). Se usa **solo como referencia visual** para portar a Angular 20.
 
-Puede estar vacía al inicio.
+Reglas:
 
-Mientras esté vacía:
-
-- no se implementa el frontend final;
-- no se inventan pantallas;
-- no se copia UI genérica;
-- solo se puede preparar estructura y documentación.
-
-Cuando tenga contenido, Matías deberá:
-
-- analizar composición, tokens visuales y comportamiento;
-- portar el diseño a Angular 20;
-- mejorar accesibilidad, rendimiento y estructura;
-- no copiar React/Next literalmente;
-- mantener una interfaz institucional, moderna y no genérica.
+- No compilar ni ejecutar este proyecto.
+- No portar componentes, hooks, rutas ni estilos literalmente a Angular.
+- No copiar credenciales demo al producto: son mock visual v0.
+- `login-form.tsx` es mock visual; el producto usa `X-Admin-Key` temporal.
+- Respetar D0: QR permanente, DNI completo público, fechas asistidas, auth simple temporal.
+- Inventario en `muestra_pagina/MANIFIESTO_V0.md`.
 
 ## 6. Roles
 
@@ -106,7 +112,8 @@ Responsable de:
 Responsable de:
 
 - liderazgo UI/UX del frontend Angular 20;
-- adaptación de `muestra_pagina/`;
+- adaptación de `muestra_pagina/` (referencia visual v0);
+- port visual a Angular (sin copiar React/Next literalmente);
 - UI/UX;
 - Tailwind o sistema visual elegido;
 - responsive;

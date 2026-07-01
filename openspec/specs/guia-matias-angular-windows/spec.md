@@ -8,7 +8,7 @@ Definir los requisitos documentales para reescribir `MATIAS_PROMPTS_SDD_3_SEMANA
 
 ### Requirement: Contexto operativo y misión
 
-La guía DEBE explicar la misión de Matías, el alcance frontend Angular 20, las fuentes de verdad y las prohibiciones: no tocar backend, base, deploy, `material_privado_no_versionar/`, ni dependencias no aprobadas. Sobre la regla de Git: OpenCode PUEDE ejecutar operaciones Git con aprobación explícita de Matías en el mismo turno del chat, comando exacto y evidencia previa. `git add` + `git commit` + `git push` a la rama actual requieren `sdd-verify` PASS, diff-confirmation gate antes de stage y pre-push safety antes de push. La preparación de rama o PR puede ocurrir antes de `sdd-verify` cuando el ciclo lo necesita. La creación/cambio de rama requiere árbol limpio o decisión explícita de stash/commit/abortar, y rama fuente explícita/actualizada. La única prohibición dura para Matías es `git push` directo a `main`. Marcos mantiene autoridad total sobre su propio workflow.
+La guía DEBE explicar la misión de Matías, el alcance frontend Angular 20, las fuentes de verdad y las prohibiciones: no tocar backend, base, deploy, `material_privado_no_versionar/`, ni dependencias no aprobadas. La guía DEBE declarar que Matías lidera UI/UX Angular 20, adaptación de `muestra_pagina/`, sistema visual, responsive, accesibilidad, admin y QA visual; el backend PHP, MariaDB, deploy cPanel, auth real, SMTP real y las decisiones de QR/token quedan bajo coordinación con Marcos. La guía DEBE codificar las decisiones D0 vigentes: QR/token permanente, DNI completo público en validación pública, certificado de curso con fechas asistidas, auth admin simple temporal (`X-Admin-Key`) sin login real, v0 como referencia visual. Sobre la regla de Git: OpenCode PUEDE ejecutar operaciones Git con aprobación explícita de Matías en el mismo turno del chat, comando exacto y evidencia previa. `git add` + `git commit` + `git push` a la rama actual requieren `sdd-verify` PASS, diff-confirmation gate antes de stage y pre-push safety antes de push. La preparación de rama o PR puede ocurrir antes de `sdd-verify` cuando el ciclo lo necesita. La creación/cambio de rama requiere árbol limpio o decisión explícita de stash/commit/abortar, y rama fuente explícita/actualizada. La única prohibición dura para Matías es `git push` directo a `main`. Marcos mantiene autoridad total sobre su propio workflow.
 
 #### Scenario: Inicio correcto
 - DADO que Matías abre la guía
@@ -32,15 +32,23 @@ La guía DEBE describir el flujo OpenCode/Gentle-AI con ciclos pequeños, TDD cu
 - DADO un ciclo terminado
 - CUANDO Matías sigue la guía
 - ENTONCES ejecuta validaciones, QA manual, `sdd-archive` y deja `git add` + `git commit` + `git push`, PR, creación/cambio de rama, merge o rebase bajo aprobación explícita de Matías por turno, con comando exacto, evidencia previa y árbol limpio o decisión explícita de stash/commit/abortar cuando corresponda
-
 ### Requirement: Uso de `muestra_pagina/`
 
-La guía DEBE tratar `muestra_pagina/` como referencia visual y funcional; si está vacía, DEBE bloquear la implementación del frontend final y limitar el trabajo a estructura, documentación o preparación.
+La guía DEBE tratar `muestra_pagina/` como referencia visual actualizada de v0; Matías DEBE usarla como insumo para portar a Angular 20 sin copiar React/Next literalmente, y DEBE respetar DNI completo ficticio, fechas asistidas y QR permanente en pantallas públicas. La guía DEBE declarar que `muestra_pagina/` no se compila, no se ejecuta, no se portan credenciales demo hardcodeadas y no se instalan dependencias desde la referencia; la implementación real corre en el scaffold Angular de `apps/frontend-angular/`.
 
-#### Scenario: Carpeta vacía
-- DADO que `muestra_pagina/` no contiene diseño utilizable
-- CUANDO un ciclo propone UI final
-- ENTONCES la guía indica no inventar pantallas y reportar bloqueo
+#### Scenario: Referencia v0 disponible
+
+- DADO que `muestra_pagina/` contiene exportación v0 actualizada
+- CUANDO Matías planifica un ciclo frontend
+- ENTONCES usa la referencia visual sin portar código React/Next literalmente.
+- Y conserva las decisiones de DNI completo, fechas asistidas y QR permanente.
+
+#### Scenario: Credenciales demo no portables
+
+- DADO que la referencia v0 contiene credenciales de demo hardcodeadas en `components/admin/login-form.tsx`
+- CUANDO se diseñe o porte una pantalla admin
+- ENTONCES la guía DEBE prohibir copiarlas al producto.
+- Y DEBE mantener auth real fuera de alcance salvo decisión explícita con Marcos.
 
 ### Requirement: Política frontend, pruebas y QA
 

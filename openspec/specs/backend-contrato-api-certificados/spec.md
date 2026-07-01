@@ -2,20 +2,20 @@
 
 ## Purpose
 
-Definir el contrato de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper, más el slice administrativo de emisión, revocación, descarga PDF y reenvío por email protegido por `X-Admin-Key`.
+Definir el contrato de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper, más el slice administrativo de emisión, revocación, descarga PDF y reenvío por email protegido por `X-Admin-Key`. El DTO público incluye DNI completo visible por decisión institucional y las fechas asistidas del curso como datos del certificado. El QR/token es permanente durante la vida del certificado; el reenvío normal conserva el token salvo revocación explícita.
 
 ## Requirements
 
 ### Requirement: Contrato público de verificación
 
-La API MUST exponer un contrato JSON para validar certificados desde QR o enlace con respuesta pública mínima bajo la URL desplegada `/certificados/api/certificados/{token}/verificacion`; la ruta PHP normalizada MAY omitir el prefijo `/certificados/api` si el front controller ya lo resolvió.
+La API MUST exponer un contrato JSON para validar certificados desde QR o enlace con respuesta pública bajo la URL desplegada `/certificados/api/certificados/{token}/verificacion`. El DTO público MUST incluir `data.valid`, estado, código de certificado, curso, fecha de emisión, DNI completo visible por decisión institucional y fechas asistidas del curso; MUST NOT incluir token completo, hashes ni datos internos. La ruta PHP normalizada MAY omitir el prefijo `/certificados/api` si el front controller ya lo resolvió.
 
 #### Scenario: Certificado válido
 
 - **Given** un token público con formato válido y certificado vigente
 - **When** se consulta `GET /certificados/api/certificados/{token}/verificacion`
-- **Then** la respuesta MUST ser `200` con `data.valid: true`, estado, código de certificado, curso, fecha de emisión y documento enmascarado.
-- **And** MUST NOT incluir DNI completo, token completo ni datos internos.
+- **Then** la respuesta MUST ser `200` con `data.valid: true`, estado, código de certificado, curso, fecha de emisión, DNI completo visible y fechas asistidas del curso.
+- **And** MUST NOT incluir token completo, hashes, pepper, nombres de tablas ni datos internos.
 
 #### Scenario: Token no verificable
 
@@ -122,7 +122,7 @@ El endpoint público de verificación MUST aplicar rate limiting mínimo y respo
 
 ### Requirement: Contrato administrativo mínimo de certificados
 
-La API MUST documentar y sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión (con generación PDF/QR sincrónica y `pdfDownloadUrl` en la respuesta `201`), `POST /admin/certificados/{id}/revocar` para revocación, `GET /admin/certificados/{id}/pdf` para descarga del PDF persistido y `POST /admin/certificados/{id}/reenviar` para entrega/reenvío por email con rotación de token. Las respuestas MUST usar envelopes JSON existentes, DTOs seguros y errores sin DNI completo, token completo, secretos, SQL ni rutas internas. El endpoint de descarga MUST responder `Content-Type: application/pdf` y `Content-Disposition: attachment` ante autorización válida, `401 UNAUTHORIZED` sin autorización y `404 PDF_NOT_FOUND` si el PDF no existe. El endpoint de reenvío MUST responder `200` con DTO de entrega sin token completo, `401 UNAUTHORIZED` sin autorización, `404 CERTIFICATE_NOT_FOUND` si el certificado no existe y `503 DELIVERY_NOT_CONFIGURED` si el transporte no está configurado.
+La API MUST documentar y sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión (con generación PDF/QR sincrónica y `pdfDownloadUrl` en la respuesta `201`), `POST /admin/certificados/{id}/revocar` para revocación, `GET /admin/certificados/{id}/pdf` para descarga del PDF persistido y `POST /admin/certificados/{id}/reenviar` para entrega/reenvío por email conservando el token/QR permanente. Las respuestas MUST usar envelopes JSON existentes, DTOs seguros y errores sin DNI completo, token completo, secretos, SQL ni rutas internas. El endpoint de descarga MUST responder `Content-Type: application/pdf` y `Content-Disposition: attachment` ante autorización válida, `401 UNAUTHORIZED` sin autorización y `404 PDF_NOT_FOUND` si el PDF no existe. El endpoint de reenvío MUST responder `200` con DTO de entrega sin token completo (preservando el QR/token permanente salvo revocación explícita), `401 UNAUTHORIZED` sin autorización, `404 CERTIFICATE_NOT_FOUND` si el certificado no existe y `503 DELIVERY_NOT_CONFIGURED` si el transporte no está configurado.
 (Previously: el contrato administrativo cubría emisión, revocación y descarga PDF; el reenvío estaba explícitamente excluido.)
 
 #### Scenario: Admin sin autorización

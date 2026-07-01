@@ -76,13 +76,13 @@ El sistema DEBE documentar las claves `public_base_url` y `certificate_storage_p
 - ENTONCES DEBE encontrar `public_base_url` y `certificate_storage_path` con valores ficticios
 - Y NO DEBE encontrar valores reales ni secretos.
 
-### Requisito: DNI enmascarado en el PDF
+### Requisito: DNI en el PDF del certificado de curso
 
-El PDF DEBE mostrar el documento enmascarado por defecto. El sistema NO DEBE imprimir el DNI completo en el cuerpo del PDF.
+El PDF DEBE corresponder a un certificado de curso e incluir las fechas asistidas del curso. El PDF PUEDE mostrar el DNI completo visible por decisión institucional aprobada como contenido público del certificado cuando los documentos lo requieran. Los logs, auditoría, errores y respuestas administrativas NO DEBEN exponer el DNI completo ni el token completo.
 
-#### Escenario: DNI enmascarado por defecto
+#### Escenario: DNI visible en el PDF del certificado
 
-- DADO una emisión que produce un PDF
+- DADO una emisión que produce un PDF de certificado de curso
 - CUANDO se renderiza el documento
-- ENTONCES el PDF DEBE mostrar el documento enmascarado
-- Y NO DEBE incluir el DNI completo en texto visible.
+- ENTONCES el PDF PUEDE mostrar el DNI completo como contenido público aprobado del certificado, junto con las fechas asistidas del curso
+- Y NO DEBE exponer el token completo en texto visible ni como dato recuperable.

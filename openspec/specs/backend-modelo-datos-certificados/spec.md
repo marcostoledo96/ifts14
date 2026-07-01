@@ -28,26 +28,33 @@ El sistema MUST almacenar tokens públicos como hash no reversible y MUST NOT gu
 - **Then** MUST calcular hash con pepper externo a Git y comparar contra `cert_tokens_verificacion.token_hash`.
 - **And** MAY conservar solo `token_prefijo` para soporte seguro.
 
-### Requirement: Exposición pública mínima
+### Requirement: Exposición pública definida
 
-El modelo MUST sostener el DTO público del contrato de API sin requerir DNI completo ni token completo.
+El modelo MUST sostener el DTO público del contrato de API con DNI completo visible por decisión institucional y fechas asistidas del curso, sin exponer token completo, hashes, pepper, nombres de tablas ni datos internos. Las tablas futuras para cursos, alumnos, asistencias y configuración institucional SHOULD usar prefijo `cert_` y migraciones controladas; la creación de esas tablas queda fuera del ciclo documental actual.
 
 #### Scenario: Certificado vigente
 
 - **Given** un certificado `vigente` con token `activo`
 - **When** se resuelva una verificación pública
-- **Then** la respuesta futura SHOULD usar código, estado, curso, fecha y `documento_enmascarado`.
-- **And** MUST NOT exponer `documento_hash`, `token_hash` ni datos internos.
+- **Then** la respuesta futura SHOULD usar código, estado, curso, fecha, DNI completo y fechas asistidas del curso.
+- **And** MUST NOT exponer `documento_hash`, `token_hash`, pepper ni datos internos.
+
+#### Scenario: Tablas futuras documentadas
+
+- **Given** la planificación de cursos, alumnos, asistencias y configuración institucional
+- **When** se documenten tablas futuras
+- **Then** SHOULD declararse como futuras, con prefijo `cert_` y sin migración en este ciclo.
 
 ### Requirement: Persistencia de entrega con reutilización de tablas `cert_`
 
-El sistema MUST registrar la entrega/reenvío reutilizando `cert_tokens_verificacion` (rotación: token anterior revocado, token nuevo activo) y `cert_eventos_auditoria` (evento `reenvio`). El sistema MUST NOT crear migraciones nuevas salvo que el diseño justifique una tabla `cert_entregas` mínima y versionada; en ese caso la migración MUST usar prefijo `cert_` y ser compatible con MariaDB 10.6.
+El sistema MUST registrar la entrega/reenvío reutilizando `cert_tokens_verificacion` (token permanente: el reenvío normal conserva el token activo y NO rota; solo la revocación explícita invalida el token, y la regeneración es excepcional y auditada) y `cert_eventos_auditoria` (evento `reenvio`). El sistema MUST NOT crear migraciones nuevas salvo que el diseño justifique una tabla `cert_entregas` mínima y versionada; en ese caso la migración MUST usar prefijo `cert_` y ser compatible con MariaDB 10.6.
 
-#### Scenario: Rotación sobre tabla existente
+#### Scenario: Reenvío conserva token sobre tabla existente
 
 - **Given** un certificado con token activo en `cert_tokens_verificacion`
-- **When** se ejecuta un reenvío
-- **Then** el sistema MUST marcar el token anterior como `revocado` y crear un nuevo registro activo.
+- **When** se ejecuta un reenvío normal
+- **Then** el sistema MUST conservar el token activo sin rotar.
+- **And** MUST NOT crear un nuevo token ni revocar el previo salvo revocación explícita.
 - **And** MUST NOT almacenar el token completo en texto plano.
 
 #### Scenario: Auditoría de reenvío sobre tabla existente

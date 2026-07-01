@@ -12,6 +12,9 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 - No imprimir DNI ni tokens completos en logs.
 - Separar configuración, rutas, servicios y acceso a datos.
 - Mantener documentación en español argentino formal.
+- Token/QR permanente: el reenvío normal no rota token.
+- DNI completo visible en validación pública (decisión D0); logs/auditoría/errores sin DNI completo.
+- Certificado de curso con fechas asistidas.
 
 ## Ruta conceptual
 
@@ -29,7 +32,7 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 | `POST` | `/certificados/api/admin/certificados` | Emite certificado y token persistido; requiere `X-Admin-Key` y devuelve DTO seguro sin DNI ni token completos. |
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revoca certificado e invalida tokens activos; requiere `X-Admin-Key`. |
 
-La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_` o `-`. Los casos inexistentes, revocados, vencidos o fuera de ventana responden `404 CERTIFICATE_NOT_FOUND` sin revelar la causa. Los endpoints públicos aplican rate limiting mínimo por origen y responden `429 RATE_LIMITED` al superar el umbral configurado. El endpoint no devuelve DNI completo, token completo, SQL, rutas internas ni configuración.
+La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_` o `-`. Los casos inexistentes, revocados, vencidos o fuera de ventana responden `404 CERTIFICATE_NOT_FOUND` sin revelar la causa. Los endpoints públicos aplican rate limiting mínimo por origen y responden `429 RATE_LIMITED` al superar el umbral configurado. El DTO público muestra DNI completo (`documentNumber`) por decisión institucional (D0) y fechas asistidas; no devuelve token completo, SQL, rutas internas ni configuración.
 
 `token_pepper` es obligatorio en la configuración externa real y debe mantenerse fuera de Git. El ejemplo versionable usa valores ficticios solo para demo local.
 
@@ -43,10 +46,14 @@ Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, 
 
 ## Pendientes
 
-- Confirmar si Composer está disponible.
-- Confirmar mecanismo de email.
+- Confirmar si Composer está disponible en cPanel (gate para TCPDF/PHPMailer).
+- Confirmar mecanismo de email (SMTP cuenta de prueba / `stub`).
 - Confirmar generación de PDF/QR viable en el hosting.
-- Definir mecanismo de reenvío/entrega de token en un ciclo SDD posterior; el endpoint de reenvío administrativo sigue fuera de alcance hasta confirmar email o canal seguro.
+- Definir mecanismo de reenvío/entrega conservando token permanente en un ciclo SDD posterior; el endpoint de reenvío administrativo debe conservar el QR/token (no rotar en reenvío normal).
+- Ajustar `AdminCertificateService::reenviar()` para no revocar token activo ni insertar token nuevo por defecto.
+- Ajustar `CertificateValidator` para devolver DNI completo (`documentNumber`) y fechas asistidas (`attendedDates`) según contrato D0.
+- Ajustar `CertificatePdfService` para incluir fechas asistidas y firmantes institucionales (Rector/a, Asesor/a Pedagógica).
+- Auth admin simple con `X-Admin-Key` queda temporal; login real es fase posterior.
 - **Rate limiting público**: implementado como protección básica de nodo único con JSON temporal y `flock()`. No reemplaza controles anti-abuso distribuidos.
 - **Auditoría fault-injection**: disponible en `apps/backend-php/tests/fault-injection-audit.php` para DB demo ficticia; restaura `cert_eventos_auditoria` en `finally`.
 
@@ -84,7 +91,7 @@ La implementación de `backend-validacion-publica-certificados` quedó validada 
 | `GET /health` con config de ejemplo | `PASS` — `200` con `data.status: ok`, `data.service: certificados-api`. |
 | `GET .../verificacion` con token de formato inválido (`bad`) | `PASS` — `400 VALIDATION_ERROR` sin DB lookup. |
 | `POST .../consulta` con `{"token":"bad"}` | `PASS` — `400 VALIDATION_ERROR` sin DB lookup. |
-| DB-backed `GET .../verificacion` con token demo válido | `PASS` — `200` con DTO público (`data.valid: true`, `documentMasked`, `requestId`). |
+| DB-backed `GET .../verificacion` con token demo válido | `PASS` — `200` con DTO público (`data.valid: true`, `requestId`). Evidencia histórica del ciclo `backend-validacion-publica-certificados`; el DTO vigente post-D0 usa `documentNumber` (DNI completo) + `attendedDates`. |
 | DB-backed `POST .../consulta` con token demo válido | `PASS` — `200` con el mismo DTO que GET. |
 | DB-backed `GET .../verificacion` con token no verificable | `PASS` — `404 CERTIFICATE_NOT_FOUND` unificado. |
 

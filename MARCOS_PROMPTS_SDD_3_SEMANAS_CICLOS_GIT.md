@@ -27,11 +27,12 @@ Marcos debe aplicar estas reglas antes de iniciar ciclos con OpenCode/Gentle-AI:
 
 | Tema | Regla |
 |---|---|
-| Rol | Backend PHP 8.4.21, MariaDB 10.6.27, integración front/back, deploy cPanel, arquitectura, seguridad, documentación y desbloqueos frontend técnicos. |
-| Ruta pública | `/certificados/`. |
+| Rol | Backend PHP 8.4.21, MariaDB 10.6.27, integración front/back, deploy cPanel, arquitectura, seguridad, documentación, estructura funcional y desbloqueos frontend técnicos. |
+| Ruta pública | `/certificados/`. Staging: `/certificados_staging/`. |
 | Frontend | Puede tomar solo fundación Angular, validación pública, mocks/contratos frontend y build `/certificados/` cuando Matías esté bloqueado o se necesite destrabar backend. No inventar diseño final. |
 | Material privado | No modificar ni copiar contenido de `material_privado_no_versionar/`; solo nombres y riesgos generales cuando el ciclo lo autorice. |
-| Datos sensibles | No imprimir credenciales, dumps, logs, DNI completo ni tokens completos. |
+| Datos sensibles | No imprimir credenciales, dumps, logs, DNI completo en logs/auditoría ni tokens completos. El DTO público muestra DNI completo por decisión D0. |
+| Decisiones D0 | QR/token permanente (reenvío no rota); DNI completo público; certificado de curso con fechas asistidas; auth simple `X-Admin-Key` temporal; firmantes Rector/a + Asesor/a Pedagógica; gates Composer/SMTP; staging `/certificados_staging/`. |
 | Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. OpenCode puede crear o cambiar ramas (`git switch`, `git checkout`, `git branch`, `git switch -c`, `git checkout -b`) solo con aprobación explícita de Marcos, árbol limpio y rama fuente explícita/actualizada. |
 | Git — nota | Commit, push y PR requieren aprobación explícita de Marcos en el mismo turno. `git merge`, `git rebase`, `git push` a `main` y merge de PR quedan fuera de OpenCode. |
 
@@ -416,6 +417,47 @@ QA manual (checkpoint de parada): confirmar checklist compartida, DTOs, errores,
 No hacer: no bloquear backend por falta de Angular, no inventar endpoints ni pantallas, no cambiar componentes Angular sin ciclo frontend coordinado. Commit y push requieren aprobación explícita de Marcos; merge y rebase quedan fuera de OpenCode.
 Archive: `docs/backend/`, `docs/frontend/`, specs de integración si cambia contrato.
 Commit sugerido: `docs(integracion): cerrar checklist angular api`.
+
+## Semana 4 — sincronización D0 y backend de certificados de curso
+
+Bloque M4 para alinear backend, DB, PDF, email, auth y deploy con las decisiones D0 confirmadas: QR/token permanente, DNI completo público, certificado de curso con fechas asistidas, auth simple temporal, firmantes institucionales, Composer/SMTP como gates y staging `/certificados_staging/`.
+
+| Ciclo | Nombre | Objetivo | Rama sugerida |
+|---|---|---|---|
+| M4-01 | `backend-token-permanente-dni-publico` | Alinear contrato y DTO público: DNI completo, `attendedDates`, reenvío sin rotación, revocación invalida token. | `backend/token-permanente-dni-publico` |
+| M4-02 | `database-cursos-alumnos-asistencias` | Modelo real de cursos, alumnos, fechas y asistencias con prefijo `cert_`. | `database/cursos-alumnos-asistencias` |
+| M4-03 | `backend-cursos-alumnos-asistencias-api` | API admin mínima para cursos, alumnos, fechas y asistencias con `X-Admin-Key`. | `backend/cursos-alumnos-asistencias-api` |
+| M4-04 | `backend-emision-desde-asistencias` | Emisión desde alumno+curso+fechas presentes, no texto libre. Token permanente. | `backend/emision-desde-asistencias` |
+| M4-05 | `pdf-certificado-curso-fechas` | PDF institucional de certificado de curso con QR, fechas asistidas y firmantes. | `backend/pdf-certificado-curso` |
+| M4-06 | `email-reenvio-token-permanente` | Reenvío con mismo QR/token y SMTP cuenta de prueba / `stub`. | `backend/email-reenvio-token-permanente` |
+| M4-07 | `staging-cpanel-real-certificados` | Subida integrada a `/certificados_staging/` con gates Composer/vendor, SMTP, DB staging y rollback. | `deploy/staging-cpanel-real` |
+
+### Reglas del bloque M4
+
+- Los IDs M1-M3 se preservan; M4 es bloque nuevo sin renumerar.
+- M4 no habilita implementación fuera de ciclo SDD verificado.
+- Marcos lidera backend, DB, integración, deploy, arquitectura y seguridad.
+- Matías conserva UI/UX, adaptación visual y QA frontend; no hacer diseño final desde backend.
+- Coordinar con Matías sobre v0 actualizada (`muestra_pagina/MANIFIESTO_V0.md`).
+- Gates: Composer pendiente de localizar en cPanel; SMTP cuenta de prueba; `vendor/` nunca versionado.
+- QR/token permanente: el reenvío normal no rota token.
+- DNI completo visible en validación pública (D0); logs/auditoría sin DNI completo.
+
+### Prompt base M4
+
+```txt
+Trabajemos el ciclo M4-XX — <nombre> para IFTS14.
+Usá SDD completo: explore, propose, spec, design, tasks, apply, verify y archive.
+Leé AGENTS.md, docs/00-indice-general.md, docs/backend/01-contrato-api-certificados.md,
+docs/database/01-modelo-datos-certificados.md y los docs/specs indicados por el ciclo.
+Respetá D0: QR permanente, DNI completo público, fechas asistidas, auth simple temporal,
+firmantes Rector/a + Asesor/a Pedagógica, gates Composer/SMTP, staging /certificados_staging/.
+No toques Angular salvo coordinación explícita. No modifiques material_privado_no_versionar/.
+No ejecutes commit, push ni PR sin aprobación explícita de Marcos. No ejecutes `git merge`,
+`git rebase`, `git push` a `main` ni merge de PR. Para cambiar o crear rama, primero verificá
+árbol limpio y rama fuente explícita/actualizada.
+Frená en los checkpoints de QA manual y reportá comando, resultado, bloqueos y riesgos.
+```
 
 ## Handoff al cierre de cada ciclo
 

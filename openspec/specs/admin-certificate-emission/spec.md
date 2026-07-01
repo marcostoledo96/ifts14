@@ -2,21 +2,21 @@
 
 ## Purpose
 
-Definir la emisión administrativa mínima de certificados QR con generación de PDF/QR: el endpoint `POST /certificados/api/admin/certificados` crea un certificado y un token de verificación sobre el esquema `cert_` existente, sin migraciones nuevas, exige autorización administrativa, valida un payload mínimo ficticio/demo, persiste con PDO y prepared statements, genera y persiste el PDF/QR durante la emisión (antes del alta lógico) y responde con un DTO seguro que oculta DNI completo y token completo, incluyendo `pdfDownloadUrl` para descarga administrativa del PDF. Esta spec separa explícitamente el acto de "token activo persistido + PDF emitido" (cubierto en este ciclo) de la "verificación pública del token recién emitido" (dependiente del mecanismo de entrega/reenvío, fuera de alcance).
+Definir la emisión administrativa mínima de certificados QR con generación de PDF/QR: el endpoint `POST /certificados/api/admin/certificados` crea un certificado y un token de verificación permanente sobre el esquema `cert_` existente, sin migraciones nuevas, exige autorización administrativa, valida un payload mínimo ficticio/demo, persiste con PDO y prepared statements, genera y persiste el PDF/QR durante la emisión (antes del alta lógico) y responde con un DTO operativo seguro que NO expone el token completo; las respuestas operativas administrativas, logs y auditoría NO DEBEN exponer el DNI completo ni el token completo (salvo DTOs explícitamente públicos cuando la decisión institucional lo requiera), incluyendo `pdfDownloadUrl` para descarga administrativa del PDF. Esta spec separa explícitamente el acto de "token activo persistido + PDF emitido" (cubierto en este ciclo) de la "verificación pública del token recién emitido" (dependiente del mecanismo de entrega/reenvío, fuera de alcance).
 
 ## Requirements
 
 ### Requirement: Emisión administrativa mínima de certificados
 
-La API MUST exponer `POST /certificados/api/admin/certificados` para emitir un certificado y un token de verificación usando el esquema `cert_` existente, sin migraciones nuevas. El endpoint MUST requerir autorización administrativa, validar un payload mínimo ficticio/demo, persistir con PDO y prepared statements, auditar la acción, generar el PDF/QR durante la emisión (antes de confirmar el alta lógico) y responder con un DTO seguro sin DNI completo ni token completo. El DTO de emisión exitosa MUST incluir `pdfDownloadUrl` apuntando a `GET /certificados/api/admin/certificados/{id}/pdf` y MUST NOT exponer el token completo.
-(Previously: la emisión devolvía identificadores y datos enmascarados sin generar PDF ni exponer `pdfDownloadUrl`.)
+La API MUST exponer `POST /certificados/api/admin/certificados` para emitir un certificado y un token de verificación permanente usando el esquema `cert_` existente, sin migraciones nuevas. El endpoint MUST requerir autorización administrativa, validar un payload mínimo ficticio/demo, persistir con PDO y prepared statements, auditar la acción, generar el PDF/QR durante la emisión (antes de confirmar el alta lógico) y responder con un DTO operativo seguro sin token completo. Las respuestas operativas administrativas, logs y auditoría MUST NOT exponer el DNI completo ni el token completo, salvo DTOs explícitamente públicos cuando la decisión institucional lo requiera. El DTO de emisión exitosa MUST incluir `pdfDownloadUrl` apuntando a `GET /certificados/api/admin/certificados/{id}/pdf` y MUST NOT exponer el token completo.
+(Previously: la emisión devolvía identificadores y datos enmascarados sin generar PDF ni exponer `pdfDownloadUrl`; el token no se declaraba permanente.)
 
 #### Scenario: Emisión exitosa
 
 - **Given** un request autorizado con payload mínimo válido y `public_base_url`/`certificate_storage_path` configurados
 - **When** se emite el certificado administrativo
 - **Then** la API MUST crear certificado y token activo persistido en el esquema `cert_` existente, generar y persistir el PDF/QR antes de confirmar la operación, y dejar el certificado listo para verificación pública una vez que el token sea entregado al destinatario.
-- **And** MUST responder `201` con identificadores, estado, datos enmascarados y `pdfDownloadUrl`.
+- **And** MUST responder `201` con identificadores, estado, DTO operativo seguro (sin token completo; sin DNI completo en respuesta operativa/logs/auditoría salvo DTO explícitamente público) y `pdfDownloadUrl`.
 - **And** MUST NOT devolver el token completo; la entrega o reenvío del token queda fuera de este ciclo.
 
 #### Scenario: Falla la generación de PDF durante la emisión

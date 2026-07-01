@@ -216,7 +216,7 @@ La guía DEBE incluir smoke checks con datos ficticios para `/certificados_stagi
 
 ### Requisito: Reescritura obligatoria de prefijos productivos en staging
 
-La guía de staging DEBE exigir que frontend, API, `.htaccess` y checks backend usen `/certificados_staging/` y `/certificados_staging/api`, sin conservar prefijos hard-codeados de producción.
+La guía de staging DEBE exigir que frontend, API, `.htaccess` y checks backend usen `/certificados_staging/` y `/certificados_staging/api`, sin conservar prefijos hard-codeados de producción. La guía DEBE concentrar todos los gates D0 confirmados: ruta de staging `/certificados_staging/`, Composer/vendor como gate de dependencias PHP, SMTP de prueba/stub como gate de entrega, auth admin simple temporal (`X-Admin-Key`) y token/QR permanente. Este ciclo NO ejecuta deploy real, NO toca cPanel, NO sube `vendor/` versionado y NO configura SMTP real.
 
 #### Escenario: Paquete de staging sin prefijos productivos
 
@@ -225,6 +225,13 @@ La guía de staging DEBE exigir que frontend, API, `.htaccess` y checks backend 
 - ENTONCES Angular usa `baseHref /certificados_staging/`
 - Y el frontend usa la API `/certificados_staging/api`
 - Y `.htaccess` y el backend no fuerzan `/certificados/`.
+
+#### Escenario: Gates D0 documentados en staging
+
+- DADO un operador preparando staging
+- CUANDO consulta la guía
+- ENTONCES encuentra gates de ruta, backup, Composer/vendor, SMTP de prueba y aprobación humana.
+- Y NO encuentra credenciales ni configuración real.
 
 ### Requisito: Backup y primera instalación de staging
 
@@ -327,3 +334,21 @@ La ejecución real en cPanel DEBE quedar bloqueada hasta aprobación humana expl
 - DADO un agente ejecutando este ciclo
 - CUANDO completa la preparación local y documental
 - ENTONCES NO DEBE subir archivos, tocar `public_html`, modificar DB real ni acceder a cPanel.
+
+### Requisito: Gates documentados de Composer, SMTP y staging
+
+La documentación DEBE declarar `/certificados_staging/` como ruta de staging, Composer/vendor como gate para dependencias PHP y SMTP de prueba/stub como gate de entrega. Este ciclo NO DEBE ejecutar deploy, tocar cPanel, subir `vendor/` versionado ni configurar SMTP real.
+
+#### Escenario: Gates visibles antes de deploy
+
+- DADO un operador preparando staging o producción
+- CUANDO consulta la guía de deploy
+- ENTONCES encuentra gates de ruta, backup, Composer/vendor, SMTP de prueba y aprobación humana.
+- Y NO encuentra credenciales ni configuración real.
+
+#### Escenario: Ejecución real bloqueada
+
+- DADO que falta confirmar Composer, SMTP o ventana cPanel
+- CUANDO se intenta pasar de documentación a ejecución
+- ENTONCES la guía DEBE indicar bloqueo por aprobación humana explícita.
+- Y NO DEBE automatizar subida ni tocar `public_html`.
