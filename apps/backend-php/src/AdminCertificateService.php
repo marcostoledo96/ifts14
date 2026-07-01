@@ -194,6 +194,146 @@ final class AdminCertificateService
         return ['id' => $certificateId, 'status' => 'revocado', 'revokedAt' => $revokedAt, 'tokensRevoked' => $tokensRevoked];
     }
 
+    /**
+     * Reenvía el certificado por email: rota el token activo, envía el enlace
+     * público por el transporte indicado y audita. El token completo solo
+     * viaja dentro del email; nunca se persiste ni se devuelve.
+     *
+     * @param int|string $id Identificador del certificado.
+     * @param string $recipient Email del destinatario.
+     * @param EmailDeliveryTransport|null $transport Transporte de email. Si es null, se arma uno stub que responde 503.
+     * @return array<string, mixed> DTO de entrega sin token completo.
+     * @throws AdminCertificateException 400/404/503 con códigos seguros.
+     */
+    public function reenviar(int|string $id, string $recipient, ?EmailDeliveryTransport $transport = null): array
+    {
+        $certificateId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if (!is_int($certificateId)) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        $recipient = trim($recipient);
+        if ($recipient === '' || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        $transport ??= new StubEmailDeliveryTransport();
+        try {
+            $transport->assertConfigured();
+        } catch (RuntimeException) {
+            throw new AdminCertificateException(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.');
+        }
+
+        $validationBaseUrl = $this->publicBaseUrl ?? '';
+        if ($validationBaseUrl === '') {
+            throw new AdminCertificateException(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.');
+        }
+
+        $now = new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires'));
+        $sentAtIso = $now->format('Y-m-d\TH:i:sP');
+        $destinatarioEnmascarado = $this->maskEmail($recipient);
+
+        $this->pdo->beginTransaction();
+        try {
+            // Lock del certificado para evitar concurrencia sobre la rotación.
+            $statement = $this->pdo->prepare(<<<'SQL'
+                SELECT id, estado, vence_en,
+                       (vence_en IS NULL OR vence_en >= CURRENT_DATE) AS vence_en_vigente
+                FROM cert_certificados
+                WHERE id = ?
+                LIMIT 1 FOR UPDATE
+                SQL);
+            $statement->execute([$certificateId]);
+            $certificate = $statement->fetch();
+
+            if ($certificate === false) {
+                $this->pdo->rollBack();
+                $this->safeAudit('reenvio', 'rechazado', ['certificado_id_consultado' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado]);
+                throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+            }
+
+            $estado = (string) ($certificate['estado'] ?? '');
+            $venceEnVigente = (int) ($certificate['vence_en_vigente'] ?? 0) === 1;
+            if ($estado !== 'vigente' || !$venceEnVigente) {
+                $this->pdo->rollBack();
+                $this->safeAudit('reenvio', 'rechazado', ['certificado_id' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado]);
+                throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+            }
+
+            // Rotación: revoca token activo anterior.
+            $statement = $this->pdo->prepare("UPDATE cert_tokens_verificacion SET estado = 'revocado', revocado_en = CURRENT_TIMESTAMP WHERE certificado_id = ? AND estado = 'activo' AND revocado_en IS NULL");
+            $statement->execute([$certificateId]);
+
+            // Emite token nuevo. Solo se persiste hash+prefijo; el token completo
+            // se usa únicamente para armar el enlace del email.
+            $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+            $tokenHash = hash('sha256', $token . $this->tokenPepper, true);
+            $tokenPrefix = substr($token, 0, 12);
+
+            $venceEn = $certificate['vence_en'] ?? null;
+            $vigenteHasta = $venceEn === null ? null : ((string) $venceEn) . ' 23:59:59';
+
+            $statement = $this->pdo->prepare(<<<'SQL'
+                INSERT INTO cert_tokens_verificacion (
+                  certificado_id, token_hash, token_prefijo, estado, vigente_desde, vigente_hasta
+                ) VALUES (?, ?, ?, 'activo', CURRENT_TIMESTAMP, ?)
+                SQL);
+            $statement->bindValue(1, $certificateId, PDO::PARAM_INT);
+            $statement->bindValue(2, $tokenHash, PDO::PARAM_LOB);
+            $statement->bindValue(3, $tokenPrefix);
+            $statement->bindValue(4, $vigenteHasta);
+            $statement->execute();
+
+            // Envío dentro de la transacción: si falla, rollback + auditoría.
+            $validationUrl = rtrim($validationBaseUrl, '/') . '/validar/' . $token;
+            $transport->sendValidationLink($recipient, $validationUrl, [
+                'certificado_id' => $certificateId,
+            ]);
+
+            $this->pdo->commit();
+        } catch (AdminCertificateException $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            $this->safeAudit('reenvio', 'error', ['certificado_id' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado]);
+            // No exponemos detalles del fallo SMTP ni el token.
+            throw new AdminCertificateException(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.');
+        }
+
+        $this->safeAudit('reenvio', 'ok', ['certificado_id' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado, 'token_hash_prefijo' => substr(hash('sha256', $token . $this->tokenPepper), 0, 16)]);
+
+        return [
+            'certificadoId' => $certificateId,
+            'enviadoEn' => $sentAtIso,
+            'destinatarioEnmascarado' => $destinatarioEnmascarado,
+        ];
+    }
+
+    /**
+     * Enmascara un email dejando solo el primer char del local part + `***` + dominio.
+     * Ej.: `persona@example.edu.ar` -> `p***a@example.edu.ar`.
+     */
+    private function maskEmail(string $email): string
+    {
+        $at = strrpos($email, '@');
+        if ($at === false || $at === 0) {
+            return '***';
+        }
+
+        $local = substr($email, 0, $at);
+        $domain = substr($email, $at);
+
+        $first = substr($local, 0, 1);
+        $last = $local === '' ? '' : substr($local, -1);
+
+        return $first . '***' . $last . $domain;
+    }
+
     private function auditRejectedRevocation(int $certificateId): never
     {
         $statement = $this->pdo->prepare('SELECT estado FROM cert_certificados WHERE id = ? LIMIT 1');
@@ -213,6 +353,17 @@ final class AdminCertificateService
     private function safeAudit(string $action, string $result, array $meta = []): void
     {
         try {
+            $detallePartes = [];
+            if ($action === 'reenvio' && isset($meta['destinatario_enmascarado']) && is_string($meta['destinatario_enmascarado'])) {
+                $detallePartes[] = 'destinatarioEnmascarado=' . $meta['destinatario_enmascarado'];
+            }
+            if (isset($meta['certificado_id_consultado']) && is_int($meta['certificado_id_consultado'])) {
+                $detallePartes[] = 'certificadoConsultado=' . $meta['certificado_id_consultado'];
+            }
+            $detalleSeguro = $detallePartes === []
+                ? ($result === 'ok' ? 'Operación administrativa correcta.' : 'Operación administrativa rechazada.')
+                : implode('; ', $detallePartes);
+
             $statement = $this->pdo->prepare(<<<'SQL'
                 INSERT INTO cert_eventos_auditoria (
                   certificado_id, tipo_evento, resultado, request_id, token_hash_prefijo, ip_hash_prefijo, detalle_seguro
@@ -224,7 +375,7 @@ final class AdminCertificateService
                 $result,
                 $this->requestId,
                 $meta['token_hash_prefijo'] ?? null,
-                $result === 'ok' ? 'Operación administrativa correcta.' : 'Operación administrativa rechazada.',
+                $detalleSeguro,
             ]);
         } catch (Throwable $exception) {
             $this->logger?->error('Falla de auditoría administrativa.', ['action' => $action, 'result' => $result]);
