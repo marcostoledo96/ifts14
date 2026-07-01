@@ -73,14 +73,14 @@ git log origin/frontend/v0-design-system..frontend/v0-design-system --oneline
 git diff origin/frontend/v0-design-system..frontend/v0-design-system --stat
 ```
 
-**Nota sobre el primer push**: como `frontend/v0-design-system` no existe aún en `origin` (es la primera vez que se pushea), el comando `git log origin/<rama>..<rama>` fallará con "ambiguous argument" hasta después del primer push. La verificación equivalente en este caso es:
+**Nota sobre el primer push**: si `frontend/v0-design-system` todavía no existe en `origin`, el comando `git log origin/<rama>..<rama>` fallará con "ambiguous argument" hasta después del primer push. En ese caso, después del `git commit`, la verificación equivalente es comparar contra la base aprobada:
 
 ```powershell
 git log main..frontend/v0-design-system --oneline
 git diff main..frontend/v0-design-system --stat
 ```
 
-Esto debe mostrar 0 commits y 0 diferencias (porque F1-01 no commiteó nada; solo agrega archivos untracked). Si Mati ve diferencias inesperadas, NO debe pushear y debe pedir revisión.
+Esto debe mostrar el commit de F1-01 y los archivos documentales esperados para la rama. Si Mati ve commits, rutas o cambios fuera del alcance de F1-01, NO debe pushear y debe pedir revisión.
 
 **Pre-commit safety** (diff-confirmation gate): antes del `git add`, Mati debe correr `git status --short` y `git diff --name-only` y confirmar que el diff es exactamente:
 
