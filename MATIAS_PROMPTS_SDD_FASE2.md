@@ -31,7 +31,11 @@ Antes de cualquier ciclo F4-F6, Matías debe:
 - No instalar dependencias sin aprobación explícita.
 - Mantener documentación breve: enlazar `docs/frontend/00-angular20-port-v0.md` como fuente visual.
 - Cerrar cada ciclo con verify y `sdd-archive`.
-- Validación pública: usar DNI enmascarado. Entrega o visualización privada para estudiantes: DNI completo solo si una spec aprobada lo exige.
+- Validación pública: mostrar DNI completo por decisión institucional (D0). Entrega o visualización privada: idem según spec. Logs/auditoría nunca exponen DNI completo.
+- QR/token permanente: las pantallas de reenvío deben decir "mismo QR"; no inventar rotación.
+- Certificado de curso con fechas asistidas (`attendedDates`).
+- Auth admin simple temporal (`X-Admin-Key`); no diseñar login real avanzado ni portar credenciales demo.
+- Firmantes PDF: Rector/a y Asesor/a Pedagógica vía configuración institucional.
 - Trabajar con ramas por capacidad revisable, no por prompt aislado.
 
 ## Estrategia de ramas Fase 2
@@ -118,8 +122,11 @@ Evidencia esperada:
 | Falta spec de PDF o QR | No implementar. Pedir spec previa. |
 | Se necesitan permisos o auditoría | Pedir contrato de roles/eventos antes de tocar UI final. |
 | Aparecen datos personales en mock | Frenar, reemplazar por datos ficticios mínimos y reportar. |
-| Hay duda sobre DNI completo | En validación pública se enmascara; para certificado entregado o mostrado al estudiante, pedir spec del contexto privado. |
-| v0 cambió | Actualizar primero `docs/frontend/00-angular20-port-v0.md` mediante SDD. |
+| Hay duda sobre DNI completo | En validación pública se muestra DNI completo por decisión D0; logs/auditoría nunca exponen DNI completo. Para otros contextos, pedir spec del contexto. |
+| v0 muestra rotación de QR | No portar rotación: el token/QR es permanente. Las pantallas de reenvío dicen "mismo QR". |
+| v0 muestra DNI enmascarado | Prevalece D0: DNI completo en validación pública. |
+| v0 tiene credenciales demo | No portarlas al producto. Son mock visual. Auth admin usa `X-Admin-Key` temporal. |
+| v0 cambió | Actualizar primero `docs/frontend/00-angular20-port-v0.md` y `muestra_pagina/MANIFIESTO_V0.md` mediante SDD. |
 | El ciclo se agranda | Dividir en otro ciclo SDD; no mezclar pantallas no relacionadas. |
 
 ## Fuentes de verdad

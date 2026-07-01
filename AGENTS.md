@@ -18,6 +18,10 @@ El objetivo es mantener el trabajo ordenado, seguro y guiado por Spec-Driven Dev
 - Compactar/prunear contexto al cerrar ciclos largos y guardar resumen de sesión.
 - Aplicar `Ponytail` y `karpathy-guidelines` para cambios chicos o quirúrgicos.
 - No procesar material privado, dumps, logs ni secretos fuera de auditorías explícitamente autorizadas.
+- **Token/QR permanente**: el reenvío normal NO rota token/QR. Solo revocación explícita o regeneración excepcional auditada.
+- **DNI completo en UI pública**: visible por decisión institucional aprobada. Logs, auditoría, errores y respuestas administrativas NO deben exponer DNI completo.
+- **Auth admin simple** con `X-Admin-Key` es temporal; login real es fase posterior.
+- **`.codegraph/`** es metadata local de indexado: no se versiona ni se incluye en stage.
 - OpenCode PUEDE ejecutar operaciones Git solo con aprobación explícita de Matías o Marcos en el mismo turno y con el comando exacto propuesto. `git add` + `git commit` + `git push` a la rama de trabajo (nunca a `main`) requieren ciclo SDD verificado, **diff-confirmation gate** antes de stage (`git status --short` y `git diff --name-only`) y **pre-push safety** antes de push: si existe `origin/<rama>`, correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`; si es primer push, declarar que la ref remota no existe y comparar contra la base aprobada con `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat`. La preparación de ramas o PR puede ocurrir antes de `sdd-verify` cuando el ciclo lo necesita; `git switch`, `git checkout`, `git branch`, `git switch -c`, `git checkout -b`, PR, `git merge` y `git rebase` requieren aprobación explícita, evidencia previa y árbol limpio, o una decisión explícita de stash/commit/abortar. La única operación siempre prohibida para el flujo de Matías es `git push` directo a `main`.
 - No subir secretos.
 - No imprimir credenciales reales en respuestas.
@@ -33,6 +37,7 @@ Backend: PHP 8.4.21
 Base de datos: MariaDB 10.6.27
 Hosting: cPanel
 Ruta pública: /certificados/
+Staging: /certificados_staging/
 ```
 
 ## Lectura mínima
@@ -64,21 +69,18 @@ Reglas:
 
 ## Carpeta `muestra_pagina/`
 
-`muestra_pagina/` contiene o contendrá el diseño generado por v0.
+`muestra_pagina/` contiene la referencia visual exportada desde v0 (Next.js/React).
 
-Si está vacía:
+Reglas:
 
-- no implementar frontend final;
-- no inventar pantallas;
-- dejar documentado que el frontend visual está pendiente.
-
-Si tiene contenido:
-
-- usarla como referencia visual;
-- portar a Angular 20;
-- no copiar React/Next literalmente;
+- usarla como referencia visual para portar a Angular 20;
+- no compilar ni ejecutar este proyecto;
+- no portar React/Next literalmente a Angular;
 - mejorar accesibilidad, rendimiento y estructura;
-- respetar identidad institucional del IFTS 14.
+- respetar identidad institucional del IFTS 14;
+- las credenciales demo de `login-form.tsx` son mock visual: no portarlas ni usarlas en el producto;
+- respetar D0: QR permanente, DNI completo público, fechas asistidas, auth simple temporal;
+- el inventario vive en `muestra_pagina/MANIFIESTO_V0.md`.
 
 ## Frontend
 
@@ -94,9 +96,12 @@ Si tiene contenido:
 - Usar PHP 8.4.21.
 - Usar PDO y prepared statements.
 - Mantener API bajo `/certificados/api/` o equivalente documentado.
+- El token/QR es permanente: el reenvío normal no rota token.
 - No exponer DNI ni tokens completos en logs.
+- Logs, auditoría y errores no deben incluir DNI completo ni token completo.
 - No guardar tokens públicos en texto plano si se implementa persistencia real.
 - Separar configuración, controladores, servicios y acceso a datos.
+- Auth admin con `X-Admin-Key` es temporal; login real es fase posterior.
 
 ## Base de datos
 

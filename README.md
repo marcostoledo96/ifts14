@@ -15,7 +15,23 @@ Base de datos: MariaDB 10.6.27
 Hosting: cPanel
 Gestión DB: phpMyAdmin / herramientas MySQL de cPanel
 Ruta objetivo: /certificados/
+Staging: /certificados_staging/
 ```
+
+## Estado actual y decisiones vigentes (D0)
+
+Decisiones confirmadas por Marcos, fuente de verdad del proyecto hasta nueva orden:
+
+| Tema | Decisión |
+|---|---|
+| QR / token | Permanente. El reenvío normal NO rota token/QR. Solo revocación explícita o regeneración excepcional auditada invalidan el token. |
+| DNI en validación pública | DNI completo visible públicamente por decisión institucional. Logs, auditoría y errores no exponen DNI completo. |
+| Tipo de documento | Certificado de curso. Debajo muestra las fechas del curso a las que asistió el alumno. |
+| Auth admin | Auth simple protegida con `X-Admin-Key` temporal. Login real queda para fase posterior. |
+| Email | Cuenta de prueba / `stub`. Producción queda gated hasta aprobación. |
+| Composer en cPanel | Gate: si no está disponible, `vendor/` se genera localmente y se sube como artefacto operativo, nunca versionado. |
+| Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |
+| Staging | `/certificados_staging/` separado de producción `/certificados/`. |
 
 ## Objetivo inicial
 
@@ -33,12 +49,13 @@ El desarrollo del producto comienza después de que el repositorio quede seguro,
 - Desbloqueos frontend técnicos cuando haga falta: base Angular, validación pública, mocks/contratos y build `/certificados/`.
 - Deploy en cPanel.
 - Arquitectura, seguridad y documentación.
+- Estructura funcional y contratos API.
 
 ### Matías
 
 - Liderazgo UI/UX del frontend Angular 20.
-- Adaptación del diseño generado en v0.
-- Uso de `muestra_pagina/` como referencia visual.
+- Adaptación del diseño generado en v0 desde `muestra_pagina/`.
+- Port visual a Angular (sin copiar React/Next literalmente).
 - Admin, sistema visual, responsive, accesibilidad, QA y handoff visual.
 
 ## Carpetas principales
@@ -51,9 +68,10 @@ El desarrollo del producto comienza después de que el repositorio quede seguro,
 | `apps/backend-php/` | API PHP 8.4.21. |
 | `database/` | Migraciones, seeds ficticios y documentación de MariaDB. |
 | `deploy/` | Documentación y archivos de deploy cPanel. |
-| `muestra_pagina/` | Referencia visual exportada/generada desde v0. Puede estar vacía al inicio. |
+| `muestra_pagina/` | Referencia visual exportada desde v0. No es código de producto; no se compila ni porta literalmente. |
 | `scripts/` | Scripts auxiliares seguros. |
 | `material_privado_no_versionar/` | Material descargado del servidor. No se versiona. |
+| `docs/auditoria/` | Auditorías e insumos de ajuste documental. |
 
 ## Regla de seguridad
 
@@ -66,7 +84,8 @@ No subir al repositorio:
 - credenciales;
 - archivos `.env`;
 - configuraciones reales de conexión;
-- carpetas `.git` internas descargadas desde cPanel.
+- carpetas `.git` internas descargadas desde cPanel;
+- `.codegraph/` (metadata local de indexado, no se versiona).
 
 ## Cómo empezar
 

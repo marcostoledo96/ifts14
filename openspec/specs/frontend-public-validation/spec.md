@@ -2,20 +2,20 @@
 
 ## Purpose
 
-Definir el flujo público de validación por token con estados ficticios, alineado al contrato backend y sin exposición de datos sensibles.
+Definir el flujo público de validación por token con estados ficticios, alineado al contrato backend y sin exposición de datos sensibles. La pantalla pública muestra DNI completo visible y fechas asistidas del curso para certificados vigentes, según decisión institucional documentada.
 
 ## Requirements
 
 ### Requirement: Ruta pública de validación
 
-El sistema DEBE exponer una pantalla pública para `/certificados/validar/:tokenCertificacion` que lea el token desde la ruta y muestre el estado de validación correspondiente.
+El sistema DEBE exponer una pantalla pública para `/certificados/validar/:tokenCertificacion` que lea el token desde la ruta y muestre el estado de validación correspondiente. Para certificados vigentes, la pantalla DEBE mostrar certificado verificable, curso, fecha de emisión, DNI completo visible y fechas asistidas del curso, usando datos ficticios o el contrato real alineado.
 
 #### Scenario: Certificado válido ficticio
 
 - **Dado** un token de mock marcado como vigente
 - **Cuando** se abre la ruta pública de validación
-- **Entonces** la pantalla DEBE mostrar certificado verificable, curso, fecha y documento enmascarado.
-- **Y** NO DEBE mostrar DNI completo, token completo ni datos reales.
+- **Entonces** la pantalla DEBE mostrar certificado verificable, curso, fecha, DNI completo y fechas asistidas.
+- **Y** NO DEBE mostrar token completo ni datos reales.
 
 #### Scenario: Certificado revocado no verificable
 

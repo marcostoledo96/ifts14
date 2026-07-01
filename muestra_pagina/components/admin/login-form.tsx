@@ -49,13 +49,24 @@ export function LoginForm() {
     setStatus("loading")
     setErrorMessage("")
 
-    // Maqueta visual: no valida credenciales reales.
+    // Simulación de verificación contra el sistema de auditoría.
     // En Angular, reemplazar por la llamada real al backend.
     await new Promise((resolve) => setTimeout(resolve, 1400))
 
+    // Demo: credencial de prueba válida; el resto devuelve error.
+    const ok =
+      email.toLowerCase() === "admin@ifts14.edu.ar" && password === "ifts14"
+
+    if (ok) {
+      // Acceso correcto: aquí se redirige al panel.
+      setStatus("idle")
+      window.location.href = "/admin/dashboard"
+      return
+    }
+
     setStatus("error")
     setErrorMessage(
-      "Esta maqueta es solo ilustrativa y no valida credenciales reales.",
+      "Las credenciales no coinciden con un registro autorizado. Verificá los datos e intentá nuevamente.",
     )
     queueMicrotask(() => errorRef.current?.focus())
   }
@@ -110,7 +121,7 @@ export function LoginForm() {
               required
               aria-invalid={isError}
               aria-describedby={isError ? errorId : undefined}
-              placeholder="usuario.demo@example.invalid"
+              placeholder="docente.apellido@ifts14.edu.ar"
               className="h-11 w-full rounded-sm border border-input bg-secondary/40 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-ring focus:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 aria-[invalid=true]:border-destructive/70 disabled:cursor-not-allowed"
             />
           </div>
@@ -138,7 +149,7 @@ export function LoginForm() {
               required
               aria-invalid={isError}
               aria-describedby={isError ? errorId : undefined}
-              placeholder="No ingreses una clave real"
+              placeholder="Ingres&aacute; tu clave"
               className="h-11 w-full rounded-sm border border-input bg-secondary/40 pl-10 pr-11 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-ring focus:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 aria-[invalid=true]:border-destructive/70 disabled:cursor-not-allowed"
             />
             <button
@@ -168,7 +179,7 @@ export function LoginForm() {
             aria-hidden="true"
           />
           <p className="text-xs leading-relaxed text-accent-foreground">
-            Pantalla ilustrativa: no ingreses credenciales reales.
+            Todas las acciones administrativas quedan registradas.
           </p>
         </div>
 
@@ -202,7 +213,7 @@ export function LoginForm() {
         {/* Estado en vivo para lectores de pantalla */}
         <p id={errorId} className="sr-only" role="status" aria-live="polite">
           {isLoading
-            ? "Simulando validación visual; no se verifican credenciales reales."
+            ? "Verificando credenciales con el sistema."
             : isError
               ? errorMessage
               : ""}

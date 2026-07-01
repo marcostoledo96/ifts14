@@ -75,9 +75,9 @@ export function FolioCertificado() {
               I. DATOS DEL ALUMNO
             </p>
           </div>
-          <Campo etiqueta="Alumno/a">Persona Ficticia de Ejemplo</Campo>
+          <Campo etiqueta="Alumno/a">Mar&iacute;a Gonz&aacute;lez</Campo>
           <Campo etiqueta="DNI" mono>
-            DNI-FICT-V001
+            40.123.456
           </Campo>
 
           <div className="py-3">

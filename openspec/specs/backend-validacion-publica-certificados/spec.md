@@ -38,13 +38,14 @@ El sistema MUST validar formato de token, calcular `SHA-256(token + token_pepper
 
 ### Requirement: Respuesta pública segura
 
-El sistema MUST devolver solo autenticidad, estado, código, nombre visible, documento enmascarado, curso, fecha de emisión y `requestId`; MUST NOT exponer DNI completo, token completo, SQL, rutas internas ni configuración.
+El sistema MUST devolver solo autenticidad, estado, código, nombre visible, DNI completo (visible por decisión institucional aprobada), curso, fecha de emisión, fechas asistidas del curso y `requestId`; MUST NOT exponer token completo, SQL, rutas internas ni configuración. Los logs, auditoría, errores y respuestas administrativas MUST NOT incluir el DNI completo ni el token completo.
 
 #### Scenario: DTO válido mínimo
 
 - **Given** un certificado verificable
 - **When** la API responde `200`
-- **Then** `data.valid` MUST ser `true` y el documento MUST estar enmascarado.
+- **Then** `data.valid` MUST ser `true` y el DTO público MUST incluir el DNI completo visible por decisión institucional, junto con las fechas asistidas del curso.
+- **And** MUST NOT exponer token completo, `documento_hash`, `token_hash`, SQL ni rutas internas.
 
 ### Requirement: No verificable unificado
 

@@ -2,35 +2,37 @@
 
 ## Purpose
 
-Definir la frontera frontend para consumir la futura API PHP de certificados sin acoplar la UI pública a mocks, tablas internas ni detalles de backend.
+Definir la frontera frontend para consumir la futura API PHP de certificados sin acoplar la UI pública a mocks, tablas internas ni detalles de backend. Los modelos TypeScript reflejan el DTO público con DNI completo visible y fechas asistidas del curso, manteniendo `verifiedAt` y `requestId` y excluyendo datos internos.
 
 ## Requirements
 
 ### Requirement: Modelos TypeScript del DTO público
 
-El frontend DEBE modelar la respuesta pública de verificación según el contrato JSON de `/certificados/api/`, no según tablas internas ni datos administrativos.
+El frontend DEBE modelar la respuesta pública de verificación según el contrato JSON de `/certificados/api/`, no según tablas internas ni datos administrativos. El modelo DEBE incluir estudiante con DNI completo, curso, fechas asistidas del curso, `verifiedAt` y `requestId`; DEBE NO requerir token completo, hash, pepper ni nombres de tablas.
 
 #### Scenario: DTO válido público
 
 - **Dado** una respuesta exitosa del contrato backend
 - **Cuando** el frontend la interpreta
-- **Entonces** DEBE representar `valid`, `status`, `certificateCode`, estudiante con documento enmascarado, curso, `verifiedAt` y `requestId`.
+- **Entonces** DEBE representar `valid`, `status`, `certificateCode`, estudiante con DNI completo, curso, fechas asistidas, `verifiedAt` y `requestId`.
 
 #### Scenario: Datos internos excluidos
 
 - **Dado** el modelo frontend
 - **Cuando** se revisan sus campos públicos
-- **Entonces** NO DEBE requerir DNI completo, token completo, hash, pepper ni nombres de tablas.
+- **Entonces** NO DEBE requerir token completo, hash, pepper ni nombres de tablas.
+- **Y** NO DEBE usar datos reales en mocks.
 
 ### Requirement: Servicio reemplazable de validación
 
-El frontend DEBE centralizar la obtención de resultados en una frontera de servicio que PUEDA usar mocks ficticios ahora y la API PHP después sin reescribir la pantalla pública. El servicio DEBE soportar conmutación entre mock y API real mediante `environment` y DEBE mantener disponible la fuente real para desarrollo local sin alterar producción.
+El frontend DEBE centralizar la obtención de resultados en una frontera de servicio que PUEDA usar mocks ficticios ahora y la API PHP después sin reescribir la pantalla pública. El servicio DEBE soportar conmutación entre mock y API real mediante `environment`, DEBE mantener visible el mismo contrato con DNI completo y fechas asistidas, y DEBE mantener disponible la fuente real para desarrollo local sin alterar producción.
 
 #### Scenario: Mocks ficticios durante el desbloqueo
 
 - **Dado** que la integración real no es obligatoria en producción
 - **Cuando** se ejecuta la validación pública con `useRealApi` inactivo
-- **Entonces** el servicio PUEDE responder estados ficticios documentados y seguros.
+- **Entonces** el servicio PUEDE responder estados ficticios con DNI completo ficticio y fechas asistidas documentados y seguros.
+- **Y** NO DEBE consultar datos reales.
 
 #### Scenario: Cambio a API PHP real en local
 

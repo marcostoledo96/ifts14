@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   ArrowLeft,
   Search,
@@ -20,8 +20,8 @@ import {
 } from "lucide-react"
 
 /* ------------------------------------------------------------------ *
- * Modelo de datos ficticios (mock). En el port a Angular se reemplaza por
- * los services reales. Nada de esto se persiste desde la UI.
+ * Modelo de datos (mock). En el port a Angular se reemplaza por los
+ * services reales. Nada de esto se persiste desde la UI.
  * ------------------------------------------------------------------ */
 
 type FechaPresente = {
@@ -60,7 +60,7 @@ const CONFIG_INSTITUCIONAL = {
     nombre: "Prof. Daniel E. Roldán",
     cargo: "Asesor Pedagógico — IFTS N.° 14",
   },
-  validacionBase: "validar.ifts14.edu.ar",
+  validacionBase: "ifts14.com.ar/certificados",
 }
 
 const CURSOS: Curso[] = [
@@ -97,9 +97,9 @@ const CURSOS: Curso[] = [
 const ALUMNOS: Alumno[] = [
   {
     id: "a1",
-    apellido: "Ejemplo C001",
-    nombre: "Alumna Ficticia",
-    dni: "DNI-FICT-C001",
+    apellido: "Gómez",
+    nombre: "Laura Valentina",
+    dni: "42.555.123",
     email: null, // sin email → emisión física
     presentesPorCurso: {
       c1: ["2024-03-15", "2024-03-22", "2024-04-05"],
@@ -109,10 +109,10 @@ const ALUMNOS: Alumno[] = [
   },
   {
     id: "a2",
-    apellido: "Ejemplo C002",
-    nombre: "Alumno Ficticio",
-    dni: "DNI-FICT-C002",
-    email: "c002@example.invalid",
+    apellido: "Quiroga",
+    nombre: "Martín Ezequiel",
+    dni: "40.218.764",
+    email: "m.quiroga@ifts14.edu.ar",
     presentesPorCurso: {
       c1: ["2024-03-15", "2024-03-22", "2024-04-05", "2024-04-19"],
       c2: ["2024-03-18", "2024-04-01", "2024-04-15"],
@@ -122,10 +122,10 @@ const ALUMNOS: Alumno[] = [
   },
   {
     id: "a3",
-    apellido: "Ejemplo C003",
-    nombre: "Alumna Ficticia",
-    dni: "DNI-FICT-C003",
-    email: "c003@example.invalid",
+    apellido: "Sanabria",
+    nombre: "Carolina",
+    dni: "43.901.550",
+    email: "c.sanabria@ifts14.edu.ar",
     presentesPorCurso: {
       c1: ["2024-03-22", "2024-04-05", "2024-04-19"],
       // sin presentes en Bases de Datos → aviso bloqueante si se elige c2
@@ -135,10 +135,10 @@ const ALUMNOS: Alumno[] = [
   },
   {
     id: "a4",
-    apellido: "Ejemplo C004",
-    nombre: "Alumno Ficticio",
-    dni: "DNI-FICT-C004",
-    email: "c004@example.invalid",
+    apellido: "Villalba",
+    nombre: "Tomás Ignacio",
+    dni: "41.677.209",
+    email: "t.villalba@ifts14.edu.ar",
     presentesPorCurso: {
       c1: ["2024-03-15", "2024-04-05"],
     },
@@ -416,6 +416,75 @@ function Aviso({
 }
 
 /* ------------------------------------------------------------------ *
+ * Skeletons de carga (mientras se resuelven datos del alumno/curso)
+ * ------------------------------------------------------------------ */
+
+function Bloque({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`block rounded-sm bg-secondary motion-safe:animate-pulse ${className}`}
+      aria-hidden="true"
+    />
+  )
+}
+
+/** Skeleton del cuerpo del certificado: replica la estructura real
+ *  (declaración, registro de asistencia, firmas, trazabilidad). */
+function PreviewSkeleton() {
+  return (
+    <div aria-hidden="true">
+      {/* Declaración + protagonista */}
+      <div className="px-5 py-6 sm:px-8">
+        <Bloque className="h-3.5 w-56 max-w-full" />
+        <Bloque className="mt-3 h-8 w-72 max-w-full" />
+        <Bloque className="mt-3 h-3.5 w-40" />
+        <Bloque className="mt-4 h-3.5 w-full max-w-xl" />
+        <Bloque className="mt-2 h-3.5 w-2/3 max-w-md" />
+      </div>
+
+      {/* Registro de asistencia */}
+      <div className="border-t border-border px-5 py-5 sm:px-8">
+        <Bloque className="h-3 w-60 max-w-full" />
+        <div className="mt-4 space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Bloque className="h-3.5 w-10" />
+              <Bloque className="h-3.5 w-20" />
+              <Bloque className="h-3.5 flex-1" />
+              <Bloque className="h-3.5 w-16" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Firmas */}
+      <div className="border-t border-border px-5 py-5 sm:px-8">
+        <Bloque className="h-3 w-44" />
+        <div className="mt-4 grid gap-x-10 gap-y-6 sm:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i}>
+              <Bloque className="h-12 w-full" />
+              <Bloque className="mt-2 h-3.5 w-40 max-w-full" />
+              <Bloque className="mt-1.5 h-3 w-28" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Trazabilidad */}
+      <div className="flex flex-col gap-5 border-t border-border bg-secondary/50 px-5 py-5 sm:flex-row sm:items-center sm:px-8">
+        <Bloque className="h-24 w-24 shrink-0" />
+        <div className="min-w-0 flex-1 space-y-3">
+          <Bloque className="h-3.5 w-48 max-w-full" />
+          <Bloque className="h-3.5 w-40" />
+          <Bloque className="h-3 w-full max-w-sm" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ *
  * Pantalla principal
  * ------------------------------------------------------------------ */
 
@@ -423,6 +492,20 @@ export function NuevaCertificacionEditor() {
   const [alumnoId, setAlumnoId] = useState<string | null>("a1")
   const [cursoId, setCursoId] = useState<string>("c1")
   const [emitido, setEmitido] = useState(false)
+  const [cargando, setCargando] = useState(false)
+
+  // Simula la latencia del service que resuelve los datos del alumno y su
+  // registro de asistencia para el curso elegido. En el port a Angular esto
+  // se reemplaza por el estado del observable/resolver (loading | data | error).
+  useEffect(() => {
+    if (!alumnoId) {
+      setCargando(false)
+      return
+    }
+    setCargando(true)
+    const t = setTimeout(() => setCargando(false), 650)
+    return () => clearTimeout(t)
+  }, [alumnoId, cursoId])
 
   const alumno = useMemo(
     () => ALUMNOS.find((a) => a.id === alumnoId) ?? null,
@@ -567,7 +650,13 @@ export function NuevaCertificacionEditor() {
             </p>
           </div>
 
-          <article className="overflow-hidden border border-border bg-card shadow-[0_1px_0_0_var(--border)]">
+          <article
+            aria-busy={cargando}
+            className="overflow-hidden border border-border bg-card shadow-[0_1px_0_0_var(--border)]"
+          >
+            <span className="sr-only" role="status" aria-live="polite">
+              {cargando ? "Cargando datos del certificado…" : ""}
+            </span>
             {/* Encabezado institucional (banda navy) */}
             <div className="bg-ink px-5 py-6 text-ink-foreground sm:px-8">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -613,7 +702,9 @@ export function NuevaCertificacionEditor() {
               </div>
             </div>
 
-            {alumno ? (
+            {cargando ? (
+              <PreviewSkeleton />
+            ) : alumno ? (
               <>
                 {/* Cuerpo: declaración + protagonista */}
                 <div className="px-5 py-6 sm:px-8">
@@ -774,7 +865,7 @@ export function NuevaCertificacionEditor() {
                     <p className="mt-3 border-l-2 border-circuit pl-3 text-xs leading-relaxed text-muted-foreground">
                       Verificable en{" "}
                       <span className="font-mono text-foreground">
-                        {CONFIG_INSTITUCIONAL.validacionBase}
+                        {CONFIG_INSTITUCIONAL.validacionBase}/validar/{"{token}"}
                       </span>
                       . El QR permanente se genera al emitir y no contiene datos
                       personales.
@@ -829,7 +920,11 @@ export function NuevaCertificacionEditor() {
                 <div className="flex items-center justify-between gap-3 px-4 py-2.5">
                   <dt className="text-muted-foreground">Jornadas presentes</dt>
                   <dd className="text-right font-mono font-semibold tabular-nums text-foreground">
-                    {fechasPresentes.length}
+                    {cargando ? (
+                      <Bloque className="ml-auto h-4 w-6" />
+                    ) : (
+                      fechasPresentes.length
+                    )}
                   </dd>
                 </div>
                 <div className="flex items-center justify-between gap-3 px-4 py-2.5">
@@ -927,11 +1022,23 @@ export function NuevaCertificacionEditor() {
             <section className="rounded-md border border-border bg-card p-4">
               <button
                 type="submit"
-                disabled={bloqueado || emitido}
+                disabled={bloqueado || emitido || cargando}
                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-sm bg-ink px-4 text-sm font-semibold text-ink-foreground transition-colors hover:bg-ink/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-45"
               >
-                <Send className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                {emitido ? "Certificación emitida" : "Emitir y enviar"}
+                {cargando ? (
+                  <>
+                    <span
+                      className="h-4 w-4 animate-spin rounded-full border-2 border-ink-foreground/30 border-t-ink-foreground"
+                      aria-hidden="true"
+                    />
+                    Cargando…
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                    {emitido ? "Certificación emitida" : "Emitir y enviar"}
+                  </>
+                )}
               </button>
               <a
                 href="/admin/certificaciones"

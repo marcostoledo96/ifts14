@@ -1,41 +1,72 @@
-# Manifiesto v0 — `muestra_pagina/`
+# Manifiesto V0 — referencia visual de muestra_pagina/
+
+Fecha de actualización: 2026-07-01.
 
 ## Origen
 
-- Fuente: exportación v0/Stitch para el módulo `/certificados/`.
-- Uso: referencia visual y funcional para portar a Angular 20.
-- Límite: no es código definitivo del producto.
+Exportación v0 generada como referencia visual para el port a Angular 20 del módulo `/certificados/`. No es código de producto.
 
-## Inventario actual
+## Stack de la referencia
 
-| Estado | Detalle |
-|---|---|
-| Pantallas disponibles | 7 pantallas para prompts 4-10. |
-| Pantallas pendientes | 12 pantallas para prompts 11-22. |
-| Capturas | Disponibles en `capturas/`. |
-| Código exportado | Next.js/React; no copiar literalmente a Angular. |
+Next.js/React con App Router, Tailwind y shadcn/ui. Se usa solo como referencia; el producto usa Angular 20.
 
 ## Pantallas incluidas
 
-| Prompt | Pantalla/flujo |
-|---:|---|
-| 4 | Validación pública válida. |
-| 5 | Estados públicos no exitosos. |
-| 6 | Dashboard administrativo. |
-| 7 | Login administrativo. |
-| 8 | Crear/editar curso con fechas. |
-| 9 | Registrar asistencias presentes. |
-| 10 | Emitir certificación directa. |
+| Prompt | Ruta v0 | Pantalla | Componentes clave |
+|---:|---|---|---|
+| 4 | `app/page.tsx` | Validación pública válida | `components/validacion/folio-certificado`, `header-institucional`, `footer-institucional`, `bloque-trazabilidad`, `acciones` |
+| 5 | `app/estados/page.tsx` | Estados no exitosos (revocada, no encontrada, error) | `components/validacion/estado-revocada`, `estado-no-encontrada`, `estado-error` |
+| 6 | `app/admin/dashboard/page.tsx` | Dashboard administrativo | `components/admin/admin-shell`, `resumen-operativo`, `bandeja-pendientes`, `actividad-reciente`, `acciones-principales`, `sidebar-admin` |
+| 7 | `app/admin/login/page.tsx` | Login administrativo (mock visual) | `components/admin/login-form` |
+| 8 | `app/admin/cursos/*`, `app/admin/cursos/[id]/editar` | Crear/editar curso con fechas | `components/admin/curso-editor`, `curso-detalle`, `lista-cursos` |
+| 9 | `app/admin/cursos/[id]/asistencias` | Registrar asistencias presentes | `components/admin/asistencias-editor` |
+| 10 | `app/admin/certificaciones/nueva` | Emitir certificación directa | `components/admin/nueva-certificacion-editor`, `expediente-certificacion` |
+| 11 | `app/admin/certificaciones/[id]` | Detalle de certificación | `components/admin/expediente-certificacion`, `vista-previa-pdf` |
+| 12 | `app/admin/certificaciones/[id]/pdf` | Vista previa PDF | `components/admin/vista-previa-pdf` |
+| 13 | `app/admin/cursos/page.tsx` | Listado de cursos | `components/admin/lista-cursos` |
+| 14 | `app/admin/cursos/[id]/page.tsx` | Detalle de curso | `components/admin/curso-detalle` |
+| 15 | `app/admin/certificaciones/page.tsx` | Listado de certificaciones | `components/admin/lista-certificaciones` |
+| 16 | `app/admin/alumnos/page.tsx` | Listado de alumnos | `components/admin/lista-alumnos` |
+| 17 | `app/admin/alumnos/[id]/page.tsx` | Detalle administrativo de alumno | `components/admin/alumno-detalle` |
 
-## Pendientes
+## Capturas disponibles
 
-- Prompts 11-22: seguir `../MATIAS_PROMPTS_SDD_FASE2.md`.
-- Port real a Angular 20: requiere ciclo SDD aprobado.
-- Contratos de API, PDF, QR, permisos y configuración: no inferir desde esta carpeta.
+`capturas/` contiene evidencia visual de las pantallas en desktop y mobile (375/390), incluyendo estados de carga, error, revocada, no encontrada, PDF, reenvío y flujos administrativos.
 
-## Privacidad
+## Rutas conceptuales cubiertas
 
-- Validación pública: DNI enmascarado y sin tokens completos.
-- Si una captura o prompt v0 muestra DNI completo públicamente, no portarlo a Angular.
-- Entrega o visualización privada para estudiantes: puede requerir DNI completo si una spec aprobada lo define.
-- No guardar datos reales, credenciales, dumps ni logs en esta carpeta.
+- `/` — validación pública válida.
+- `/estados` — estados públicos no exitosos.
+- `/admin/dashboard` — dashboard administrativo.
+- `/admin/login` — login admin (mock).
+- `/admin/cursos` — listado de cursos.
+- `/admin/cursos/nuevo`, `/admin/cursos/[id]/editar` — alta/edición de curso con fechas.
+- `/admin/cursos/[id]/asistencias` — registro de asistencias.
+- `/admin/certificaciones` — listado de certificaciones.
+- `/admin/certificaciones/nueva` — emisión directa.
+- `/admin/certificaciones/[id]` — detalle de certificación.
+- `/admin/certificaciones/[id]/pdf` — vista previa PDF.
+- `/admin/alumnos` — listado de alumnos.
+- `/admin/alumnos/[id]` — detalle de alumno.
+
+## Alineación con decisiones D0
+
+| Decisión D0 | Estado en v0 | Observación |
+|---|---|---|
+| QR/token permanente | Pendiente de validar en cada pantalla de reenvío | Las pantallas de reenvío deben decir "mismo QR"; si v0 muestra rotación, no portar ese comportamiento. |
+| DNI completo en validación pública | Pendiente de validar | `folio-certificado.tsx` debe mostrar DNI completo; si v0 lo enmascara, prevalece la decisión D0. |
+| Certificado de curso con fechas asistidas | Pendiente de validar | El folio y el PDF deben mostrar fechas asistidas del curso. |
+| Auth admin simple temporal | Mock visual en `login-form.tsx` | No portar credenciales demo; el producto usa `X-Admin-Key`. |
+| Firmantes PDF: Rector/a y Asesor/a Pedagógica | Pendiente de validar | `vista-previa-pdf` debe incluirlos vía configuración institucional. |
+
+## Qué NO copiar literalmente
+
+- Componentes React/Next, hooks, App Router, JSX.
+- Tokens de Tailwind/shadcn sin convertir a criterios visuales Angular.
+- Credenciales demo de `login-form.tsx`.
+- Comportamiento de rotación de QR si aparece en pantallas de reenvío.
+- DNI enmascarado si aparece en validación pública (prevalece D0: DNI completo).
+
+## Pantallas pendientes
+
+Las pantallas de prompts 18-22 (reenvío, revocación, carga masiva, auditoría, configuración institucional) no tienen referencia v0 dedicada todavía o se cubren parcialmente en componentes admin existentes. Ver `MATIAS_PROMPTS_SDD_FASE2.md` para la planificación de F4-F6.

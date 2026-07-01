@@ -2,13 +2,13 @@
 
 ## Propósito
 
-Definir la generación, persistencia segura y descarga administrativa de certificados en PDF horizontal con un QR de validación pública. El PDF se genera sincrónicamente durante `emitir()`, se persiste como `{certificateCode}.pdf` (nunca con el token) y se ofrece mediante un endpoint administrativo protegido por `X-Admin-Key`. El token completo solo existe durante la emisión; no se guarda en texto plano ni se regenera luego.
+Definir la generación, persistencia segura y descarga administrativa de certificados en PDF horizontal con un QR de validación pública. El PDF se genera sincrónicamente durante `emitir()`, se persiste como `{certificateCode}.pdf` (nunca con el token) y se ofrece mediante un endpoint administrativo protegido por `X-Admin-Key`. El token completo no se guarda en texto plano: para soportar el reenvío y la regeneración del PDF con el mismo QR, el sistema DEBE persistir un artefacto recuperable del token/URL pública (`token_cifrado` o equivalente, por ejemplo URL pública cifrada) con la clave de cifrado almacenada fuera de Git. El hash del token (`token_hash`) es insuficiente para reconstruir `/validar/{token}`.
 
 ## Requisitos
 
 ### Requisito: Generación sincrónica de PDF con QR durante la emisión
 
-El sistema DEBE generar el PDF del certificado con su QR de validación durante la operación de emisión, antes de confirmar el alta lógico del certificado. El QR DEBE apuntar a `{public_base_url}/validar/{token}` con `public_base_url` configurable por entorno. El sistema NO DEBE guardar el token completo en el PDF como dato recuperable ni regenerar el token tras la emisión.
+El sistema DEBE generar el PDF del certificado con su QR de validación durante la operación de emisión, antes de confirmar el alta lógico del certificado. El QR DEBE apuntar a `{public_base_url}/validar/{token}` con `public_base_url` configurable por entorno. El sistema NO DEBE guardar el token completo en texto plano en el PDF, en la base ni en logs. Para permitir el reenvío y la regeneración del PDF con el mismo QR, el sistema DEBE persistir un artefacto recuperable del token/URL pública (`token_cifrado` o URL pública cifrada equivalente) con la clave de cifrado fuera de Git; el `token_hash` por sí solo NO permite reconstruir `/validar/{token}`. El sistema NO DEBE regenerar el token tras la emisión.
 
 #### Escenario: Emisión con PDF generado
 
@@ -16,6 +16,7 @@ El sistema DEBE generar el PDF del certificado con su QR de validación durante 
 - CUANDO se ejecuta `emitir()`
 - ENTONCES el sistema DEBE generar un PDF horizontal con el QR apuntando a `{public_base_url}/validar/{token}`
 - Y DEBE persistirlo como `{certificateCode}.pdf` sin incluir el token en texto plano.
+- Y DEBE persistir un artefacto recuperable del token/URL (`token_cifrado` o equivalente) con clave de cifrado fuera de Git para reenvío/regeneración con el mismo QR.
 
 #### Escenario: Falla la generación de PDF
 
@@ -76,13 +77,13 @@ El sistema DEBE documentar las claves `public_base_url` y `certificate_storage_p
 - ENTONCES DEBE encontrar `public_base_url` y `certificate_storage_path` con valores ficticios
 - Y NO DEBE encontrar valores reales ni secretos.
 
-### Requisito: DNI enmascarado en el PDF
+### Requisito: DNI en el PDF del certificado de curso
 
-El PDF DEBE mostrar el documento enmascarado por defecto. El sistema NO DEBE imprimir el DNI completo en el cuerpo del PDF.
+El PDF DEBE corresponder a un certificado de curso e incluir las fechas asistidas del curso. El PDF PUEDE mostrar el DNI completo visible por decisión institucional aprobada como contenido público del certificado cuando los documentos lo requieran. Los logs, auditoría, errores y respuestas administrativas NO DEBEN exponer el DNI completo ni el token completo.
 
-#### Escenario: DNI enmascarado por defecto
+#### Escenario: DNI visible en el PDF del certificado
 
-- DADO una emisión que produce un PDF
+- DADO una emisión que produce un PDF de certificado de curso
 - CUANDO se renderiza el documento
-- ENTONCES el PDF DEBE mostrar el documento enmascarado
-- Y NO DEBE incluir el DNI completo en texto visible.
+- ENTONCES el PDF PUEDE mostrar el DNI completo como contenido público aprobado del certificado, junto con las fechas asistidas del curso
+- Y NO DEBE exponer el token completo en texto visible ni como dato recuperable.
