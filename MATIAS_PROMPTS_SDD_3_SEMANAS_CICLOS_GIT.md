@@ -74,6 +74,7 @@ Antes de cualquier ciclo F0-F3, Matías debe:
 | Backend/API | No inventar contratos. Usar solo lo documentado por Marcos. |
 | Seguridad | No tocar `material_privado_no_versionar/`, dumps, logs, credenciales ni archivos `.env`. |
 | Decisiones D0 | QR/token permanente (reenvío no rota); DNI completo visible en validación pública; certificado de curso con fechas asistidas; auth admin simple `X-Admin-Key` temporal; firmantes PDF Rector/a + Asesor/a Pedagógica; staging `/certificados_staging/`. |
+| Cierre admin | Matías puede avanzar sistema visual y componentes base sin backend final, pero **no debe cerrar pantallas admin como "done"** hasta que Marcos provea contratos/mocks aprobados para cada flujo. El trabajo visual puede quedar "in progress / pending contract". |
 | Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. **Para el flujo de Matías**: OpenCode PUEDE ejecutar operaciones Git con aprobación explícita de Matías en el mismo turno, comando exacto, evidencia previa, diff-confirmation gate cuando corresponda, árbol limpio o decisión explícita de stash/commit/abortar; la única prohibición dura es `git push` directo a `main`; ver sección "Ruta rápida" punto 8. **Para el flujo de Marcos**: ver `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` — Marcos mantiene autoridad total sobre su propio workflow. |
 
 ### Alcance permitido

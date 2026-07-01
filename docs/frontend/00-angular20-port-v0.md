@@ -138,7 +138,9 @@ Evidencia de verificación de este turno (sin PHP CLI): `npm test --watch=false`
 
 ### Shared certificates
 
-`dto.ts` (DTOs del contrato PHP: incluye `documentNumber` completo y `attendedDates` por D0; sin hash/pepper/tablas internas), `validation-source.ts` (interfaz + InjectionToken, frontera reemplazable), `mock-tokens.ts` (`MockValidationSource` + tokens `demo-valido|revocado|expirado|inexistente|error-tecnico`), `http-validation.source.ts` (`HttpValidationSource` con `HttpClient`, URL `${environment.apiBaseUrl}/certificados/{encodeURIComponent(token)}/verificacion`; usa suscripción cancelable vía `AbortSignal` en vez de `firstValueFrom`), `result-mapper.ts` (404/revocado/expirado/inexistente → `not-verifiable`; 5xx/red/JSON → `technical-error`), `validation.service.ts` (`verify(token)` consume `VALIDATION_SOURCE`; sin cambios al swap).
+`dto.ts` (DTOs del contrato PHP), `validation-source.ts` (interfaz + InjectionToken, frontera reemplazable), `mock-tokens.ts` (`MockValidationSource` + tokens `demo-valido|revocado|expirado|inexistente|error-tecnico`), `http-validation.source.ts` (`HttpValidationSource` con `HttpClient`, URL `${environment.apiBaseUrl}/certificados/{encodeURIComponent(token)}/verificacion`; usa suscripción cancelable vía `AbortSignal` en vez de `firstValueFrom`), `result-mapper.ts` (404/revocado/expirado/inexistente → `not-verifiable`; 5xx/red/JSON → `technical-error`), `validation.service.ts` (`verify(token)` consume `VALIDATION_SOURCE`; sin cambios al swap).
+
+> **Pendiente D0 en el DTO Angular.** `dto.ts` todavía declara `student.documentMasked` y no incluye `attendedDates`. El contrato D0 (`documentNumber` completo + `attendedDates`) es el **objetivo/contrato pendiente**, no el estado actual. El ajuste del DTO/mapper/tests forma parte del split `backend-contrato-token-permanente-dni-fechas` / `backend-token-permanente-dni-fechas` (M4-01A/M4-01B); no describir `dto.ts` como ya alineado a D0 hasta que ese ciclo lo confirme.
 
 ### Límites de UI final
 

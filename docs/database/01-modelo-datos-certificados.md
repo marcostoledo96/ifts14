@@ -26,14 +26,15 @@ Registra el certificado emitido y los datos mínimos necesarios para la respuest
 | `estado` | `ENUM` | `borrador`, `vigente`, `revocado`, `vencido` |
 | `alumno_nombre_mostrar` | `VARCHAR(160)` | Nombre de visualización para respuesta pública |
 | `documento_hash` | `BINARY(32)` | Huella no reversible para control interno futuro |
-| `documento_enmascarado` | `VARCHAR(20)` | Ejemplo: `12******90`. Columna legacy; el DTO público usa DNI completo por D0. |
-| `documento_completo` | `VARCHAR(20)` | DNI completo visible en validación pública (decisión D0). No se loguea ni audita. |
+| `documento_enmascarado` | `VARCHAR(20)` | Ejemplo: `12******90`. Columna legacy presente en la migración `001`. El DTO público usa DNI completo por D0; este campo no alcanza para la validación pública. |
 | `curso_nombre` | `VARCHAR(180)` | Nombre del curso o trayecto |
 | `emitido_en` | `DATE` | Fecha de emisión |
 | `vence_en` | `DATE NULL` | Vencimiento opcional |
 | `revocado_en` | `DATETIME NULL` | Revocación opcional |
 | `motivo_revocacion` | `VARCHAR(180) NULL` | Motivo interno breve, sin datos sensibles |
 | `created_at`, `updated_at` | `DATETIME` | Timestamps técnicos |
+
+> **DNI completo: no migrado todavía.** La migración controlada `001_certificados_qr.sql` solo crea `documento_hash` y `documento_enmascarado`. El DTO público D0 exige DNI completo, pero **no existe columna `documento_completo` migrada**. Cualquier backend que siga el modelo actual no podría satisfacer el DTO D0. La columna `documento_completo` queda como **planificación futura** (ver "Tablas futuras" y el split `backend-contrato-token-permanente-dni-fechas` / `backend-token-permanente-dni-fechas`). No documentar `documento_completo` como columna actual de `cert_certificados` hasta que exista una migración controlada que la cree.
 
 Índices: único por `codigo_certificado`, índice por `estado`, índice por `emitido_en`.
 
@@ -45,8 +46,9 @@ Guarda tokens verificables por QR sin conservar el valor público.
 |---|---|---|
 | `id` | `BIGINT UNSIGNED` | PK autoincremental |
 | `certificado_id` | `BIGINT UNSIGNED` | FK a `cert_certificados.id` |
-| `token_hash` | `BINARY(32)` | Único; hash del token público con pepper |
+| `token_hash` | `BINARY(32)` | Único; hash del token público con pepper. Lookup y verificación pública. No reversible. |
 | `token_prefijo` | `VARCHAR(12)` | Prefijo mínimo para soporte, nunca token completo |
+| `token_cifrado` | `VARBINARY(255) NULL` | **Planificado, no migrado.** Token completo cifrado (o URL pública cifrada) con clave externa a Git. Habilita reenvío/regeneración de PDF conservando el QR sin rotar. Hash-only NO permite reenvío permanente. Se crea en migración futura (`backend-token-permanente-storage`). |
 | `estado` | `ENUM` | `activo`, `revocado`, `vencido` |
 | `vigente_desde`, `vigente_hasta` | `DATETIME` | Ventana de validez |
 | `ultimo_uso_en` | `DATETIME NULL` | Última verificación pública |
@@ -96,10 +98,11 @@ Las siguientes tablas quedan planificadas para ciclos SDD posteriores (M4-02 y s
 
 | Tabla | Propósito |
 |---|---|
-| `cert_alumnos` | Alumnos: id, nombre, apellido, dni, email, estado, timestamps. |
+| `cert_alumnos` | Alumnos. Diseño seguro recomendado: `dni_hash` (lookup/control), `dni_cifrado` (recuperación controlada) y `dni_mostrar VARCHAR(20) NULL` (DNI completo visible solo si la institución lo exige por D0). La clave de cifrado vive fuera de Git. Alternativa MVP explícita: `dni VARCHAR(20)` + `dni_hash`, aceptada solo con riesgo documentado (DNI en claro en base). Sin decisión explícita, se prefiere el diseño seguro. |
 | `cert_cursos` | Cursos: id, codigo, nombre, estado, timestamps. |
 | `cert_curso_fechas` | Fechas de cada curso: id, curso_id, fecha, descripcion opcional, estado, created_at. |
-| `cert_asistencias` | Asistencias: id, alumno_id, curso_fecha_id, presente, timestamps. Unique por alumno+fecha. |
+| `cert_asistencias` | Asistencias. **La presencia representa asistencia**: un registro existe si el alumno asistió a esa fecha. No hay booleano `presente` ni estados ausente/justificado. `UNIQUE(alumno_id, curso_fecha_id)`. `eliminado_en DATETIME NULL` solo si se necesita soft-delete para correcciones. |
+| `cert_certificado_fechas` | Snapshot de fechas asistidas al momento de emisión. Permite reconstruir el PDF sin recalcular desde asistencias vivas. Las correcciones actualizan el snapshot o generan versión/auditoría y marcan `requiere_reenvio`. |
 | `cert_configuracion_institucional` | Firmantes y config institucional (Rector/a, Asesor/a Pedagógica). |
 | `cert_entregas_email` | Entregas/reenvíos por email (opcional, futuro). |
 | `cert_admin_usuarios` | Usuarios admin para login real futuro (opcional, fuera de este ciclo). |

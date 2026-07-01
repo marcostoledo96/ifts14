@@ -20,6 +20,20 @@ Este ciclo SDD **no ejecuta la subida**, no toca `public_html`, no crea `.env`, 
 | Auth admin | `X-Admin-Key` temporal. Login real es fase posterior. |
 | Token/QR | Permanente. El reenvío normal no rota token. |
 
+### Checklist Composer en cPanel
+
+Antes de asumir que Composer está disponible, verificar en orden:
+
+```bash
+which composer
+composer --version
+php -v
+```
+
+- Si `which composer` devuelve una ruta, Composer está disponible por terminal: usar `composer install --no-dev --no-interaction` en el servidor.
+- Si no hay terminal o `composer` no se reconoce, revisar en cPanel: **Terminal** (si está habilitado), **Setup Python App**, **Node.js App**, **PHP Composer** (algunos cPanel exponen Composer como sección propia).
+- Si ninguna vía está disponible: generar `vendor/` localmente desde `composer.lock` y subirlo como artefacto operativo. **Nunca versionar `vendor/`** en Git. Dejar constancia operativa del fallback usado.
+
 ## Estructura esperada en cPanel
 
 ```txt
