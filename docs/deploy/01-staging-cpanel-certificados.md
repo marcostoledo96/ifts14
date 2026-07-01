@@ -37,6 +37,18 @@ La guía productiva vigente sigue siendo [`00-cpanel-certificados.md`](00-cpanel
 | Validación pública | `/certificados_staging/validar/TOKEN_FICTICIO` | Solo con token ficticio. |
 | Producción | `/certificados/` | No se modifica en este ciclo. |
 
+Antes de considerar seguro cualquier paquete de staging, revisar que no queden prefijos productivos hard-codeados:
+
+| Punto de control | Valor esperado para staging |
+|---|---|
+| Angular `baseHref` | `/certificados_staging/` |
+| Base de API usada por el frontend | `/certificados_staging/api` |
+| `.htaccess` de raíz | `RewriteBase /certificados_staging/` y fallback a `/certificados_staging/index.html`. |
+| `.htaccess` de API | Fallback o rewrite hacia `/certificados_staging/api/index.php`. |
+| Backend | Normalizadores, validaciones o checks de prefijo deben aceptar `/certificados_staging/` y no forzar `/certificados/`. |
+
+Si cualquiera de estos puntos todavía apunta a `/certificados/`, el paquete de staging no es seguro para subir.
+
 Estructura orientativa para una ventana futura:
 
 ```txt
@@ -62,7 +74,21 @@ Antes de cualquier ventana operativa futura, confirmar:
 - [ ] No contiene volcados SQL, bitácoras, copias de resguardo ni paquetes comprimidos descargados del servidor.
 - [ ] No contiene carpetas de dependencias instaladas por Composer ni artefactos generados innecesarios.
 - [ ] No contiene material privado ni archivos cuyo origen o sensibilidad no esté claro.
+- [ ] Frontend, API, `.htaccess` y checks backend fueron reescritos para `/certificados_staging/`.
+- [ ] Existe una copia de resguardo de staging antes de subir; si es primera instalación, existe plan de reversión por retiro/renombre de la carpeta nueva.
+- [ ] Dependencias Composer resueltas operativamente sin versionar `vendor/`.
+- [ ] Staging usa una ubicación de configuración externa propia, sin fallback a producción.
+- [ ] `certificate_storage_path` de staging queda fuera del webroot público o protegido por `.htaccess`.
 - [ ] Si hay duda sobre un archivo, se excluye del paquete y se consulta antes de continuar.
+
+## Dependencias Composer para staging
+
+`vendor/` no se versiona ni se incorpora al repo. Antes de excluirlo del paquete versionable, resolver dependencias de una de estas dos formas operativas:
+
+1. Preferente: ejecutar en el hosting `composer install --no-dev --no-interaction` junto al `composer.lock` versionado.
+2. Si el hosting no tiene Composer: generar `vendor/` localmente desde el `composer.lock` y subirlo solo como artefacto operativo del deploy, sin agregarlo a Git.
+
+Sin una de estas dos opciones confirmada, la API de staging puede quedar incompleta y el paquete no debe considerarse listo.
 
 ## Configuración de staging con placeholders
 
@@ -83,6 +109,19 @@ return [
 
 La clave `public_base_url` debe apuntar a `/certificados_staging/`. No reutilizar la base productiva `/certificados/` para staging.
 
+La ubicación de configuración real de staging debe ser explícita y separada de producción. Usar `CERTIFICADOS_CONFIG_PATH` o un mecanismo equivalente apuntando a un archivo externo propio de staging. Si esa ruta no está definida o no existe, staging debe fallar cerrado; no debe caer al archivo productivo ni a una ruta default compartida.
+
+## Almacenamiento de PDFs de staging
+
+`certificate_storage_path` de staging debe apuntar a un storage ficticio o de prueba separado del productivo. La opción preferente es ubicarlo fuera del webroot público. Si por restricción del hosting queda dentro de una carpeta pública, protegerlo con `.htaccess` para impedir listado y acceso directo:
+
+```apache
+Options -Indexes
+Deny from all
+```
+
+No servir PDFs de staging por URL directa. Las pruebas deben usar certificados ficticios y archivos de prueba eliminables.
+
 ## Smoke checks con datos ficticios
 
 Después de una instalación futura autorizada, validar únicamente con datos ficticios:
@@ -98,13 +137,18 @@ No consultar certificados reales, DNI reales, tokens reales ni bitácoras produc
 
 ## Rollback limitado a staging
 
+Antes de cualquier subida futura, crear una copia de resguardo de `/certificados_staging/` si la carpeta existe. Registrar nombre, fecha y responsable sin copiar contenido sensible al repo.
+
+Si es la primera instalación y no existe staging previo, el plan de reversión es retirar o renombrar la carpeta nueva de staging y dejar constancia operativa. No usar archivos de producción como reemplazo automático.
+
 Si una subida futura de staging falla:
 
 1. Detener cambios manuales en curso.
 2. Conservar evidencia general sin copiar datos sensibles.
-3. Desde cPanel File Manager, restaurar la copia de resguardo de `/certificados_staging/`.
-4. Verificar nuevamente `GET /certificados_staging/api/health`.
-5. Confirmar que `/certificados/` no fue modificado.
+3. Desde cPanel File Manager, restaurar la copia de resguardo de `/certificados_staging/` si existía.
+4. Si era primera instalación, retirar o renombrar la carpeta nueva de staging.
+5. Verificar nuevamente `GET /certificados_staging/api/health` cuando corresponda.
+6. Confirmar que `/certificados/` no fue modificado.
 
 El rollback de staging no debe tocar producción ni reutilizar archivos productivos sin revisión.
 
@@ -113,7 +157,7 @@ El rollback de staging no debe tocar producción ni reutilizar archivos producti
 Para revertir este ciclo documental:
 
 1. Eliminar este archivo.
-2. Quitar el enlace de `deploy/README.md`.
+2. Quitar el enlace en `deploy/README.md` (ruta desde la raíz del repositorio).
 3. Descartar el delta OpenSpec del cambio `staging-cpanel-certificados`.
 
 No hay reversión de servidor porque este ciclo no modifica cPanel ni producción.
@@ -126,6 +170,10 @@ No hay reversión de servidor porque este ciclo no modifica cPanel ni producció
 | Checklist seguro de paquete de staging | `Checklist seguro de paquete` |
 | Configuración de staging con placeholders | `Configuración de staging con placeholders` |
 | Smoke y rollback de staging | `Smoke checks con datos ficticios`, `Rollback limitado a staging` |
+| Reescritura de prefijos productivos | `Rutas y estructura esperada`, `Checklist seguro de paquete` |
+| Dependencias Composer sin versionar `vendor/` | `Dependencias Composer para staging` |
+| Configuración externa separada de staging | `Configuración de staging con placeholders` |
+| PDFs de staging protegidos | `Almacenamiento de PDFs de staging` |
 
 Spec vigente: [`openspec/specs/deploy-cpanel-certificados/spec.md`](../../openspec/specs/deploy-cpanel-certificados/spec.md). Delta archivado: [`openspec/changes/archive/2026-06-30-staging-cpanel-certificados/specs/deploy-cpanel-certificados/spec.md`](../../openspec/changes/archive/2026-06-30-staging-cpanel-certificados/specs/deploy-cpanel-certificados/spec.md).
 
