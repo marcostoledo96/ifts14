@@ -1,0 +1,20 @@
+# Plantilla .htaccess — raíz SPA de staging /certificados_staging/
+#
+# Copiar como .htaccess dentro de public_html/certificados_staging/.
+# Sirve el frontend Angular con base /certificados_staging/ y deja que la API
+# se sirva desde /certificados_staging/api/ (propio .htaccess-api).
+# No capturar /api/: esa carpeta tiene su .htaccess y su FallbackResource.
+#
+# Sin secretos: la config real de staging se carga vía CERTIFICADOS_CONFIG_PATH
+# declarado en .htaccess-api, no aquí.
+
+RewriteEngine On
+RewriteBase /certificados_staging/
+
+# No interferir con la API: tiene su propio .htaccess y FallbackResource.
+RewriteRule ^api(/.*)?$ - [L]
+
+# SPA fallback: toda ruta no existente sirve index.html.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.html [L]
