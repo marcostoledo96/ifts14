@@ -349,7 +349,11 @@ function respondToValidation(string $token, string $requestId, array $config): v
 
 function normalizePath(string $path): string
 {
-    foreach (['/certificados/api', '/index.php'] as $prefix) {
+    // Un único router cubre producción, staging y PHP embebido.
+    // Soporta prefijos /certificados/api (prod), /certificados_staging/api (staging)
+    // y /index.php (built-in server). Orden por longitud: staging primero para
+    // evitar que el prefijo más corto matchee y deje el resto incorrecto.
+    foreach (['/certificados_staging/api', '/certificados/api', '/index.php'] as $prefix) {
         if (str_starts_with($path, $prefix)) {
             $path = substr($path, strlen($prefix)) ?: '/';
         }
