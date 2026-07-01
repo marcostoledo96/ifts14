@@ -8,7 +8,7 @@ Definir la entrega y reenvío administrativo de certificados por email mediante 
 
 ### Requirement: Reenvío administrativo por email
 
-La API MUST exponer `POST /certificados/api/admin/certificados/{id}/reenviar` protegido por `X-Admin-Key`. El endpoint MUST conservar el token de verificación activo del certificado en un reenvío normal, enviar o simular por email el enlace público de validación y responder `200` con un DTO de entrega que NO contenga el token completo. La revocación explícita es la única vía válida para invalidar el token; el reenvío normal NO rota token.
+La API MUST exponer `POST /certificados/api/admin/certificados/{id}/reenviar` protegido por `X-Admin-Key`. El endpoint MUST conservar el token de verificación activo del certificado en un reenvío normal, enviar o simular por email el enlace público de validación y responder `200` con un DTO de entrega que NO contenga el token completo. La revocación explícita es la única vía válida para invalidar el token; el reenvío normal NO rota token. `X-Admin-Key` es un mecanismo de API server-to-server y MUST NOT estar embebido ni expuesto desde bundles de Angular, `localStorage`, `sessionStorage` ni ningún almacenamiento del navegador. La UI administrativa en navegador para el MVP MUST usar cPanel Basic Auth o una sesión PHP simple con cookie `HttpOnly`+`Secure`+`SameSite`; el cliente navegador no DEBE conocer ni transportar `X-Admin-Key`.
 
 #### Scenario: Reenvío exitoso
 
@@ -31,6 +31,19 @@ La API MUST exponer `POST /certificados/api/admin/certificados/{id}/reenviar` pr
 - **When** la API procesa la solicitud
 - **Then** MUST responder `401 UNAUTHORIZED` con sobre de error seguro.
 - **And** MUST NOT rotar token, enviar email ni auditar reenvío.
+
+#### Scenario: `X-Admin-Key` no expuesta desde el navegador
+
+- **Given** la UI administrativa en navegador Angular consumiendo endpoints admin
+- **When** se inspecciona el bundle, `localStorage`, `sessionStorage` y cookies del navegador
+- **Then** MUST NOT aparecer `X-Admin-Key` ni su valor en ningún almacenamiento del navegador ni en el bundle JS.
+- **And** la UI admin MUST usar cPanel Basic Auth o sesión PHP `HttpOnly` para el MVP.
+
+#### Scenario: Respuesta admin sin DNI ni token completo
+
+- **Given** un reenvío autorizado exitoso o fallido
+- **When** se inspecciona la respuesta JSON administrativa
+- **Then** MUST NOT incluir DNI completo ni token completo en ningún campo de la respuesta operativa.
 
 #### Scenario: Certificado inexistente
 

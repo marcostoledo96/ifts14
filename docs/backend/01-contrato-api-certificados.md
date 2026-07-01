@@ -104,6 +104,8 @@ Request demo mínimo:
 }
 ```
 
+> El request puede recibir `documentNumber` completo (DNI) si la emisión lo necesita para generar el certificado. La respuesta `201` NO debe devolverlo: por D0, el DNI completo solo se expone en el DTO público de validación. Logs, auditoría, errores y respuestas administrativas no incluyen DNI completo.
+
 Respuesta `201`:
 
 ```json
@@ -114,7 +116,7 @@ Respuesta `201`:
     "status": "vigente",
     "student": {
       "displayName": "Persona Demo",
-      "documentNumber": "00000000"
+      "documentMasked": "00******00"
     },
     "course": {
       "name": "Curso Demo"
@@ -130,7 +132,7 @@ Respuesta `201`:
 }
 ```
 
-La emisión no devuelve DNI completo ni token completo. `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. La entrega del token queda pendiente hasta definir email/reenvío u otro canal seguro. Si la generación o persistencia del PDF falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional).
+La emisión no devuelve DNI completo ni token completo. El campo `documentMasked` (enmascarado) en la respuesta administrativa es el único dato de documento permitido; el DNI completo queda reservado para el DTO público de validación (decisión D0). `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. La entrega del token queda pendiente hasta definir email/reenvío u otro canal seguro. Si la generación o persistencia del PDF falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional).
 
 ### `POST /admin/certificados/{id}/revocar`
 
@@ -199,6 +201,16 @@ La descarga no expone el token completo ni rutas internas en la respuesta.
 ### `POST /admin/certificados/{id}/reenviar`
 
 Reenvía el certificado por email: **conserva el token/QR permanente** del certificado (no rota token en reenvío normal), envía únicamente el enlace público de validación `/certificados/validar/{token}` por el transporte configurado y responde con un DTO de entrega que NO contiene el token completo, el email completo ni credenciales. El token completo viaja exclusivamente dentro del email del destinatario. La rotación de token solo ocurre por revocación explícita o regeneración excepcional auditada, separada del reenvío normal.
+
+> **Estrategia de token recuperable (requerida para reenvío permanente).** Guardar solo `token_hash` (SHA-256 con pepper) es **insuficiente** para reenvío: el hash no permite reconstruir el token ni la URL `/validar/{token}`. Para que el reenvío conserve el QR sin rotar, el backend debe persistir un artefacto recuperable del token:
+>
+> | Columna | Uso |
+> |---|---|
+> | `token_hash` | Lookup y verificación pública (ya existe). No reversible. |
+> | `token_prefijo` | Soporte/identificación parcial (ya existe). No reversible a token completo. |
+> | `token_cifrado` | Token completo cifrado con clave externa a Git/config. Permite reconstruir la URL pública y regenerar PDF sin rotar QR. Alternativa válida: persistir la URL pública cifrada en vez del token. |
+>
+> La clave de cifrado de `token_cifrado` debe vivir fuera de Git y fuera de la configuración versionable. Este artefacto se planifica como parte de `backend-token-permanente-storage` (split de M4-01); mientras no exista, el reenvío real se mantiene fuera de alcance o limitado al token conocido en emisión. Hash-only NO habilita reenvío permanente.
 
 Headers:
 
@@ -294,6 +306,7 @@ Toda respuesta de error debe usar este formato:
 - El frontend debe consultar a `/certificados/api/certificados/{token}/verificacion`.
 - El token público no se guarda en texto plano: se compara contra `SHA-256(token + token_pepper)` con `token_pepper` externo a Git. El cálculo PHP usa `hash('sha256', $token . $tokenPepper, true)` (binario) contra `cert_tokens_verificacion.token_hash BINARY(32)`.
 - El seed demo versionable debe almacenar `token_hash` con `UNHEX(SHA2(CONCAT(token_demo, pepper_demo), 256))` para mantener coherencia con el cálculo PHP binario.
+- **Hash-only es insuficiente para reenvío permanente.** El `token_hash` no permite reconstruir el token ni la URL `/validar/{token}`. El reenvío que conserva el QR exige además `token_cifrado` (o URL pública cifrada) con clave externa a Git; ver `POST /admin/certificados/{id}/reenviar`. Mientras ese artefacto no exista, el reenvío real queda fuera de alcance.
 - Los logs y la auditoría solo conservan prefijos o huellas truncadas no reversibles; nunca el token completo.
 - Tokens revocados, vencidos o inexistentes deben responder como no verificables sin revelar cuál caso ocurrió.
 
@@ -308,6 +321,7 @@ Toda respuesta de error debe usar este formato:
 - La verificación pública debe devolver datos mínimos necesarios para confirmar autenticidad: certificado, curso, fecha, DNI completo (decisión D0) y fechas asistidas.
 - Los endpoints administrativos deben fallar cerrados si `admin_api_key` no existe, está vacío o mide menos de 16 caracteres tras `trim`.
 - La auditoría administrativa no debe guardar DNI completo, token completo, claves, SQL ni rutas internas.
+- **`X-Admin-Key` no debe exponerse en bundles Angular ni en `localStorage`/`sessionStorage`.** El header `X-Admin-Key` es para uso técnico/API/smoke/staging controlado, no para UI de navegador. Para una UI admin en browser se debe usar cPanel Directory Privacy / Basic Auth, o un login PHP simple con cookie `HttpOnly` + `SameSite` que el backend valide; nunca incrustar la clave admin en el bundle. Si se implementa login PHP, el ciclo correspondiente define el contrato.
 
 ## Headers de seguridad y validación de request
 

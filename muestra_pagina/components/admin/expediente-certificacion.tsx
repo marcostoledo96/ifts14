@@ -24,6 +24,13 @@ import {
 /* ------------------------------------------------------------------ *
  * Modelo (mock). En el port a Angular se reemplaza por el resolver /
  * service del expediente. La UI no persiste nada por su cuenta.
+ *
+ * IMPORTANTE — muestra estática: este componente renderiza SIEMPRE el
+ * mismo EXPEDIENTE de ejemplo (García / IFTS14-CUR-2024-0031) sin usar
+ * el `id` de la ruta para seleccionar datos. Es una muestra visual fija,
+ * no comportamiento real por registro. Al portar a Angular, reemplazar
+ * por un resolver que use el id para cargar el expediente real o, si
+ * no hay dataset mock, mantener el cartel "muestra estática" explícito.
  * ------------------------------------------------------------------ */
 
 type FechaPresente = { fecha: string; modulo: string; carga: number }
@@ -63,7 +70,7 @@ const EXPEDIENTE = {
   },
 }
 
-const VALIDACION_HOST = "ifts14.edu.ar/certificados"
+const VALIDACION_HOST = "ifts14.com.ar/certificados"
 
 /* ------------------------------------------------------------------ *
  * Helpers de formato
@@ -310,6 +317,10 @@ export function ExpedienteCertificacion({ id }: { id: string }) {
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {curso.nombre} · {curso.ciclo}
+            </p>
+            <p className="mt-1 inline-flex items-center gap-1.5 rounded-sm border border-border bg-secondary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              <Lock className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
+              Muestra estática — el id de ruta no selecciona datos reales
             </p>
           </div>
           <EstadoBadge revocada={revocada} />

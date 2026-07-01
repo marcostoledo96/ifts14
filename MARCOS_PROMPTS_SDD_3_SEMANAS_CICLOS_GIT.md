@@ -424,13 +424,20 @@ Bloque M4 para alinear backend, DB, PDF, email, auth y deploy con las decisiones
 
 | Ciclo | Nombre | Objetivo | Rama sugerida |
 |---|---|---|---|
-| M4-01 | `backend-token-permanente-dni-publico` | Alinear contrato y DTO público: DNI completo, `attendedDates`, reenvío sin rotación, revocación invalida token. | `backend/token-permanente-dni-publico` |
+| M4-01A | `backend-contrato-token-permanente-dni-fechas` | Contrato documental: DTO público con DNI completo + `attendedDates`, reenvío sin rotación, estrategia de token recuperable (`token_cifrado`), revocación invalida token, storage seguro de DNI (`dni_hash`+`dni_cifrado`). No implementa producto. | `backend/contrato-token-permanente-dni-fechas` |
+| M4-01B | `backend-token-permanente-dni-fechas` | Implementación del contrato M4-01A sobre backend/modelo. Depende de M4-02 (modelo de cursos/alumnos/asistencias) para emisión real desde asistencias y del storage de token recuperable. | `backend/token-permanente-dni-fechas` |
 | M4-02 | `database-cursos-alumnos-asistencias` | Modelo real de cursos, alumnos, fechas y asistencias con prefijo `cert_`. | `database/cursos-alumnos-asistencias` |
 | M4-03 | `backend-cursos-alumnos-asistencias-api` | API admin mínima para cursos, alumnos, fechas y asistencias con `X-Admin-Key`. | `backend/cursos-alumnos-asistencias-api` |
 | M4-04 | `backend-emision-desde-asistencias` | Emisión desde alumno+curso+fechas presentes, no texto libre. Token permanente. | `backend/emision-desde-asistencias` |
-| M4-05 | `pdf-certificado-curso-fechas` | PDF institucional de certificado de curso con QR, fechas asistidas y firmantes. | `backend/pdf-certificado-curso` |
-| M4-06 | `email-reenvio-token-permanente` | Reenvío con mismo QR/token y SMTP cuenta de prueba / `stub`. | `backend/email-reenvio-token-permanente` |
+| M4-05 | `pdf-certificado-curso-fechas` | PDF institucional de certificado de curso con QR, fechas asistidas y firmantes. | `backend/pdf-certificado-curso-fechas` |
+| M4-06 | `email-reenvio-token-permanente` | Reenvío con mismo QR/token y SMTP cuenta de prueba / `stub`. Depende de storage de token recuperable (`token_cifrado`). | `backend/email-reenvio-token-permanente` |
 | M4-07 | `staging-cpanel-real-certificados` | Subida integrada a `/certificados_staging/` con gates Composer/vendor, SMTP, DB staging y rollback. | `deploy/staging-cpanel-real` |
+
+### Reglas del split M4-01
+
+- **M4-01A (contrato)** puede avanzar sin dependencias de implementación: solo docs/specs. No crea migraciones ni código.
+- **M4-01B (implementación)** depende de M4-02 (modelo de cursos/alumnos/asistencias) para emisión real y del storage de token recuperable (`token_cifrado`). No implementar M4-01B antes de que existan las dependencias del modelo.
+- El reenvío (M4-06) depende del storage de `token_cifrado`; hash-only NO habilita reenvío permanente.
 
 ### Reglas del bloque M4
 

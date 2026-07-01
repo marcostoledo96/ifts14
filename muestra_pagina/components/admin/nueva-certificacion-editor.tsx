@@ -60,7 +60,7 @@ const CONFIG_INSTITUCIONAL = {
     nombre: "Prof. Daniel E. Roldán",
     cargo: "Asesor Pedagógico — IFTS N.° 14",
   },
-  validacionBase: "validar.ifts14.edu.ar",
+  validacionBase: "ifts14.com.ar/certificados",
 }
 
 const CURSOS: Curso[] = [
@@ -865,7 +865,7 @@ export function NuevaCertificacionEditor() {
                     <p className="mt-3 border-l-2 border-circuit pl-3 text-xs leading-relaxed text-muted-foreground">
                       Verificable en{" "}
                       <span className="font-mono text-foreground">
-                        {CONFIG_INSTITUCIONAL.validacionBase}
+                        {CONFIG_INSTITUCIONAL.validacionBase}/validar/{"{token}"}
                       </span>
                       . El QR permanente se genera al emitir y no contiene datos
                       personales.

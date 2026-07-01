@@ -51,13 +51,20 @@ Toda respuesta de error MUST usar `{ error: { code, message, details }, meta: { 
 
 ### Requirement: Validación y seguridad del token QR
 
-El token público MUST validarse antes de consultar la base y MUST buscarse como `SHA-256(token + token_pepper)` con `token_pepper` externo a Git y PDO prepared statements.
+El token público MUST validarse antes de consultar la base y MUST buscarse como `SHA-256(token + token_pepper)` con `token_pepper` externo a Git y PDO prepared statements. El hash no reversible (`token_hash`) es suficiente para verificación pública, pero NO para reenvío: el reenvío normal conserva el token permanente y MUST poder reconstruir el enlace `/certificados/validar/{token}`, lo que requiere un artefacto recuperable (`token_cifrado` cifrado con clave externa a Git, o almacenamiento equivalente reversible). Hash-only es insuficiente para reenvío permanente.
 
 #### Scenario: Token con formato permitido
 
 - **Given** un token de 32 a 128 caracteres alfanuméricos con `_` o `-`
 - **When** llega a la API
 - **Then** la API MUST calcular el hash con pepper externo y MUST consultarlo con prepared statements.
+
+#### Scenario: Token recuperable para reenvío
+
+- **Given** un certificado con token activo y un reenvío administrativo solicitado
+- **When** el backend reconstruye el enlace público de validación
+- **Then** MUST recuperar el token desde un artefacto cifrado (`token_cifrado` con clave externa a Git) usando lookup por `token_hash` + `token_prefijo`.
+- **And** MUST NOT requerir regeneración de token ni revocación en reenvío normal.
 
 #### Scenario: Logs seguros
 
@@ -136,7 +143,7 @@ La API MUST documentar y sostener endpoints administrativos bajo `/certificados/
 - **Given** un request autorizado con payload mínimo válido y `public_base_url`/`certificate_storage_path` configurados
 - **When** se invoca `POST /certificados/api/admin/certificados`
 - **Then** el contrato MUST indicar `201` con certificado emitido, PDF/QR generado y `pdfDownloadUrl` presente.
-- **And** MUST NOT devolver DNI completo ni token completo.
+- **And** MUST NOT devolver DNI completo ni token completo en la respuesta operativa administrativa, logs ni auditoría. El DNI completo solo es visible en el DTO público de validación aprobado por decisión institucional.
 
 #### Scenario: Descarga PDF documentada
 

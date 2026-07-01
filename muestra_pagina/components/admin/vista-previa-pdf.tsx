@@ -47,7 +47,7 @@ const CERTIFICADO = {
   },
 }
 
-const VALIDACION_HOST = "certs.ifts14.edu.ar"
+const VALIDACION_HOST = "ifts14.com.ar/certificados"
 
 /* --------------------------- helpers ----------------------------- */
 
@@ -218,7 +218,7 @@ export function VistaPreviaPdf({ id }: { id?: string }) {
   const desde = fechas[0]
   const hasta = fechas[fechas.length - 1]
   const periodo = `${capitalizar(fmtMesAnio.format(desde))} a ${capitalizar(fmtMesAnio.format(hasta))}`
-  const validarPath = `/v/${admin.token}`
+  const validarPath = `/validar/${admin.token}`
 
   async function onDescargar() {
     setDescargando(true)

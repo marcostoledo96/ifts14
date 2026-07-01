@@ -419,7 +419,8 @@ Actualizar gates:
 
 Agregar nuevas fases:
 
-- `M4-01 decision-token-permanente-dni-publico`
+- `M4-01A backend-contrato-token-permanente-dni-fechas`
+- `M4-01B backend-token-permanente-dni-fechas` (implementación, depende de M4-02 y del storage de token recuperable)
 - `M4-02 database-cursos-alumnos-asistencias`
 - `M4-03 backend-cursos-alumnos-asistencias-api`
 - `M4-04 backend-emision-desde-asistencias`
@@ -465,6 +466,8 @@ Actualizar:
 ---
 
 ## 5. Plan de fases SDD sugeridas
+
+> **Si docs-sync es demasiado amplio**, partirlo en dos fases: **D0-01** (decisiones fuente de verdad en docs raíz: README, GUIA, AGENTS, decisiones D0) y **D0-02** (contratos técnicos: contrato API, modelo de datos, DTO Angular, specs OpenSpec). D0-01 puede cerrarse sin tocar contratos técnicos; D0-02 requiere los contratos vigentes.
 
 ## Fase D0 — Sincronización documental de decisiones
 
@@ -524,10 +527,12 @@ Actualizar toda la documentación y planificación con las decisiones confirmada
 
 ## Fase M4-01 — Token permanente y contrato público actualizado
 
+> **Split recomendado.** Dividir en **M4-01A** (`backend-contrato-token-permanente-dni-fechas`, documental/contrato, sin implementar) y **M4-01B** (`backend-token-permanente-dni-fechas`, implementación, depende de M4-02 y del storage de token recuperable).
+
 ### Nombre sugerido
 
 ```txt
-backend-token-permanente-dni-publico
+backend-contrato-token-permanente-dni-fechas
 ```
 
 ### Responsable
@@ -564,6 +569,7 @@ Alinear contrato backend/API con:
 - Reenvío no rota token.
 - Revocación invalida token.
 - Logs/auditoría no registran DNI completo ni token completo.
+- **Estrategia de token recuperable** (`token_cifrado` con clave externa a Git) queda definida; hash-only se marca como insuficiente para reenvío permanente.
 
 ---
 
@@ -599,7 +605,7 @@ cert_asistencias
 - id;
 - nombre;
 - apellido;
-- dni;
+- **DNI con diseño seguro recomendado**: `dni_hash` (lookup/control), `dni_cifrado` (recuperación controlada con clave externa a Git) y `dni_mostrar VARCHAR(20) NULL` (DNI completo visible solo si la institución lo exige por D0). Alternativa MVP explícita: `dni VARCHAR(20)` + `dni_hash`, aceptada solo con riesgo documentado. Sin decisión explícita, preferir el diseño seguro.
 - email;
 - estado;
 - created_at;
@@ -628,9 +634,10 @@ cert_asistencias
 - id;
 - alumno_id;
 - curso_fecha_id;
-- presente;
 - created_at;
-- updated_at.
+- eliminado_en (opcional, solo si se necesita soft-delete para correcciones).
+- **No booleano `presente` ni estados ausente/justificado**: la presencia se representa por la existencia de la fila.
+- `UNIQUE(alumno_id, curso_fecha_id)` para evitar duplicados.
 
 ### Criterios de aceptación
 
@@ -640,6 +647,10 @@ cert_asistencias
 - Seeds ficticios.
 - Compatible MariaDB 10.6.
 - Sin datos reales.
+
+### Modelo de fechas de certificado (snapshot)
+
+Para el MVP serio, las fechas asistidas del certificado se capturan como **snapshot al momento de emisión** en `cert_certificado_fechas`. Las correcciones posteriores sobre asistencias vivas actualizan el snapshot o generan versión/auditoría y marcan el certificado como `requiere_reenvio`; la regeneración del PDF conserva el mismo QR/token. No recalcular las fechas del PDF desde asistencias vivas en cada reenvío.
 
 ---
 
@@ -792,6 +803,8 @@ Actualizar el PDF para que sea un certificado de curso institucional, horizontal
 ---
 
 ## Fase M4-06 — Reenvío con token permanente y email de prueba
+
+> **Dependencia clave.** El reenvío que conserva el QR exige persistir un artefacto recuperable del token (`token_cifrado` o URL pública cifrada con clave externa a Git). Guardar solo `token_hash` es insuficiente: el hash no permite reconstruir la URL `/validar/{token}`. Mientras no exista `backend-token-permanente-storage`, el reenvío real queda fuera de alcance o limitado al token conocido en emisión.
 
 ### Nombre sugerido
 
@@ -1091,15 +1104,18 @@ Al finalizar:
 ## 7.2. Prompt para Marcos después de sincronizar docs
 
 ```txt
-Trabajemos la fase M4-01 — backend-token-permanente-dni-publico.
+Trabajemos la fase M4-01A — backend-contrato-token-permanente-dni-fechas (contrato, sin implementar todavía).
 
 Objetivo:
-Alinear backend, contrato y tests con:
+Alinear contrato y specs con:
 - QR/token permanente;
 - DNI completo público;
 - certificado de curso;
 - fechas asistidas;
-- reenvío sin rotación de token.
+- reenvío sin rotación de token;
+- artefacto recuperable de token (`token_cifrado` o equivalente, clave fuera de Git).
+
+Después de cerrar M4-01A, la fase M4-01B — backend-token-permanente-dni-fechas implementa el contrato, pero depende de M4-02 y del storage de token recuperable.
 
 Usá SDD completo.
 Primero explore/propose/spec/design/tasks.
@@ -1221,8 +1237,9 @@ El próximo paso exacto para Marcos debería ser:
 ```txt
 1. Ejecutar docs-sync-decisiones-certificados.
 2. Commit documental.
-3. Ejecutar M4-01 backend-token-permanente-dni-publico.
-4. Después recién avanzar a modelo real de cursos/alumnos/asistencias.
+3. Ejecutar M4-01A backend-contrato-token-permanente-dni-fechas (contrato).
+4. Después M4-01B backend-token-permanente-dni-fechas (implementación, depende de M4-02 y del storage de token recuperable).
+5. Después recién avanzar a modelo real de cursos/alumnos/asistencias.
 ```
 
 No conviene que Matías empiece el port final de pantallas admin hasta que Marcos deje al menos:
@@ -1231,4 +1248,3 @@ No conviene que Matías empiece el port final de pantallas admin hasta que Marco
 - ZIP v0 actualizado en `muestra_pagina/`;
 - contrato DTO público actualizado;
 - modelos/mocks básicos para cursos, fechas y asistencias.
-
