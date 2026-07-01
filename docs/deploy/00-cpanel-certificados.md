@@ -69,6 +69,45 @@ public_html/certificados/api/
 
 La configuración real debe quedar fuera del repositorio y preferentemente fuera del webroot. Para validar certificados, el archivo externo debe devolver un array PHP con las claves reales esperadas por `Config::load()`: `db_host`, `db_name`, `db_user`, `db_pass`, `token_pepper`, `public_base_url` y `certificate_storage_path`; la guía no debe registrar valores reales. Tomar como referencia de estructura el ejemplo versionable `apps/backend-php/config/certificados-config.example.php`, reemplazando sus valores ficticios fuera de Git. Sin `token_pepper`, `public_base_url` o `certificate_storage_path`, `Config::load()` debe fallar de forma segura con error genérico y la API no debe exponer stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable y contra un config ficticio bajo `/tmp`; la configuración productiva permanece fuera de Git.
 
+### Entrega por email (reenvío administrativo)
+
+El endpoint `POST /admin/certificados/{id}/reenviar` entrega el certificado por email mediante un enlace público de validación. El transporte es configurable y desacoplado: modo `stub` (default, no envía real) y modo `smtp` (PHPMailer con credenciales externas).
+
+#### Dependencias Composer
+
+El backend versiona `apps/backend-php/composer.lock` para fijar `tecnickcom/tcpdf` y `phpmailer/phpmailer`. La carpeta `vendor/` permanece ignorada por Git y se regenera en deploy con:
+
+```bash
+composer install --no-dev --no-interaction
+```
+
+No subir `vendor/` al repo; subir el `composer.lock` versionado y ejecutar `composer install` en el servidor (o subir `vendor/` generado localmente solo si el hosting no dispone de Composer, dejando constancia operativa).
+
+#### Configuración SMTP externa
+
+Las credenciales SMTP viven en el archivo de configuración externo (nunca en Git). Claves:
+
+| Clave | Uso |
+|---|---|
+| `delivery_transport` | `stub` (default seguro) o `smtp`. |
+| `smtp_host` | Host SMTP. Exigido en modo `smtp`. |
+| `smtp_port` | Puerto SMTP (1-65535). Exigido en modo `smtp`. |
+| `smtp_username` | Usuario SMTP. Exigido en modo `smtp`. |
+| `smtp_password` | Contraseña SMTP. Exigida en modo `smtp`. |
+| `smtp_secure` | `tls` (default) o `ssl`. Vacío o cualquier otro valor se rechaza (riesgo de credenciales en claro). |
+| `mail_from` | Remitente. Exigido en modo `smtp`. |
+| `mail_from_name` | Nombre del remitente (opcional). |
+| `public_base_url` | Base pública absoluta para armar `/validar/{token}`. Exigida en modo `smtp`. |
+
+En modo `stub`, el endpoint responde `503 DELIVERY_NOT_CONFIGURED` sin rotar token ni enviar email. En modo `smtp` sin credenciales, también responde `503`. El envío real solo ocurre con modo `smtp` + credenciales válidas.
+
+#### Rollback de entrega por email
+
+1. Cambiar `delivery_transport` a `stub` en la configuración externa (el endpoint pasa a responder `503`).
+2. O retirar la ruta `POST /admin/certificados/{id}/reenviar` del backend.
+3. Los certificados y tokens vigentes permanecen válidos: el rollback no toca `cert_certificados` ni `cert_tokens_verificacion`.
+4. No requiere migraciones de base: la auditoría reutiliza `cert_eventos_auditoria.detalle_seguro`.
+
 ### Almacenamiento de PDFs de certificados
 
 `certificate_storage_path` es la ruta absoluta donde se persisten los PDFs generados durante la emisión administrativa. Cada PDF se guarda como `{certificateCode}.pdf` (ej. `CERT-2026-AB12CD34.pdf`); el nombre nunca incluye el token de verificación.

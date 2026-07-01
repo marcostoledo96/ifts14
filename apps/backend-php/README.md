@@ -6,11 +6,17 @@ Base mínima de la API PHP 8.4 para `/certificados/api/`.
 
 | Ruta | Uso |
 |---|---|
-| `index.php` | Front controller con `GET /health`, 404, 405 y error 500 seguro. |
+| `index.php` | Front controller con `GET /health`, validación pública, emisión, revocación, descarga PDF y reenvío por email. |
 | `src/Response.php` | Respuestas JSON UTF-8 con envelope `data/meta` o `error/meta`. |
-| `src/Config.php` | Carga configuración real desde un archivo externo no versionado. |
-| `src/Database.php` | Crea PDO de forma diferida para endpoints futuros. |
-| `config/certificados-config.example.php` | Ejemplo ficticio, sin credenciales reales. |
+| `src/Config.php` | Carga configuración real desde un archivo externo no versionado. Normaliza `requirePdfConfig()` y `requireDeliveryConfig()`. |
+| `src/Database.php` | Crea PDO de forma diferida para endpoints que requieren base. |
+| `src/AdminCertificateService.php` | Emisión, revocación y reenvío con rotación de token, auditoría segura y `maskEmail()`. |
+| `src/EmailDeliveryTransport.php` | Contrato del adaptador de entrega por email. |
+| `src/StubEmailDeliveryTransport.php` | Modo seguro: siempre `503 DELIVERY_NOT_CONFIGURED`. |
+| `src/SmtpEmailDeliveryTransport.php` | Modo SMTP con PHPMailer; no loguea token ni credenciales. |
+| `src/EmailDeliveryTransportFactory.php` | Selecciona `stub` o `smtp` desde `Config::requireDeliveryConfig()`. |
+| `config/certificados-config.example.php` | Ejemplo ficticio con `delivery_transport => 'stub'` y placeholders SMTP. |
+| `composer.json` / `composer.lock` | Fija `tecnickcom/tcpdf` y `phpmailer/phpmailer`. `vendor/` ignorado. |
 | `.htaccess` | Fallback mínimo hacia `index.php` para Apache. |
 
 ## Configuración externa
@@ -23,6 +29,38 @@ Orden de carga:
 2. `/home/usuario_demo/certificados_config/certificados-api.php` como ruta externa documentada.
 
 No versionar `.env`, `config.php`, `db.php`, `database.php`, `conexion.php` ni credenciales reales.
+
+### Entrega por email (reenvío)
+
+El reenvío administrativo (`POST /admin/certificados/{id}/reenviar`) usa un adaptador de transporte configurable:
+
+| Clave | Default | Uso |
+|---|---|---|
+| `delivery_transport` | `stub` | `stub` no envía real (responde `503`); `smtp` exige credenciales. |
+| `smtp_host` | — | Host SMTP. Exigido en `smtp`. |
+| `smtp_port` | — | Puerto (1-65535). Exigido en `smtp`. |
+| `smtp_username` | — | Usuario SMTP. Exigido en `smtp`. |
+| `smtp_password` | — | Contraseña SMTP. Exigida en `smtp`. |
+| `smtp_secure` | `tls` | `tls` o `ssl`. Vacío se rechaza (riesgo de credenciales en claro). |
+| `mail_from` | — | Remitente. Exigido en `smtp`. |
+| `mail_from_name` | — | Nombre del remitente (opcional). |
+| `public_base_url` | — | Base pública para `/validar/{token}`. Exigida en `smtp`. |
+
+El token completo solo viaja dentro del email; nunca en JSON, logs ni auditoría. La auditoría guarda `destinatario_enmascarado` en `detalle_seguro`.
+
+### Composer / dependencias
+
+El backend versiona `composer.lock` para fijar `tecnickcom/tcpdf` y `phpmailer/phpmailer`. `vendor/` está ignorado y se regenera con:
+
+```bash
+composer install --no-dev --no-interaction
+```
+
+Regenerar el lock tras cambiar `composer.json`:
+
+```bash
+docker run --rm --volume "$PWD/apps/backend-php:/app" --workdir /app composer:2 composer update --no-dev --no-interaction
+```
 
 ## QA local
 
