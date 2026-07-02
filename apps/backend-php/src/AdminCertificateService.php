@@ -32,6 +32,7 @@ final class AdminCertificateService
         private readonly ?CertificatePdfService $pdfService = null,
         private readonly ?string $publicBaseUrl = null,
         private readonly ?string $tokenCipherKey = null,
+        private readonly ?string $pdfStoragePath = null,
     ) {
     }
 
@@ -205,6 +206,17 @@ final class AdminCertificateService
      * ni token. Descifra el token en memoria solo para reconstruir el link
      * permanente; el token completo nunca se devuelve como campo separado.
      *
+     * El JOIN del token activo replica exactamente los predicados de validez
+     * que usa el validador público (CertificateValidator::findCertificate):
+     * estado='activo', revocado_en IS NULL, vigente_desde <= CURRENT_TIMESTAMP
+     * y (vigente_hasta IS NULL OR vigente_hasta >= CURRENT_TIMESTAMP). Así la
+     * entrega manual nunca devuelve un link que la validación pública rechazaría.
+     * Si ningún token actualmente válido existe, falla seguro con 404.
+     *
+     * Antes de devolver pdfDownloadUrl verifica que el PDF persistido exista
+     * y sea legible/no vacío usando la misma semántica de path que la descarga
+     * (CertificatePdfService::pathForCode). Si falta, responde 404 PDF_NOT_FOUND.
+     *
      * @param int|string $id Identificador del certificado.
      * @return array<string, mixed> DTO {certificadoId, publicValidationUrl, pdfDownloadUrl, tokenPrefix}.
      * @throws AdminCertificateException 400/404/409 con códigos seguros.
@@ -216,15 +228,23 @@ final class AdminCertificateService
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
 
-        // Lectura de certificado vigente + token activo. No abre transacción:
-        // el endpoint es de solo lectura y no requiere FOR UPDATE.
+        // Lectura de certificado vigente + token actualmente válido. No abre
+        // transacción: el endpoint es de solo lectura y no requiere FOR UPDATE.
+        // Los predicados del token replican CertificateValidator::findCertificate
+        // para que la entrega manual solo recupere tokens que la validación
+        // pública aceptaría.
         $statement = $this->pdo->prepare(<<<'SQL'
-            SELECT c.id, c.estado, c.vence_en,
+            SELECT c.id, c.estado, c.revocado_en AS cert_revocado_en, c.vence_en,
                    (c.vence_en IS NULL OR c.vence_en >= CURRENT_DATE) AS vence_en_vigente,
+                   c.codigo_certificado,
                    t.token_prefijo, t.token_cifrado
             FROM cert_certificados c
             LEFT JOIN cert_tokens_verificacion t
-              ON t.certificado_id = c.id AND t.estado = 'activo'
+              ON t.certificado_id = c.id
+             AND t.estado = 'activo'
+             AND t.revocado_en IS NULL
+             AND t.vigente_desde <= CURRENT_TIMESTAMP
+             AND (t.vigente_hasta IS NULL OR t.vigente_hasta >= CURRENT_TIMESTAMP)
             WHERE c.id = ?
             LIMIT 1
             SQL);
@@ -237,14 +257,25 @@ final class AdminCertificateService
 
         $estado = (string) ($row['estado'] ?? '');
         $venceEnVigente = (int) ($row['vence_en_vigente'] ?? 0) === 1;
-        if ($estado !== 'vigente' || !$venceEnVigente) {
+        $certRevocadoEn = $row['cert_revocado_en'] ?? null;
+        if ($estado !== 'vigente' || !$venceEnVigente || $certRevocadoEn !== null) {
             throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
         }
 
         $tokenPrefix = is_string($row['token_prefijo']) ? $row['token_prefijo'] : '';
-        $tokenCipher = $this->readLobAsString($row['token_cifrado'] ?? null);
+        // Sin token actualmente válido: fail safe 404. No devolver un link que
+        // la validación pública rechazaría (token expirado/futuro/revocado).
+        if ($tokenPrefix === '') {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+        }
 
+        $tokenCipher = $this->readLobAsString($row['token_cifrado'] ?? null);
         $token = $this->recoverToken($tokenCipher);
+
+        // Verificación de PDF persistido: misma semántica de path que la
+        // descarga (CertificatePdfService::pathForCode). Si falta o es ilegible,
+        // respondemos el mismo error seguro que el endpoint de descarga.
+        $this->ensurePdfExists($row['codigo_certificado'] ?? null);
 
         return [
             'certificadoId' => $certificateId,
@@ -252,6 +283,55 @@ final class AdminCertificateService
             'pdfDownloadUrl' => $this->buildPdfDownloadUrl($certificateId),
             'tokenPrefix' => $tokenPrefix,
         ];
+    }
+
+    /**
+     * Verifica que el PDF persistido del certificado exista y sea legible/no
+     * vacío, usando la misma semántica de path que streamPdf()/descarga.
+     * Responde 404 PDF_NOT_FOUND (mismo código seguro que el endpoint de
+     * descarga) si el archivo falta o es inválido.
+     *
+     * @throws AdminCertificateException 404 PDF_NOT_FOUND si el PDF no existe.
+     */
+    private function ensurePdfExists(mixed $certificateCode): void
+    {
+        if (!is_string($certificateCode) || $certificateCode === '') {
+            throw new AdminCertificateException(404, 'PDF_NOT_FOUND', 'PDF no encontrado.');
+        }
+
+        $path = $this->pathForCertificateCode($certificateCode);
+
+        if (!is_file($path) || !is_readable($path)) {
+            throw new AdminCertificateException(404, 'PDF_NOT_FOUND', 'PDF no encontrado.');
+        }
+
+        $size = filesize($path);
+        if ($size === false || $size <= 0) {
+            throw new AdminCertificateException(404, 'PDF_NOT_FOUND', 'PDF no encontrado.');
+        }
+    }
+
+    /**
+     * Resuelve la ruta del PDF para un código de certificado usando la misma
+     * semántica que CertificatePdfService::pathForCode. Reusa pdfService si fue
+     * inyectado; si no, reconstruye el path con pdfStoragePath. En ambos casos
+     * el resultado es idéntico al que usa la descarga.
+     */
+    private function pathForCertificateCode(string $certificateCode): string
+    {
+        if (isset($this->pdfService) && $this->pdfService instanceof CertificatePdfService) {
+            return $this->pdfService->pathForCode($certificateCode);
+        }
+
+        if ($this->pdfStoragePath === null || $this->pdfStoragePath === '') {
+            throw new AdminCertificateException(404, 'PDF_NOT_FOUND', 'PDF no encontrado.');
+        }
+
+        // ponytail: duplica la sanitización mínima de pathForCode sin instanciar
+        // TCPDF (que no se carga en la ruta de entrega manual). Misma regex.
+        $sanitized = preg_replace('/[^A-Za-z0-9_-]/', '_', $certificateCode) ?? $certificateCode;
+
+        return rtrim($this->pdfStoragePath, '/') . '/' . $sanitized . '.pdf';
     }
 
     private function buildPublicValidationUrl(string $token): string

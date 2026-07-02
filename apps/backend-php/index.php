@@ -240,6 +240,7 @@ if (preg_match('#^/admin/certificados/([^/]+)/entrega-manual$#', $path, $matches
             null,
             (string) $config['public_base_url'],
             $tokenCipherKey,
+            (string) $config['certificate_storage_path'],
         );
 
         return ['status' => 200, 'data' => $service->entregaManual($certificateId)];
