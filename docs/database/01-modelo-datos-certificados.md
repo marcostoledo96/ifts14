@@ -1,6 +1,6 @@
 # Modelo de datos — Certificados QR
 
-Este documento define el esquema MariaDB para la verificación pública de certificados QR. La migración controlada vive en `database/migrations/001_certificados_qr.sql` y no contiene datos reales.
+Este documento define el esquema MariaDB para la verificación pública de certificados QR. Las migraciones controladas viven en `database/migrations/` y no contienen datos reales.
 
 ## Decisión principal
 
@@ -69,6 +69,29 @@ mariadb NOMBRE_DB -e "SHOW COLUMNS FROM cert_tokens_verificacion LIKE 'token_cif
 
 No dropear `token_cifrado` como rollback sin backup y aprobación: si se revierte el ciclo documental, preferir dejar la columna sin uso.
 
+### M4-02 — Cursos, alumnos, asistencias y snapshot
+
+La migración `database/migrations/003_cursos_alumnos_asistencias.sql` agrega el modelo real para certificados de curso con fechas asistidas. Es aditiva sobre `001` + `002` y no modifica PHP, Angular, API, PDF, auth ni datos reales.
+
+| Tabla | Regla principal |
+|---|---|
+| `cert_alumnos` | Guarda `dni_hash BINARY(32)`, `dni_cifrado VARBINARY(512)` y `dni_mostrar VARCHAR(20) NULL`. La clave de cifrado vive fuera de Git. No hay DNI plano obligatorio. |
+| `cert_cursos` | Cursos certificables con `codigo` único, `nombre`, `estado` y timestamps. |
+| `cert_curso_fechas` | Fechas normalizadas por curso, con `fecha`, `descripcion`, `orden` y FK a `cert_cursos`. |
+| `cert_asistencias` | La presencia se representa por existencia de fila. No existe booleano `presente`. `eliminado_en` permite correcciones y `asistencia_activa` bloquea duplicados activos. |
+| `cert_certificado_fechas` | Snapshot de fechas certificadas: conserva FK a `cert_curso_fechas` y materializa `fecha`, `descripcion` y `orden` para estabilidad histórica. |
+| `cert_configuracion_institucional` | Configuración institucional de una sola fila (`CHECK id = 1`) para firmantes y texto del certificado, sin secretos. |
+
+#### Reglas de integridad relevantes
+
+- `cert_asistencias` usa `asistencia_activa TINYINT AS (CASE WHEN eliminado_en IS NULL THEN 1 ELSE NULL END) STORED` y `UNIQUE(alumno_id, curso_fecha_id, asistencia_activa)`; MariaDB permite múltiples `NULL`, por eso se conserva historial eliminado y se impide una sola asistencia activa duplicada.
+- `cert_certificado_fechas` no recalcula desde fechas vivas: si una fecha del curso cambia después de emitir, el certificado conserva la copia materializada.
+- `cert_configuracion_institucional` es single-row para evitar una tabla KV innecesaria en el MVP.
+
+#### Verificación local ficticia
+
+El seed `database/seeds/002_cursos_alumnos_asistencias_demo.sql` puede aplicarse después de `001`, `002` y `003` sobre una base temporal. Solo contiene placeholders ficticios y verifica relaciones curso → fecha → alumno → asistencia → snapshot.
+
 ### `cert_eventos_auditoria`
 
 Registra eventos operativos sin exponer datos personales completos.
@@ -97,27 +120,21 @@ Registra eventos operativos sin exponer datos personales completos.
 
 ## Fixtures permitidos
 
-`database/seeds/001_certificados_qr_demo.sql` contiene datos ficticios explícitos. No representa personas reales, DNIs reales ni tokens productivos.
+`database/seeds/001_certificados_qr_demo.sql` y `database/seeds/002_cursos_alumnos_asistencias_demo.sql` contienen datos ficticios explícitos. No representan personas reales, DNIs reales ni tokens productivos.
 
 El seed demo usa un token ficticio válido para el contrato público y guarda `token_hash` como binario mediante `UNHEX(SHA2(CONCAT(token_demo, pepper_demo), 256))`, alineado con el cálculo PHP `hash('sha256', $token . $tokenPepper, true)`. La coherencia entre seed y lookup quedó verificada con un MariaDB 10.6 local ficticio durante el ciclo `backend-validacion-publica-certificados`: el token demo `TOKEN_DEMO_FICTICIO_VALIDO_2026_0001` y el pepper de ejemplo `pepper_demo_ficticio_2026_no_usar` resuelven correctamente a un certificado vigente y devuelven `200` con DTO público.
 
 ## Rollback
 
-La migración documenta `DROP TABLE` en orden inverso: primero `cert_eventos_auditoria`, luego `cert_tokens_verificacion`, finalmente `cert_certificados`.
+Las migraciones documentan rollback manual en orden inverso de FK. Para `003`, dropear primero `cert_configuracion_institucional`, `cert_certificado_fechas`, `cert_asistencias`, `cert_curso_fechas`, `cert_cursos` y finalmente `cert_alumnos`. No tocar tablas existentes sin backup y aprobación operativa.
 
-## Tablas futuras (planificación D0, no migrar en este ciclo)
+## Tablas futuras
 
-Las siguientes tablas quedan planificadas para ciclos SDD posteriores (M4-02 y siguientes). Usan prefijo `cert_`, migraciones controladas y no se crean en este ciclo documental.
+Las tablas de cursos, alumnos, fechas, asistencias, snapshot y configuración institucional ya quedan migradas por `003`. Siguen fuera de este ciclo las tablas operativas futuras no necesarias para el MVP actual.
 
 | Tabla | Propósito |
 |---|---|
-| `cert_alumnos` | Alumnos. Diseño seguro recomendado: `dni_hash` (lookup/control), `dni_cifrado` (recuperación controlada) y `dni_mostrar VARCHAR(20) NULL` (DNI completo visible solo si la institución lo exige por D0). La clave de cifrado vive fuera de Git. Alternativa MVP explícita: `dni VARCHAR(20)` + `dni_hash`, aceptada solo con riesgo documentado (DNI en claro en base). Sin decisión explícita, se prefiere el diseño seguro. |
-| `cert_cursos` | Cursos: id, codigo, nombre, estado, timestamps. |
-| `cert_curso_fechas` | Fechas de cada curso: id, curso_id, fecha, descripcion opcional, estado, created_at. |
-| `cert_asistencias` | Asistencias. **La presencia representa asistencia**: un registro existe si el alumno asistió a esa fecha. No hay booleano `presente` ni estados ausente/justificado. `UNIQUE(alumno_id, curso_fecha_id)`. `eliminado_en DATETIME NULL` solo si se necesita soft-delete para correcciones. |
-| `cert_certificado_fechas` | Snapshot de fechas asistidas al momento de emisión. Permite reconstruir el PDF sin recalcular desde asistencias vivas. Las correcciones actualizan el snapshot o generan versión/auditoría y marcan `requiere_reenvio`. |
-| `cert_configuracion_institucional` | Firmantes y config institucional (Rector/a, Asesor/a Pedagógica). |
 | `cert_entregas_email` | Entregas/reenvíos por email (opcional, futuro). Obsoleto en el MVP: no hay flujo de email. Se reintroduce solo con nuevo ciclo SDD. |
 | `cert_admin_usuarios` | Usuarios admin para login real futuro (opcional, fuera de este ciclo). |
 
-Reglas: FK correctas, índices por DNI/curso/fecha, unique para evitar asistencia duplicada, seeds ficticios, compatible MariaDB 10.6, sin datos reales.
+Reglas: migraciones controladas, seeds ficticios, compatible MariaDB 10.6 y sin datos reales.
