@@ -10,8 +10,11 @@ declare(strict_types=1);
  *    sin token completo como campo separado; sin escritura/rotación.
  *  - 409 TOKEN_NOT_RECOVERABLE: token_cifrado ausente, envelope inválido,
  *    clave inválida, descifrado fallido.
- *  - 404 CERTIFICATE_NOT_FOUND: inexistente y no vigente.
+ *  - 404 CERTIFICATE_NOT_FOUND: inexistente, no vigente y vencido.
  *  - 400 VALIDATION_ERROR: id no numérico.
+ *  - 404 CERTIFICATE_NOT_FOUND: token expirado/futuro/revocado (estado='activo'
+ *    pero vigente_hasta < now / vigente_desde > now / revocado_en != null).
+ *  - 404 PDF_NOT_FOUND: certificado vigente + token válido pero PDF inexistente.
  *  - Privacidad: el DTO no contiene el token completo fuera de la URL.
  */
 
@@ -61,18 +64,30 @@ final class FakePdoForManual extends PDO
         return new FakeStmtForManual($query, $this);
     }
 
-    public function seedCert(int $id, string $estado, ?string $venceEn = '2027-12-31'): void
+    public function seedCert(int $id, string $estado, ?string $venceEn = '2027-12-31', ?string $revocadoEn = null, string $codigo = 'CERT-2026-DEMO'): void
     {
-        $this->certs[] = ['id' => $id, 'estado' => $estado, 'vence_en' => $venceEn];
+        $this->certs[] = [
+            'id' => $id,
+            'estado' => $estado,
+            'vence_en' => $venceEn,
+            'revocado_en' => $revocadoEn,
+            'codigo_certificado' => $codigo,
+        ];
     }
 
-    public function seedToken(int $certId, string $prefix, ?string $tokenCipher): void
+    /**
+     * @param array<string, mixed> $override Token fields override (estado, revocado_en, vigente_desde, vigente_hasta).
+     */
+    public function seedToken(int $certId, string $prefix, ?string $tokenCipher, array $override = []): void
     {
         $this->tokens[] = [
             'certificado_id' => $certId,
             'token_prefijo' => $prefix,
             'token_cifrado' => $tokenCipher,
-            'estado' => 'activo',
+            'estado' => $override['estado'] ?? 'activo',
+            'revocado_en' => $override['revocado_en'] ?? null,
+            'vigente_desde' => $override['vigente_desde'] ?? date('Y-m-d H:i:s', strtotime('-1 hour')),
+            'vigente_hasta' => $override['vigente_hasta'] ?? null,
         ];
     }
 
@@ -85,17 +100,41 @@ final class FakePdoForManual extends PDO
                 $tokenCipher = null;
                 $tokenPrefix = '';
                 foreach ($this->tokens as $tok) {
-                    if ((int) $tok['certificado_id'] === $id && $tok['estado'] === 'activo') {
-                        $tokenCipher = $tok['token_cifrado'];
-                        $tokenPrefix = (string) $tok['token_prefijo'];
-                        break;
+                    if ((int) $tok['certificado_id'] !== $id) {
+                        continue;
                     }
+                    // Replica los predicados del JOIN: estado='activo',
+                    // revocado_en IS NULL, vigente_desde <= now,
+                    // (vigente_hasta IS NULL OR vigente_hasta >= now).
+                    if (($tok['estado'] ?? '') !== 'activo') {
+                        continue;
+                    }
+                    if ($tok['revocado_en'] !== null) {
+                        continue;
+                    }
+                    $now = time();
+                    $desde = strtotime((string) ($tok['vigente_desde'] ?? 'now'));
+                    if ($desde !== false && $desde > $now) {
+                        continue;
+                    }
+                    $hasta = $tok['vigente_hasta'];
+                    if ($hasta !== null) {
+                        $hastaTs = strtotime((string) $hasta);
+                        if ($hastaTs !== false && $hastaTs < $now) {
+                            continue;
+                        }
+                    }
+                    $tokenCipher = $tok['token_cifrado'];
+                    $tokenPrefix = (string) $tok['token_prefijo'];
+                    break;
                 }
                 return [
                     'id' => $cert['id'],
                     'estado' => $cert['estado'],
                     'vence_en' => $cert['vence_en'],
                     'vence_en_vigente' => $vigente ? 1 : 0,
+                    'cert_revocado_en' => $cert['revocado_en'],
+                    'codigo_certificado' => $cert['codigo_certificado'],
                     'token_prefijo' => $tokenPrefix,
                     'token_cifrado' => $tokenCipher,
                 ];
@@ -158,7 +197,7 @@ final class FakeStmtForManual extends PDOStatement
 }
 
 // --- Helper: arma AdminCertificateService con reflection sobre el fake PDO ---
-function buildManualService(FakePdoForManual $pdo, string $cipherKey): AdminCertificateService
+function buildManualService(FakePdoForManual $pdo, string $cipherKey, ?string $pdfStoragePath = null): AdminCertificateService
 {
     $service = (new ReflectionClass(AdminCertificateService::class))->newInstanceWithoutConstructor();
     $props = [
@@ -166,6 +205,7 @@ function buildManualService(FakePdoForManual $pdo, string $cipherKey): AdminCert
         'requestId' => 'req_test_manual',
         'publicBaseUrl' => 'https://demo.example.edu.ar/certificados',
         'tokenCipherKey' => $cipherKey,
+        'pdfStoragePath' => $pdfStoragePath,
     ];
     foreach ($props as $name => $value) {
         $prop = new ReflectionProperty(AdminCertificateService::class, $name);
@@ -175,6 +215,22 @@ function buildManualService(FakePdoForManual $pdo, string $cipherKey): AdminCert
     $pdoProp->setValue($service, $pdo);
 
     return $service;
+}
+
+// Helper: crea un storage temporal con un PDF válido para un código dado.
+function seedPdfFile(string $codigo): string
+{
+    $dir = sys_get_temp_dir() . '/ifts14-manual-pdf-' . bin2hex(random_bytes(4));
+    if (!@mkdir($dir, 0700, true) && !is_dir($dir)) {
+        throw new RuntimeException('No se pudo crear storage temporal.');
+    }
+    $sanitized = preg_replace('/[^A-Za-z0-9_-]/', '_', $codigo) ?? $codigo;
+    $path = $dir . '/' . $sanitized . '.pdf';
+    if (file_put_contents($path, '%PDF-1.4 dummy content for test') === false) {
+        throw new RuntimeException('No se pudo escribir PDF temporal.');
+    }
+
+    return $dir;
 }
 
 // Clave de 32 bytes para los tests.
@@ -188,8 +244,9 @@ $pdo->seedCert(10, 'vigente', '2027-12-31');
 $demoToken = 'TOKEN_DEMO_ENTREGA_MANUAL_2026';
 $tokenCipher = TokenCipher::encrypt($demoToken, $validKey);
 $pdo->seedToken(10, 'PREV_PREFIX_', $tokenCipher);
+$pdfDir = seedPdfFile('CERT-2026-DEMO');
 
-$service = buildManualService($pdo, $validKey);
+$service = buildManualService($pdo, $validKey, $pdfDir);
 $dto = $service->entregaManual(10);
 
 if (($dto['certificadoId'] ?? null) !== 10) {
@@ -226,10 +283,11 @@ if (count($pdo->audits) !== 0) {
 // Escenario 2: 409 TOKEN_NOT_RECOVERABLE — token_cifrado ausente
 // =====================================================
 $pdo2 = new FakePdoForManual();
-$pdo2->seedCert(20, 'vigente', '2027-12-31');
+$pdo2->seedCert(20, 'vigente', '2027-12-31', null, 'CERT-2026-S20');
 $pdo2->seedToken(20, 'OLD_PREFIX_', null); // certificado viejo sin token_cifrado
+$pdfDir2 = seedPdfFile('CERT-2026-S20');
 
-$service2 = buildManualService($pdo2, $validKey);
+$service2 = buildManualService($pdo2, $validKey, $pdfDir2);
 $got409 = false;
 try {
     $service2->entregaManual(20);
@@ -244,10 +302,11 @@ if (!$got409) {
 // Escenario 3: 409 TOKEN_NOT_RECOVERABLE — envelope inválido
 // =====================================================
 $pdo3 = new FakePdoForManual();
-$pdo3->seedCert(30, 'vigente', '2027-12-31');
+$pdo3->seedCert(30, 'vigente', '2027-12-31', null, 'CERT-2026-S30');
 $pdo3->seedToken(30, 'BAD_PREFIX_', 'no-es-un-envelope-valido');
+$pdfDir3 = seedPdfFile('CERT-2026-S30');
 
-$service3 = buildManualService($pdo3, $validKey);
+$service3 = buildManualService($pdo3, $validKey, $pdfDir3);
 $got409Bad = false;
 try {
     $service3->entregaManual(30);
@@ -262,11 +321,12 @@ if (!$got409Bad) {
 // Escenario 4: 409 TOKEN_NOT_RECOVERABLE — clave inválida (descifrado fallido)
 // =====================================================
 $pdo4 = new FakePdoForManual();
-$pdo4->seedCert(40, 'vigente', '2027-12-31');
+$pdo4->seedCert(40, 'vigente', '2027-12-31', null, 'CERT-2026-S40');
 $pdo4->seedToken(40, 'KEY_PREFIX_', $tokenCipher); // cifrado con $validKey
+$pdfDir4 = seedPdfFile('CERT-2026-S40');
 
 $wrongKey = str_repeat('x', 32);
-$service4 = buildManualService($pdo4, $wrongKey);
+$service4 = buildManualService($pdo4, $wrongKey, $pdfDir4);
 $got409Key = false;
 try {
     $service4->entregaManual(40);
@@ -281,8 +341,9 @@ if (!$got409Key) {
 // Escenario 5: 409 TOKEN_NOT_RECOVERABLE — clave ausente (servicio sin key)
 // =====================================================
 $pdo5 = new FakePdoForManual();
-$pdo5->seedCert(50, 'vigente', '2027-12-31');
+$pdo5->seedCert(50, 'vigente', '2027-12-31', null, 'CERT-2026-S50');
 $pdo5->seedToken(50, 'NO_KEY_PREFIX_', $tokenCipher);
+$pdfDir5 = seedPdfFile('CERT-2026-S50');
 
 $serviceNoKey = (new ReflectionClass(AdminCertificateService::class))->newInstanceWithoutConstructor();
 $propsNoKey = [
@@ -290,6 +351,7 @@ $propsNoKey = [
     'requestId' => 'req_test',
     'publicBaseUrl' => 'https://demo.example.edu.ar/certificados',
     'tokenCipherKey' => null,
+    'pdfStoragePath' => $pdfDir5,
 ];
 foreach ($propsNoKey as $name => $value) {
     $prop = new ReflectionProperty(AdminCertificateService::class, $name);
@@ -358,9 +420,10 @@ if (!$got400) {
 // Escenario 9: 404 CERTIFICATE_NOT_FOUND — vigente pero vencido
 // =====================================================
 $pdo9 = new FakePdoForManual();
-$pdo9->seedCert(90, 'vigente', '2000-01-01');
+$pdo9->seedCert(90, 'vigente', '2000-01-01', null, 'CERT-2026-S90');
 $pdo9->seedToken(90, 'EXPIRED_PREFIX_', $tokenCipher);
-$service9 = buildManualService($pdo9, $validKey);
+$pdfDir9 = seedPdfFile('CERT-2026-S90');
+$service9 = buildManualService($pdo9, $validKey, $pdfDir9);
 $got404Expired = false;
 try {
     $service9->entregaManual(90);
@@ -370,6 +433,114 @@ try {
 if (!$got404Expired) {
     throw new RuntimeException('Certificado vencido no respondió 404.');
 }
+
+// =====================================================
+// Escenario 9b: 404 CERTIFICATE_NOT_FOUND — token expirado (vigente_hasta < now)
+//     Estado='activo' pero vigente_hasta ya pasó: el JOIN no lo trae, así que
+//     token_cifrado llega null y debe fallar 404 (no devolver link inválido).
+// =====================================================
+$pdo9b = new FakePdoForManual();
+$pdo9b->seedCert(91, 'vigente', '2027-12-31', null, 'CERT-2026-S91');
+$pdo9b->seedToken(91, 'EXPIRED_TOKEN_', $tokenCipher, [
+    'vigente_hasta' => date('Y-m-d H:i:s', strtotime('-1 hour')),
+]);
+$pdfDir9b = seedPdfFile('CERT-2026-S91');
+$service9b = buildManualService($pdo9b, $validKey, $pdfDir9b);
+$got404ExpiredToken = false;
+try {
+    $service9b->entregaManual(91);
+} catch (AdminCertificateException $e) {
+    $got404ExpiredToken = $e->status === 404 && $e->errorCode === 'CERTIFICATE_NOT_FOUND';
+}
+if (!$got404ExpiredToken) {
+    throw new RuntimeException('Token expirado (vigente_hasta pasada) no respondió 404 CERTIFICATE_NOT_FOUND.');
+}
+
+// =====================================================
+// Escenario 9c: 404 CERTIFICATE_NOT_FOUND — token futuro (vigente_desde > now)
+//     Estado='activo' pero vigente_desde aún no llegó: el JOIN no lo trae.
+// =====================================================
+$pdo9c = new FakePdoForManual();
+$pdo9c->seedCert(92, 'vigente', '2027-12-31', null, 'CERT-2026-S92');
+$pdo9c->seedToken(92, 'FUTURE_TOKEN_', $tokenCipher, [
+    'vigente_desde' => date('Y-m-d H:i:s', strtotime('+1 hour')),
+]);
+$pdfDir9c = seedPdfFile('CERT-2026-S92');
+$service9c = buildManualService($pdo9c, $validKey, $pdfDir9c);
+$got404FutureToken = false;
+try {
+    $service9c->entregaManual(92);
+} catch (AdminCertificateException $e) {
+    $got404FutureToken = $e->status === 404 && $e->errorCode === 'CERTIFICATE_NOT_FOUND';
+}
+if (!$got404FutureToken) {
+    throw new RuntimeException('Token futuro (vigente_desde > now) no respondió 404 CERTIFICATE_NOT_FOUND.');
+}
+
+// =====================================================
+// Escenario 9d: 404 CERTIFICATE_NOT_FOUND — token revocado (revocado_en != null)
+//     Estado='activo' pero revocado_en seteado: el JOIN no lo trae.
+// =====================================================
+$pdo9d = new FakePdoForManual();
+$pdo9d->seedCert(93, 'vigente', '2027-12-31', null, 'CERT-2026-S93');
+$pdo9d->seedToken(93, 'REVOKED_TOKEN_', $tokenCipher, [
+    'revocado_en' => date('Y-m-d H:i:s', strtotime('-10 minutes')),
+]);
+$pdfDir9d = seedPdfFile('CERT-2026-S93');
+$service9d = buildManualService($pdo9d, $validKey, $pdfDir9d);
+$got404RevokedToken = false;
+try {
+    $service9d->entregaManual(93);
+} catch (AdminCertificateException $e) {
+    $got404RevokedToken = $e->status === 404 && $e->errorCode === 'CERTIFICATE_NOT_FOUND';
+}
+if (!$got404RevokedToken) {
+    throw new RuntimeException('Token revocado (revocado_en != null) no respondió 404 CERTIFICATE_NOT_FOUND.');
+}
+
+// =====================================================
+// Escenario 9e: 404 CERTIFICATE_NOT_FOUND — token estado='revocado'
+//     El JOIN filtra estado='activo'; un token revocado no debe llegar.
+// =====================================================
+$pdo9e = new FakePdoForManual();
+$pdo9e->seedCert(94, 'vigente', '2027-12-31', null, 'CERT-2026-S94');
+$pdo9e->seedToken(94, 'STATE_REVOKED_', $tokenCipher, ['estado' => 'revocado']);
+$pdfDir9e = seedPdfFile('CERT-2026-S94');
+$service9e = buildManualService($pdo9e, $validKey, $pdfDir9e);
+$got404StateRevoked = false;
+try {
+    $service9e->entregaManual(94);
+} catch (AdminCertificateException $e) {
+    $got404StateRevoked = $e->status === 404 && $e->errorCode === 'CERTIFICATE_NOT_FOUND';
+}
+if (!$got404StateRevoked) {
+    throw new RuntimeException('Token con estado=revocado no respondió 404 CERTIFICATE_NOT_FOUND.');
+}
+
+// =====================================================
+// Escenario 9f: 404 PDF_NOT_FOUND — token válido pero PDF inexistente
+//     Certificado vigente + token válido + storage sin el PDF debe fallar
+//     seguro con 404 PDF_NOT_FOUND (mismo código que descarga), no 200.
+// =====================================================
+$pdo9f = new FakePdoForManual();
+$pdo9f->seedCert(95, 'vigente', '2027-12-31', null, 'CERT-2026-MISSING-PDF');
+$pdo9f->seedToken(95, 'VALID_TOKEN_', $tokenCipher);
+// Storage temporal vacío (sin el PDF del código).
+$emptyPdfDir = sys_get_temp_dir() . '/ifts14-manual-nopdf-' . bin2hex(random_bytes(4));
+if (!@mkdir($emptyPdfDir, 0700, true) && !is_dir($emptyPdfDir)) {
+    throw new RuntimeException('No se pudo crear storage vacío.');
+}
+$service9f = buildManualService($pdo9f, $validKey, $emptyPdfDir);
+$got404Pdf = false;
+try {
+    $service9f->entregaManual(95);
+} catch (AdminCertificateException $e) {
+    $got404Pdf = $e->status === 404 && $e->errorCode === 'PDF_NOT_FOUND';
+}
+if (!$got404Pdf) {
+    throw new RuntimeException('PDF inexistente no respondió 404 PDF_NOT_FOUND.');
+}
+@rmdir($emptyPdfDir);
 
 echo "OK EntregaManualTest\n";
 
