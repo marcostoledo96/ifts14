@@ -56,6 +56,18 @@ Guarda tokens verificables por QR sin conservar el valor público.
 
 Índices: único por `token_hash`, índice por `certificado_id`, índice por `estado`, índice por `vigente_hasta`.
 
+#### Estado operativo de la migración `002`
+
+La migración `database/migrations/002_token_cifrado_entrega_manual.sql` fue verificada estáticamente: agrega `token_cifrado VARBINARY(512) NULL` y documenta rollback manual. En esta sesión no hubo acceso DB aprobado sin secretos, por lo que la aplicación real queda como gate operativo:
+
+```sql
+-- después de backup aprobado por operador
+SOURCE database/migrations/002_token_cifrado_entrega_manual.sql;
+SHOW COLUMNS FROM cert_tokens_verificacion LIKE 'token_cifrado';
+```
+
+No dropear `token_cifrado` como rollback sin backup y aprobación: si se revierte el ciclo documental, preferir dejar la columna sin uso.
+
 ### `cert_eventos_auditoria`
 
 Registra eventos operativos sin exponer datos personales completos.

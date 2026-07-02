@@ -128,6 +128,17 @@ Si la clave falta, no decodifica a 32 bytes o el descifrado falla, el endpoint r
 3. No reactivar SMTP/PHPMailer sin un nuevo ciclo SDD.
 4. La columna `token_cifrado` puede quedar sin uso; no borrar datos cifrados.
 
+#### Gates operativos D0 previos al deploy
+
+Antes de declarar listo el deploy de entrega manual, el operador debe cerrar estos gates con evidencia real o dejarlos explícitamente pendientes:
+
+| Gate | Verificación esperada | Estado local del ciclo |
+|---|---|---|
+| Composer/vendor | `composer validate --strict` y `composer install --no-dev --no-interaction` desde `composer.lock`; si cPanel no tiene Composer, subir `vendor/` generado localmente como artefacto operativo, nunca versionado. | `composer.lock` actualizado; `vendor/` no se tocó. |
+| Migración `002` | Backup aprobado, aplicar `database/migrations/002_token_cifrado_entrega_manual.sql` y verificar `SHOW COLUMNS FROM cert_tokens_verificacion LIKE 'token_cifrado';`. | Sin DB aprobada en esta sesión; gate queda para operador. |
+| Smoke DB-backed | `GET /certificados/api/admin/certificados/<id_recuperable>/entrega-manual` debe responder `200`; `<id_legacy>` debe responder `409 TOKEN_NOT_RECOVERABLE`. Usar `X-Admin-Key` real solo fuera de Git y no pegarlo en evidencia. | Sin endpoint/config aprobados en esta sesión; gate queda para operador. |
+| `token_encryption_key` | Confirmar presencia externa y decode a 32 bytes sin imprimir el valor. | Sin configuración real aprobada en esta sesión; gate queda para operador. |
+
 ### Almacenamiento de PDFs de certificados
 
 `certificate_storage_path` es la ruta absoluta donde se persisten los PDFs generados durante la emisión administrativa. Cada PDF se guarda como `{certificateCode}.pdf` (ej. `CERT-2026-AB12CD34.pdf`); el nombre nunca incluye el token de verificación.

@@ -1,4 +1,7 @@
 {
+    "name": "ifts14/certificados-api",
+    "description": "Backend PHP API for the IFTS 14 certificates module.",
+    "license": "proprietary",
     "require": {
         "php": ">=8.4",
         "tecnickcom/tcpdf": "^6.8"
