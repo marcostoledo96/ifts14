@@ -38,11 +38,13 @@ El backend versiona `composer.lock` para fijar `tecnickcom/tcpdf`. `vendor/` est
 composer install --no-dev --no-interaction
 ```
 
-Regenerar el lock tras cambiar `composer.json`:
+Si el cambio en `composer.json` solo requiere refrescar metadata/content-hash del lock, sin agregar, quitar ni actualizar paquetes:
 
 ```bash
 docker run --rm --volume "$PWD/apps/backend-php:/app" --workdir /app composer:2 composer update --lock --no-install
 ```
+
+Para agregar, quitar o actualizar paquetes, usar un flujo explícito de Composer, por ejemplo `composer update <paquete> --no-dev --no-interaction`, y luego validar que `composer.lock` haya quedado coherente con el cambio.
 
 ## QA local
 

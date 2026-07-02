@@ -58,12 +58,13 @@ Guarda tokens verificables por QR sin conservar el valor público.
 
 #### Estado operativo de la migración `002`
 
-La migración `database/migrations/002_token_cifrado_entrega_manual.sql` fue verificada estáticamente: agrega `token_cifrado VARBINARY(512) NULL` y documenta rollback manual. En esta sesión no hubo acceso DB aprobado sin secretos, por lo que la aplicación real queda como gate operativo:
+La migración `database/migrations/002_token_cifrado_entrega_manual.sql` fue verificada estáticamente: agrega `token_cifrado VARBINARY(512) NULL` y documenta rollback manual. En esta sesión no hubo acceso DB aprobado sin secretos, por lo que la aplicación real queda como gate operativo.
 
-```sql
--- después de backup aprobado por operador
-SOURCE database/migrations/002_token_cifrado_entrega_manual.sql;
-SHOW COLUMNS FROM cert_tokens_verificacion LIKE 'token_cifrado';
+Para cPanel/phpMyAdmin, después de un backup aprobado, usar **Importar** o pegar únicamente el `ALTER TABLE` de la migración; no pegar comandos del cliente CLI. `SOURCE` pertenece al cliente CLI, no a SQL genérico para phpMyAdmin. Para ejecución local por terminal, aplicar el archivo con redirección del cliente MariaDB:
+
+```bash
+mariadb NOMBRE_DB < database/migrations/002_token_cifrado_entrega_manual.sql
+mariadb NOMBRE_DB -e "SHOW COLUMNS FROM cert_tokens_verificacion LIKE 'token_cifrado';"
 ```
 
 No dropear `token_cifrado` como rollback sin backup y aprobación: si se revierte el ciclo documental, preferir dejar la columna sin uso.
