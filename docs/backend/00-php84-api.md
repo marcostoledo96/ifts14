@@ -29,19 +29,19 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 | `GET` | `/certificados/api/health` | Estado técnico básico, sin abrir configuración ni PDO. |
 | `GET` | `/certificados/api/certificados/{token}/verificacion` | Valida token público por hash `SHA-256(token + token_pepper)` y devuelve DTO público mínimo. |
 | `POST` | `/certificados/api/certificados/consulta` | Lee JSON `{ "token": "..." }` y reutiliza la misma validación que el GET. |
-| `POST` | `/certificados/api/admin/certificados` | Emite certificado y token persistido; requiere `X-Admin-Key` y devuelve DTO seguro con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; sin DNI ni token completos como campos separados. |
+| `POST` | `/certificados/api/admin/certificados` | Emite certificado desde `alumnoId` + `cursoId` y asistencias activas; requiere `X-Admin-Key` y devuelve DTO seguro con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; sin DNI ni token completos como campos separados. |
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revoca certificado e invalida tokens activos; requiere `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/certificados/{id}/entrega-manual` | Entrega manual de solo lectura: devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para copia/descarga externa por Bedelía; sin email, sin rotación, sin escritura. |
 
 La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_` o `-`. Los casos inexistentes, revocados, vencidos o fuera de ventana responden `404 CERTIFICATE_NOT_FOUND` sin revelar la causa. Los endpoints públicos aplican rate limiting mínimo por origen y responden `429 RATE_LIMITED` al superar el umbral configurado.
 
-> **D0 DTO pendiente, no implementado.** El contrato vigente (`docs/backend/01-contrato-api-certificados.md`) define `documentNumber` (DNI completo) + `attendedDates` como DTO público D0, pero `CertificateValidator::verify()` actual todavía devuelve `student.documentMasked` y no incluye `attendedDates`. El DTO D0 es **objetivo/contrato pendiente** (split M4-01A/M4-01B), no estado actual. Hasta que el backend y el modelo se ajusten en un ciclo verificado, un operador podría creer que la base desplegada satisface D0 cuando no es así. No marcar como implementado hasta que el ciclo `backend-token-permanente-dni-fechas` lo confirme.
+Para certificados nuevos emitidos desde alumno+curso, `CertificateValidator::verify()` devuelve `student.documentNumber` y `course.attendedDates` desde `cert_alumnos.dni_cifrado` y `cert_certificado_fechas`. Los certificados legacy mantienen fallback con `student.documentMasked` y no inventan fechas asistidas.
 
 `token_pepper` es obligatorio en la configuración externa real y debe mantenerse fuera de Git. El ejemplo versionable usa valores ficticios solo para demo local.
 
 ### Gate operativo de entrega manual
 
-El endpoint `GET /certificados/api/admin/certificados/{id}/entrega-manual` requiere smoke DB-backed formal antes de cerrar el gate de deploy: un certificado recuperable debe responder `200` y un legacy sin `token_cifrado` debe responder `409 TOKEN_NOT_RECOVERABLE`. El smoke local ad-hoc en Docker realizado después del archive (2026-07-02) validó solo el happy path recuperable: emisión `201`, entrega manual `200`, validación backend `200` y descarga PDF. El gate SDD archive/operador sigue abierto hasta contar con evidencia redactada de staging/producción con configuración real aprobada, incluyendo el caso legacy `409`:
+El endpoint `GET /certificados/api/admin/certificados/{id}/entrega-manual` requiere smoke DB-backed formal antes de cerrar el gate de deploy: un certificado recuperable debe responder `200` y un legacy sin `token_cifrado` debe responder `409 TOKEN_NOT_RECOVERABLE`. El happy path recuperable local quedó versionado en `apps/backend-php/tests/HttpEmissionE2eTest.php`: emisión `201`, validación pública `200`, entrega manual `200` sin rotación y `/reenviar` `404`. El gate SDD archive/operador sigue abierto hasta contar con evidencia redactada de staging/producción con configuración real aprobada, incluyendo el caso legacy `409`:
 
 ```bash
 curl -sS -H "X-Admin-Key: <placeholder>" https://<host>/certificados/api/admin/certificados/<id_recuperable>/entrega-manual
@@ -64,8 +64,7 @@ Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, 
 - Confirmar generación de PDF/QR viable en el hosting.
 - La entrega manual reemplaza al reenvío por email: Bedelía copia el link público y descarga el PDF por canal externo. No hay SMTP/PHPMailer activos.
 - `token_cifrado` (AES-256-GCM, clave externa a Git) habilita reconstruir `publicValidationUrl` sin rotar token. Certificados previos sin `token_cifrado` responden `409 TOKEN_NOT_RECOVERABLE`; no se regeneran salvo decisión auditada explícita.
-- Ajustar `CertificateValidator` para devolver DNI completo (`documentNumber`) y fechas asistidas (`attendedDates`) según contrato D0.
-- Ajustar `CertificatePdfService` para incluir fechas asistidas y firmantes institucionales (Rector/a, Asesor/a Pedagógica).
+- Firmantes institucionales completos en PDF quedan pendientes de un ciclo específico si no se cargan desde configuración institucional.
 - Auth admin simple con `X-Admin-Key` queda temporal; login real es fase posterior.
 - **Rate limiting público**: implementado como protección básica de nodo único con JSON temporal y `flock()`. No reemplaza controles anti-abuso distribuidos.
 - **Auditoría fault-injection**: disponible en `apps/backend-php/tests/fault-injection-audit.php` para DB demo ficticia; restaura `cert_eventos_auditoria` en `finally`.

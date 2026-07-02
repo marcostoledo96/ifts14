@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/TokenCipher.php';
+require_once __DIR__ . '/DniCipher.php';
+
 if (!interface_exists('LoggerInterface')) {
     interface LoggerInterface
     {
@@ -33,44 +36,48 @@ final class AdminCertificateService
         private readonly ?string $publicBaseUrl = null,
         private readonly ?string $tokenCipherKey = null,
         private readonly ?string $pdfStoragePath = null,
+        private readonly ?string $dniCipherKey = null,
     ) {
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     public function emitir(array $payload): array
     {
+        $pdfPath = null;
+
         try {
             $data = $this->validatePayload($payload);
-        } catch (AdminCertificateException $exception) {
-            $this->safeAudit('emision', 'rechazado');
-            throw $exception;
-        }
+            $student = $this->loadActiveStudent($data['alumnoId']);
+            $course = $this->loadActiveCourse($data['cursoId']);
+            $attendedDates = $this->loadActiveAttendances($data['alumnoId'], $data['cursoId']);
+            $documentNumber = $this->decryptDocumentNumber($this->readLobAsString($student['dni_cifrado'] ?? null));
+            $documentHash = $this->hashDocument($documentNumber);
+            $documentMasked = $this->maskDocument($documentNumber);
 
-        $documentHash = $this->hashDocument($data['documentNumber']);
-        $documentMasked = $this->maskDocument($data['documentNumber']);
-        unset($data['documentNumber']);
+            $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+            $tokenHash = hash('sha256', $token . $this->tokenPepper, true);
+            $tokenPrefix = substr($token, 0, 12);
+            $tokenCipher = $this->encryptToken($token);
+            $code = 'CERT-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(4)));
 
-        $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
-        $tokenHash = hash('sha256', $token . $this->tokenPepper, true);
-        $tokenPrefix = substr($token, 0, 12);
-        $tokenCipher = $this->encryptToken($token);
-        $code = 'CERT-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(4)));
-
-        try {
             $this->pdo->beginTransaction();
             $statement = $this->pdo->prepare(<<<'SQL'
                 INSERT INTO cert_certificados (
-                  codigo_certificado, estado, alumno_nombre_mostrar, documento_hash,
+                  alumno_id, curso_id, codigo_certificado, estado, alumno_nombre_mostrar, documento_hash,
                   documento_enmascarado, curso_nombre, emitido_en, vence_en
-                ) VALUES (?, 'vigente', ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, 'vigente', ?, ?, ?, ?, ?, ?)
                 SQL);
-            $statement->bindValue(1, $code);
-            $statement->bindValue(2, $data['studentDisplayName']);
-            $statement->bindValue(3, $documentHash, PDO::PARAM_LOB);
-            $statement->bindValue(4, $documentMasked);
-            $statement->bindValue(5, $data['courseName']);
-            $statement->bindValue(6, $data['issuedAt']);
-            $statement->bindValue(7, $data['expiresAt']);
+            $statement->bindValue(1, $data['alumnoId'], PDO::PARAM_INT);
+            $statement->bindValue(2, $data['cursoId'], PDO::PARAM_INT);
+            $statement->bindValue(3, $code);
+            $statement->bindValue(4, (string) $student['apellido_nombre']);
+            $statement->bindValue(5, $documentHash, PDO::PARAM_LOB);
+            $statement->bindValue(6, $documentMasked);
+            $statement->bindValue(7, (string) $course['nombre']);
+            $statement->bindValue(8, $data['issuedAt']);
+            $data['expiresAt'] === null
+                ? $statement->bindValue(9, null, PDO::PARAM_NULL)
+                : $statement->bindValue(9, $data['expiresAt']);
             $statement->execute();
 
             $id = (int) $this->pdo->lastInsertId();
@@ -83,17 +90,36 @@ final class AdminCertificateService
             $statement->bindValue(2, $tokenHash, PDO::PARAM_LOB);
             $statement->bindValue(3, $tokenPrefix);
             $statement->bindValue(4, $tokenCipher, PDO::PARAM_LOB);
-            $statement->bindValue(5, $data['expiresAt'] === null ? null : $data['expiresAt'] . ' 23:59:59');
+            $data['expiresAt'] === null
+                ? $statement->bindValue(5, null, PDO::PARAM_NULL)
+                : $statement->bindValue(5, $data['expiresAt'] . ' 23:59:59');
             $statement->execute();
 
-            $pdfPath = $this->generatePdfWithinTransaction($code, $documentMasked, $data, $token);
+            $this->insertSnapshot($id, $attendedDates);
+            $pdfPath = $this->generatePdfWithinTransaction($code, $documentNumber, [
+                'studentDisplayName' => (string) $student['apellido_nombre'],
+                'courseName' => (string) $course['nombre'],
+                'issuedAt' => $data['issuedAt'],
+                'expiresAt' => $data['expiresAt'],
+                'attendedDates' => $attendedDates,
+            ], $token);
 
             $this->pdo->commit();
         } catch (AdminCertificateException $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            if (is_string($pdfPath) && is_file($pdfPath)) {
+                @unlink($pdfPath);
+            }
+            $this->safeAudit('emision', $exception->status >= 500 ? 'error' : 'rechazado');
             throw $exception;
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
+            }
+            if (is_string($pdfPath) && is_file($pdfPath)) {
+                @unlink($pdfPath);
             }
             $this->safeAudit('emision', 'error');
             throw $exception;
@@ -105,8 +131,8 @@ final class AdminCertificateService
             'id' => $id,
             'certificateCode' => $code,
             'status' => 'vigente',
-            'student' => ['displayName' => $data['studentDisplayName'], 'documentMasked' => $documentMasked],
-            'course' => ['name' => $data['courseName']],
+            'student' => ['displayName' => (string) $student['apellido_nombre'], 'documentMasked' => $documentMasked],
+            'course' => ['name' => (string) $course['nombre']],
             'issuedAt' => $data['issuedAt'],
             'expiresAt' => $data['expiresAt'],
             'tokenPrefix' => $tokenPrefix,
@@ -121,10 +147,10 @@ final class AdminCertificateService
      * emitido sin PDF. El token completo solo se usa acá para armar la URL del
      * QR y nunca se persiste ni se devuelve.
      *
-     * @param array<string, mixed> $data Datos validados (sin documentNumber).
+     * @param array<string, mixed> $data Datos visibles del certificado.
      * @throws RuntimeException Si el servicio PDF o el storage fallan.
      */
-    private function generatePdfWithinTransaction(string $code, string $documentMasked, array $data, string $token): string
+    private function generatePdfWithinTransaction(string $code, string $documentNumber, array $data, string $token): string
     {
         if ($this->pdfService === null || $this->publicBaseUrl === null) {
             throw new RuntimeException('Configuración PDF no disponible.');
@@ -134,10 +160,11 @@ final class AdminCertificateService
         $viewData = [
             'certificateCode' => $code,
             'studentDisplayName' => $data['studentDisplayName'],
-            'documentMasked' => $documentMasked,
+            'documentNumber' => $documentNumber,
             'courseName' => $data['courseName'],
             'issuedAt' => $data['issuedAt'],
             'expiresAt' => $data['expiresAt'] ?? '',
+            'attendedDates' => $data['attendedDates'] ?? [],
         ];
 
         $pdfPath = $this->pdfService->generate($code, $viewData, $validationUrl);
@@ -448,33 +475,123 @@ final class AdminCertificateService
         }
     }
 
-    /** @param array<string, mixed> $payload @return array{studentDisplayName:string,documentNumber:string,courseName:string,issuedAt:string,expiresAt:?string} */
+    /** @return array<string, mixed> */
+    private function loadActiveStudent(int $studentId): array
+    {
+        $statement = $this->pdo->prepare('SELECT id, apellido_nombre, dni_cifrado FROM cert_alumnos WHERE id = ? AND estado = \'activo\' LIMIT 1');
+        $statement->execute([$studentId]);
+        $row = $statement->fetch();
+
+        if (!is_array($row)) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        return $row;
+    }
+
+    /** @return array<string, mixed> */
+    private function loadActiveCourse(int $courseId): array
+    {
+        $statement = $this->pdo->prepare('SELECT id, nombre FROM cert_cursos WHERE id = ? AND estado = \'activo\' LIMIT 1');
+        $statement->execute([$courseId]);
+        $row = $statement->fetch();
+
+        if (!is_array($row)) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        return $row;
+    }
+
+    /** @return list<array{curso_fecha_id:int,fecha:string,descripcion:?string,orden:int}> */
+    private function loadActiveAttendances(int $studentId, int $courseId): array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT cf.id AS curso_fecha_id, cf.fecha, cf.descripcion, cf.orden
+            FROM cert_asistencias a
+            JOIN cert_curso_fechas cf ON cf.id = a.curso_fecha_id
+            WHERE a.alumno_id = ?
+              AND cf.curso_id = ?
+              AND a.eliminado_en IS NULL
+              AND cf.estado IN ('programada', 'realizada')
+            ORDER BY cf.orden, cf.fecha
+            SQL);
+        $statement->execute([$studentId, $courseId]);
+
+        $rows = [];
+        while (($row = $statement->fetch()) !== false) {
+            $rows[] = [
+                'curso_fecha_id' => (int) $row['curso_fecha_id'],
+                'fecha' => (string) $row['fecha'],
+                'descripcion' => is_string($row['descripcion'] ?? null) ? $row['descripcion'] : null,
+                'orden' => (int) $row['orden'],
+            ];
+        }
+
+        if ($rows === []) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        return $rows;
+    }
+
+    /** @param list<array{curso_fecha_id:int,fecha:string,descripcion:?string,orden:int}> $attendedDates */
+    private function insertSnapshot(int $certificateId, array $attendedDates): void
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            INSERT INTO cert_certificado_fechas (certificado_id, curso_fecha_id, fecha, descripcion, orden)
+            VALUES (?, ?, ?, ?, ?)
+            SQL);
+
+        foreach ($attendedDates as $date) {
+            $statement->execute([
+                $certificateId,
+                $date['curso_fecha_id'],
+                $date['fecha'],
+                $date['descripcion'],
+                $date['orden'],
+            ]);
+        }
+    }
+
+    private function decryptDocumentNumber(?string $dniCipher): string
+    {
+        if ($this->dniCipherKey === null || strlen($this->dniCipherKey) !== 32 || !DniCipher::envelopeLooksValid($dniCipher)) {
+            throw new AdminCertificateException(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.');
+        }
+
+        try {
+            return DniCipher::decrypt($dniCipher, $this->dniCipherKey);
+        } catch (RuntimeException) {
+            throw new AdminCertificateException(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.');
+        }
+    }
+
+    /** @param array<string, mixed> $payload @return array{alumnoId:int,cursoId:int,issuedAt:string,expiresAt:?string} */
     private function validatePayload(array $payload): array
     {
-        $student = $this->requiredString($payload, 'studentDisplayName', 160);
-        $document = $this->requiredString($payload, 'documentNumber', 20);
-        $course = $this->requiredString($payload, 'courseName', 180);
+        $studentId = $this->requiredPositiveInt($payload['alumnoId'] ?? null);
+        $courseId = $this->requiredPositiveInt($payload['cursoId'] ?? null);
         $issuedAt = $this->dateString($payload['issuedAt'] ?? null);
         $expiresAt = isset($payload['expiresAt']) && $payload['expiresAt'] !== '' ? $this->dateString($payload['expiresAt']) : null;
 
         $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
 
-        if (preg_match('/\A\d{6,12}\z/', $document) !== 1 || ($expiresAt !== null && ($expiresAt < $issuedAt || $expiresAt < $today))) {
+        if ($expiresAt !== null && ($expiresAt < $issuedAt || $expiresAt < $today)) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
 
-        return ['studentDisplayName' => $student, 'documentNumber' => $document, 'courseName' => $course, 'issuedAt' => $issuedAt, 'expiresAt' => $expiresAt];
+        return ['alumnoId' => $studentId, 'cursoId' => $courseId, 'issuedAt' => $issuedAt, 'expiresAt' => $expiresAt];
     }
 
-    /** @param array<string, mixed> $payload */
-    private function requiredString(array $payload, string $key, int $max): string
+    private function requiredPositiveInt(mixed $value): int
     {
-        $value = $payload[$key] ?? null;
-        if (!is_string($value) || trim($value) === '' || mb_strlen(trim($value)) > $max) {
+        $int = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if (!is_int($int)) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
 
-        return trim($value);
+        return $int;
     }
 
     private function dateString(mixed $value): string

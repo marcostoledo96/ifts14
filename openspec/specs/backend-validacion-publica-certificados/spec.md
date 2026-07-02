@@ -38,14 +38,28 @@ El sistema MUST validar formato de token, calcular `SHA-256(token + token_pepper
 
 ### Requirement: Respuesta pública segura
 
-El sistema MUST devolver solo autenticidad, estado, código, nombre visible, DNI completo (visible por decisión institucional aprobada), curso, fecha de emisión, fechas asistidas del curso y `requestId`; MUST NOT exponer token completo, SQL, rutas internas ni configuración. Los logs, auditoría, errores y respuestas administrativas MUST NOT incluir el DNI completo ni el token completo.
+El sistema MUST devolver solo autenticidad, estado, código, nombre visible, DNI completo aprobado, curso, fecha de emisión, fechas asistidas del snapshot y `requestId`; MUST NOT exponer token completo, SQL, rutas internas ni configuración. Para certificados nuevos con `alumno_id`, `curso_id` y snapshot, el DNI completo MUST obtenerse desde `cert_alumnos.dni_cifrado` con clave externa y `attendedDates` MUST obtenerse de `cert_certificado_fechas`. Para certificados legacy sin FKs/snapshot, el sistema MUST conservar compatibilidad con datos heredados disponibles y MUST NOT inventar fechas. Logs, auditoría, errores y respuestas administrativas MUST NOT incluir DNI completo ni token completo.
 
-#### Scenario: DTO válido mínimo
+#### Scenario: DTO válido desde snapshot
 
-- **Given** un certificado verificable
-- **When** la API responde `200`
-- **Then** `data.valid` MUST ser `true` y el DTO público MUST incluir el DNI completo visible por decisión institucional, junto con las fechas asistidas del curso.
-- **And** MUST NOT exponer token completo, `documento_hash`, `token_hash`, SQL ni rutas internas.
+- DADO un certificado verificable emitido desde asistencias
+- CUANDO la API responde `200`
+- ENTONCES `data.valid` MUST ser `true` e incluir DNI completo aprobado y fechas asistidas desde snapshot.
+- AND MUST NOT exponer token completo, hashes, SQL ni rutas internas.
+
+#### Scenario: Certificado legacy sin snapshot
+
+- DADO un certificado verificable anterior sin FKs ni snapshot
+- CUANDO la API responde `200`
+- ENTONCES MUST conservar los datos heredados disponibles.
+- AND MUST NOT recalcular ni inventar `attendedDates`.
+
+#### Scenario: Descifrado de DNI falla cerrado
+
+- DADO un certificado nuevo que requiere DNI cifrado
+- CUANDO falta la clave externa o el descifrado falla
+- ENTONCES la API MUST responder error seguro o no verificable según política vigente.
+- AND MUST NOT exponer DNI cifrado, clave, SQL ni rutas internas.
 
 ### Requirement: No verificable unificado
 
@@ -88,3 +102,19 @@ El ejemplo versionable MUST incluir `token_pepper`; la configuración real MUST 
 - **Given** actividad pública de validación con IP, token y posible DNI asociado al certificado
 - **When** se guarda el estado del rate limiter
 - **Then** MUST NOT persistirse IP cruda, token completo ni DNI.
+
+### Requirement: Inmutabilidad de validación pública
+
+La validación pública MUST usar el snapshot de `cert_certificado_fechas` como evidencia histórica y MUST NOT recalcular asistencias vivas al validar.
+
+#### Scenario: Asistencia modificada después de emisión
+
+- DADO un certificado emitido con snapshot
+- CUANDO una asistencia viva se elimina o cambia después
+- ENTONCES la validación pública MUST seguir mostrando las fechas materializadas originales.
+
+#### Scenario: Fecha de curso modificada después de emisión
+
+- DADO un certificado emitido con descripción y orden materializados
+- CUANDO cambia la fecha viva del curso
+- ENTONCES la validación pública MUST usar fecha, descripción y orden del snapshot.
