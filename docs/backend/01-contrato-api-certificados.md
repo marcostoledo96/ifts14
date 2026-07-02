@@ -92,19 +92,18 @@ Headers:
 |---|---|
 | `X-Admin-Key` | Requerido. Se compara contra configuración externa con `hash_equals()`. Si la clave configurada falta, está vacía o mide menos de 16 caracteres, si falta el header o si el valor no coincide, responde `401 UNAUTHORIZED` sin revelar causa. |
 
-Request demo mínimo:
+Request mínimo:
 
 ```json
 {
-  "studentDisplayName": "Persona Demo",
-  "documentNumber": "00000000",
-  "courseName": "Curso Demo",
+  "alumnoId": 1,
+  "cursoId": 2,
   "issuedAt": "2026-06-26",
   "expiresAt": "2026-12-31"
 }
 ```
 
-> El request puede recibir `documentNumber` completo (DNI) si la emisión lo necesita para generar el certificado. La respuesta `201` NO debe devolverlo: por D0, el DNI completo solo se expone en el DTO público de validación. Logs, auditoría, errores y respuestas administrativas no incluyen DNI completo.
+La emisión toma alumno, curso y asistencias activas existentes. El DNI completo se descifra desde `cert_alumnos.dni_cifrado` solo para PDF/validación pública. La respuesta `201` NO lo devuelve: por D0, el DNI completo solo se expone en el DTO público de validación. Logs, auditoría, errores y respuestas administrativas no incluyen DNI completo.
 
 Respuesta `201`:
 
@@ -134,6 +133,8 @@ Respuesta `201`:
 ```
 
 La emisión no devuelve DNI completo ni token completo como campo separado. El campo `documentMasked` (enmascarado) en la respuesta administrativa es el único dato de documento permitido; el DNI completo queda reservado para el DTO público de validación (decisión D0). `publicValidationUrl` es el único link público previsto y contiene el token permanente; `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. `tokenPrefix` es ayuda operativa segura. El token se persiste como `token_hash` (verificación), `token_prefijo` (soporte) y `token_cifrado` (recuperable, AES-256-GCM con clave externa a Git). Si la generación o persistencia del PDF falla, o si el cifrado del token falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional, fail closed).
+
+La emisión persiste `alumno_id`, `curso_id` y snapshot en `cert_certificado_fechas`. Si no hay asistencias activas (`cert_asistencias.eliminado_en IS NULL` y fecha de curso `programada|realizada`), responde `400 VALIDATION_ERROR` sin persistir certificado, token, PDF ni snapshot.
 
 ### `POST /admin/certificados/{id}/revocar`
 

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/TokenCipher.php';
+require_once __DIR__ . '/DniCipher.php';
 
 final class Config
 {
@@ -92,6 +93,26 @@ final class Config
 
         $key = TokenCipher::key($encoded);
         $config['token_encryption_key'] = $encoded;
+
+        return [$config, $key];
+    }
+
+    /**
+     * Valida y normaliza la clave de cifrado de DNI. Misma regla que tokens:
+     * clave externa a Git, base64/base64url, 32 bytes exactos.
+     *
+     * @param array<string, mixed> $config
+     * @return array{0:array<string,mixed>,1:string}
+     */
+    public static function requireDniCipherKey(array $config): array
+    {
+        $encoded = $config['dni_cipher_key'] ?? null;
+        if (!is_string($encoded) || trim($encoded) === '') {
+            throw new RuntimeException('Configuration invalid.');
+        }
+
+        $key = DniCipher::key($encoded);
+        $config['dni_cipher_key'] = $encoded;
 
         return [$config, $key];
     }

@@ -94,3 +94,12 @@ Antes de responder “listo”, guardar resumen de sesión con Engram:
 ```txt
 mem_session_summary: objetivo, descubrimientos, realizado, próximos pasos y archivos relevantes.
 ```
+
+## Claves externas obligatorias del backend
+
+No registrar ni pegar valores reales. Para el ciclo de emisión desde asistencias, la configuración externa debe incluir:
+
+| Clave | Uso | Regla |
+|---|---|---|
+| `token_encryption_key` | Recuperar el token permanente para entrega manual y PDF. | Base64/base64url de 32 bytes, fuera de Git. |
+| `dni_cipher_key` | Descifrar `cert_alumnos.dni_cifrado` para PDF y validación pública. | Base64/base64url de 32 bytes, fuera de Git. |

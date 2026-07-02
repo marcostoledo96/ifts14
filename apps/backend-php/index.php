@@ -109,12 +109,17 @@ if ($path === '/admin/certificados') {
         return;
     }
 
+    $dniCipherKey = loadDniCipherKey($config, $requestId);
+    if ($dniCipherKey === null) {
+        return;
+    }
+
     $body = readJsonBody($requestId);
     if ($body === null) {
         return;
     }
 
-    respondToAdmin(static function () use ($config, $requestId, $body, $tokenCipherKey): array {
+    respondToAdmin(static function () use ($config, $requestId, $body, $tokenCipherKey, $dniCipherKey): array {
         $service = new AdminCertificateService(
             Database::pdo($config),
             (string) $config['token_pepper'],
@@ -124,6 +129,8 @@ if ($path === '/admin/certificados') {
             new CertificatePdfService((string) $config['certificate_storage_path']),
             (string) $config['public_base_url'],
             $tokenCipherKey,
+            null,
+            $dniCipherKey,
         );
 
         return ['status' => 201, 'data' => $service->emitir($body)];
@@ -316,7 +323,7 @@ function allowPublicRequest(array $config, string $requestId): bool
 /** @param array<string, mixed> $config */
 function respondToValidation(string $token, string $requestId, array $config): void
 {
-    $validator = new CertificateValidator($config);
+    $validator = new CertificateValidator($config, loadDniCipherKeyOrNull($config));
     $result = $validator->verify($token, $requestId);
 
     if (isset($result['data'])) {
@@ -427,6 +434,29 @@ function loadTokenCipherKey(array $config, string $requestId): ?string
         return $key;
     } catch (RuntimeException) {
         Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return null;
+    }
+}
+
+/** @param array<string, mixed> $config */
+function loadDniCipherKey(array $config, string $requestId): ?string
+{
+    try {
+        [, $key] = Config::requireDniCipherKey($config);
+        return $key;
+    } catch (RuntimeException) {
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return null;
+    }
+}
+
+/** @param array<string, mixed> $config */
+function loadDniCipherKeyOrNull(array $config): ?string
+{
+    try {
+        [, $key] = Config::requireDniCipherKey($config);
+        return $key;
+    } catch (RuntimeException) {
         return null;
     }
 }

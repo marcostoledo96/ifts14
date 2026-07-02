@@ -34,6 +34,8 @@ Registra el certificado emitido y los datos mínimos necesarios para la respuest
 | `motivo_revocacion` | `VARCHAR(180) NULL` | Motivo interno breve, sin datos sensibles |
 | `created_at`, `updated_at` | `DATETIME` | Timestamps técnicos |
 
+Desde la migración `004_certificados_alumno_curso.sql`, los certificados nuevos pueden guardar también `alumno_id` y `curso_id` nullable con FKs a `cert_alumnos` y `cert_cursos`. Los certificados legacy conservan esos campos en `NULL` y se validan con los datos denormalizados disponibles.
+
 > **DNI completo: no migrado todavía.** La migración controlada `001_certificados_qr.sql` solo crea `documento_hash` y `documento_enmascarado`. El DTO público D0 exige DNI completo, pero **no existe columna `documento_completo` migrada**. Cualquier backend que siga el modelo actual no podría satisfacer el DTO D0. La columna `documento_completo` queda como **planificación futura** (ver "Tablas futuras" y el split `backend-contrato-token-permanente-dni-fechas` / `backend-token-permanente-dni-fechas`). No documentar `documento_completo` como columna actual de `cert_certificados` hasta que exista una migración controlada que la cree.
 
 Índices: único por `codigo_certificado`, índice por `estado`, índice por `emitido_en`.
@@ -87,6 +89,10 @@ La migración `database/migrations/003_cursos_alumnos_asistencias.sql` agrega el
 - `cert_asistencias` usa `asistencia_activa TINYINT AS (CASE WHEN eliminado_en IS NULL THEN 1 ELSE NULL END) STORED` y `UNIQUE(alumno_id, curso_fecha_id, asistencia_activa)`; MariaDB permite múltiples `NULL`, por eso se conserva historial eliminado y se impide una sola asistencia activa duplicada.
 - `cert_certificado_fechas` no recalcula desde fechas vivas: si una fecha del curso cambia después de emitir, el certificado conserva la copia materializada.
 - `cert_configuracion_institucional` es single-row para evitar una tabla KV innecesaria en el MVP.
+
+### M4-04 — Vínculo certificado-alumno-curso
+
+La migración `004_certificados_alumno_curso.sql` agrega `alumno_id` y `curso_id` nullable en `cert_certificados`, con índices y FKs `ON UPDATE CASCADE` / `ON DELETE RESTRICT`. Es aditiva, no modifica `003` y no requiere backfill: los certificados nuevos se emiten desde alumno+curso; los legacy siguen sin vínculos ni snapshot inventado.
 
 #### Verificación local ficticia
 

@@ -23,6 +23,7 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'public_base_url' => 'https://demo.example.edu.ar/certificados',
     'certificate_storage_path' => $tmpDir . '/pdf-storage',
     'token_encryption_key' => 'ZGVtby1rZXktMzItYnl0ZXMtZmljdGljaW8tMjAyNiE=',
+    'dni_cipher_key' => 'ZGVtby1rZXktMzItYnl0ZXMtZmljdGljaW8tMjAyNiE=',
 ], true) . ';');
 
 $port = random_int(18080, 18999);
