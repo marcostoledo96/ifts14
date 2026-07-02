@@ -39,7 +39,7 @@ Los prompts 11-22 no se implementan en Fase 1. Ya están derivados en `MATIAS_PR
 | 15 | Listado de certificaciones | F5 | Contrato de filtros, estados y paginación. |
 | 16 | Listado de alumnos | F5 | Definir datos visibles; DNI completo solo si spec lo exige en contexto privado/administrativo. |
 | 17 | Detalle de alumno administrativo | F5 | Spec previa de datos personales permitidos. |
-| 18 | Enviar/reenviar certificación | F5 | Contrato de envío aprobado. |
+| 18 | Entrega manual de certificación | F5 | MVP sin email: copiar link / descargar PDF. |
 | 19 | Revocar certificación | F6 | Spec de permisos, confirmación y efecto irreversible. |
 | 20 | Carga masiva placeholder | F6 | Alcance placeholder; sin importación real. |
 | 21 | Auditoría básica | F6 | Contrato de eventos y permisos. |

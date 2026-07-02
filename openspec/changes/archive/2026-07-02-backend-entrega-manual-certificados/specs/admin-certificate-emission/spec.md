@@ -1,14 +1,11 @@
-# Spec — admin-certificate-emission
+# Delta — admin-certificate-emission
 
-## Purpose
-
-Definir la emisión administrativa mínima de certificados QR con generación de PDF/QR: el endpoint `POST /certificados/api/admin/certificados` crea un certificado y un token de verificación permanente sobre el esquema `cert_` existente, sin migraciones nuevas, exige autorización administrativa, valida un payload mínimo ficticio/demo, persiste con PDO y prepared statements, genera y persiste el PDF/QR durante la emisión (antes del alta lógico) y responde con un DTO operativo seguro que NO expone el token completo; las respuestas operativas administrativas, logs y auditoría NO DEBEN exponer el DNI completo ni el token completo (salvo DTOs explícitamente públicos cuando la decisión institucional lo requiera), incluyendo `pdfDownloadUrl` para descarga administrativa del PDF. Esta spec separa explícitamente el acto de "token activo persistido + PDF emitido" (cubierto en este ciclo) de la "verificación pública del token recién emitido" (dependiente del mecanismo de entrega/reenvío, fuera de alcance).
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Emisión administrativa mínima de certificados
 
 La API DEBE exponer `POST /certificados/api/admin/certificados` para emitir un certificado y un token de verificación permanente usando el esquema `cert_` existente con la migración controlada necesaria para recuperar el token cifrado. El endpoint DEBE requerir autorización administrativa, validar un payload mínimo ficticio/demo, persistir con PDO y prepared statements, auditar la acción, generar el PDF/QR durante la emisión antes de confirmar el alta lógico y responder con un DTO operativo seguro. La emisión DEBE persistir `token_hash`, `token_prefijo` y `token_cifrado` o equivalente cifrado con clave externa a Git. Si se usa `token_cifrado`, DEBE guardarse como `v1.<iv_b64url>.<tag_b64url>.<ciphertext_b64url>` con IV de 12 bytes, tag GCM de 16 bytes y clave base64/base64url que decodifique exactamente 32 bytes; falta de clave, formato inválido o falla de cifrado/descifrado DEBE fallar cerrado sin confirmar la emisión. La respuesta `201` DEBE incluir `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; NO DEBE incluir el token completo como campo separado, DNI completo operativo, secretos, SQL ni rutas internas. La emisión NO DEBE enviar email ni depender de SMTP/PHPMailer. `X-Admin-Key` DEBE ser server-to-server: NO DEBE haber llamadas Angular directas que lo usen ni exponerse desde bundles Angular o almacenamiento del navegador. Si existe UI admin MVP, DEBE usar cPanel Basic Auth o sesión/proxy PHP `HttpOnly`; si Angular admin queda fuera de alcance, DEBEN existir checks/documentación que prueben que no se embebió la clave.
+(Previously: la emisión devolvía `pdfDownloadUrl` y dejaba la entrega/reenvío del token fuera del ciclo, sin `publicValidationUrl` ni `tokenPrefix`.)
 
 #### Scenario: Emisión exitosa con datos de entrega manual
 
@@ -67,6 +64,7 @@ La API DEBE exponer `POST /certificados/api/admin/certificados` para emitir un c
 ### Requirement: DTO de emisión ampliado con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`
 
 La respuesta `201` de `POST /certificados/api/admin/certificados` DEBE incluir `publicValidationUrl` para copiar el link permanente, `pdfDownloadUrl` para descargar el PDF administrativo y `tokenPrefix` para soporte seguro. Ningún campo DEBE exponer el token completo como valor separado ni permitir reconstruirlo fuera del link público previsto.
+(Previously: el DTO ampliado exigía únicamente `pdfDownloadUrl`.)
 
 #### Scenario: Respuesta operativa segura
 
@@ -82,20 +80,3 @@ La respuesta `201` de `POST /certificados/api/admin/certificados` DEBE incluir `
 - CUANDO se inspecciona el cuerpo JSON
 - ENTONCES NO DEBE aparecer el token completo como campo independiente.
 - Y `publicValidationUrl` DEBE ser el único link público previsto para entrega manual.
-
-### Requirement: Rechazo de JSON malformado en emisión
-
-El endpoint `POST /certificados/api/admin/certificados` MUST rechazar JSON malformado con `400 VALIDATION_ERROR` antes de emitir certificado, crear token, auditar acción de negocio o ejecutar cualquier persistencia.
-
-#### Scenario: Emisión con JSON malformado
-
-- **Given** un request autorizado a emisión con `Content-Type: application/json`
-- **When** el body JSON está malformado
-- **Then** la API MUST responder `400 VALIDATION_ERROR`.
-- **And** MUST NOT persistir certificado, token ni auditoría de emisión.
-
-#### Scenario: Emisión con JSON parseable
-
-- **Given** un request autorizado con JSON parseable
-- **When** el payload tiene campos requeridos ausentes o inválidos
-- **Then** la API MUST conservar `400 VALIDATION_ERROR` sin persistir certificado ni token.
