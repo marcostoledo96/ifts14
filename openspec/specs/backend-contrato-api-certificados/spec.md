@@ -136,32 +136,32 @@ El endpoint público de verificación MUST aplicar rate limiting mínimo y respo
 
 ### Requirement: Contrato administrativo mínimo de certificados
 
-La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión con generación PDF/QR sincrónica y respuesta `201` con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`, `POST /admin/certificados/{id}/revocar` para revocación, `GET /admin/certificados/{id}/pdf` para descarga del PDF persistido y `GET /admin/certificados/{id}/entrega-manual` para obtener datos de entrega manual. Entrega manual DEBE ser de solo lectura: NO DEBE rotar token, enviar email, activar SMTP/PHPMailer ni modificar estado de negocio del certificado/token. Las respuestas DEBEN usar envelopes existentes, DTOs seguros y errores sin DNI completo, token completo como campo separado, secretos, SQL ni rutas internas. `X-Admin-Key` es server-to-server: NO DEBE haber llamadas Angular directas que lo usen ni debe aparecer en bundle Angular, storage del navegador ni cookies legibles por JS; una UI admin MVP en navegador DEBE usar cPanel Basic Auth o sesión/proxy PHP `HttpOnly`. Si Angular admin queda fuera de alcance, DEBEN quedar checks/documentación que prueben que no se embebió la clave. El endpoint de descarga DEBE responder `Content-Type: application/pdf` y `Content-Disposition: attachment` ante autorización válida, `401 UNAUTHORIZED` sin autorización y `404 PDF_NOT_FOUND` si el PDF no existe. `POST /admin/certificados/{id}/reenviar` NO DEBE formar parte del contrato MVP.
+La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión desde `alumnoId` + `cursoId` con generación PDF/QR, snapshot de asistencias activas y respuesta `201` con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; `POST /admin/certificados/{id}/revocar`; `GET /admin/certificados/{id}/pdf`; y `GET /admin/certificados/{id}/entrega-manual`. Entrega manual DEBE ser de solo lectura: NO DEBE rotar token, enviar email, activar SMTP/PHPMailer ni modificar estado de negocio. Las respuestas DEBEN usar envelopes existentes, DTOs seguros y errores sin DNI completo, token completo como campo separado, secretos, SQL ni rutas internas. `X-Admin-Key` es server-to-server y NO DEBE exponerse en Angular. `POST /admin/certificados/{id}/reenviar` NO DEBE formar parte del contrato MVP.
 
 #### Scenario: Admin sin autorización
 
-- DADO un request a un endpoint administrativo sin `X-Admin-Key` válido
+- DADO un request administrativo sin `X-Admin-Key` válido
 - CUANDO la API procesa la solicitud
-- ENTONCES DEBE responder `401 UNAUTHORIZED` con sobre de error seguro.
+- ENTONCES DEBE responder `401 UNAUTHORIZED` con sobre seguro.
 
-#### Scenario: Emisión documentada con entrega manual
+#### Scenario: Emisión desde asistencias documentada
 
-- DADO un request autorizado con payload válido y configuración completa
+- DADO un request autorizado con `alumnoId` y `cursoId` válidos
 - CUANDO se invoca `POST /certificados/api/admin/certificados`
-- ENTONCES la API DEBE responder `201` con certificado emitido, PDF/QR generado, `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`.
-- Y NO DEBE incluir token completo como campo separado ni DNI completo en la respuesta operativa.
+- ENTONCES la API DEBE responder `201` con certificado emitido, PDF/QR generado, snapshot, `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`.
+- Y NO DEBE incluir token completo como campo separado ni DNI completo administrativo.
 
 #### Scenario: Descarga PDF documentada
 
-- DADO un request autorizado a `GET /certificados/api/admin/certificados/{id}/pdf` para un certificado con PDF persistido
-- CUANDO se invoca el endpoint
+- DADO un request autorizado para un certificado con PDF persistido
+- CUANDO se invoca `GET /certificados/api/admin/certificados/{id}/pdf`
 - ENTONCES el contrato DEBE indicar `200` con `Content-Type: application/pdf` y `Content-Disposition: attachment`.
 
 #### Scenario: Descarga PDF sin autorización documentada
 
 - DADO un request sin `X-Admin-Key` válido al endpoint de descarga PDF
 - CUANDO se invoca el endpoint
-- ENTONCES el contrato DEBE indicar `401 UNAUTHORIZED` con sobre de error seguro.
+- ENTONCES el contrato DEBE indicar `401 UNAUTHORIZED` con sobre seguro.
 
 #### Scenario: Descarga PDF inexistente documentada
 
@@ -180,7 +180,7 @@ La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` p
 - DADO un certificado existente con token recuperable y PDF persistido
 - CUANDO se invoca `GET /certificados/api/admin/certificados/{id}/entrega-manual`
 - ENTONCES la API DEBE responder `200` con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`.
-- Y NO DEBE rotar token, enviar email ni modificar el estado de negocio del certificado/token.
+- Y NO DEBE rotar token, enviar email ni modificar estado.
 
 #### Scenario: Reenvío removido
 
@@ -188,6 +188,23 @@ La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` p
 - CUANDO el MVP procesa la ruta
 - ENTONCES la API DEBE responder ruta inexistente o método no permitido con error seguro.
 - Y NO DEBE activar SMTP, PHPMailer ni transporte `stub`.
+
+### Requirement: DTO público desde snapshot certificado
+
+La validación pública DEBE devolver `documentNumber` y `attendedDates` desde alumno/snapshot cuando existan FKs y snapshot; para certificados legacy DEBE mantener fallback seguro sin romper el contrato disponible.
+
+#### Scenario: Certificado nuevo con snapshot
+
+- DADO un certificado emitido desde alumno, curso y asistencias
+- CUANDO se valida públicamente
+- ENTONCES el DTO DEBE incluir DNI completo aprobado y `attendedDates` del snapshot.
+
+#### Scenario: Certificado legacy sin snapshot
+
+- DADO un certificado anterior sin FKs ni `cert_certificado_fechas`
+- CUANDO se valida públicamente
+- ENTONCES la API DEBE responder con datos heredados disponibles o error seguro según estado.
+- Y NO DEBE recalcular ni inventar fechas asistidas.
 
 ### Requirement: Headers de seguridad en respuestas JSON
 

@@ -19,6 +19,8 @@ return [
     // Placeholder: generar fuera de Git, por ejemplo con:
     // php -r "echo base64_encode(random_bytes(32)), PHP_EOL;"
     'token_encryption_key' => 'REEMPLAZAR_CON_CLAVE_BASE64_DE_32_BYTES',
+    // Clave de cifrado de DNI (AES-256-GCM). Mismas reglas que token_encryption_key.
+    'dni_cipher_key' => 'REEMPLAZAR_CON_CLAVE_DNI_BASE64_DE_32_BYTES',
     // Placeholder: generar fuera de Git. No hardcodear esta clave en Angular.
     'admin_api_key' => 'REEMPLAZAR_CON_ADMIN_API_KEY_EXTERNA',
 ];

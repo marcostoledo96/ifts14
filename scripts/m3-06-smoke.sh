@@ -57,6 +57,7 @@ return [
     'db_user' => 'usuario_demo',
     'db_pass' => 'clave_demo_no_real',
     'token_pepper' => 'pepper_demo_ficticio_2026_no_usar',
+    'dni_cipher_key' => 'ZGVtby1rZXktMzItYnl0ZXMtZmljdGljaW8tMjAyNiE=',
 ];
 PHP
 
@@ -104,10 +105,13 @@ assert_200_dto() {
   php -r '
     $data = json_decode(file_get_contents($argv[1]), true);
     $dto = is_array($data) ? ($data["data"] ?? null) : null;
+    $student = is_array($dto) ? ($dto["student"] ?? null) : null;
+    $hasDocument = is_array($student) && (isset($student["documentMasked"]) || isset($student["documentNumber"]));
     $ok = is_array($dto)
       && ($dto["valid"] ?? null) === true
       && ($dto["status"] ?? null) === "vigente"
-      && isset($dto["certificateCode"], $dto["student"]["displayName"], $dto["student"]["documentMasked"], $dto["course"]["name"], $dto["course"]["issuedAt"], $dto["verifiedAt"], $data["meta"]["requestId"]);
+      && $hasDocument
+      && isset($dto["certificateCode"], $dto["student"]["displayName"], $dto["course"]["name"], $dto["course"]["issuedAt"], $dto["verifiedAt"], $data["meta"]["requestId"]);
     exit($ok ? 0 : 1);
   ' "$file"
 }

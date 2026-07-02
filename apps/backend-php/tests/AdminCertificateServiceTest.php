@@ -31,9 +31,8 @@ $twoDaysAgo = (new DateTimeImmutable('-2 days', new DateTimeZone('America/Argent
 
 try {
     $validate->invoke($service, [
-        'studentDisplayName' => 'Alumno Demo',
-        'documentNumber' => '12345678',
-        'courseName' => 'Curso Demo',
+        'alumnoId' => 1,
+        'cursoId' => 2,
         'issuedAt' => $twoDaysAgo,
         'expiresAt' => $yesterday,
     ]);
@@ -98,6 +97,15 @@ try {
         throw $exception;
     }
     // Esperado: sin pdfService la emisión debe abortar antes del commit.
+}
+
+$dniKey = str_repeat('d', 32);
+$dniEnvelope = DniCipher::encrypt('12345678', $dniKey);
+if (!DniCipher::envelopeLooksValid($dniEnvelope) || DniCipher::decrypt($dniEnvelope, $dniKey) !== '12345678') {
+    throw new RuntimeException('DniCipher no recupera el DNI cifrado.');
+}
+if (DniCipher::envelopeLooksValid('v1.invalid') !== false) {
+    throw new RuntimeException('DniCipher aceptó un envelope inválido.');
 }
 
 echo "OK AdminCertificateServiceTest\n";
