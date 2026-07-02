@@ -26,7 +26,7 @@ Los prompts anteriores de `docs/opencode/` quedan archivados en `docs/opencode/a
 |---|---|
 | Arquitectura | `docs/01-contexto-decisiones-stack.md`, `docs/02-arquitectura.md` |
 | Frontend | `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `docs/opencode/onboarding-matias-frontend.md` |
-| Backend | `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md` |
+| Backend | `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, `docs/backend/API.md` |
 | Base de datos | `database/AGENTS.md`, `docs/database/00-mariadb.md`, `docs/database/01-modelo-datos-certificados.md`, `database/README.md` |
 | Deploy | `deploy/AGENTS.md`, `docs/deploy/00-cpanel-certificados.md`, `deploy/README.md` |
 | Auditoría | `docs/auditoria/INDEX.md`, `docs/auditoria/00-inventario-material-descargado.md`, `docs/auditoria/01-auditoria-material-original.md`, `docs/auditoria/02-hallazgos-dumps-sql.md`, `docs/auditoria/IFTS14_ajuste_documentacion_planificacion_marcos_matias.md` |

@@ -25,8 +25,8 @@ final class CertificatePdfService
 
     /**
      * @param array<string, mixed> $viewData Datos visibles del certificado:
-     *   certificateCode, studentDisplayName, documentMasked, courseName,
-     *   issuedAt, expiresAt.
+     *   certificateCode, studentDisplayName, documentNumber, courseName,
+     *   issuedAt, expiresAt, attendedDates.
      * @param string $validationUrl URL pública absoluta apuntando a /validar/{token}.
      * @return string Ruta absoluta final del PDF persistido.
      * @throws RuntimeException Si la generación o el rename fallan.
@@ -59,10 +59,15 @@ final class CertificatePdfService
         $tcpdf->MultiCell(0, 8, (string) ($viewData['courseName'] ?? ''), 0, 'C');
 
         $tcpdf->setFont('helvetica', '', 11);
-        $tcpdf->MultiCell(0, 6, 'Documento: ' . (string) ($viewData['documentMasked'] ?? ''), 0, 'C');
+        $tcpdf->MultiCell(0, 6, 'Documento: ' . (string) ($viewData['documentNumber'] ?? ''), 0, 'C');
         $tcpdf->MultiCell(0, 6, 'Emitido el: ' . (string) ($viewData['issuedAt'] ?? ''), 0, 'C');
         if (isset($viewData['expiresAt']) && $viewData['expiresAt'] !== '') {
             $tcpdf->MultiCell(0, 6, 'Vence el: ' . (string) ($viewData['expiresAt'] ?? ''), 0, 'C');
+        }
+
+        $attendedDates = $this->attendedDatesText($viewData['attendedDates'] ?? []);
+        if ($attendedDates !== '') {
+            $tcpdf->MultiCell(0, 6, 'Fechas asistidas: ' . $attendedDates, 0, 'C');
         }
 
         $tcpdf->setFont('helvetica', '', 10);
@@ -113,5 +118,23 @@ final class CertificatePdfService
         $sanitized = preg_replace('/[^A-Za-z0-9_-]/', '_', $certificateCode) ?? $certificateCode;
 
         return rtrim($this->storagePath, '/') . '/' . $sanitized . '.pdf';
+    }
+
+    private function attendedDatesText(mixed $dates): string
+    {
+        if (!is_array($dates)) {
+            return '';
+        }
+
+        $values = [];
+        foreach ($dates as $date) {
+            if (is_array($date) && isset($date['fecha'])) {
+                $values[] = (string) $date['fecha'];
+            } elseif (is_string($date)) {
+                $values[] = $date;
+            }
+        }
+
+        return implode(', ', $values);
     }
 }
