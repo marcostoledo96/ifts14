@@ -37,35 +37,41 @@ El sistema DEBE almacenar tokens públicos como `token_hash` no reversible con p
 
 ### Requirement: Exposición pública definida y modelo D0 vs estado migrado
 
-El modelo MUST sostener el DTO público del contrato de API con DNI completo visible por decisión institucional y fechas asistidas del curso, sin exponer token completo, hashes, pepper, nombres de tablas ni datos internos. La migración actual `001_certificados_qr.sql` define el modelo verificado hoy (`documento_hash` + `documento_enmascarado`, sin `documento_completo`); el modelo D0 futuro agrega DNI completo visible en DTO público de validación y requiere almacenamiento seguro de DNI (`dni_hash` + `dni_cifrado` con clave externa a Git, más campo de visualización opcional o atajo MVP con riesgo aceptado). El modelo D0 es target, no estado migrado. Las tablas futuras para cursos, alumnos, asistencias y configuración institucional SHOULD usar prefijo `cert_` y migraciones controladas; la creación de esas tablas queda fuera del ciclo documental actual.
+El modelo MUST sostener el DTO público del contrato de API con DNI completo visible por decisión institucional y fechas asistidas del curso, sin exponer token completo, hashes, pepper, nombres de tablas ni datos internos. La migración `001_certificados_qr.sql` define el modelo base (`documento_hash` + `documento_enmascarado`, sin `documento_completo`). La migración `003_cursos_alumnos_asistencias.sql` MUST mover el modelo de cursos/asistencias desde planificación a contrato migrable mediante `cert_alumnos`, `cert_cursos`, `cert_curso_fechas`, `cert_asistencias`, `cert_certificado_fechas` y `cert_configuracion_institucional`. `cert_alumnos` MUST usar DNI seguro (`dni_hash` + `dni_cifrado` + `dni_mostrar` nullable), y `cert_certificado_fechas` MUST conservar snapshot con FK a `cert_curso_fechas` y campos materializados. Este cambio MUST NOT modificar runtime PHP, Angular, API, PDF, auth ni datos reales.
 
 #### Scenario: Certificado vigente
 
-- **Given** un certificado `vigente` con token `activo`
-- **When** se resuelva una verificación pública
-- **Then** la respuesta futura SHOULD usar código, estado, curso, fecha, DNI completo y fechas asistidas del curso.
-- **And** MUST NOT exponer `documento_hash`, `token_hash`, pepper ni datos internos.
+- DADO un certificado `vigente` con token `activo`
+- CUANDO se resuelva una verificación pública futura
+- ENTONCES la respuesta SHOULD usar código, estado, curso, fecha, DNI completo y fechas asistidas del curso.
+- Y MUST NOT exponer `documento_hash`, `token_hash`, pepper ni datos internos.
 
 #### Scenario: Estado migrado actual vs modelo D0 futuro
 
-- **Given** la migración `001_certificados_qr.sql` vigente
-- **When** se inspecciona el modelo actual
-- **Then** MUST distinguir que el modelo migrado usa `documento_hash` + `documento_enmascarado` (sin `documento_completo`).
-- **And** el modelo D0 futuro (no migrado) agrega DNI completo visible en DTO público con almacenamiento seguro (`dni_hash` + `dni_cifrado` o atajo MVP con riesgo aceptado).
+- DADO las migraciones `001` y `003`
+- CUANDO se inspecciona el modelo
+- ENTONCES `001` MUST conservar el certificado base con `documento_hash` + `documento_enmascarado`.
+- Y `003` MUST aportar alumnos/cursos/asistencias/snapshot sin cambiar el comportamiento PHP existente.
 
-#### Scenario: Tablas futuras documentadas
+#### Scenario: Tablas de cursos y asistencias migrables
 
-- **Given** la planificación de cursos, alumnos, asistencias y configuración institucional
-- **When** se documenten tablas futuras
-- **Then** SHOULD declararse como futuras, con prefijo `cert_` y sin migración en este ciclo.
+- DADO la planificación de cursos, alumnos, asistencias y configuración institucional
+- CUANDO se aplique el contrato de M4-02
+- ENTONCES esas tablas MUST quedar definidas con prefijo `cert_`, FKs e índices compatibles con MariaDB 10.6.
 
-#### Scenario: Asistencias por fila y snapshot de fechas diferido a M4-01A/M4-02
+#### Scenario: Asistencias por fila y snapshot de fechas
 
-- **Given** la planificación de tablas futuras de asistencias y fechas de curso
-- **When** se documente el modelo de asistencias
-- **Then** la presencia MUST representarse por existencia de fila (una fila por asistencia), sin booleano de presencia, con `UNIQUE` por alumno/fecha/curso.
-- **And** las fechas asistidas del curso MUST representarse como snapshot de fechas (no rango calculado en runtime).
-- **And** el diseño detallado de estas tablas queda explícitamente diferido a M4-01A (contrato) / M4-02.
+- DADO el modelo de asistencias y fechas de curso
+- CUANDO se registre presencia
+- ENTONCES la presencia MUST representarse por existencia de fila en `cert_asistencias`, sin booleano de ausente/presente.
+- Y las fechas certificadas MUST representarse como snapshot materializado, no como rango recalculado en runtime.
+
+#### Scenario: No cambios de producto ni datos reales
+
+- DADO este ciclo SDD
+- CUANDO se inspecciona el alcance
+- ENTONCES MUST limitarse a modelo SQL, specs y documentación.
+- Y MUST NOT incluir PHP, Angular, API, PDF, auth, deploy ni datos reales.
 
 ### Requirement: Persistencia de entrega con reutilización de tablas `cert_`
 
