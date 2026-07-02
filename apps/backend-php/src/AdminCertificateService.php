@@ -31,6 +31,7 @@ final class AdminCertificateService
         private readonly ?string $documentSalt = null,
         private readonly ?CertificatePdfService $pdfService = null,
         private readonly ?string $publicBaseUrl = null,
+        private readonly ?string $tokenCipherKey = null,
     ) {
     }
 
@@ -51,6 +52,7 @@ final class AdminCertificateService
         $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
         $tokenHash = hash('sha256', $token . $this->tokenPepper, true);
         $tokenPrefix = substr($token, 0, 12);
+        $tokenCipher = $this->encryptToken($token);
         $code = 'CERT-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(4)));
 
         try {
@@ -73,13 +75,14 @@ final class AdminCertificateService
             $id = (int) $this->pdo->lastInsertId();
             $statement = $this->pdo->prepare(<<<'SQL'
                 INSERT INTO cert_tokens_verificacion (
-                  certificado_id, token_hash, token_prefijo, estado, vigente_desde, vigente_hasta
-                ) VALUES (?, ?, ?, 'activo', CURRENT_TIMESTAMP, ?)
+                  certificado_id, token_hash, token_prefijo, token_cifrado, estado, vigente_desde, vigente_hasta
+                ) VALUES (?, ?, ?, ?, 'activo', CURRENT_TIMESTAMP, ?)
                 SQL);
             $statement->bindValue(1, $id, PDO::PARAM_INT);
             $statement->bindValue(2, $tokenHash, PDO::PARAM_LOB);
             $statement->bindValue(3, $tokenPrefix);
-            $statement->bindValue(4, $data['expiresAt'] === null ? null : $data['expiresAt'] . ' 23:59:59');
+            $statement->bindValue(4, $tokenCipher, PDO::PARAM_LOB);
+            $statement->bindValue(5, $data['expiresAt'] === null ? null : $data['expiresAt'] . ' 23:59:59');
             $statement->execute();
 
             $pdfPath = $this->generatePdfWithinTransaction($code, $documentMasked, $data, $token);
@@ -106,6 +109,7 @@ final class AdminCertificateService
             'issuedAt' => $data['issuedAt'],
             'expiresAt' => $data['expiresAt'],
             'tokenPrefix' => $tokenPrefix,
+            'publicValidationUrl' => $this->buildPublicValidationUrl($token),
             'pdfDownloadUrl' => $this->buildPdfDownloadUrl($id),
         ];
     }
@@ -195,143 +199,125 @@ final class AdminCertificateService
     }
 
     /**
-     * Reenvía el certificado por email: rota el token activo, envía el enlace
-     * público por el transporte indicado y audita. El token completo solo
-     * viaja dentro del email; nunca se persiste ni se devuelve.
+     * Entrega manual de un certificado: lectura sin side effects. Devuelve los
+     * datos para que Bedelía copie el link público y descargue el PDF por canal
+     * externo. NO rota token, NO envía email, NO modifica estado de certificado
+     * ni token. Descifra el token en memoria solo para reconstruir el link
+     * permanente; el token completo nunca se devuelve como campo separado.
      *
      * @param int|string $id Identificador del certificado.
-     * @param string $recipient Email del destinatario.
-     * @param EmailDeliveryTransport|null $transport Transporte de email. Si es null, se arma uno stub que responde 503.
-     * @return array<string, mixed> DTO de entrega sin token completo.
-     * @throws AdminCertificateException 400/404/503 con códigos seguros.
+     * @return array<string, mixed> DTO {certificadoId, publicValidationUrl, pdfDownloadUrl, tokenPrefix}.
+     * @throws AdminCertificateException 400/404/409 con códigos seguros.
      */
-    public function reenviar(int|string $id, string $recipient, ?EmailDeliveryTransport $transport = null): array
+    public function entregaManual(int|string $id): array
     {
         $certificateId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         if (!is_int($certificateId)) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
 
-        $recipient = trim($recipient);
-        if ($recipient === '' || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
-            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        // Lectura de certificado vigente + token activo. No abre transacción:
+        // el endpoint es de solo lectura y no requiere FOR UPDATE.
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT c.id, c.estado, c.vence_en,
+                   (c.vence_en IS NULL OR c.vence_en >= CURRENT_DATE) AS vence_en_vigente,
+                   t.token_prefijo, t.token_cifrado
+            FROM cert_certificados c
+            LEFT JOIN cert_tokens_verificacion t
+              ON t.certificado_id = c.id AND t.estado = 'activo'
+            WHERE c.id = ?
+            LIMIT 1
+            SQL);
+        $statement->execute([$certificateId]);
+        $row = $statement->fetch();
+
+        if ($row === false) {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
         }
 
-        $transport ??= new StubEmailDeliveryTransport();
-        try {
-            $transport->assertConfigured();
-        } catch (RuntimeException) {
-            throw new AdminCertificateException(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.');
+        $estado = (string) ($row['estado'] ?? '');
+        $venceEnVigente = (int) ($row['vence_en_vigente'] ?? 0) === 1;
+        if ($estado !== 'vigente' || !$venceEnVigente) {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
         }
 
-        $validationBaseUrl = $this->publicBaseUrl ?? '';
-        if ($validationBaseUrl === '') {
-            throw new AdminCertificateException(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.');
-        }
+        $tokenPrefix = is_string($row['token_prefijo']) ? $row['token_prefijo'] : '';
+        $tokenCipher = $this->readLobAsString($row['token_cifrado'] ?? null);
 
-        $now = new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires'));
-        $sentAtIso = $now->format('Y-m-d\TH:i:sP');
-        $destinatarioEnmascarado = $this->maskEmail($recipient);
-
-        $this->pdo->beginTransaction();
-        try {
-            // Lock del certificado para evitar concurrencia sobre la rotación.
-            $statement = $this->pdo->prepare(<<<'SQL'
-                SELECT id, estado, vence_en,
-                       (vence_en IS NULL OR vence_en >= CURRENT_DATE) AS vence_en_vigente
-                FROM cert_certificados
-                WHERE id = ?
-                LIMIT 1 FOR UPDATE
-                SQL);
-            $statement->execute([$certificateId]);
-            $certificate = $statement->fetch();
-
-            if ($certificate === false) {
-                $this->pdo->rollBack();
-                $this->safeAudit('reenvio', 'rechazado', ['certificado_id_consultado' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado]);
-                throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
-            }
-
-            $estado = (string) ($certificate['estado'] ?? '');
-            $venceEnVigente = (int) ($certificate['vence_en_vigente'] ?? 0) === 1;
-            if ($estado !== 'vigente' || !$venceEnVigente) {
-                $this->pdo->rollBack();
-                $this->safeAudit('reenvio', 'rechazado', ['certificado_id' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado]);
-                throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
-            }
-
-            // Rotación: revoca token activo anterior.
-            $statement = $this->pdo->prepare("UPDATE cert_tokens_verificacion SET estado = 'revocado', revocado_en = CURRENT_TIMESTAMP WHERE certificado_id = ? AND estado = 'activo' AND revocado_en IS NULL");
-            $statement->execute([$certificateId]);
-
-            // Emite token nuevo. Solo se persiste hash+prefijo; el token completo
-            // se usa únicamente para armar el enlace del email.
-            $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
-            $tokenHash = hash('sha256', $token . $this->tokenPepper, true);
-            $tokenPrefix = substr($token, 0, 12);
-
-            $venceEn = $certificate['vence_en'] ?? null;
-            $vigenteHasta = $venceEn === null ? null : ((string) $venceEn) . ' 23:59:59';
-
-            $statement = $this->pdo->prepare(<<<'SQL'
-                INSERT INTO cert_tokens_verificacion (
-                  certificado_id, token_hash, token_prefijo, estado, vigente_desde, vigente_hasta
-                ) VALUES (?, ?, ?, 'activo', CURRENT_TIMESTAMP, ?)
-                SQL);
-            $statement->bindValue(1, $certificateId, PDO::PARAM_INT);
-            $statement->bindValue(2, $tokenHash, PDO::PARAM_LOB);
-            $statement->bindValue(3, $tokenPrefix);
-            $statement->bindValue(4, $vigenteHasta);
-            $statement->execute();
-
-            // Envío dentro de la transacción: si falla, rollback + auditoría.
-            $validationUrl = rtrim($validationBaseUrl, '/') . '/validar/' . $token;
-            $transport->sendValidationLink($recipient, $validationUrl, [
-                'certificado_id' => $certificateId,
-            ]);
-
-            $this->pdo->commit();
-        } catch (AdminCertificateException $exception) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-            throw $exception;
-        } catch (Throwable $exception) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-            $this->safeAudit('reenvio', 'error', ['certificado_id' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado]);
-            // No exponemos detalles del fallo SMTP ni el token.
-            throw new AdminCertificateException(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.');
-        }
-
-        $this->safeAudit('reenvio', 'ok', ['certificado_id' => $certificateId, 'destinatario_enmascarado' => $destinatarioEnmascarado, 'token_hash_prefijo' => substr(hash('sha256', $token . $this->tokenPepper), 0, 16)]);
+        $token = $this->recoverToken($tokenCipher);
 
         return [
             'certificadoId' => $certificateId,
-            'enviadoEn' => $sentAtIso,
-            'destinatarioEnmascarado' => $destinatarioEnmascarado,
+            'publicValidationUrl' => $this->buildPublicValidationUrl($token),
+            'pdfDownloadUrl' => $this->buildPdfDownloadUrl($certificateId),
+            'tokenPrefix' => $tokenPrefix,
         ];
     }
 
-    /**
-     * Enmascara un email dejando solo el primer char del local part + `***` + dominio.
-     * Ej.: `persona@example.edu.ar` -> `p***a@example.edu.ar`.
-     */
-    private function maskEmail(string $email): string
+    private function buildPublicValidationUrl(string $token): string
     {
-        $at = strrpos($email, '@');
-        if ($at === false || $at === 0) {
-            return '***';
+        if ($this->publicBaseUrl === null || $this->publicBaseUrl === '' || $token === '') {
+            return '';
         }
 
-        $local = substr($email, 0, $at);
-        $domain = substr($email, $at);
+        return rtrim($this->publicBaseUrl, '/') . '/validar/' . $token;
+    }
 
-        $first = substr($local, 0, 1);
-        $last = $local === '' ? '' : substr($local, -1);
+    /**
+     * Cifra el token con AES-256-GCM. Fail closed si la clave falta o el
+     * cifrado falla: la emisión aborta antes del commit.
+     */
+    private function encryptToken(string $token): string
+    {
+        if ($this->tokenCipherKey === null || $this->tokenCipherKey === '' || strlen($this->tokenCipherKey) !== 32) {
+            throw new RuntimeException('Token cipher key invalid.');
+        }
 
-        return $first . '***' . $last . $domain;
+        return TokenCipher::encrypt($token, $this->tokenCipherKey);
+    }
+
+    /**
+     * Descifra el envelope y reconstruye el token en memoria. Fail closed con
+     * 409 TOKEN_NOT_RECOVERABLE ante clave ausente, envelope inválido, IV/tag
+     * incorrectos o descifrado fallido. No regenera token.
+     */
+    private function recoverToken(?string $tokenCipher): string
+    {
+        if ($this->tokenCipherKey === null || $this->tokenCipherKey === '' || strlen($this->tokenCipherKey) !== 32) {
+            throw new AdminCertificateException(409, 'TOKEN_NOT_RECOVERABLE', 'Token no recuperable.');
+        }
+
+        if (!TokenCipher::envelopeLooksValid($tokenCipher)) {
+            throw new AdminCertificateException(409, 'TOKEN_NOT_RECOVERABLE', 'Token no recuperable.');
+        }
+
+        try {
+            return TokenCipher::decrypt($tokenCipher, $this->tokenCipherKey);
+        } catch (RuntimeException) {
+            throw new AdminCertificateException(409, 'TOKEN_NOT_RECOVERABLE', 'Token no recuperable.');
+        }
+    }
+
+    /**
+     * Normaliza un LOB de PDO (stream o string) a string binaria segura.
+     * Algunos drivers devuelven token_cifrado como resource stream.
+     */
+    private function readLobAsString(mixed $lob): ?string
+    {
+        if ($lob === null) {
+            return null;
+        }
+
+        if (is_string($lob)) {
+            return $lob;
+        }
+
+        if (is_resource($lob)) {
+            $contents = stream_get_contents($lob);
+            return is_string($contents) ? $contents : null;
+        }
+
+        return null;
     }
 
     private function auditRejectedRevocation(int $certificateId): never
@@ -354,9 +340,9 @@ final class AdminCertificateService
     {
         try {
             $detallePartes = [];
-            if ($action === 'reenvio' && isset($meta['destinatario_enmascarado']) && is_string($meta['destinatario_enmascarado'])) {
-                $detallePartes[] = 'destinatarioEnmascarado=' . $meta['destinatario_enmascarado'];
-            }
+            // ponytail: la rama `reenvio` con destinatario_enmascarado se eliminó
+            // junto con el flujo de email. La entrega manual no audita evento
+            // operativo (spec: endpoint de solo lectura sin escritura de auditoría).
             if (isset($meta['certificado_id_consultado']) && is_int($meta['certificado_id_consultado'])) {
                 $detallePartes[] = 'certificadoConsultado=' . $meta['certificado_id_consultado'];
             }

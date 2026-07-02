@@ -31,7 +31,7 @@ Next.js/React con App Router, Tailwind y shadcn/ui. Se usa solo como referencia;
 
 ## Capturas disponibles
 
-`capturas/` contiene evidencia visual de las pantallas en desktop y mobile (375/390), incluyendo estados de carga, error, revocada, no encontrada, PDF, reenvío y flujos administrativos.
+`capturas/` contiene evidencia visual de las pantallas en desktop y mobile (375/390), incluyendo estados de carga, error, revocada, no encontrada, PDF, entrega manual y flujos administrativos.
 
 ## Rutas conceptuales cubiertas
 
@@ -53,7 +53,7 @@ Next.js/React con App Router, Tailwind y shadcn/ui. Se usa solo como referencia;
 
 | Decisión D0 | Estado en v0 | Observación |
 |---|---|---|
-| QR/token permanente | Pendiente de validar en cada pantalla de reenvío | Las pantallas de reenvío deben decir "mismo QR"; si v0 muestra rotación, no portar ese comportamiento. |
+| QR/token permanente | Pendiente de validar en cada pantalla de entrega manual | Las pantallas de entrega manual deben decir "mismo QR"; si v0 muestra rotación o reenvío por email, no portar esos comportamientos. La entrega es manual: copiar link / descargar PDF. |
 | DNI completo en validación pública | Pendiente de validar | `folio-certificado.tsx` debe mostrar DNI completo; si v0 lo enmascara, prevalece la decisión D0. |
 | Certificado de curso con fechas asistidas | Pendiente de validar | El folio y el PDF deben mostrar fechas asistidas del curso. |
 | Auth admin simple temporal | Mock visual en `login-form.tsx` | No portar credenciales demo; el producto usa `X-Admin-Key`. |
@@ -64,9 +64,10 @@ Next.js/React con App Router, Tailwind y shadcn/ui. Se usa solo como referencia;
 - Componentes React/Next, hooks, App Router, JSX.
 - Tokens de Tailwind/shadcn sin convertir a criterios visuales Angular.
 - Credenciales demo de `login-form.tsx`.
-- Comportamiento de rotación de QR si aparece en pantallas de reenvío.
+- Comportamiento de rotación de QR si aparece en pantallas de entrega manual.
+- Reenvío por email, SMTP o PHPMailer: no existen en el MVP. La entrega es manual (copiar link / descargar PDF).
 - DNI enmascarado si aparece en validación pública (prevalece D0: DNI completo).
 
 ## Pantallas pendientes
 
-Las pantallas de prompts 18-22 (reenvío, revocación, carga masiva, auditoría, configuración institucional) no tienen referencia v0 dedicada todavía o se cubren parcialmente en componentes admin existentes. Ver `MATIAS_PROMPTS_SDD_FASE2.md` para la planificación de F4-F6.
+Las pantallas de prompts 18-22 (entrega manual, revocación, carga masiva, auditoría, configuración institucional) no tienen referencia v0 dedicada todavía o se cubren parcialmente en componentes admin existentes. Ver `MATIAS_PROMPTS_SDD_FASE2.md` para la planificación de F4-F6.

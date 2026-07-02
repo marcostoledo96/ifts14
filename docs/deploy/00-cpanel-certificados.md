@@ -16,9 +16,10 @@ Este ciclo SDD **no ejecuta la subida**, no toca `public_html`, no crea `.env`, 
 |---|---|
 | Staging | `/certificados_staging/` separado de producción `/certificados/`. Ver `docs/deploy/01-staging-cpanel-certificados.md`. |
 | Composer/vendor | Gate: si Composer no está disponible en cPanel, generar `vendor/` localmente y subir como artefacto operativo. Nunca versionar `vendor/`. |
-| SMTP | Cuenta de prueba / `stub`. Producción queda gated hasta aprobación. |
+| SMTP/Email | Sin flujo de email en el MVP. SMTP/PHPMailer fueron removidos. La entrega es manual: Bedelía copia link y descarga PDF. |
 | Auth admin | `X-Admin-Key` temporal. Login real es fase posterior. |
-| Token/QR | Permanente. El reenvío normal no rota token. |
+| Token/QR | Permanente. La entrega manual no rota token. `token_cifrado` (AES-256-GCM, clave externa) habilita recuperación. |
+| Clave de cifrado | `token_encryption_key` se inyecta por config externa a Git; debe decodificar (base64/base64url) a 32 bytes exactos. Su pérdida vuelve los certificados existentes no recuperables (`409`). |
 
 ### Checklist Composer en cPanel
 
@@ -93,13 +94,13 @@ public_html/certificados/api/
 
 La configuración real debe quedar fuera del repositorio y preferentemente fuera del webroot. Para validar certificados, el archivo externo debe devolver un array PHP con las claves reales esperadas por `Config::load()`: `db_host`, `db_name`, `db_user`, `db_pass`, `token_pepper`, `public_base_url` y `certificate_storage_path`; la guía no debe registrar valores reales. Tomar como referencia de estructura el ejemplo versionable `apps/backend-php/config/certificados-config.example.php`, reemplazando sus valores ficticios fuera de Git. Sin `token_pepper`, `public_base_url` o `certificate_storage_path`, `Config::load()` debe fallar de forma segura con error genérico y la API no debe exponer stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable y contra un config ficticio bajo `/tmp`; la configuración productiva permanece fuera de Git.
 
-### Entrega por email (reenvío administrativo)
+### Entrega manual (reemplaza al reenvío por email)
 
-El endpoint `POST /admin/certificados/{id}/reenviar` entrega el certificado por email mediante un enlace público de validación. El transporte es configurable y desacoplado: modo `stub` (default, no envía real) y modo `smtp` (PHPMailer con credenciales externas).
+El endpoint `GET /admin/certificados/{id}/entrega-manual` entrega el certificado de forma manual: Bedelía copia el link público (`publicValidationUrl`) y descarga el PDF (`pdfDownloadUrl`) por canal externo. No hay email, SMTP, PHPMailer ni transporte `stub|smtp` en el MVP. El endpoint es de solo lectura: no rota token, no modifica estado, no inserta auditoría operativa. El token se descifra en memoria con `token_cifrado` (AES-256-GCM) y clave externa.
 
 #### Dependencias Composer
 
-El backend versiona `apps/backend-php/composer.lock` para fijar `tecnickcom/tcpdf` y `phpmailer/phpmailer`. La carpeta `vendor/` permanece ignorada por Git y se regenera en deploy con:
+El backend versiona `apps/backend-php/composer.lock` para fijar `tecnickcom/tcpdf`. `phpmailer/phpmailer` fue removido: no hay flujo de email. La carpeta `vendor/` permanece ignorada por Git y se regenera en deploy con:
 
 ```bash
 composer install --no-dev --no-interaction
@@ -107,30 +108,25 @@ composer install --no-dev --no-interaction
 
 No subir `vendor/` al repo; subir el `composer.lock` versionado y ejecutar `composer install` en el servidor (o subir `vendor/` generado localmente solo si el hosting no dispone de Composer, dejando constancia operativa).
 
-#### Configuración SMTP externa
+#### Clave de cifrado de tokens (externa a Git)
 
-Las credenciales SMTP viven en el archivo de configuración externo (nunca en Git). Claves:
+La clave `token_encryption_key` vive en el archivo de configuración externo (nunca en Git). Reglas:
 
 | Clave | Uso |
 |---|---|
-| `delivery_transport` | `stub` (default seguro) o `smtp`. |
-| `smtp_host` | Host SMTP. Exigido en modo `smtp`. |
-| `smtp_port` | Puerto SMTP (1-65535). Exigido en modo `smtp`. |
-| `smtp_username` | Usuario SMTP. Exigido en modo `smtp`. |
-| `smtp_password` | Contraseña SMTP. Exigida en modo `smtp`. |
-| `smtp_secure` | `tls` (default) o `ssl`. Vacío o cualquier otro valor se rechaza (riesgo de credenciales en claro). |
-| `mail_from` | Remitente. Exigido en modo `smtp`. |
-| `mail_from_name` | Nombre del remitente (opcional). |
-| `public_base_url` | Base pública absoluta para armar `/validar/{token}`. Exigida en modo `smtp`. |
+| `token_encryption_key` | Clave AES-256-GCM (32 bytes exactos, base64/base64url). Habilita descifrar `token_cifrado` para reconstruir `publicValidationUrl`. |
+| `token_pepper` | Pepper del hash público (ya existente). |
+| `public_base_url` | Base pública absoluta para armar `/validar/{token}`. |
+| `certificate_storage_path` | Ruta absoluta del storage de PDFs (fuera del webroot). |
 
-En modo `stub`, el endpoint responde `503 DELIVERY_NOT_CONFIGURED` sin rotar token ni enviar email. En modo `smtp` sin credenciales, también responde `503`. El envío real solo ocurre con modo `smtp` + credenciales válidas.
+Si la clave falta, no decodifica a 32 bytes o el descifrado falla, el endpoint responde `409 TOKEN_NOT_RECOVERABLE` sin regenerar token. La pérdida de la clave vuelve no recuperables los certificados existentes.
 
-#### Rollback de entrega por email
+#### Rollback de entrega manual
 
-1. Cambiar `delivery_transport` a `stub` en la configuración externa (el endpoint pasa a responder `503`).
-2. O retirar la ruta `POST /admin/certificados/{id}/reenviar` del backend.
-3. Los certificados y tokens vigentes permanecen válidos: el rollback no toca `cert_certificados` ni `cert_tokens_verificacion`.
-4. No requiere migraciones de base: la auditoría reutiliza `cert_eventos_auditoria.detalle_seguro`.
+1. Retirar la ruta `GET /admin/certificados/{id}/entrega-manual` del backend (revertir el código).
+2. Los certificados y tokens vigentes permanecen válidos: el rollback no toca `cert_certificados` ni `cert_tokens_verificacion`.
+3. No reactivar SMTP/PHPMailer sin un nuevo ciclo SDD.
+4. La columna `token_cifrado` puede quedar sin uso; no borrar datos cifrados.
 
 ### Almacenamiento de PDFs de certificados
 

@@ -1,14 +1,11 @@
-# Spec — admin-certificate-delivery
+# Delta — admin-certificate-delivery
 
-## Purpose
-
-Definir la entrega y reenvío administrativo de certificados por email mediante un enlace público de validación. El flujo conserva el token completo fuera de la base, los logs y la respuesta JSON; el QR/token se trata como permanente durante la vida del certificado y se conserva en un reenvío normal (no rota en flujo normal). El transporte de email queda como adaptador configurable con modo `stub` o `smtp`, y SMTP real queda bloqueado por gate humano mientras Composer/vendor y credenciales externas no estén confirmadas.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Reenvío administrativo por email
 
 La API DEBE reemplazar el reenvío automático por email por `GET /certificados/api/admin/certificados/{id}/entrega-manual`, protegido por `X-Admin-Key`. El endpoint DEBE ser de solo lectura respecto del estado de certificado/token, conservar el token vigente, devolver `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`, y NO DEBE enviar email, usar SMTP/PHPMailer, activar `/reenviar`, rotar token ni exponer token completo, DNI completo, secretos, SQL, rutas internas o claves en respuestas operativas, logs, auditoría o errores. `X-Admin-Key` es server-to-server: NO DEBE haber llamadas Angular directas que lo usen, ni estar embebido o expuesto desde bundles de Angular ni almacenamiento del navegador. Si existe UI admin MVP en navegador, DEBE quedar protegida por cPanel Basic Auth o sesión/proxy PHP `HttpOnly`; si este ciclo queda backend-only, el wiring Angular admin queda fuera de alcance pero DEBEN existir checks/documentación que prueben que no se embebió la clave.
+(Previously: exponía `POST /certificados/api/admin/certificados/{id}/reenviar` para enviar o simular email.)
 
 #### Scenario: Entrega manual exitosa
 
@@ -61,6 +58,7 @@ La API DEBE reemplazar el reenvío automático por email por `GET /certificados/
 ### Requirement: Privacidad del token en el canal de entrega
 
 El sistema DEBE exponer el token completo solo dentro de `publicValidationUrl` devuelto al operador autorizado para copia manual. El endpoint de entrega manual NO DEBE persistir el token completo en texto plano ni escribir cambios de certificado/token; logs, auditoría, errores y campos auxiliares NO DEBEN contener token completo ni DNI completo.
+(Previously: el token completo viajaba únicamente dentro del email del destinatario.)
 
 #### Scenario: Token solo en link autorizado
 
@@ -78,6 +76,7 @@ El sistema DEBE exponer el token completo solo dentro de `publicValidationUrl` d
 ### Requirement: Rollback documentado
 
 El cambio DEBE incluir un plan de rollback que retire la ruta de entrega manual y revierta los deltas de docs/specs sin invalidar certificados existentes ni tokens vigentes.
+(Previously: el rollback retiraba la ruta de reenvío y desactivaba el transporte de email.)
 
 #### Scenario: Rollback ejecutable
 
@@ -85,6 +84,8 @@ El cambio DEBE incluir un plan de rollback que retire la ruta de entrega manual 
 - CUANDO se ejecuta el rollback
 - ENTONCES DEBE quedar removida la ruta `GET /admin/certificados/{id}/entrega-manual`.
 - Y DEBEN conservarse los certificados y tokens vigentes.
+
+## REMOVED Requirements
 
 ### Requirement: Adaptador de transporte configurable
 

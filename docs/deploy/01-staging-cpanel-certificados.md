@@ -1,6 +1,6 @@
 # Staging cPanel — /certificados_staging/
 
-Runbook de preparación local ejecutable y ejecución manual gated para staging del módulo de certificaciones. Distingue staging (`/certificados_staging/`) de producción (`/certificados/`). El agente no ejecuta deploy remoto, no sube archivos, no modifica cPanel, no toca DB real ni SMTP real.
+Runbook de preparación local ejecutable y ejecución manual gated para staging del módulo de certificaciones. Distingue staging (`/certificados_staging/`) de producción (`/certificados/`). El agente no ejecuta deploy remoto, no sube archivos, no modifica cPanel, no toca DB real. No hay SMTP/email en el MVP: la entrega es manual (copiar link / descargar PDF).
 
 La guía productiva vigente sigue siendo [`00-cpanel-certificados.md`](00-cpanel-certificados.md). Este documento solo cubre staging.
 
@@ -14,7 +14,7 @@ Preparar localmente un paquete revisable para `/certificados_staging/` y dejar g
 
 - Preparación local: build Angular `production-staging`, `normalizePath()` compatible con staging, artefactos versionables en `deploy/staging/`.
 - Paquete revisable: manifiesto, plantillas `.htaccess`, checklist de gates.
-- Ejecución manual gated: pasos para Marcos en cPanel, con backup, config externa, DB ficticia, Composer y SMTP `stub`.
+- Ejecución manual gated: pasos para Marcos en cPanel, con backup, config externa, DB ficticia, Composer y entrega manual (sin SMTP/email).
 - Rollback manual limitado a staging.
 
 ### No incluye
@@ -34,7 +34,7 @@ Antes de cualquier ejecución real, confirmar los 7 gates con Marcos:
 4. **DB/schema staging**: nombre, usuario, migración y seed ficticios. No usar datos reales.
 5. **Backup**: copia de resguardo de `/certificados_staging/` si existe; si es primera instalación, plan de reversión por retiro/renombre.
 6. **Composer/vendor**: `composer install --no-dev` en hosting o `vendor/` local. Nunca versionar `vendor/`.
-7. **SMTP**: `stub` por defecto. SMTP real solo con credenciales de prueba y aprobación explícita.
+7. **Entrega manual**: no hay SMTP/email en el MVP. Bedelía copia el link público y descarga el PDF. `token_encryption_key` (32 bytes, config externa) habilita la recuperación del token.
 
 Sin los 7 gates: el cambio queda en preparación local. No subir, no tocar `public_html`, no modificar DB real, no acceder a cPanel.
 
@@ -141,7 +141,9 @@ return [
     'token_pepper' => 'PEPPER_STAGING_FICTICIO',
     'public_base_url' => 'https://example.edu.ar/certificados_staging',
     'certificate_storage_path' => 'RUTA_STORAGE_STAGING_FICTICIA',
-    'delivery_transport' => 'stub',
+    // Clave AES-256-GCM (32 bytes, base64/base64url). Generar fuera de Git:
+    // php -r "echo base64_encode(random_bytes(32)), PHP_EOL;"
+    'token_encryption_key' => 'REEMPLAZAR_CON_CLAVE_BASE64_DE_32_BYTES',
 ];
 ```
 
@@ -220,4 +222,4 @@ Spec vigente: [`openspec/specs/deploy-cpanel-certificados/spec.md`](../../opensp
 - [ ] Confirmar quién aprueba la ventana operativa futura.
 - [ ] Confirmar ruta externa final de `CERTIFICADOS_CONFIG_PATH` para staging.
 - [ ] Confirmar Composer en hosting o subida operativa de `vendor/`.
-- [ ] Confirmar si SMTP queda en `stub` o usa SMTP de prueba.
+- [ ] Confirmar que no hay flujo de email activo (entrega manual: copiar link / descargar PDF).
