@@ -30,7 +30,7 @@ Antes de cualquier ejecución real, confirmar los 7 gates con Marcos:
 
 1. **Ruta final**: `/certificados_staging/` en dominio principal o subdominio.
 2. **Ventana cPanel**: pasos manuales aprobados. El agente no toca cPanel.
-3. **Config externa staging**: `CERTIFICADOS_CONFIG_PATH` apuntando a archivo externo propio de staging, separado de producción. Sin fallback a config productiva.
+3. **Config externa staging**: `CERTIFICADOS_CONFIG_PATH` apuntando a archivo externo propio de staging, separado de producción, con `admin_api_key` presente fuera de Git. Sin fallback a config productiva.
 4. **DB/schema staging**: nombre, usuario, migración y seed ficticios. No usar datos reales.
 5. **Backup**: copia de resguardo de `/certificados_staging/` si existe; si es primera instalación, plan de reversión por retiro/renombre.
 6. **Composer/vendor**: `composer install --no-dev` en hosting o `vendor/` local. Nunca versionar `vendor/`.
@@ -128,7 +128,7 @@ La config real de staging se carga vía `CERTIFICADOS_CONFIG_PATH` apuntando a u
 SetEnv CERTIFICADOS_CONFIG_PATH "/ruta/externa/staging/certificados-config.php"
 ```
 
-Si esa ruta no está definida o no existe, staging debe fallar cerrado; no debe caer al archivo productivo ni a una ruta default compartida.
+Si esa ruta no está definida o no existe, staging debe fallar cerrado; no debe caer al archivo productivo ni a una ruta default compartida. El archivo externo debe incluir `admin_api_key` de al menos 16 caracteres y coincidir con el header `X-Admin-Key` usado en los smokes, sin registrar su valor.
 
 Plantilla con placeholders ficticios (no usar en producción):
 
@@ -138,6 +138,7 @@ return [
     'db_name' => 'DB_STAGING_FICTICIA',
     'db_user' => 'USUARIO_STAGING_FICTICIO',
     'db_pass' => 'CLAVE_STAGING_FICTICIA',
+    'admin_api_key' => 'REEMPLAZAR_CON_CLAVE_ADMIN_STAGING_MIN_16_CARACTERES',
     'token_pepper' => 'PEPPER_STAGING_FICTICIO',
     'public_base_url' => 'https://example.edu.ar/certificados_staging',
     'certificate_storage_path' => 'RUTA_STORAGE_STAGING_FICTICIA',
@@ -183,6 +184,7 @@ La entrega manual queda lista para staging solo cuando Marcos confirme, fuera de
 | Gate | Comando/criterio esperado |
 |---|---|
 | Migración `002` | Backup aprobado, aplicar `database/migrations/002_token_cifrado_entrega_manual.sql` y verificar `SHOW COLUMNS FROM cert_tokens_verificacion LIKE 'token_cifrado';`. |
+| Clave admin | `admin_api_key` presente en `CERTIFICADOS_CONFIG_PATH` de staging, externa a Git, con 16+ caracteres y coincidente con el `X-Admin-Key` usado en los smokes. |
 | Clave externa | `token_encryption_key` presente en `CERTIFICADOS_CONFIG_PATH` de staging y decodificable a 32 bytes; no registrar el valor. |
 | Smoke recuperable | `curl -sS -H "X-Admin-Key: <placeholder>" https://<host>/certificados_staging/api/admin/certificados/<id_recuperable>/entrega-manual` → `200` con datos redactados. |
 | Smoke legacy | Repetir con `<id_legacy>` → `409 TOKEN_NOT_RECOVERABLE`; no regenerar token. |
