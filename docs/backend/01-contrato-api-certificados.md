@@ -1,6 +1,6 @@
 # Contrato de API — Certificados QR
 
-Este contrato define la API PHP bajo `/certificados/api/` para validar certificados por QR o enlace. Tras el ciclo `backend-admin-certificados`, la API suma endpoints administrativos mínimos para emitir, revocar, descargar PDF y reenviar certificados con `X-Admin-Key`. El reenvío entrega el certificado por email mediante un enlace público de validación conservando el token/QR permanente (no rota token en reenvío normal) y con transporte configurable `stub|smtp`. El certificado es de curso e incluye fechas asistidas; el DTO público muestra DNI completo por decisión institucional aprobada.
+Este contrato define la API PHP bajo `/certificados/api/` para validar certificados por QR o enlace. Tras el ciclo `backend-entrega-manual-certificados`, la API suma endpoints administrativos mínimos para emitir, revocar, descargar PDF y entregar manualmente certificados con `X-Admin-Key`. La entrega manual reemplaza al reenvío por email: Bedelía copia el link público y descarga el PDF por canal externo, conservando el token/QR permanente (no rota token, no envía email, no usa SMTP/PHPMailer). El token recuperable se persiste cifrado con AES-256-GCM y clave externa a Git. El certificado es de curso e incluye fechas asistidas; el DTO público muestra DNI completo por decisión institucional aprobada.
 
 ## Alcance
 
@@ -10,7 +10,7 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | Formato | JSON UTF-8 |
 | Persistencia | MariaDB 10.6.27 con PDO y prepared statements cuando se implemente. Modelo documentado en `docs/database/01-modelo-datos-certificados.md`. |
 | Exposición pública | Mínima: autenticidad, estado y datos no sensibles del certificado |
-| Fuera de alcance | Angular, migraciones nuevas, generación PDF/QR fuera de emisión, envío masivo, adjuntos PDF en email, cola de jobs y operaciones reales sobre cPanel/public_html |
+| Fuera de alcance | Angular, migraciones nuevas, generación PDF/QR fuera de emisión, envío masivo, SMTP/PHPMailer, email automático, cola de jobs y operaciones reales sobre cPanel/public_html |
 
 ## Endpoints previstos
 
@@ -19,12 +19,12 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | `GET` | `/certificados/api/health` | Verificar disponibilidad básica de la API. | Público técnico, sin datos sensibles. |
 | `GET` | `/certificados/api/certificados/{token}/verificacion` | Validar un token leído desde QR o link. | Público, respuesta mínima. |
 | `POST` | `/certificados/api/certificados/consulta` | Consulta alternativa cuando el cliente no pueda usar path param. | Público, respuesta mínima. |
-| `POST` | `/certificados/api/admin/certificados` | Emitir certificado y token verificable; genera PDF/QR sincrónico. | Admin con `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/certificados` | Emitir certificado y token verificable; genera PDF/QR sincrónico; responde `201` con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`. | Admin con `X-Admin-Key`. |
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revocar certificado e invalidar tokens activos. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/certificados/{id}/pdf` | Descargar el PDF persistido del certificado. | Admin con `X-Admin-Key`. |
-| `POST` | `/certificados/api/admin/certificados/{id}/reenviar` | Reenviar certificado por email conservando token/QR permanente y enlace público. | Admin con `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/certificados/{id}/entrega-manual` | Entrega manual de solo lectura: devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para copia/descarga externa. Sin email, sin rotación, sin escritura. | Admin con `X-Admin-Key`. |
 
-El reenvío está cubierto por el contrato `admin-certificate-delivery`: **conserva el token/QR permanente** del certificado en un reenvío normal (no rota token), envía el enlace `/certificados/validar/{token}` por email y responde `200` con DTO de entrega sin token completo. La rotación solo ocurre por revocación explícita o regeneración excepcional auditada. Mientras el transporte esté en modo `stub` o SMTP sin credenciales, responde `503 DELIVERY_NOT_CONFIGURED` sin enviar email.
+La entrega manual está cubierta por el contrato `admin-certificate-delivery`: **conserva el token/QR permanente** del certificado (no rota token), descifra `token_cifrado` en memoria solo para reconstruir `publicValidationUrl` y responde `200` con DTO de entrega sin token completo como campo separado. No envía email, no usa SMTP/PHPMailer. Si `token_cifrado` está ausente, el envelope es inválido, la clave no decodifica a 32 bytes o el descifrado falla, responde `409 TOKEN_NOT_RECOVERABLE` sin regenerar ni auditar entrega. `POST /admin/certificados/{id}/reenviar` NO forma parte del contrato MVP: responde `404 NOT_FOUND`.
 
 ## DTOs
 
@@ -124,6 +124,7 @@ Respuesta `201`:
     "issuedAt": "2026-06-26",
     "expiresAt": "2026-12-31",
     "tokenPrefix": "prefijo_demo",
+    "publicValidationUrl": "https://demo.example.edu.ar/certificados/validar/{token}",
     "pdfDownloadUrl": "https://demo.example.edu.ar/certificados/api/admin/certificados/10/pdf"
   },
   "meta": {
@@ -132,7 +133,7 @@ Respuesta `201`:
 }
 ```
 
-La emisión no devuelve DNI completo ni token completo. El campo `documentMasked` (enmascarado) en la respuesta administrativa es el único dato de documento permitido; el DNI completo queda reservado para el DTO público de validación (decisión D0). `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. La entrega del token queda pendiente hasta definir email/reenvío u otro canal seguro. Si la generación o persistencia del PDF falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional).
+La emisión no devuelve DNI completo ni token completo como campo separado. El campo `documentMasked` (enmascarado) en la respuesta administrativa es el único dato de documento permitido; el DNI completo queda reservado para el DTO público de validación (decisión D0). `publicValidationUrl` es el único link público previsto y contiene el token permanente; `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. `tokenPrefix` es ayuda operativa segura. El token se persiste como `token_hash` (verificación), `token_prefijo` (soporte) y `token_cifrado` (recuperable, AES-256-GCM con clave externa a Git). Si la generación o persistencia del PDF falla, o si el cifrado del token falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional, fail closed).
 
 ### `POST /admin/certificados/{id}/revocar`
 
@@ -198,41 +199,32 @@ Errores:
 
 La descarga no expone el token completo ni rutas internas en la respuesta.
 
-### `POST /admin/certificados/{id}/reenviar`
+### `GET /admin/certificados/{id}/entrega-manual`
 
-Reenvía el certificado por email: **conserva el token/QR permanente** del certificado (no rota token en reenvío normal), envía únicamente el enlace público de validación `/certificados/validar/{token}` por el transporte configurado y responde con un DTO de entrega que NO contiene el token completo, el email completo ni credenciales. El token completo viaja exclusivamente dentro del email del destinatario. La rotación de token solo ocurre por revocación explícita o regeneración excepcional auditada, separada del reenvío normal.
+Entrega manual de solo lectura: **conserva el token/QR permanente** del certificado (no rota token, no envía email, no usa SMTP/PHPMailer), descifra `token_cifrado` en memoria solo para reconstruir `publicValidationUrl` y responde con un DTO que NO contiene el token completo como campo separado. Bedelía copia el link público y descarga el PDF por canal externo. El endpoint NO modifica estado de certificado/token, NO inserta auditoría operativa y NO requiere body.
 
-> **Estrategia de token recuperable (requerida para reenvío permanente).** Guardar solo `token_hash` (SHA-256 con pepper) es **insuficiente** para reenvío: el hash no permite reconstruir el token ni la URL `/validar/{token}`. Para que el reenvío conserve el QR sin rotar, el backend debe persistir un artefacto recuperable del token:
+> **Estrategia de token recuperable (requerida para entrega manual).** Guardar solo `token_hash` (SHA-256 con pepper) es **insuficiente** para entrega manual: el hash no permite reconstruir el token ni la URL `/validar/{token}`. Para que la entrega manual conserve el QR sin rotar, el backend persiste un artefacto recuperable del token:
 >
 > | Columna | Uso |
 > |---|---|
-> | `token_hash` | Lookup y verificación pública (ya existe). No reversible. |
-> | `token_prefijo` | Soporte/identificación parcial (ya existe). No reversible a token completo. |
-> | `token_cifrado` | Token completo cifrado con clave externa a Git/config. Permite reconstruir la URL pública y regenerar PDF sin rotar QR. Alternativa válida: persistir la URL pública cifrada en vez del token. |
+> | `token_hash` | Lookup y verificación pública. No reversible. |
+> | `token_prefijo` | Soporte/identificación parcial. No reversible a token completo. |
+> | `token_cifrado` | Token completo cifrado con AES-256-GCM, clave externa a Git. Envelope `v1.<iv_b64url>.<tag_b64url>.<ciphertext_b64url>`. Permite reconstruir la URL pública y regenerar PDF sin rotar QR. |
 >
-> La clave de cifrado de `token_cifrado` debe vivir fuera de Git y fuera de la configuración versionable. Este artefacto se planifica como parte de `backend-token-permanente-storage` (split de M4-01); mientras no exista, el reenvío real se mantiene fuera de alcance o limitado al token conocido en emisión. Hash-only NO habilita reenvío permanente.
+> La clave de cifrado de `token_cifrado` (`token_encryption_key`) debe vivir fuera de Git y decodificar (base64/base64url) exactamente a 32 bytes. Su ausencia o invalidez aborta la emisión y la entrega manual (fail closed). Certificados previos sin `token_cifrado` responden `409 TOKEN_NOT_RECOVERABLE`; no se regeneran salvo decisión auditada explícita. Hash-only NO habilita entrega manual.
 
 Headers:
 
 | Header | Regla |
 |---|---|
 | `X-Admin-Key` | Requerido. Se valida igual que en emisión/revocación/descarga. |
-| `Content-Type` | `application/json` (con o sin `; charset=...`). |
+| `Content-Type` | No se exige; el endpoint es `GET` y no acepta body. |
 
 Parámetros:
 
 | Campo | Ubicación | Regla |
 |---|---|---|
 | `id` | path | Requerido. Numérico entero mayor a 0. Si no es numérico, responde `400 VALIDATION_ERROR`. |
-| `destinatarioEmail` | body | Requerido. Email válido. |
-
-Request demo:
-
-```json
-{
-  "destinatarioEmail": "persona@example.edu.ar"
-}
-```
 
 Respuesta `200`:
 
@@ -240,8 +232,9 @@ Respuesta `200`:
 {
   "data": {
     "certificadoId": 10,
-    "enviadoEn": "2026-06-30T19:00:00-03:00",
-    "destinatarioEnmascarado": "p***a@example.edu.ar"
+    "publicValidationUrl": "https://demo.example.edu.ar/certificados/validar/{token}",
+    "pdfDownloadUrl": "https://demo.example.edu.ar/certificados/api/admin/certificados/10/pdf",
+    "tokenPrefix": "prefijo_demo"
   },
   "meta": {
     "requestId": "req_admin_no_sensible"
@@ -253,14 +246,17 @@ Errores:
 
 | HTTP | `code` | Uso |
 |---|---|---|
-| 400 | `VALIDATION_ERROR` | `id` no numérico, `destinatarioEmail` ausente o inválido, o body JSON malformado. |
+| 400 | `VALIDATION_ERROR` | `id` no numérico. |
 | 401 | `UNAUTHORIZED` | Falta `X-Admin-Key` o valor inválido. |
 | 404 | `CERTIFICATE_NOT_FOUND` | Certificado inexistente o no vigente. |
-| 405 | `METHOD_NOT_ALLOWED` | Método distinto de `POST` (con `Allow: POST`). |
-| 415 | `UNSUPPORTED_MEDIA_TYPE` | POST sin `Content-Type: application/json`. |
-| 503 | `DELIVERY_NOT_CONFIGURED` | Transporte en modo `stub` o SMTP sin credenciales. No envía email. Conserva token permanente. |
+| 405 | `METHOD_NOT_ALLOWED` | Método distinto de `GET` (con `Allow: GET`). |
+| 409 | `TOKEN_NOT_RECOVERABLE` | `token_cifrado` ausente, envelope inválido, clave inválida o descifrado fallido. No regenera token. |
 
-El DTO de entrega nunca incluye el token completo, el email completo ni credenciales SMTP. La auditoría del evento `reenvio` guarda `certificado_id`, `tipo_evento`, `resultado`, `request_id` y `destinatario_enmascarado` en `detalle_seguro`; nunca guarda el token completo, DNI completo ni credenciales. El envío real solo ocurre si el transporte está configurado en modo `smtp` con credenciales externas válidas; el modo `stub` es el default seguro y nunca envía email real.
+El DTO de entrega nunca incluye el token completo como campo separado: el token solo vive dentro de `publicValidationUrl`. El endpoint es de solo lectura: no inserta auditoría, no rota token, no modifica estado de certificado/token. Logs, auditoría y errores nunca incluyen token completo, clave, IV, tag ni ciphertext.
+
+### `POST /admin/certificados/{id}/reenviar` (REMOVIDO)
+
+El endpoint `POST /admin/certificados/{id}/reenviar` fue **removido** del contrato MVP. No existe flujo de email, SMTP, PHPMailer ni transporte `stub|smtp`. Cualquier invocación a esa ruta responde `404 NOT_FOUND`. La entrega manual reemplaza al reenvío: ver `GET /admin/certificados/{id}/entrega-manual`.
 
 ## Sobre de errores
 
@@ -281,16 +277,16 @@ Toda respuesta de error debe usar este formato:
 
 | HTTP | `code` | Uso |
 |---|---|---|
-| 400 | `VALIDATION_ERROR` | Token ausente o formato inválido, o body JSON malformado en POST, o `id` no numérico en `GET /admin/certificados/{id}/pdf` o `POST /admin/certificados/{id}/reenviar`. |
+| 400 | `VALIDATION_ERROR` | Token ausente o formato inválido, o body JSON malformado en POST, o `id` no numérico en `GET /admin/certificados/{id}/pdf` o `GET /admin/certificados/{id}/entrega-manual`. |
 | 401 | `UNAUTHORIZED` | Falta autorización administrativa válida. |
 | 404 | `CERTIFICATE_NOT_FOUND` | Token inexistente, revocado o no verificable públicamente. |
 | 404 | `PDF_NOT_FOUND` | Certificado inexistente o PDF no persistido en `GET /admin/certificados/{id}/pdf`. |
 | 405 | `METHOD_NOT_ALLOWED` | Método HTTP no permitido. |
 | 409 | `CERTIFICATE_NOT_REVOCABLE` | El certificado existe pero no puede revocarse en su estado actual. |
+| 409 | `TOKEN_NOT_RECOVERABLE` | `token_cifrado` ausente, envelope inválido, clave inválida o descifrado fallido en entrega manual. No regenera token. |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | POST JSON sin `Content-Type: application/json` (con o sin charset). |
 | 429 | `RATE_LIMITED` | Demasiadas consultas desde el mismo origen. |
 | 500 | `INTERNAL_ERROR` | Error no esperado sin datos internos. |
-| 503 | `DELIVERY_NOT_CONFIGURED` | Transporte de email en modo `stub` o SMTP sin credenciales. No envía email. Conserva token permanente. |
 
 ## Reglas de validación
 
@@ -306,7 +302,7 @@ Toda respuesta de error debe usar este formato:
 - El frontend debe consultar a `/certificados/api/certificados/{token}/verificacion`.
 - El token público no se guarda en texto plano: se compara contra `SHA-256(token + token_pepper)` con `token_pepper` externo a Git. El cálculo PHP usa `hash('sha256', $token . $tokenPepper, true)` (binario) contra `cert_tokens_verificacion.token_hash BINARY(32)`.
 - El seed demo versionable debe almacenar `token_hash` con `UNHEX(SHA2(CONCAT(token_demo, pepper_demo), 256))` para mantener coherencia con el cálculo PHP binario.
-- **Hash-only es insuficiente para reenvío permanente.** El `token_hash` no permite reconstruir el token ni la URL `/validar/{token}`. El reenvío que conserva el QR exige además `token_cifrado` (o URL pública cifrada) con clave externa a Git; ver `POST /admin/certificados/{id}/reenviar`. Mientras ese artefacto no exista, el reenvío real queda fuera de alcance.
+- **Hash-only es insuficiente para entrega manual.** El `token_hash` no permite reconstruir el token ni la URL `/validar/{token}`. La entrega manual que conserva el QR exige además `token_cifrado` (AES-256-GCM, envelope `v1.<iv>.<tag>.<ciphertext>`) con clave externa a Git; ver `GET /admin/certificados/{id}/entrega-manual`. Certificados previos sin `token_cifrado` responden `409 TOKEN_NOT_RECOVERABLE` y no se regeneran salvo decisión auditada explícita.
 - Los logs y la auditoría solo conservan prefijos o huellas truncadas no reversibles; nunca el token completo.
 - Tokens revocados, vencidos o inexistentes deben responder como no verificables sin revelar cuál caso ocurrió.
 
@@ -332,7 +328,7 @@ Toda respuesta JSON de la API emite los siguientes headers de seguridad centrali
 | `X-Content-Type-Options` | `nosniff` | Éxitos y errores JSON. |
 | `X-Frame-Options` | `SAMEORIGIN` | Éxitos y errores JSON. |
 
-Los endpoints POST que esperan JSON (`POST /certificados/consulta`, `POST /admin/certificados`, `POST /admin/certificados/{id}/revocar`, `POST /admin/certificados/{id}/reenviar`) deben recibir `Content-Type: application/json` (con o sin `; charset=...`). Si el header falta o no coincide, la API responde `415 UNSUPPORTED_MEDIA_TYPE` antes de cualquier side effect o rate-limit.
+Los endpoints POST que esperan JSON (`POST /certificados/consulta`, `POST /admin/certificados`, `POST /admin/certificados/{id}/revocar`) deben recibir `Content-Type: application/json` (con o sin `; charset=...`). Si el header falta o no coincide, la API responde `415 UNSUPPORTED_MEDIA_TYPE` antes de cualquier side effect o rate-limit. `GET /admin/certificados/{id}/entrega-manual` y `GET /admin/certificados/{id}/pdf` no exigen `Content-Type` (son `GET`).
 
 Si el `Content-Type` es correcto pero el body está malformado, la API responde `400 VALIDATION_ERROR` antes de construir el servicio, abrir la base, auditar o consumir el bucket del `RateLimiter` en el endpoint público.
 
@@ -377,7 +373,7 @@ El modelo de datos inicial contempla tablas con prefijo `cert_`:
 |---|---|
 | `cert_certificados` | Estado, código público, fecha de emisión y referencia al alumno/curso. |
 | `cert_tokens_verificacion` | Hash del token público, vigencia, revocación y último uso. |
-| `cert_eventos_auditoria` | Eventos no sensibles de emisión, verificación, revocación o reenvío. |
+| `cert_eventos_auditoria` | Eventos no sensibles de emisión, verificación o revocación. El evento `reenvio` quedó obsoleto: la entrega manual no inserta auditoría operativa (endpoint de solo lectura). |
 
 La migración controlada es `database/migrations/001_certificados_qr.sql`. El token público se almacena como hash con pepper externo a Git; la API futura debe calcularlo antes de consultar `cert_tokens_verificacion.token_hash`.
 

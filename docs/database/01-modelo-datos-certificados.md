@@ -8,7 +8,7 @@ Este documento define el esquema MariaDB para la verificación pública de certi
 |---|---|
 | Motor | MariaDB 10.6.27, `InnoDB`, `utf8mb4` |
 | Prefijo | Todas las tablas nuevas usan `cert_` |
-| Token QR | Permanente. El token público no se guarda en texto plano; se guarda `SHA-256(token + pepper_servidor)` como `BINARY(32)`. El reenvío normal no rota token. |
+| Token QR | Permanente. El token público no se guarda en texto plano; se guarda `SHA-256(token + pepper_servidor)` como `BINARY(32)` y `token_cifrado` (AES-256-GCM) para recuperación. La entrega manual no rota token; no hay reenvío por email en el MVP. |
 | Pepper | Debe vivir fuera de Git, en configuración real del servidor |
 | Datos públicos | DNI completo visible por decisión institucional (D0), estado, código, curso, fecha de emisión y fechas asistidas |
 | Auditoría | Eventos mínimos sin DNI completo, token completo, SQL ni credenciales |
@@ -48,7 +48,7 @@ Guarda tokens verificables por QR sin conservar el valor público.
 | `certificado_id` | `BIGINT UNSIGNED` | FK a `cert_certificados.id` |
 | `token_hash` | `BINARY(32)` | Único; hash del token público con pepper. Lookup y verificación pública. No reversible. |
 | `token_prefijo` | `VARCHAR(12)` | Prefijo mínimo para soporte, nunca token completo |
-| `token_cifrado` | `VARBINARY(255) NULL` | **Planificado, no migrado.** Token completo cifrado (o URL pública cifrada) con clave externa a Git. Habilita reenvío/regeneración de PDF conservando el QR sin rotar. Hash-only NO permite reenvío permanente. Se crea en migración futura (`backend-token-permanente-storage`). |
+| `token_cifrado` | `VARBINARY(512) NULL` | Token completo cifrado con AES-256-GCM, clave externa a Git. Envelope `v1.<iv_b64url>.<tag_b64url>.<ciphertext_b64url>`. Habilita entrega manual y regeneración de PDF conservando el QR sin rotar. Hash-only NO permite entrega manual. Migración `002_token_cifrado_entrega_manual.sql`. Certificados previos sin esta columna quedan limitados (`409 TOKEN_NOT_RECOVERABLE`). |
 | `estado` | `ENUM` | `activo`, `revocado`, `vencido` |
 | `vigente_desde`, `vigente_hasta` | `DATETIME` | Ventana de validez |
 | `ultimo_uso_en` | `DATETIME NULL` | Última verificación pública |
@@ -64,7 +64,7 @@ Registra eventos operativos sin exponer datos personales completos.
 |---|---|---|
 | `id` | `BIGINT UNSIGNED` | PK autoincremental |
 | `certificado_id` | `BIGINT UNSIGNED NULL` | FK opcional |
-| `tipo_evento` | `ENUM` | `emision`, `verificacion`, `revocacion`, `reenvio`, `error` |
+| `tipo_evento` | `ENUM` | `emision`, `verificacion`, `revocacion`, `reenvio`, `error`. El valor `reenvio` quedó obsoleto: la entrega manual no inserta auditoría operativa (endpoint de solo lectura). |
 | `resultado` | `ENUM` | `ok`, `rechazado`, `error` |
 | `request_id` | `VARCHAR(80) NULL` | Correlación segura |
 | `token_hash_prefijo` | `VARCHAR(16) NULL` | Huella truncada no reversible |
@@ -104,7 +104,7 @@ Las siguientes tablas quedan planificadas para ciclos SDD posteriores (M4-02 y s
 | `cert_asistencias` | Asistencias. **La presencia representa asistencia**: un registro existe si el alumno asistió a esa fecha. No hay booleano `presente` ni estados ausente/justificado. `UNIQUE(alumno_id, curso_fecha_id)`. `eliminado_en DATETIME NULL` solo si se necesita soft-delete para correcciones. |
 | `cert_certificado_fechas` | Snapshot de fechas asistidas al momento de emisión. Permite reconstruir el PDF sin recalcular desde asistencias vivas. Las correcciones actualizan el snapshot o generan versión/auditoría y marcan `requiere_reenvio`. |
 | `cert_configuracion_institucional` | Firmantes y config institucional (Rector/a, Asesor/a Pedagógica). |
-| `cert_entregas_email` | Entregas/reenvíos por email (opcional, futuro). |
+| `cert_entregas_email` | Entregas/reenvíos por email (opcional, futuro). Obsoleto en el MVP: no hay flujo de email. Se reintroduce solo con nuevo ciclo SDD. |
 | `cert_admin_usuarios` | Usuarios admin para login real futuro (opcional, fuera de este ciclo). |
 
 Reglas: FK correctas, índices por DNI/curso/fecha, unique para evitar asistencia duplicada, seeds ficticios, compatible MariaDB 10.6, sin datos reales.

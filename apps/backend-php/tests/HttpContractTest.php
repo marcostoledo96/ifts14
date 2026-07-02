@@ -22,6 +22,7 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'app_salt' => 'salt_demo_http_contract',
     'public_base_url' => 'https://demo.example.edu.ar/certificados',
     'certificate_storage_path' => $tmpDir . '/pdf-storage',
+    'token_encryption_key' => 'ZGVtby1rZXktMzItYnl0ZXMtZmljdGljaW8tMjAyNiE=',
 ], true) . ';');
 
 $port = random_int(18080, 18999);
@@ -115,137 +116,43 @@ try {
     assertError($pdfNonNumericId, 400, 'VALIDATION_ERROR', 'PDF id no numérico');
     assertSecurityHeaders($pdfNonNumericId, 'PDF id no numérico');
 
-    // --- Reenvío: contrato del endpoint POST /admin/certificados/{id}/reenviar ---
+    // --- Entrega manual: contrato del endpoint GET /admin/certificados/{id}/entrega-manual ---
 
-    // 401 sin X-Admin-Key (antes de Content-Type/body).
-    $resendNoAuth = request($port, 'POST', '/admin/certificados/1/reenviar', [
-        'Content-Type: application/json',
-    ], '{}');
-    assertError($resendNoAuth, 401, 'UNAUTHORIZED', 'reenvío sin X-Admin-Key');
-    assertSecurityHeaders($resendNoAuth, 'reenvío sin X-Admin-Key');
-
-    // 415 sin Content-Type correcto.
-    $resendNoContentType = request($port, 'POST', '/admin/certificados/1/reenviar');
-    assertError($resendNoContentType, 415, 'UNSUPPORTED_MEDIA_TYPE', 'reenvío sin Content-Type');
-
-    $resendWrongContentType = request($port, 'POST', '/admin/certificados/1/reenviar', [
-        'Content-Type: text/plain',
-        'X-Admin-Key: ' . $adminKey,
-    ], '{}');
-    assertError($resendWrongContentType, 415, 'UNSUPPORTED_MEDIA_TYPE', 'reenvío Content-Type inválido');
+    // 401 sin X-Admin-Key (antes de body/config).
+    $manualNoAuth = request($port, 'GET', '/admin/certificados/1/entrega-manual');
+    assertError($manualNoAuth, 401, 'UNAUTHORIZED', 'entrega manual sin X-Admin-Key');
+    assertSecurityHeaders($manualNoAuth, 'entrega manual sin X-Admin-Key');
 
     // 405 método no permitido.
-    $resendWrongMethod = request($port, 'GET', '/admin/certificados/1/reenviar', [
+    $manualWrongMethod = request($port, 'POST', '/admin/certificados/1/entrega-manual', [
         'X-Admin-Key: ' . $adminKey,
-    ]);
-    assertError($resendWrongMethod, 405, 'METHOD_NOT_ALLOWED', 'reenvío método no permitido');
-    assertSecurityHeaders($resendWrongMethod, 'reenvío método no permitido');
-    if (($resendWrongMethod['headers']['allow'] ?? '') !== 'POST') {
-        throw new RuntimeException('reenvío método no permitido: falta Allow: POST.');
+    ], '{}');
+    assertError($manualWrongMethod, 405, 'METHOD_NOT_ALLOWED', 'entrega manual método no permitido');
+    assertSecurityHeaders($manualWrongMethod, 'entrega manual método no permitido');
+    if (($manualWrongMethod['headers']['allow'] ?? '') !== 'GET') {
+        throw new RuntimeException('entrega manual método no permitido: falta Allow: GET.');
     }
 
     // 400 id no numérico (la regex captura [^/]+ y se valida con filter_var).
-    $resendNonNumericId = request($port, 'POST', '/admin/certificados/abc/reenviar', [
+    $manualNonNumericId = request($port, 'GET', '/admin/certificados/abc/entrega-manual', [
+        'X-Admin-Key: ' . $adminKey,
+    ]);
+    assertError($manualNonNumericId, 400, 'VALIDATION_ERROR', 'entrega manual id no numérico');
+    assertSecurityHeaders($manualNonNumericId, 'entrega manual id no numérico');
+
+    // --- Reenvío removido: POST /admin/certificados/{id}/reenviar DEBE responder 404 ---
+
+    $resendRemoved = request($port, 'POST', '/admin/certificados/1/reenviar', [
         'Content-Type: application/json',
         'X-Admin-Key: ' . $adminKey,
     ], '{"destinatarioEmail":"persona@example.edu.ar"}');
-    assertError($resendNonNumericId, 400, 'VALIDATION_ERROR', 'reenvío id no numérico');
-    assertSecurityHeaders($resendNonNumericId, 'reenvío id no numérico');
+    assertError($resendRemoved, 404, 'NOT_FOUND', 'reenvío removido 404');
+    assertSecurityHeaders($resendRemoved, 'reenvío removido 404');
 
-    // 400 JSON malformado.
-    $resendBadJson = request($port, 'POST', '/admin/certificados/1/reenviar', [
-        'Content-Type: application/json',
+    $resendRemovedGet = request($port, 'GET', '/admin/certificados/1/reenviar', [
         'X-Admin-Key: ' . $adminKey,
-    ], '{');
-    assertError($resendBadJson, 400, 'VALIDATION_ERROR', 'reenvío JSON malformado');
-
-    // 400 email inválido antes de validar transporte: debe ganar incluso en modo stub.
-    $resendInvalidEmailStub = request($port, 'POST', '/admin/certificados/1/reenviar', [
-        'Content-Type: application/json',
-        'X-Admin-Key: ' . $adminKey,
-    ], '{"destinatarioEmail":"no-es-email"}');
-    assertError($resendInvalidEmailStub, 400, 'VALIDATION_ERROR', 'reenvío email inválido con stub');
-
-    // 503 con transporte stub (default del config de ejemplo no incluye delivery_transport,
-    // pero el config de test hereda el default 'stub' de Config::requireDeliveryConfig).
-    $resendStub = request($port, 'POST', '/admin/certificados/1/reenviar', [
-        'Content-Type: application/json',
-        'X-Admin-Key: ' . $adminKey,
-    ], '{"destinatarioEmail":"persona@example.edu.ar"}');
-    assertError($resendStub, 503, 'DELIVERY_NOT_CONFIGURED', 'reenvío stub 503');
-    assertSecurityHeaders($resendStub, 'reenvío stub 503');
-    $stubBody = json_decode($resendStub['body'], true);
-    if (str_contains($resendStub['body'], 'TOKEN') || str_contains($resendStub['body'], 'persona@example.edu.ar')) {
-        throw new RuntimeException('reenvío stub 503: el cuerpo filtró token o email completo.');
-    }
-    if (($stubBody['error']['message'] ?? '') === '') {
-        throw new RuntimeException('reenvío stub 503: mensaje vacío.');
-    }
-
-    // 503 con modo smtp sin credenciales (segundo config + segundo servidor).
-    $smtpIncompletePath = $tmpDir . '/config-smtp-incomplete.php';
-    file_put_contents($smtpIncompletePath, '<?php return ' . var_export([
-        'db_host' => '127.0.0.1',
-        'db_name' => 'demo',
-        'db_user' => 'demo',
-        'db_pass' => 'demo',
-        'token_pepper' => 'pepper_demo_ficticio_2026_no_usar',
-        'admin_api_key' => $adminKey,
-        'rate_limit_storage_path' => $ratePath,
-        'app_salt' => 'salt_demo_http_contract',
-        'public_base_url' => 'https://demo.example.edu.ar/certificados',
-        'certificate_storage_path' => $tmpDir . '/pdf-storage',
-        'delivery_transport' => 'smtp',
-        'smtp_host' => '',
-        'smtp_port' => 587,
-        'smtp_username' => '',
-        'smtp_password' => '',
-        'mail_from' => '',
-        'smtp_secure' => 'tls',
-    ], true) . ';');
-
-    $port2 = random_int(19000, 19999);
-    $previousConfigPath2 = getenv('CERTIFICADOS_CONFIG_PATH');
-    putenv('CERTIFICADOS_CONFIG_PATH=' . $smtpIncompletePath);
-    $process2 = proc_open([
-        PHP_BINARY,
-        '-S',
-        '127.0.0.1:' . $port2,
-        '-t',
-        $root,
-        $root . '/index.php',
-    ], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes2, $root);
-
-    if (!is_resource($process2)) {
-        throw new RuntimeException('No se pudo iniciar el segundo servidor embebido.');
-    }
-
-    try {
-        waitForServer($port2);
-
-        $resendInvalidEmailSmtpIncomplete = request($port2, 'POST', '/admin/certificados/1/reenviar', [
-            'Content-Type: application/json',
-            'X-Admin-Key: ' . $adminKey,
-        ], '{"destinatarioEmail":"no-es-email"}');
-        assertError($resendInvalidEmailSmtpIncomplete, 400, 'VALIDATION_ERROR', 'reenvío email inválido con smtp incompleto');
-
-        $resendSmtpIncomplete = request($port2, 'POST', '/admin/certificados/1/reenviar', [
-            'Content-Type: application/json',
-            'X-Admin-Key: ' . $adminKey,
-        ], '{"destinatarioEmail":"persona@example.edu.ar"}');
-        assertError($resendSmtpIncomplete, 503, 'DELIVERY_NOT_CONFIGURED', 'reenvío smtp incompleto 503');
-        assertSecurityHeaders($resendSmtpIncomplete, 'reenvío smtp incompleto 503');
-        if (str_contains($resendSmtpIncomplete['body'], 'persona@example.edu.ar') || str_contains($resendSmtpIncomplete['body'], 'TOKEN')) {
-            throw new RuntimeException('reenvío smtp incompleto: filtró token o email.');
-        }
-    } finally {
-        proc_terminate($process2);
-        proc_close($process2);
-        putenv($previousConfigPath2 === false ? 'CERTIFICADOS_CONFIG_PATH' : 'CERTIFICADOS_CONFIG_PATH=' . $previousConfigPath2);
-        if (is_file($smtpIncompletePath)) {
-            unlink($smtpIncompletePath);
-        }
-    }
+    ]);
+    assertError($resendRemovedGet, 404, 'NOT_FOUND', 'reenvío GET removido 404');
 } finally {
     proc_terminate($process);
     proc_close($process);

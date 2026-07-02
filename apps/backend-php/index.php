@@ -9,10 +9,6 @@ require_once __DIR__ . '/src/Database.php';
 require_once __DIR__ . '/src/CertificateValidator.php';
 require_once __DIR__ . '/src/AuthGate.php';
 require_once __DIR__ . '/src/AdminCertificateService.php';
-require_once __DIR__ . '/src/EmailDeliveryTransport.php';
-require_once __DIR__ . '/src/StubEmailDeliveryTransport.php';
-require_once __DIR__ . '/src/SmtpEmailDeliveryTransport.php';
-require_once __DIR__ . '/src/EmailDeliveryTransportFactory.php';
 
 $requestId = 'req_' . bin2hex(random_bytes(8));
 
@@ -108,12 +104,17 @@ if ($path === '/admin/certificados') {
         return;
     }
 
+    $tokenCipherKey = loadTokenCipherKey($config, $requestId);
+    if ($tokenCipherKey === null) {
+        return;
+    }
+
     $body = readJsonBody($requestId);
     if ($body === null) {
         return;
     }
 
-    respondToAdmin(static function () use ($config, $requestId, $body): array {
+    respondToAdmin(static function () use ($config, $requestId, $body, $tokenCipherKey): array {
         $service = new AdminCertificateService(
             Database::pdo($config),
             (string) $config['token_pepper'],
@@ -122,6 +123,7 @@ if ($path === '/admin/certificados') {
             (string) $config['app_salt'],
             new CertificatePdfService((string) $config['certificate_storage_path']),
             (string) $config['public_base_url'],
+            $tokenCipherKey,
         );
 
         return ['status' => 201, 'data' => $service->emitir($body)];
@@ -198,14 +200,10 @@ if (preg_match('#^/admin/certificados/([^/]+)/pdf$#', $path, $matches) === 1) {
     return;
 }
 
-if (preg_match('#^/admin/certificados/([^/]+)/reenviar$#', $path, $matches) === 1) {
-    if ($method !== 'POST') {
-        header('Allow: POST');
+if (preg_match('#^/admin/certificados/([^/]+)/entrega-manual$#', $path, $matches) === 1) {
+    if ($method !== 'GET') {
+        header('Allow: GET');
         Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
-        return;
-    }
-
-    if (!requireJsonContentType($requestId)) {
         return;
     }
 
@@ -220,39 +218,19 @@ if (preg_match('#^/admin/certificados/([^/]+)/reenviar$#', $path, $matches) === 
         return;
     }
 
-    $body = readJsonBody($requestId);
-    if ($body === null) {
-        return;
-    }
-
-    $recipient = isset($body['destinatarioEmail']) && is_string($body['destinatarioEmail']) ? $body['destinatarioEmail'] : '';
-    $recipient = trim($recipient);
-    if ($recipient === '' || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
-        Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
-        return;
-    }
-
-    // Normaliza y valida config de entrega ANTES de despachar. Si falla
-    // (modo inválido o SMTP incompleto), respondemos 503 seguro sin dejar
-    // config sin normalizar al factory/transporte.
     try {
-        $config = Config::requireDeliveryConfig($config);
+        $config = Config::requirePdfConfig($config);
     } catch (RuntimeException) {
-        Response::error(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.', $requestId);
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
         return;
     }
 
-    respondToAdmin(static function () use ($config, $requestId, $certificateId, $recipient): array {
-        $transport = EmailDeliveryTransportFactory::make($config);
+    $tokenCipherKey = loadTokenCipherKey($config, $requestId);
+    if ($tokenCipherKey === null) {
+        return;
+    }
 
-        // Valida el transporte antes de abrir PDO: si no está configurado,
-        // responde 503 sin tocar la base ni rotar token.
-        try {
-            $transport->assertConfigured();
-        } catch (RuntimeException) {
-            throw new AdminCertificateException(503, 'DELIVERY_NOT_CONFIGURED', 'El envío real está deshabilitado.');
-        }
-
+    respondToAdmin(static function () use ($config, $requestId, $certificateId, $tokenCipherKey): array {
         $service = new AdminCertificateService(
             Database::pdo($config),
             (string) $config['token_pepper'],
@@ -260,10 +238,12 @@ if (preg_match('#^/admin/certificados/([^/]+)/reenviar$#', $path, $matches) === 
             null,
             (string) $config['app_salt'],
             null,
-            (string) ($config['public_base_url'] ?? ''),
+            (string) $config['public_base_url'],
+            $tokenCipherKey,
+            (string) $config['certificate_storage_path'],
         );
 
-        return ['status' => 200, 'data' => $service->reenviar($certificateId, $recipient, $transport)];
+        return ['status' => 200, 'data' => $service->entregaManual($certificateId)];
     }, $requestId);
     return;
 }
@@ -430,4 +410,23 @@ function loadPdfDependencies(string $requestId): bool
     require_once __DIR__ . '/src/CertificatePdfService.php';
 
     return true;
+}
+
+/**
+ * Carga y valida la clave de cifrado de tokens (AES-256-GCM, 32 bytes).
+ * Fail closed: responde 500 CONFIGURATION_ERROR si la clave falta o es inválida.
+ * La clave DEBE provenir de configuración externa a Git.
+ *
+ * @param array<string, mixed> $config
+ * @return string|null Clave binaria de 32 bytes, o null si ya se respondió error.
+ */
+function loadTokenCipherKey(array $config, string $requestId): ?string
+{
+    try {
+        [$config, $key] = Config::requireTokenCipherKey($config);
+        return $key;
+    } catch (RuntimeException) {
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return null;
+    }
 }
