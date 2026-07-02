@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Definir la entrega y reenvío administrativo de certificados por email mediante un enlace público de validación. El flujo conserva el token completo fuera de la base, los logs y la respuesta JSON; el QR/token se trata como permanente durante la vida del certificado y se conserva en un reenvío normal (no rota en flujo normal). El transporte de email queda como adaptador configurable con modo `stub` o `smtp`, y SMTP real queda bloqueado por gate humano mientras Composer/vendor y credenciales externas no estén confirmadas.
+Definir la entrega manual administrativa de certificados mediante link público y descarga de PDF, sin email, SMTP, PHPMailer ni reenvío automático. El QR/token es permanente; el token completo no se guarda en texto plano, no se expone como campo JSON separado y se recupera solo desde `token_cifrado` con clave externa.
 
 ## Requirements
 
@@ -100,3 +100,35 @@ El cambio DEBE incluir un plan de rollback que retire la ruta de entrega manual 
 
 (Reason: no existe envío real ni configuración SMTP activa en este ciclo.)
 (Migration: mantener `/reenviar`, SMTP y PHPMailer inactivos hasta nuevo ciclo SDD.)
+
+### Requirement: Validación operativa DB-backed de entrega manual
+
+El endpoint `GET /certificados/api/admin/certificados/{id}/entrega-manual` DEBE tener cierre de deploy-readiness mediante smoke DB-backed para casos `200` recuperable y `409 TOKEN_NOT_RECOVERABLE`, o gate exacto documentado si falta acceso aprobado. Este cambio NO DEBE reintroducir email, SMTP, PHPMailer, `/reenviar` ni rotación de token.
+
+#### Scenario: Smoke recuperable 200
+
+- DADO un certificado emitido con `token_cifrado` recuperable y PDF disponible en una DB aprobada
+- CUANDO se ejecuta el smoke autorizado de entrega manual
+- ENTONCES la API DEBE responder `200` con link público y datos operativos seguros
+- Y NO DEBE enviar email, rotar token ni escribir cambios de entrega.
+
+#### Scenario: Smoke legacy 409
+
+- DADO un certificado legacy sin token recuperable en una DB aprobada
+- CUANDO se ejecuta el smoke autorizado de entrega manual
+- ENTONCES la API DEBE responder `409 TOKEN_NOT_RECOVERABLE`
+- Y NO DEBE inventar, regenerar ni completar evidencia faltante.
+
+#### Scenario: Gate sin DB/config
+
+- DADO que no hay DB o configuración externa aprobada
+- CUANDO se verifica readiness del endpoint
+- ENTONCES se DEBE registrar el gate pendiente con precondiciones y comando esperado
+- Y NO SE DEBEN leer secretos reales ni simular respuestas HTTP como evidencia.
+
+#### Scenario: Sin reintroducción de email
+
+- DADO el cierre operacional de entrega manual
+- CUANDO se revisa el alcance del cambio
+- ENTONCES NO DEBEN reaparecer SMTP, PHPMailer, `/reenviar` ni envío automático
+- Y el gate DEBE limitarse a readiness operacional, no a funcionalidad nueva.

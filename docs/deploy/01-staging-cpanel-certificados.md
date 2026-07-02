@@ -176,6 +176,18 @@ Después de una instalación autorizada, validar únicamente con datos ficticios
 
 No consultar certificados reales, DNI reales, tokens reales ni bitácoras productivas durante este smoke.
 
+### Gates de entrega manual en staging
+
+La entrega manual queda lista para staging solo cuando Marcos confirme, fuera de Git, estas precondiciones:
+
+| Gate | Comando/criterio esperado |
+|---|---|
+| Migración `002` | Backup aprobado, aplicar `database/migrations/002_token_cifrado_entrega_manual.sql` y verificar `SHOW COLUMNS FROM cert_tokens_verificacion LIKE 'token_cifrado';`. |
+| Clave externa | `token_encryption_key` presente en `CERTIFICADOS_CONFIG_PATH` de staging y decodificable a 32 bytes; no registrar el valor. |
+| Smoke recuperable | `curl -sS -H "X-Admin-Key: <placeholder>" https://<host>/certificados_staging/api/admin/certificados/<id_recuperable>/entrega-manual` → `200` con datos redactados. |
+| Smoke legacy | Repetir con `<id_legacy>` → `409 TOKEN_NOT_RECOVERABLE`; no regenerar token. |
+| Vendor | Composer en hosting o `vendor/` generado localmente desde `composer.lock`; nunca versionar `vendor/`. |
+
 ## Rollback limitado a staging
 
 Antes de cualquier subida, crear copia de resguardo de `/certificados_staging/` si la carpeta existe. Registrar nombre, fecha y responsable sin copiar contenido sensible al repo.
