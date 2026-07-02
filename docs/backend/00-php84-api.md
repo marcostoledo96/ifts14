@@ -39,6 +39,17 @@ La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_`
 
 `token_pepper` es obligatorio en la configuración externa real y debe mantenerse fuera de Git. El ejemplo versionable usa valores ficticios solo para demo local.
 
+### Gate operativo de entrega manual
+
+El endpoint `GET /certificados/api/admin/certificados/{id}/entrega-manual` requiere smoke DB-backed formal antes de cerrar el gate de deploy: un certificado recuperable debe responder `200` y un legacy sin `token_cifrado` debe responder `409 TOKEN_NOT_RECOVERABLE`. El smoke local ad-hoc en Docker realizado después del archive (2026-07-02) validó solo el happy path recuperable: emisión `201`, entrega manual `200`, validación backend `200` y descarga PDF. El gate SDD archive/operador sigue abierto hasta contar con evidencia redactada de staging/producción con configuración real aprobada, incluyendo el caso legacy `409`:
+
+```bash
+curl -sS -H "X-Admin-Key: <placeholder>" https://<host>/certificados/api/admin/certificados/<id_recuperable>/entrega-manual
+curl -sS -H "X-Admin-Key: <placeholder>" https://<host>/certificados/api/admin/certificados/<id_legacy>/entrega-manual
+```
+
+No pegar `X-Admin-Key`, tokens, DNI, URLs con tokens reales ni respuestas completas con datos personales en la evidencia.
+
 ## Contrato vigente
 
 El contrato público futuro de la API de certificados QR está documentado en:

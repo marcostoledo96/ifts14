@@ -6,17 +6,13 @@ Base mínima de la API PHP 8.4 para `/certificados/api/`.
 
 | Ruta | Uso |
 |---|---|
-| `index.php` | Front controller con `GET /health`, validación pública, emisión, revocación, descarga PDF y reenvío por email. |
+| `index.php` | Front controller con `GET /health`, validación pública, emisión, revocación, descarga PDF y entrega manual. |
 | `src/Response.php` | Respuestas JSON UTF-8 con envelope `data/meta` o `error/meta`. |
-| `src/Config.php` | Carga configuración real desde un archivo externo no versionado. Normaliza `requirePdfConfig()` y `requireDeliveryConfig()`. |
+| `src/Config.php` | Carga configuración real desde un archivo externo no versionado. Normaliza PDF y clave externa de cifrado. |
 | `src/Database.php` | Crea PDO de forma diferida para endpoints que requieren base. |
-| `src/AdminCertificateService.php` | Emisión, revocación y reenvío con rotación de token, auditoría segura y `maskEmail()`. |
-| `src/EmailDeliveryTransport.php` | Contrato del adaptador de entrega por email. |
-| `src/StubEmailDeliveryTransport.php` | Modo seguro: siempre `503 DELIVERY_NOT_CONFIGURED`. |
-| `src/SmtpEmailDeliveryTransport.php` | Modo SMTP con PHPMailer; no loguea token ni credenciales. |
-| `src/EmailDeliveryTransportFactory.php` | Selecciona `stub` o `smtp` desde `Config::requireDeliveryConfig()`. |
-| `config/certificados-config.example.php` | Ejemplo ficticio con `delivery_transport => 'stub'` y placeholders SMTP. |
-| `composer.json` / `composer.lock` | Fija `tecnickcom/tcpdf` y `phpmailer/phpmailer`. `vendor/` ignorado. |
+| `src/AdminCertificateService.php` | Emisión, revocación y entrega manual sin rotar token. |
+| `config/certificados-config.example.php` | Ejemplo ficticio con `token_encryption_key`, `admin_api_key` y rutas de prueba. |
+| `composer.json` / `composer.lock` | Fija `tecnickcom/tcpdf`. `vendor/` ignorado. |
 | `.htaccess` | Fallback mínimo hacia `index.php` para Apache. |
 
 ## Configuración externa
@@ -30,37 +26,25 @@ Orden de carga:
 
 No versionar `.env`, `config.php`, `db.php`, `database.php`, `conexion.php` ni credenciales reales.
 
-### Entrega por email (reenvío)
+### Entrega manual
 
-El reenvío administrativo (`POST /admin/certificados/{id}/reenviar`) usa un adaptador de transporte configurable:
-
-| Clave | Default | Uso |
-|---|---|---|
-| `delivery_transport` | `stub` | `stub` no envía real (responde `503`); `smtp` exige credenciales. |
-| `smtp_host` | — | Host SMTP. Exigido en `smtp`. |
-| `smtp_port` | — | Puerto (1-65535). Exigido en `smtp`. |
-| `smtp_username` | — | Usuario SMTP. Exigido en `smtp`. |
-| `smtp_password` | — | Contraseña SMTP. Exigida en `smtp`. |
-| `smtp_secure` | `tls` | `tls` o `ssl`. Vacío se rechaza (riesgo de credenciales en claro). |
-| `mail_from` | — | Remitente. Exigido en `smtp`. |
-| `mail_from_name` | — | Nombre del remitente (opcional). |
-| `public_base_url` | — | Base pública para `/validar/{token}`. Exigida en `smtp`. |
-
-El token completo solo viaja dentro del email; nunca en JSON, logs ni auditoría. La auditoría guarda `destinatario_enmascarado` en `detalle_seguro`.
+El endpoint `GET /admin/certificados/{id}/entrega-manual` devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para que Bedelía entregue el certificado por canal externo. No envía email, no rota token y no escribe auditoría operativa. La clave externa `token_encryption_key` debe decodificar a 32 bytes y nunca se versiona.
 
 ### Composer / dependencias
 
-El backend versiona `composer.lock` para fijar `tecnickcom/tcpdf` y `phpmailer/phpmailer`. `vendor/` está ignorado y se regenera con:
+El backend versiona `composer.lock` para fijar `tecnickcom/tcpdf`. `vendor/` está ignorado y se regenera con:
 
 ```bash
 composer install --no-dev --no-interaction
 ```
 
-Regenerar el lock tras cambiar `composer.json`:
+Si el cambio en `composer.json` solo requiere refrescar metadata/content-hash del lock, sin agregar, quitar ni actualizar paquetes:
 
 ```bash
-docker run --rm --volume "$PWD/apps/backend-php:/app" --workdir /app composer:2 composer update --no-dev --no-interaction
+docker run --rm --volume "$PWD/apps/backend-php:/app" --workdir /app composer:2 composer update --lock --no-install
 ```
+
+Para agregar, quitar o actualizar paquetes, usar un flujo explícito de Composer, por ejemplo `composer update <paquete> --no-dev --no-interaction`, y luego validar que `composer.lock` haya quedado coherente con el cambio.
 
 ## QA local
 

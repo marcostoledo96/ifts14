@@ -6,7 +6,7 @@ Gates manuales obligatorios. La ejecución real en cPanel queda bloqueada hasta 
 
 - [ ] **0.a Ruta final**: staging bajo `/certificados_staging/` en dominio principal o subdominio.
 - [ ] **0.b Ventana cPanel**: pasos manuales aprobados y ventana operativa acordada. El agente no toca cPanel.
-- [ ] **0.c Config externa staging**: `CERTIFICADOS_CONFIG_PATH` apuntando a archivo externo propio de staging, separado de producción. Sin fallback a config productiva.
+- [ ] **0.c Config externa staging**: `CERTIFICADOS_CONFIG_PATH` apuntando a archivo externo propio de staging, separado de producción, con `admin_api_key` presente fuera de Git, 16+ caracteres y coincidente con el `X-Admin-Key` de los smokes. Sin fallback a config productiva.
 - [ ] **0.d DB/schema staging**: nombre, usuario, esquema, migración y seed ficticios confirmados. No usar datos reales.
 - [ ] **0.e Backup**: copia de resguardo de `/certificados_staging/` si la carpeta existe. Si es primera instalación, plan de reversión por retiro/renombre.
 - [ ] **0.f Composer/vendor**: `composer install --no-dev` en hosting o `vendor/` generado localmente. Nunca versionar `vendor/`.
@@ -36,7 +36,7 @@ Sin los 7 gates: el cambio queda en preparación local/documental. No subir, no 
 - [ ] 3.2 Subir `dist/frontend-angular/` a `public_html/certificados_staging/`.
 - [ ] 3.3 Subir backend PHP (sin `vendor/`) a `public_html/certificados_staging/api/`.
 - [ ] 3.4 Instalar `.htaccess-root` y `.htaccess-api` desde plantillas.
-- [ ] 3.5 `SetEnv CERTIFICADOS_CONFIG_PATH` en `.htaccess-api` con ruta externa staging.
+- [ ] 3.5 `SetEnv CERTIFICADOS_CONFIG_PATH` en `.htaccess-api` con ruta externa staging; confirmar `admin_api_key` externo a Git sin registrar su valor.
 - [ ] 3.6 Migración + seed en DB staging (datos ficticios).
 - [ ] 3.7 Subir `composer.json` + `composer.lock`; Composer en hosting o `vendor/` local (nunca commitear).
 - [ ] 3.8 SMTP `stub`; SMTP real solo si gate 0.g lo aprobó.
