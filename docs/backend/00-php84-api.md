@@ -12,7 +12,7 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 - No imprimir DNI ni tokens completos en logs.
 - Separar configuración, rutas, servicios y acceso a datos.
 - Mantener documentación en español argentino formal.
-- Token/QR permanente: el reenvío normal no rota token.
+- Token/QR permanente: la entrega manual no rota token; no hay reenvío por email en el MVP.
 - DNI completo visible en validación pública (decisión D0); logs/auditoría/errores sin DNI completo.
 - Certificado de curso con fechas asistidas.
 
@@ -29,8 +29,9 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 | `GET` | `/certificados/api/health` | Estado técnico básico, sin abrir configuración ni PDO. |
 | `GET` | `/certificados/api/certificados/{token}/verificacion` | Valida token público por hash `SHA-256(token + token_pepper)` y devuelve DTO público mínimo. |
 | `POST` | `/certificados/api/certificados/consulta` | Lee JSON `{ "token": "..." }` y reutiliza la misma validación que el GET. |
-| `POST` | `/certificados/api/admin/certificados` | Emite certificado y token persistido; requiere `X-Admin-Key` y devuelve DTO seguro sin DNI ni token completos. |
+| `POST` | `/certificados/api/admin/certificados` | Emite certificado y token persistido; requiere `X-Admin-Key` y devuelve DTO seguro con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; sin DNI ni token completos como campos separados. |
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revoca certificado e invalida tokens activos; requiere `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/certificados/{id}/entrega-manual` | Entrega manual de solo lectura: devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para copia/descarga externa por Bedelía; sin email, sin rotación, sin escritura. |
 
 La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_` o `-`. Los casos inexistentes, revocados, vencidos o fuera de ventana responden `404 CERTIFICATE_NOT_FOUND` sin revelar la causa. Los endpoints públicos aplican rate limiting mínimo por origen y responden `429 RATE_LIMITED` al superar el umbral configurado.
 
@@ -48,11 +49,10 @@ Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, 
 
 ## Pendientes
 
-- Confirmar si Composer está disponible en cPanel (gate para TCPDF/PHPMailer).
-- Confirmar mecanismo de email (SMTP cuenta de prueba / `stub`).
+- Confirmar si Composer está disponible en cPanel (gate para TCPDF). PHPMailer fue removido: no hay flujo de email en el MVP.
 - Confirmar generación de PDF/QR viable en el hosting.
-- Definir mecanismo de reenvío/entrega conservando token permanente en un ciclo SDD posterior; el endpoint de reenvío administrativo debe conservar el QR/token (no rotar en reenvío normal).
-- Ajustar `AdminCertificateService::reenviar()` para no revocar token activo ni insertar token nuevo por defecto.
+- La entrega manual reemplaza al reenvío por email: Bedelía copia el link público y descarga el PDF por canal externo. No hay SMTP/PHPMailer activos.
+- `token_cifrado` (AES-256-GCM, clave externa a Git) habilita reconstruir `publicValidationUrl` sin rotar token. Certificados previos sin `token_cifrado` responden `409 TOKEN_NOT_RECOVERABLE`; no se regeneran salvo decisión auditada explícita.
 - Ajustar `CertificateValidator` para devolver DNI completo (`documentNumber`) y fechas asistidas (`attendedDates`) según contrato D0.
 - Ajustar `CertificatePdfService` para incluir fechas asistidas y firmantes institucionales (Rector/a, Asesor/a Pedagógica).
 - Auth admin simple con `X-Admin-Key` queda temporal; login real es fase posterior.

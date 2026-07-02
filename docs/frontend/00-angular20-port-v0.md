@@ -45,7 +45,7 @@ Secuencia de desbloqueo: Marcos puede iniciar `frontend/angular-shell`; Matías 
 | 15 | Listado de certificaciones | Media | Contrato de filtros, estados y paginación. |
 | 16 | Listado de alumnos | Media | Cuidado con datos personales. |
 | 17 | Detalle de alumno administrativo | Media | Spec previa de datos visibles. |
-| 18 | Enviar/reenviar certificación | Baja | Contrato de envío aprobado. |
+| 18 | Entrega manual de certificación | Baja | MVP sin email: copiar link / descargar PDF. |
 | 19 | Revocar certificación | Baja | Spec de permisos y estado irreversible. |
 | 20 | Carga masiva placeholder | Baja | Alcance placeholder, sin importación real. |
 | 21 | Auditoría básica | Media | Contrato de eventos y permisos. |
@@ -81,7 +81,7 @@ Secuencia de desbloqueo: Marcos puede iniciar `frontend/angular-shell`; Matías 
 - No inventar contratos API, PDF, QR, permisos ni configuración institucional.
 - En validación pública, mostrar DNI completo por decisión institucional (D0); no exponer tokens completos ni datos reales.
 - El certificado es de curso y debe mostrar fechas asistidas (`attendedDates`).
-- QR/token permanente: las pantallas de reenvío deben indicar "mismo QR"; no portar rotación de QR desde v0.
+- QR/token permanente: las pantallas de entrega manual deben indicar "mismo QR"; no portar rotación de QR desde v0. El MVP no envía emails: la entrega es manual (copiar link / descargar PDF).
 - Auth admin simple temporal (`X-Admin-Key`); no portar credenciales demo de `login-form.tsx`.
 - Firmantes PDF: Rector/a y Asesor/a Pedagógica vía configuración institucional.
 - Usar mocks solo si el ciclo los declara explícitamente.
@@ -144,7 +144,7 @@ Evidencia de verificación de este turno (sin PHP CLI): `npm test --watch=false`
 
 ### Límites de UI final
 
-Base técnica, no diseño visual final. Diseño visual corresponde a Matías (F1-01/F1-02). Admin, PDF, QR, reenvío y configuración institucional quedan fuera de este ciclo.
+Base técnica, no diseño visual final. Diseño visual corresponde a Matías (F1-01/F1-02). Admin, PDF, QR, entrega manual y configuración institucional quedan fuera de este ciclo.
 
 ## Contrato API esperado
 
@@ -155,5 +155,5 @@ Cuando exista integración real:
 - `404 CERTIFICATE_NOT_FOUND` se muestra como certificado no verificable, no como error técnico;
 - la UI pública muestra DNI completo por decisión institucional (D0) y fechas asistidas (`attendedDates`);
 - la UI pública no debe pedir DNI como input de búsqueda pública;
-- QR/token permanente: pantallas de reenvío indican "mismo QR", no rotación;
+- QR/token permanente: pantallas de entrega manual indican "mismo QR", no rotación;
 - los modelos TypeScript futuros deben respetar `docs/backend/01-contrato-api-certificados.md`.

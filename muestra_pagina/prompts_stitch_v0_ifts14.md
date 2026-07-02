@@ -20,7 +20,7 @@ Esta versión integra el archivo original de prompts y la revisión posterior. L
 - emisión y detalle de certificaciones conectados visualmente con el certificado real del IFTS 14;
 - firmantes, cargos, logos, firmas digitales y textos base movidos a **Configuración institucional**;
 - prompts 10, 11, 12 y 22 actualizados;
-- ajustes en envío/reenvío y carga masiva para mantener QR permanente y evitar estados múltiples.
+- ajustes en entrega manual y carga masiva para mantener QR permanente y evitar estados múltiples. El MVP no envía emails: Bedelía copia el link público y descarga el PDF por canal externo.
 
 ---
 
@@ -43,8 +43,8 @@ Decisiones confirmadas:
 - El DNI completo se muestra públicamente.
 - El QR/token de certificación es permanente.
 - Si se corrigen fechas o asistencias, se mantiene el mismo QR.
-- Si se corrigen datos ya enviados, se reenvía el PDF/aviso al alumno con el mismo QR.
-- No hay borrador: la certificación se emite/envía directo.
+- Si se corrigen datos de una certificación ya emitida, Bedelía realiza una nueva entrega manual (copiar link / descargar PDF) por canal externo; el QR no cambia.
+- No hay borrador: la certificación se emite y queda disponible para entrega manual. El sistema NO envía emails (sin SMTP, sin PHPMailer, sin "reenviar").
 - El admin lo usará principalmente Bedelía desde PC/notebook.
 - Frontend final: Angular 20 + Tailwind.
 - Stitch/v0 se usan para diseño visual; luego se porta a Angular 20.
@@ -173,7 +173,7 @@ Usar:
 10. Listado de cursos.
 11. Detalle de curso.
 12. Listado de certificaciones.
-13. Enviar / reenviar certificación.
+13. Entrega manual de certificación.
 14. Revocar certificación.
 15. Listado de alumnos.
 16. Detalle de alumno administrativo.
@@ -462,7 +462,7 @@ Variante 2 — Certificación no encontrada:
 - Mensaje: “No pudimos encontrar una certificación asociada a este código.”
 - No mostrar datos personales.
 - Mostrar código consultado parcial, fecha/hora de consulta y aclaración:
-  “Verificá que el enlace o QR sea el último enviado por el instituto.”
+  “Verificá que el enlace o QR sea el vigente compartido por el instituto.”
 - Usar ámbar o azul institucional, no rojo agresivo.
 
 Variante 3 — Error técnico temporal:
@@ -570,7 +570,7 @@ Variante 2 — Certificación no encontrada:
 - Título: “Certificación no encontrada”.
 - Mensaje: “No pudimos encontrar una certificación asociada a este código.”
 - No mostrar datos personales.
-- Mostrar código consultado parcial, fecha/hora de consulta y aclaración: “Verificá que el enlace o QR sea el último enviado por el instituto.”
+- Mostrar código consultado parcial, fecha/hora de consulta y aclaración: “Verificá que el enlace o QR sea el vigente compartido por el instituto.”
 
 Variante 3 — Error técnico temporal:
 - Título: “No pudimos completar la validación”.
@@ -629,7 +629,7 @@ Contenido obligatorio:
   - Nuevo curso
   - Cargar asistencias
   - Nueva certificación
-  - Reenviar certificado
+  - Entrega manual (copiar link / descargar PDF)
   - Carga masiva
 - Resumen operativo:
   - Cursos cargados
@@ -639,13 +639,12 @@ Contenido obligatorio:
 - Actividad reciente:
   - certificación emitida;
   - asistencia modificada;
-  - certificado reenviado;
+  - entrega manual realizada;
   - certificación revocada.
 - Pendientes:
   - cursos sin fechas;
-  - alumnos sin email;
-  - certificaciones pendientes de envío;
-  - certificados que requieren reenvío por modificación.
+  - certificaciones pendientes de entrega manual;
+  - certificados que requieren nueva entrega manual por modificación.
 
 Composición:
 - Desktop-first.
@@ -693,7 +692,7 @@ Ruta conceptual:
 /admin/dashboard
 
 Objetivo de esta pantalla:
-Crear la primera pantalla del panel administrativo. Debe ayudar a Bedelía a entender qué hacer al entrar: cargar cursos, asistencias, certificaciones, reenvíos y pendientes. No debe priorizar métricas decorativas.
+Crear la primera pantalla del panel administrativo. Debe ayudar a Bedelía a entender qué hacer al entrar: cargar cursos, asistencias, certificaciones, entregas manuales y pendientes. No debe priorizar métricas decorativas.
 
 Dirección visual esperada:
 - mesa de trabajo de Bedelía;
@@ -724,10 +723,10 @@ Contenido obligatorio:
 - Header/sidebar administrativo con IFTS N.° 14.
 - Título: “Panel de certificaciones”.
 - Subtítulo: “Gestión de cursos, asistencias y certificados con QR.”
-- Acciones principales: Nuevo curso, Cargar asistencias, Nueva certificación, Reenviar certificado, Carga masiva.
+- Acciones principales: Nuevo curso, Cargar asistencias, Nueva certificación, Entrega manual (copiar link / descargar PDF), Carga masiva.
 - Resumen operativo: cursos cargados, alumnos registrados, certificaciones emitidas, certificaciones revocadas.
-- Actividad reciente: certificación emitida, asistencia modificada, certificado reenviado, certificación revocada.
-- Pendientes: cursos sin fechas, alumnos sin email, certificaciones pendientes de envío, certificados que requieren reenvío por modificación.
+- Actividad reciente: certificación emitida, asistencia modificada, entrega manual realizada, certificación revocada.
+- Pendientes: cursos sin fechas, certificaciones pendientes de entrega manual, certificados que requieren nueva entrega manual por modificación.
 
 Reglas y límites:
 - Las acciones principales deben tener más peso que las métricas.
@@ -911,11 +910,11 @@ Contenido:
   - acción “Agregar fecha”;
   - acción “Quitar fecha”.
 - Aviso importante:
-  “Si modificás fechas de un curso con certificados ya enviados, será necesario reenviar el certificado al alumno. El QR seguirá siendo el mismo.”
+  “Si modificás fechas de un curso con certificados ya emitidos, será necesario realizar una nueva entrega manual al alumno (copiar link / descargar PDF). El QR seguirá siendo el mismo.”
 - Acciones:
   - Guardar curso;
   - Cancelar;
-  - Guardar cambios y marcar para reenvío, si aplica.
+  - Guardar cambios y marcar para nueva entrega manual, si aplica.
 
 Composición:
 - Desktop-first.
@@ -992,8 +991,8 @@ Contenido obligatorio:
 - Campos del curso: nombre del curso, descripción opcional, carga horaria opcional, modalidad opcional, estado activo/inactivo.
 - Sección “Fechas del curso” con lista editable.
 - Cada fecha debe contemplar: fecha, horario opcional, descripción opcional, acción Agregar fecha y acción Quitar fecha.
-- Aviso importante: “Si modificás fechas de un curso con certificados ya enviados, será necesario reenviar el certificado al alumno. El QR seguirá siendo el mismo.”
-- Acciones: Guardar curso, Cancelar, Guardar cambios y marcar para reenvío si aplica.
+- Aviso importante: “Si modificás fechas de un curso con certificados ya entregados, será necesario realizar una nueva entrega manual al alumno. El QR seguirá siendo el mismo.”
+- Acciones: Guardar curso, Cancelar, Guardar cambios y marcar para nueva entrega manual si aplica.
 
 Reglas y límites:
 - No uses wizard si no aporta.
@@ -1058,13 +1057,13 @@ Contenido:
   - fecha seleccionada;
   - presentes marcados;
   - cambios sin guardar;
-  - aviso si una modificación afecta certificados ya enviados.
+  - aviso si una modificación afecta certificados ya compartidos manualmente.
 - Acciones:
   - Guardar asistencias;
   - Cancelar;
   - Ver curso.
 - Aviso:
-  “Si modificás una asistencia ya certificada, el certificado deberá reenviarse al alumno. El QR seguirá siendo el mismo.”
+  “Si modificás una asistencia ya certificada, el certificado deberá entregarse manualmente nuevamente al alumno. El QR seguirá siendo el mismo.”
 
 Reglas:
 - Solo se registra estado presente.
@@ -1171,9 +1170,9 @@ Contenido obligatorio:
   - DNI;
   - email;
   - una única acción o control: “Presente”.
-- Resumen con fecha seleccionada, presentes marcados, cambios sin guardar y aviso si una modificación afecta certificados ya enviados.
+- Resumen con fecha seleccionada, presentes marcados, cambios sin guardar y aviso si una modificación afecta certificados ya compartidos manualmente.
 - Acciones: Guardar asistencias, Cancelar, Ver curso.
-- Aviso: “Si modificás una asistencia ya certificada, el certificado deberá reenviarse al alumno. El QR seguirá siendo el mismo.”
+- Aviso: “Si modificás una asistencia ya certificada, el certificado deberá entregarse manualmente nuevamente al alumno. El QR seguirá siendo el mismo.”
 
 Patrones permitidos:
 - Tabla compacta con una única columna “Presente”.
@@ -1264,10 +1263,10 @@ Contenido obligatorio de la pantalla:
 - Selector o buscador de curso.
 - Vista previa automática del certificado.
 - Avisos de validación.
-- Acción principal: “Emitir y enviar”.
+- Acción principal: “Emitir certificado”.
 - Acción secundaria: “Cancelar”.
 - Texto de apoyo:
-  “Después de emitir, se generará el QR permanente, el PDF complementario y el envío al alumno.”
+  “Después de emitir, se generará el QR permanente y el PDF complementario. La entrega al alumno es manual (copiar link / descargar PDF) por canal externo; el sistema NO envía emails.”
 
 Contenido obligatorio de la vista previa:
 - título institucional del certificado;
@@ -1352,7 +1351,7 @@ URL final esperada dentro del módulo:
 /certificados/admin/certificaciones/nueva
 
 Objetivo de esta pantalla:
-Permitir que Bedelía seleccione alumno y curso, revise la vista previa del certificado complementario y emita/envíe la certificación directamente.
+Permitir que Bedelía seleccione alumno y curso, revise la vista previa del certificado complementario, emita la certificación y prepare la entrega manual mediante link copiable y PDF descargable.
 
 Importante:
 Esta pantalla NO debe sentirse como un dashboard SaaS, una fintech, un CRM comercial ni una “acta” inventada.
@@ -1379,10 +1378,10 @@ Contenido obligatorio:
 - Selector o buscador de curso.
 - Vista previa automática del certificado.
 - Avisos de validación o advertencia.
-- Acción principal: “Emitir y enviar”.
+- Acción principal: “Emitir certificado”.
 - Acción secundaria: “Cancelar”.
 - Texto de apoyo:
-  “Después de emitir, se generará el QR permanente, el PDF complementario y el envío al alumno.”
+  “Después de emitir, se generará el QR permanente y el PDF complementario. La entrega al alumno es manual (copiar link / descargar PDF) por canal externo; el sistema NO envía emails.”
 
 Contenido obligatorio de la vista previa:
 - logos institucionales;
@@ -1477,7 +1476,7 @@ URL final esperada dentro del módulo:
 /certificados/admin/certificaciones/:id
 
 Objetivo:
-Bedelía puede revisar una certificación ya emitida, verificar su estado, ver el PDF/certificado generado, consultar QR/link, reenviar, regenerar PDF o revocar si corresponde.
+Bedelía puede revisar una certificación ya emitida, verificar su estado, ver el PDF/certificado generado, consultar QR/link, copiar link, descargar PDF, regenerar PDF o revocar si corresponde. La entrega al alumno es manual (canal externo); el sistema NO envía emails.
 
 Dirección visual:
 Control documental interno / expediente de certificación.
@@ -1510,8 +1509,8 @@ Contenido obligatorio:
   - número de certificado;
   - fecha de emisión;
   - token parcial;
-  - estado de envío;
-  - fecha de último envío.
+  - fecha de última entrega manual;
+  - estado de entrega (pendiente / entregada manualmente).
 - Vista previa del certificado/PDF:
   - inspirado en el certificado real del IFTS 14;
   - horizontal o preview escalada;
@@ -1529,17 +1528,16 @@ Contenido obligatorio:
   - botón “Copiar link”.
 - Acciones principales:
   - Descargar PDF;
-  - Enviar por email;
-  - Reenviar certificado;
+  - Copiar link;
   - Regenerar PDF.
 - Acción peligrosa:
   - Revocar certificación.
 - Aviso:
-  “El QR es permanente. Si se corrigen fechas o asistencias, se debe reenviar el PDF al alumno con el mismo QR.”
+  “El QR es permanente. Si se corrigen fechas o asistencias, se realiza una nueva entrega manual (copiar link / descargar PDF) al alumno con el mismo QR. El sistema NO envía emails.”
 - Historial:
   - creada;
-  - enviada;
-  - reenviada;
+  - emitida;
+  - entrega manual realizada;
   - PDF regenerado;
   - asistencia modificada;
   - revocada.
@@ -1598,7 +1596,7 @@ URL final esperada dentro del módulo:
 /certificados/admin/certificaciones/:id
 
 Objetivo:
-Diseñar la pantalla administrativa de detalle de certificación. Bedelía debe poder revisar una certificación emitida, ver su estado, consultar los datos del alumno/curso, ver la vista previa del certificado/PDF, copiar el QR/link, descargar PDF, reenviar, regenerar PDF o revocar.
+Diseñar la pantalla administrativa de detalle de certificación. Bedelía debe poder revisar una certificación emitida, ver su estado, consultar los datos del alumno/curso, ver la vista previa del certificado/PDF, copiar el QR/link, descargar PDF, regenerar PDF o revocar. La entrega al alumno es manual (canal externo); el sistema NO envía emails.
 
 Dirección visual esperada:
 - control documental interno;
@@ -1622,8 +1620,8 @@ Contenido obligatorio:
   - número de certificado;
   - fecha de emisión;
   - token parcial;
-  - estado de envío;
-  - fecha de último envío.
+  - fecha de última entrega manual;
+  - estado de entrega (pendiente / entregada manualmente).
 - Vista previa del certificado/PDF:
   - inspirada en el certificado real del IFTS 14;
   - formato horizontal o preview escalada;
@@ -1642,17 +1640,16 @@ Contenido obligatorio:
   - botón “Copiar link”.
 - Acciones principales:
   - Descargar PDF;
-  - Enviar por email;
-  - Reenviar certificado;
+  - Copiar link;
   - Regenerar PDF.
 - Acción peligrosa separada:
   - Revocar certificación.
 - Aviso:
-  “El QR es permanente. Si se corrigen fechas o asistencias, se debe reenviar el PDF al alumno con el mismo QR.”
+  “El QR es permanente. Si se corrigen fechas o asistencias, se realiza una nueva entrega manual (copiar link / descargar PDF) al alumno con el mismo QR. El sistema NO envía emails.”
 - Historial breve:
   - creada;
-  - enviada;
-  - reenviada;
+  - emitida;
+  - entrega manual realizada;
   - PDF regenerado;
   - asistencia modificada;
   - revocada.
@@ -2038,7 +2035,7 @@ Contenido:
 - Acciones: Editar curso, Agregar fecha, Cargar asistencias, Generar certificaciones, Ver certificaciones.
 - Sección “Fechas del curso”: fecha, horario, cantidad de presentes, acción Ver asistencias.
 - Sección “Alumnos con asistencias presentes”: alumno, DNI, email, cantidad de fechas presentes, estado de certificación, acción Ver certificación.
-- Avisos: curso sin fechas; cambios que requieren reenviar certificados.
+- Avisos: curso sin fechas; cambios que requieren nueva entrega manual de certificados.
 
 Composición:
 - Desktop con buena densidad.
@@ -2114,7 +2111,7 @@ Contenido obligatorio:
 - Acciones: Editar curso, Agregar fecha, Cargar asistencias, Generar certificaciones, Ver certificaciones.
 - Sección “Fechas del curso”: fecha, horario, cantidad de presentes, acción Ver asistencias.
 - Sección “Alumnos con asistencias presentes”: alumno, DNI, email, cantidad de fechas presentes, estado de certificación, acción Ver certificación.
-- Avisos: curso sin fechas; cambios que requieren reenviar certificados.
+- Avisos: curso sin fechas; cambios que requieren nueva entrega manual de certificados.
 
 Reglas y límites:
 - Fechas y asistencias deben ser protagonistas.
@@ -2156,7 +2153,7 @@ Contenido:
 - Título: “Certificaciones”.
 - Botón principal: “Nueva certificación”.
 - Buscador por alumno, DNI, curso o número de certificado.
-- Filtros: válidas, revocadas, enviadas, pendientes de envío, requieren reenvío.
+- Filtros: válidas, revocadas, entregadas, pendientes de entrega manual, requieren nueva entrega manual.
 - Tabla/lista:
   - número de certificado;
   - alumno;
@@ -2164,7 +2161,7 @@ Contenido:
   - curso;
   - fecha de emisión;
   - estado;
-  - estado de envío;
+  - estado de entrega (pendiente / entregada manualmente);
   - acción “Ver detalle”.
 - Empty state.
 
@@ -2238,8 +2235,8 @@ Contenido obligatorio:
 - Título: “Certificaciones”.
 - Botón principal: “Nueva certificación”.
 - Buscador por alumno, DNI, curso o número de certificado.
-- Filtros: válidas, revocadas, enviadas, pendientes de envío, requieren reenvío.
-- Tabla/lista: número de certificado, alumno, DNI, curso, fecha de emisión, estado, estado de envío, acción Ver detalle.
+- Filtros: válidas, revocadas, entregadas, pendientes de entrega manual, requieren nueva entrega manual.
+- Tabla/lista: número de certificado, alumno, DNI, curso, fecha de emisión, estado, estado de entrega (pendiente / entregada manualmente), acción Ver detalle.
 - Empty state.
 
 Reglas y límites:
@@ -2404,7 +2401,7 @@ Legajo administrativo simple. No perfil social.
 Contenido:
 - Header/sidebar admin.
 - Datos del alumno: nombre, apellido, DNI completo, email.
-- Acciones: Editar datos, Nueva certificación, Enviar certificado, Ver asistencias.
+- Acciones: Editar datos, Nueva certificación, Entrega manual, Ver asistencias.
 - Resumen: cursos con asistencia, certificaciones válidas, certificaciones revocadas.
 - Sección “Cursos con asistencias presentes”: nombre del curso, fechas presentes, estado de certificación, acción Ver certificación.
 - No incluir perfil público del alumno.
@@ -2480,7 +2477,7 @@ Evitá:
 Contenido obligatorio:
 - Header/sidebar admin.
 - Datos del alumno: nombre, apellido, DNI completo, email.
-- Acciones: Editar datos, Nueva certificación, Enviar certificado, Ver asistencias.
+- Acciones: Editar datos, Nueva certificación, Entrega manual, Ver asistencias.
 - Resumen: cursos con asistencia, certificaciones válidas, certificaciones revocadas.
 - Sección “Cursos con asistencias presentes”: nombre del curso, fechas presentes, estado de certificación, acción Ver certificación.
 
@@ -2502,12 +2499,14 @@ Resultado esperado:
 
 ---
 
-## 18. Enviar / reenviar certificación
+## 18. Entrega manual de certificación
+
+> MVP: el sistema NO envía emails. No hay SMTP, no hay PHPMailer, no hay "reenviar". Bedelía obtiene el link público de validación y descarga el PDF, y entrega la certificación al alumno por canal externo (presencial, WhatsApp, etc.). El QR/token es permanente.
 
 ### Prompt para Google Stitch
 
 ```txt
-Diseñá 3 variantes visuales para un modal o pantalla administrativa de envío/reenviado de certificación del IFTS N.° 14.
+Diseñá 3 variantes visuales para un modal o pantalla administrativa de entrega manual de certificación del IFTS N.° 14.
 
 Se abre desde:
 /admin/certificaciones/:id
@@ -2516,20 +2515,21 @@ URL final esperada dentro del módulo:
 /certificados/admin/certificaciones/:id
 
 Objetivo:
-Bedelía confirma el envío o reenvío de una certificación al alumno por email.
+Bedelía obtiene el link público de validación y el PDF de la certificación para entregarlos al alumno por canal externo (presencial, WhatsApp, etc.). El sistema NO envía emails.
 
 Dirección visual:
-Confirmación administrativa de comunicación oficial.
+Confirmación administrativa de entrega manual de documentación oficial.
 
 Contenido:
-- Título: “Enviar certificación” o “Reenviar certificación”.
-- Destinatario: nombre y apellido, DNI, email.
-- Datos: curso, fechas presentes, número de certificado.
-- Mensaje: “Se enviará un nuevo PDF con el mismo QR de validación.”
-- Si hubo cambios: “Esta certificación tuvo modificaciones. El PDF será regenerado antes del envío.”
-- Aclaración: “El PDF se generará con la Configuración institucional vigente.”
-- Acciones: Enviar ahora, Cancelar.
-- Estado de confirmación exitoso: “La certificación fue enviada correctamente.”
+- Título: "Entrega manual de certificación".
+- Datos del certificado: alumno (nombre y apellido), DNI, curso, fechas presentes, número de certificado.
+- Link público de validación (copiable): /validar/:tokenCertificacion.
+- Acción: "Copiar link".
+- Acción: "Descargar PDF".
+- Mensaje: "El QR de validación es permanente. Entregá el link y el PDF al alumno por el canal que corresponda."
+- Aclaración: "El sistema no envía emails. La entrega es manual."
+- Aclaración: "El PDF se genera con la Configuración institucional vigente."
+- Estado de confirmación: "Link copiado al portapapeles." / "PDF descargado."
 
 Datos institucionales aplicados al PDF:
 - logos;
@@ -2541,21 +2541,21 @@ Datos institucionales aplicados al PDF:
 Composición:
 - Modal o panel lateral.
 - Claro, directo.
-- No editor de email.
-- No configuración SMTP.
-- Acción principal visible.
+- Sin editor de email.
+- Sin configuración SMTP.
+- Acciones principales visibles: Copiar link, Descargar PDF.
 
 Reglas:
-- El QR no cambia.
-- No editar el texto completo del email en este flujo.
+- El QR/token no cambia.
+- No hay "reenviar": la entrega manual se puede repetir cuantas veces sea necesario, siempre con el mismo QR.
 - No editar firmas/cargos en este flujo.
-- Si hubo cambios de asistencia o fechas, el reenvío usa el mismo QR.
 
 Evitar:
 - Lenguaje técnico.
 - Exceso de advertencias.
 - Wizard largo.
 - SaaS genérico.
+- Cualquier mención a "enviar email", "reenviar", "SMTP" o "destinatario de email".
 ```
 
 ### Prompt para v0
@@ -2586,7 +2586,7 @@ URL final esperada dentro del módulo:
 /certificados/admin/certificaciones/:id
 
 Objetivo de esta pantalla:
-Permitir que Bedelía confirme el envío o reenvío de una certificación por email. Debe dejar claro que se enviará un nuevo PDF con el mismo QR.
+Permitir que Bedelía obtenga el link público de validación y el PDF de la certificación para entregarlos al alumno por canal externo. El sistema NO envía emails: la entrega es manual (copiar link / descargar PDF).
 
 Dirección visual esperada:
 - mesa de trabajo de Bedelía;
@@ -2595,24 +2595,25 @@ Dirección visual esperada:
 - herramienta clara para operar cursos, asistencias y certificaciones.
 
 Contenido obligatorio:
-- Título: “Enviar certificación” o “Reenviar certificación”.
-- Destinatario: nombre y apellido, DNI, email.
-- Datos: curso, fechas presentes, número de certificado.
-- Mensaje: “Se enviará un nuevo PDF con el mismo QR de validación.”
-- Si hubo cambios: “Esta certificación tuvo modificaciones. El PDF será regenerado antes del envío.”
-- Aclaración: “El PDF se generará con la Configuración institucional vigente.”
-- Acciones: Enviar ahora, Cancelar.
-- Estado de confirmación exitoso: “La certificación fue enviada correctamente.”
+- Título: "Entrega manual de certificación".
+- Datos del certificado: alumno, DNI, curso, fechas presentes, número de certificado.
+- Link público de validación (copiable).
+- Acciones: "Copiar link", "Descargar PDF", "Cancelar".
+- Mensaje: "El QR de validación es permanente. Entregá el link y el PDF al alumno por el canal que corresponda."
+- Aclaración: "El sistema no envía emails. La entrega es manual."
+- Aclaración: "El PDF se genera con la Configuración institucional vigente."
+- Estado de confirmación: "Link copiado al portapapeles." / "PDF descargado."
 
 Reglas y límites:
 - Puede ser modal, panel lateral o pantalla compacta, según lo que mejore el flujo.
-- No incluir editor completo de email.
-- No incluir configuración SMTP.
-- No usar lenguaje técnico.
-- Acción principal visible y clara.
-- El QR no cambia.
+- NO incluir editor de email.
+- NO incluir configuración SMTP.
+- NO usar lenguaje técnico.
+- Acciones principales visibles y claras: Copiar link, Descargar PDF.
+- El QR/token no cambia.
 - El PDF usa logos, texto base, autoridades, cargos y firmas digitales desde Configuración institucional.
 - No editar firmantes en este flujo.
+- No hay "reenviar": la entrega manual se puede repetir con el mismo QR.
 
 Evitá:
 - dashboard SaaS genérico;
@@ -2622,7 +2623,8 @@ Evitá:
 - fintech;
 - colores Tailwind por defecto sin identidad;
 - íconos decorativos excesivos;
-- gráficos si no aportan.
+- gráficos si no aportan;
+- cualquier mención a "enviar email", "reenviar", "SMTP" o "destinatario de email".
 
 Resultado esperado:
 - generá una pantalla visualmente refinada y coherente con el sistema;
@@ -2884,7 +2886,7 @@ Ruta conceptual:
 /admin/auditoria
 
 Objetivo:
-Ver historial de acciones administrativas relevantes: emisión, envío, reenvío, modificación de asistencias, modificación de fechas y revocación.
+Ver historial de acciones administrativas relevantes: emisión, entrega manual, modificación de asistencias, modificación de fechas y revocación.
 
 Dirección visual:
 Bitácora institucional. Debe sentirse como registro administrativo confiable.
@@ -2899,7 +2901,7 @@ Contenido:
   - acción;
   - entidad afectada;
   - detalle breve.
-- Ejemplos: Certificación emitida, PDF reenviado, Asistencia modificada, Curso actualizado, Certificación revocada.
+- Ejemplos: Certificación emitida, Entrega manual realizada, Asistencia modificada, Curso actualizado, Certificación revocada.
 - Empty state.
 - Texto: “Este registro permite revisar cambios administrativos del sistema.”
 
@@ -2942,7 +2944,7 @@ Ruta conceptual:
 /admin/auditoria
 
 Objetivo de esta pantalla:
-Permitir revisar historial de acciones administrativas relevantes: emisión, envío, reenvío, modificación de asistencias, modificación de fechas y revocación.
+Permitir revisar historial de acciones administrativas relevantes: emisión, entrega manual, modificación de asistencias, modificación de fechas y revocación.
 
 Dirección visual esperada:
 - mesa de trabajo de Bedelía;
@@ -2974,7 +2976,7 @@ Contenido obligatorio:
 - Título: “Auditoría”.
 - Filtros: usuario, acción, fecha, certificado, alumno/DNI.
 - Lista cronológica: fecha/hora, usuario, acción, entidad afectada, detalle breve.
-- Ejemplos: Certificación emitida, PDF reenviado, Asistencia modificada, Curso actualizado, Certificación revocada.
+- Ejemplos: Certificación emitida, Entrega manual realizada, Asistencia modificada, Curso actualizado, Certificación revocada.
 - Empty state.
 - Texto: “Este registro permite revisar cambios administrativos del sistema.”
 
@@ -3009,9 +3011,9 @@ Ruta conceptual:
 Objetivo:
 Configurar datos institucionales globales que luego aparecen en:
 - PDF/certificado;
-- emails;
 - validación pública;
 - emisión de certificaciones.
+El sistema NO envía emails en el MVP (sin SMTP, sin PHPMailer); los datos de contacto institucional que aquí se configuran son metadata institucional/persona, no un sistema de envío automático.
 
 Dirección visual:
 Configuración institucional sobria.
@@ -3051,11 +3053,10 @@ Secciones:
 - firma digital del/la asesor/a pedagógico/a;
 - vista previa de cómo se verán las firmas en el PDF.
 
-4. Email
-- remitente;
-- asunto por defecto;
-- texto base;
-- aviso de que el QR permanece igual en reenvíos.
+4. Contacto institucional (metadata, sin envío automático)
+- email de contacto institucional (solo dato institucional/persona; el sistema NO envía emails en el MVP);
+- aviso de que el QR permanece igual en entregas manuales repetidas;
+- aclaración: no hay SMTP, no hay PHPMailer, no hay "reenviar"; la entrega es manual (copiar link / descargar PDF).
 
 5. Validación pública
 - texto aclaratorio;
@@ -3066,7 +3067,7 @@ Secciones:
 
 Avisos:
 - “Los cambios impactan en nuevos documentos generados.”
-- “Si se modifican firmas o autoridades, los certificados ya enviados no cambian hasta que se regenere el PDF.”
+- “Si se modifican firmas o autoridades, los certificados ya compartidos manualmente no cambian hasta que se regenere el PDF.”
 - “Estos datos no se editan en la pantalla de emisión individual.”
 
 Composición:
@@ -3105,7 +3106,7 @@ Ruta conceptual:
 /admin/configuracion
 
 Objetivo:
-Diseñar la pantalla de Configuración institucional. Esta pantalla define los datos globales que luego aparecen en certificados, PDF, emails y validación pública.
+Diseñar la pantalla de Configuración institucional. Esta pantalla define los datos globales que luego aparecen en certificados, PDF y validación pública. El sistema NO envía emails en el MVP (sin SMTP, sin PHPMailer); los datos de contacto institucional que aquí se configuran son metadata institucional/persona, no un sistema de envío automático.
 
 Importante:
 Los nombres de autoridades, cargos, firmas digitales, logos y textos base se configuran acá.
@@ -3155,11 +3156,10 @@ Usar como ejemplo:
 - Rector / Rectora del IFTS 14;
 - Asesor / Asesora Pedagógica del IFTS 14.
 
-Sección 4 — Email:
-- remitente;
-- asunto por defecto;
-- texto base;
-- aviso de que el QR permanece igual en reenvíos.
+Sección 4 — Contacto institucional (metadata, sin envío automático):
+- email de contacto institucional (solo dato institucional/persona; el sistema NO envía emails en el MVP);
+- aviso de que el QR permanece igual en entregas manuales repetidas;
+- aclaración: no hay SMTP, no hay PHPMailer, no hay "reenviar"; la entrega es manual (copiar link / descargar PDF).
 
 Sección 5 — Validación pública:
 - texto aclaratorio;
@@ -3170,7 +3170,7 @@ Sección 5 — Validación pública:
 
 Avisos obligatorios:
 - “Los cambios impactan en nuevos documentos generados.”
-- “Si se modifican firmas o autoridades, los certificados ya enviados no cambian hasta que se regenere el PDF.”
+- “Si se modifican firmas o autoridades, los certificados ya compartidos manualmente no cambian hasta que se regenere el PDF.”
 - “Estos datos no se editan en la pantalla de emisión individual.”
 
 Reglas:

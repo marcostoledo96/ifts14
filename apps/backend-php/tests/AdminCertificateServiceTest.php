@@ -59,6 +59,24 @@ if (str_contains($downloadUrl, '/validar/')) {
     throw new RuntimeException('pdfDownloadUrl no debe exponer la ruta de validación con token.');
 }
 
+// Armado de publicValidationUrl: el helper arma {public_base_url}/validar/{token}.
+$buildValidationUrl = new ReflectionMethod(AdminCertificateService::class, 'buildPublicValidationUrl');
+$validationUrl = $buildValidationUrl->invoke($service, 'TOKEN_DEMO_2026');
+$expectedValidation = 'https://demo.example.edu.ar/certificados/validar/TOKEN_DEMO_2026';
+if ($validationUrl !== $expectedValidation) {
+    throw new RuntimeException("publicValidationUrl inválido: {$validationUrl}");
+}
+
+// Sin publicBaseUrl, el helper devuelve string vacío (no filtra token).
+$serviceNoBase = (new ReflectionClass(AdminCertificateService::class))->newInstanceWithoutConstructor();
+$pubBasePropNoBase = new ReflectionProperty(AdminCertificateService::class, 'publicBaseUrl');
+$pubBasePropNoBase->setValue($serviceNoBase, null);
+$buildValidationUrlNoBase = new ReflectionMethod(AdminCertificateService::class, 'buildPublicValidationUrl');
+$emptyValidation = $buildValidationUrlNoBase->invoke($serviceNoBase, 'TOKEN_DEMO_2026');
+if ($emptyValidation !== '') {
+    throw new RuntimeException('publicValidationUrl sin base URL debe ser vacío.');
+}
+
 // Fallo de PDF dentro de la transacción: un CertificatePdfService con storage
 // inaccesible debe lanzar y el llamador (emitir) rollbackearía. Validamos acá
 // que el helper privado genera la URL con el token y no filtra el token en la

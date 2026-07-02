@@ -19,21 +19,21 @@ El sistema MUST definir tablas nuevas con prefijo `cert_` para certificados, tok
 
 ### Requirement: Token QR sin texto plano y recuperable para reenvío
 
-El sistema MUST almacenar tokens públicos como hash no reversible (`token_hash` con pepper externo a Git) y MUST NOT guardar el token completo en texto plano. El reenvío normal conserva el token permanente y requiere reconstruir el enlace `/certificados/validar/{token}`, por lo que el sistema MUST mantener un artefacto recuperable (`token_cifrado` cifrado con clave externa a Git, o equivalente reversible) además del hash. Hash-only es insuficiente para reenvío permanente. El sistema MAY conservar `token_prefijo` para soporte seguro y lookup.
+El sistema DEBE almacenar tokens públicos como `token_hash` no reversible con pepper externo a Git y DEBE mantener un artefacto recuperable cifrado (`token_cifrado` o equivalente reversible) con clave externa a Git para reconstruir el link permanente en emisión, entrega manual y regeneración de PDF. El token completo NO DEBE guardarse en texto plano ni aparecer en logs, auditoría, errores o respuestas administrativas. `token_prefijo` DEBE usarse solo como ayuda operativa segura.
 
-#### Scenario: Token verificable por hash
+#### Scenario: Token verificable y recuperable
 
-- **Given** un token público futuro
-- **When** el backend lo consulte
-- **Then** MUST calcular hash con pepper externo a Git y comparar contra `cert_tokens_verificacion.token_hash`.
-- **And** MAY conservar solo `token_prefijo` para soporte seguro.
+- DADO un certificado emitido con token activo
+- CUANDO se persiste el token
+- ENTONCES el sistema DEBE guardar `token_hash`, `token_prefijo` y `token_cifrado` o equivalente cifrado.
+- Y NO DEBE guardar el token completo en texto plano.
 
-#### Scenario: Token recuperable para reenvío permanente
+#### Scenario: Clave externa obligatoria
 
-- **Given** un certificado con token activo y un reenvío solicitado
-- **When** el backend reconstruye el enlace público
-- **Then** MUST recuperar el token desde `token_cifrado` (cifrado reversible con clave externa a Git) usando lookup por `token_hash` + `token_prefijo`.
-- **And** MUST NOT regenerar token ni revocar en reenvío normal.
+- DADO la configuración de entorno del backend
+- CUANDO se emite o consulta entrega manual
+- ENTONCES la clave de cifrado DEBE provenir de configuración externa a Git.
+- Y su ausencia DEBE producir error seguro sin exponer secretos ni tokens.
 
 ### Requirement: Exposición pública definida y modelo D0 vs estado migrado
 
@@ -69,29 +69,35 @@ El modelo MUST sostener el DTO público del contrato de API con DNI completo vis
 
 ### Requirement: Persistencia de entrega con reutilización de tablas `cert_`
 
-El sistema MUST registrar la entrega/reenvío reutilizando `cert_tokens_verificacion` (token permanente: el reenvío normal conserva el token activo y NO rota; solo la revocación explícita invalida el token, y la regeneración es excepcional y auditada) y `cert_eventos_auditoria` (evento `reenvio`). El sistema MUST NOT crear migraciones nuevas salvo que el diseño justifique una tabla `cert_entregas` mínima y versionada; en ese caso la migración MUST usar prefijo `cert_` y ser compatible con MariaDB 10.6.
+El endpoint de entrega manual DEBE reutilizar `cert_tokens_verificacion` para leer el token permanente recuperable y DEBE ser de solo lectura respecto de certificado, token y entrega: NO DEBE rotar, revocar, crear token, insertar evento operativo ni crear tabla nueva. La auditoría de copia de link queda fuera de alcance/futura salvo decisión explícita de diseño; si se implementa en otro ciclo, DEBE omitir DNI completo, token completo, link completo si se considera sensible, credenciales y SQL.
 
-#### Scenario: Reenvío conserva token sobre tabla existente
+#### Scenario: Entrega manual conserva token sobre tabla existente
 
-- **Given** un certificado con token activo en `cert_tokens_verificacion`
-- **When** se ejecuta un reenvío normal
-- **Then** el sistema MUST conservar el token activo sin rotar.
-- **And** MUST NOT crear un nuevo token ni revocar el previo salvo revocación explícita.
-- **And** MUST NOT almacenar el token completo en texto plano.
+- DADO un certificado con token activo en `cert_tokens_verificacion`
+- CUANDO se consulta la entrega manual
+- ENTONCES el sistema DEBE conservar el token activo sin rotar.
+- Y NO DEBE crear un nuevo token, revocar el previo ni almacenar el token completo en texto plano.
 
-#### Scenario: Auditoría de reenvío sobre tabla existente
+#### Scenario: Sin auditoría operativa en este endpoint
 
-- **Given** un reenvío exitoso o fallido
-- **When** se registra el evento
-- **Then** MUST insertarse en `cert_eventos_auditoria` con tipo `reenvio`, resultado y `request_id`.
-- **And** MUST NOT guardar token completo, DNI completo ni credenciales.
+- DADO una consulta de entrega manual exitosa o fallida
+- CUANDO se procesa el endpoint
+- ENTONCES NO DEBE insertarse evento obligatorio en `cert_eventos_auditoria` ni modificarse estado de entrega.
+- Y cualquier auditoría futura DEBE definirse en otro ciclo sin datos sensibles.
 
-#### Scenario: Tabla `cert_entregas` solo si el diseño lo justifica
+#### Scenario: Certificados anteriores sin token cifrado
 
-- **Given** el diseño técnico finalizado
-- **When** se evalúa la necesidad de persistencia adicional
-- **Then** el sistema MAY crear `cert_entregas` solo si la reutilización de `cert_eventos_auditoria` resulta insuficiente.
-- **And** la migración MUST usar prefijo `cert_` y ser compatible con MariaDB 10.6.
+- DADO un certificado emitido antes de existir `token_cifrado`
+- CUANDO se solicita reconstruir el link
+- ENTONCES el sistema NO DEBE regenerar token automáticamente.
+- Y DEBE requerir regeneración excepcional auditada o limitarse al PDF existente.
+
+#### Scenario: Tabla `cert_entregas` diferida
+
+- DADO el diseño técnico finalizado para este MVP
+- CUANDO se evalúa persistencia adicional de entrega manual
+- ENTONCES el sistema NO DEBE crear `cert_entregas` para el endpoint de solo lectura.
+- Y una tabla futura DEBE requerir nuevo ciclo SDD y migración `cert_` compatible con MariaDB 10.6.
 
 ### Requirement: Auditoría sin datos sensibles
 

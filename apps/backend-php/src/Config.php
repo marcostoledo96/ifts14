@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/TokenCipher.php';
+
 final class Config
 {
     private const string DEFAULT_PATH = '/home/usuario_demo/certificados_config/certificados-api.php';
@@ -73,56 +75,25 @@ final class Config
     }
 
     /**
-     * Valida y normaliza la configuración de entrega por email. El transporte
-     * se normaliza a `stub|smtp`. En modo `smtp` exige host, puerto, usuario,
-     * pass, from y `public_base_url`. En modo `stub` no exige credenciales.
+     * Valida y normaliza la clave de cifrado de tokens (AES-256-GCM). La clave
+     * DEBE provenir de configuración externa a Git y decodificar exactamente a
+     * 32 bytes (base64/base64url). Falla cerrado si falta o es inválida.
      *
      * @param array<string, mixed> $config
-     * @return array<string, mixed> Config con delivery_transport y claves SMTP normalizadas.
-     * @throws RuntimeException Si el modo es inválido o falta una clave SMTP requerida.
+     * @return array{0:array<string,mixed>,1:string} Config con token_encryption_key crudo y la clave binaria de 32 bytes.
+     * @throws RuntimeException Si la clave falta, no es string o no decodifica a 32 bytes.
      */
-    public static function requireDeliveryConfig(array $config): array
+    public static function requireTokenCipherKey(array $config): array
     {
-        $transport = strtolower(trim((string) ($config['delivery_transport'] ?? 'stub')));
-        if ($transport !== 'stub' && $transport !== 'smtp') {
+        $encoded = $config['token_encryption_key'] ?? null;
+        if (!is_string($encoded) || trim($encoded) === '') {
             throw new RuntimeException('Configuration invalid.');
         }
 
-        $config['delivery_transport'] = $transport;
+        $key = TokenCipher::key($encoded);
+        $config['token_encryption_key'] = $encoded;
 
-        if ($transport === 'stub') {
-            return $config;
-        }
-
-        foreach (['smtp_host', 'smtp_username', 'smtp_password', 'mail_from', 'public_base_url'] as $key) {
-            if (!isset($config[$key]) || !is_string($config[$key]) || trim($config[$key]) === '') {
-                throw new RuntimeException('Configuration invalid.');
-            }
-        }
-
-        $port = $config['smtp_port'] ?? null;
-        if (!is_int($port) || $port <= 0 || $port > 65535) {
-            if (is_string($port) && ctype_digit($port)) {
-                $port = (int) $port;
-            } else {
-                throw new RuntimeException('Configuration invalid.');
-            }
-        }
-        $config['smtp_port'] = $port;
-
-        // ponytail: smtp exige transporte cifrado (tls|ssl). Vacío desactiva TLS
-        // con credenciales activas: riesgo de credenciales en claro. No hay caso
-        // legítimo de SMTP plano en este flujo (solo enlace de validación).
-        $secure = strtolower(trim((string) ($config['smtp_secure'] ?? 'tls')));
-        if (!in_array($secure, ['ssl', 'tls'], true)) {
-            throw new RuntimeException('Configuration invalid.');
-        }
-        $config['smtp_secure'] = $secure;
-
-        $config['public_base_url'] = rtrim(trim($config['public_base_url']), '/');
-        $config['mail_from_name'] = trim((string) ($config['mail_from_name'] ?? $config['mail_from']));
-
-        return $config;
+        return [$config, $key];
     }
 
     /** @param array<string, mixed> $config */
