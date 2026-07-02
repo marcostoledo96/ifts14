@@ -26,19 +26,31 @@ No deben versionarse.
 
 ## Modelo para certificados QR
 
-El modelo inicial queda definido en `docs/database/01-modelo-datos-certificados.md` y en la migración controlada `database/migrations/001_certificados_qr.sql`.
+El modelo queda definido en `docs/database/01-modelo-datos-certificados.md` y en migraciones controladas bajo `database/migrations/`.
 
 | Concepto | Propósito |
 |---|---|
 | `cert_certificados` | Estado, código público, fecha de emisión y referencia al alumno/curso. |
 | `cert_tokens_verificacion` | Hash del token público, vigencia, revocación y último uso. |
 | `cert_eventos_auditoria` | Eventos no sensibles de emisión, verificación, revocación o reenvío. |
+| `cert_alumnos` | Identidad de alumnos con DNI seguro (`dni_hash`, `dni_cifrado`, `dni_mostrar`). |
+| `cert_cursos` | Cursos certificables con código, nombre y estado. |
+| `cert_curso_fechas` | Fechas normalizadas del curso con orden estable. |
+| `cert_asistencias` | Presencia por existencia de fila, sin booleano de asistencia. |
+| `cert_certificado_fechas` | Snapshot materializado de fechas certificadas al momento de emisión. |
+| `cert_configuracion_institucional` | Configuración single-row para firmantes y texto institucional. |
 
 Los tokens públicos no se guardan en texto plano. El backend futuro debe comparar contra `token_hash` calculado con hash criptográfico y pepper fuera de Git. El token/QR es permanente: el reenvío normal no rota token; solo revocación explícita o regeneración excepcional auditada invalidan el token.
 
-## Tablas futuras planificadas (D0)
+## Migraciones vigentes
 
-Para certificados de curso con fechas asistidas se planifican tablas futuras con prefijo `cert_`: `cert_alumnos`, `cert_cursos`, `cert_curso_fechas`, `cert_asistencias`, `cert_configuracion_institucional`. No se migran en este ciclo documental; ver `docs/database/01-modelo-datos-certificados.md`.
+| Migración | Estado | Contenido |
+|---|---|---|
+| `database/migrations/001_certificados_qr.sql` | Base | Certificados, tokens de verificación y auditoría segura. |
+| `database/migrations/002_token_cifrado_entrega_manual.sql` | Aditiva | `token_cifrado` recuperable para entrega manual sin rotar QR/token. |
+| `database/migrations/003_cursos_alumnos_asistencias.sql` | Aditiva | Alumnos, cursos, fechas, asistencias, snapshot de fechas y configuración institucional. |
+
+El seed ficticio opcional `database/seeds/002_cursos_alumnos_asistencias_demo.sql` sirve para verificar relaciones locales. No se usa en producción ni contiene datos reales.
 
 ## Hallazgos de auditoría (hipótesis)
 
