@@ -32,3 +32,7 @@ Los certificados legacy mantienen fallback con `documentMasked` y no inventan `a
 - `dni_cipher_key`: descifra DNI para validación pública y PDF.
 
 Ambas claves deben vivir fuera de Git y decodificar a 32 bytes.
+
+## PDF institucional
+
+El PDF de emisión incorpora `cert_configuracion_institucional` (`id = 1`) para nombre institucional, texto certificado y firmantes rector/a + asesor/a pedagógica. Si la fila falta, usa fallback seguro. No cambia endpoints, DTO administrativo, entrega manual ni token/QR permanente.

@@ -72,6 +72,9 @@ $insertAttendance->execute([$alumnoId, $fecha1, null]);
 $insertAttendance->execute([$alumnoId, $fecha2, null]);
 $insertAttendance->execute([$alumnoId, $fechaCancelada, null]);
 
+$pdo->prepare('INSERT INTO cert_configuracion_institucional (id, institucion_nombre, rector_nombre, rector_cargo, asesor_nombre, asesor_cargo, texto_certificado) VALUES (1, ?, ?, ?, ?, ?, ?)')
+    ->execute(['IFTS 14 Demo', 'Rector Demo', 'Rector', 'Asesora Demo', 'Asesora Pedagogica', 'Texto institucional demo.']);
+
 $service = new AdminCertificateService($pdo, $pepper, 'req_snapshot', null, 'salt_snapshot', $pdf, 'https://demo.example.edu.ar/certificados', $tokenKey, null, $dniKey);
 $result = $service->emitir([
     'alumnoId' => $alumnoId,
@@ -85,10 +88,25 @@ if (($result['student']['documentMasked'] ?? '') !== '12****78' || !isset($resul
 }
 
 $certificateId = (int) $result['id'];
+$pdfPath = $pdf->pathForCode((string) $result['certificateCode']);
+assertPdfPersisted($pdfPath, 'PDF institucional con configuración', ['IFTS 14 Demo', 'Texto institucional demo.', 'Rector Demo', 'Rector', 'Asesora Demo', 'Asesora Pedagogica']);
+
 $snapshotCount = (int) $pdo->query('SELECT COUNT(*) FROM cert_certificado_fechas WHERE certificado_id = ' . $certificateId)->fetchColumn();
 if ($snapshotCount !== 2) {
     throw new RuntimeException('El snapshot no excluyó asistencias canceladas/eliminadas.');
 }
+
+$pdo->exec('DELETE FROM cert_configuracion_institucional WHERE id = 1');
+$fallbackResult = $service->emitir([
+    'alumnoId' => $alumnoId,
+    'cursoId' => $cursoId,
+    'issuedAt' => '2026-07-02',
+    'expiresAt' => null,
+]);
+if (($fallbackResult['status'] ?? '') !== 'vigente' || !isset($fallbackResult['publicValidationUrl'], $fallbackResult['pdfDownloadUrl'], $fallbackResult['tokenPrefix'])) {
+    throw new RuntimeException('Emisión con configuración ausente no conservó DTO administrativo.');
+}
+assertPdfPersisted($pdf->pathForCode((string) $fallbackResult['certificateCode']), 'PDF institucional con fallback');
 
 $token = basename((string) parse_url((string) $result['publicValidationUrl'], PHP_URL_PATH));
 $validator = new CertificateValidator([
@@ -222,4 +240,29 @@ function tableCounts(PDO $pdo): array
         'tokens' => (int) $pdo->query('SELECT COUNT(*) FROM cert_tokens_verificacion')->fetchColumn(),
         'snapshot' => (int) $pdo->query('SELECT COUNT(*) FROM cert_certificado_fechas')->fetchColumn(),
     ];
+}
+
+/** @param list<string> $expectedText */
+function assertPdfPersisted(string $path, string $label, array $expectedText = []): void
+{
+    if (!is_file($path) || !is_readable($path)) {
+        throw new RuntimeException($label . ': archivo PDF no persistido.');
+    }
+
+    $contents = file_get_contents($path, false, null, 0, 5);
+    $size = filesize($path);
+    if ($contents !== '%PDF-' || $size === false || $size <= 100) {
+        throw new RuntimeException($label . ': binario PDF inválido.');
+    }
+
+    $fullContents = file_get_contents($path);
+    if (!is_string($fullContents)) {
+        throw new RuntimeException($label . ': PDF no legible.');
+    }
+
+    foreach ($expectedText as $text) {
+        if (!str_contains($fullContents, $text)) {
+            throw new RuntimeException($label . ': falta texto visible esperado: ' . $text . '.');
+        }
+    }
 }

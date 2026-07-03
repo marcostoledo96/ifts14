@@ -57,6 +57,9 @@ file_put_contents($configPath, '<?php return ' . var_export([
 
 $dni = '12345678';
 
+$pdo->prepare('INSERT INTO cert_configuracion_institucional (id, institucion_nombre, rector_nombre, rector_cargo, asesor_nombre, asesor_cargo, texto_certificado) VALUES (1, ?, ?, ?, ?, ?, ?)')
+    ->execute(['IFTS 14 HTTP', 'Rector HTTP', 'Rector', 'Asesora HTTP', 'Asesora Pedagogica', 'Texto institucional HTTP.']);
+
 $port = random_int(21000, 21999);
 $previousConfigPath = getenv('CERTIFICADOS_CONFIG_PATH');
 putenv('CERTIFICADOS_CONFIG_PATH=' . $configPath);
@@ -124,10 +127,20 @@ try {
     $emissionBody = assertJson($emission, 'emisión HTTP');
     $certificateId = (int) ($emissionBody['data']['id'] ?? 0);
     $validationUrl = (string) ($emissionBody['data']['publicValidationUrl'] ?? '');
+    $pdfDownloadUrl = (string) ($emissionBody['data']['pdfDownloadUrl'] ?? '');
     $tokenPrefix = (string) ($emissionBody['data']['tokenPrefix'] ?? '');
-    if ($certificateId < 1 || $validationUrl === '' || $tokenPrefix === '' || isset($emissionBody['data']['student']['documentNumber'])) {
+    if ($certificateId < 1 || $validationUrl === '' || $pdfDownloadUrl === '' || $tokenPrefix === '' || isset($emissionBody['data']['student']['documentNumber'])) {
         throw new RuntimeException('emisión HTTP: DTO administrativo inválido.');
     }
+
+    $pdfPath = (string) parse_url($pdfDownloadUrl, PHP_URL_PATH);
+    if ($pdfPath === '') {
+        throw new RuntimeException('emisión HTTP: URL de descarga PDF inválida.');
+    }
+    $pdf = request($port, 'GET', $pdfPath, [
+        'X-Admin-Key: ' . $adminKey,
+    ]);
+    assertPdfDownload($pdf, 'descarga PDF HTTP', ['IFTS 14 HTTP', 'Texto institucional HTTP.', 'Rector HTTP', 'Rector', 'Asesora HTTP', 'Asesora Pedagogica']);
 
     $token = basename((string) parse_url($validationUrl, PHP_URL_PATH));
     $validation = request($port, 'GET', '/certificados/' . rawurlencode($token) . '/verificacion');
@@ -151,6 +164,22 @@ try {
         'X-Admin-Key: ' . $adminKey,
     ], '{"destinatarioEmail":"persona@example.edu.ar"}');
     assertError($resend, 404, 'NOT_FOUND', 'reenvío removido HTTP');
+
+    $pdo->exec('DELETE FROM cert_configuracion_institucional WHERE id = 1');
+    $fallbackEmission = request($port, 'POST', '/admin/certificados', [
+        'Content-Type: application/json',
+        'X-Admin-Key: ' . $adminKey,
+    ], json_encode([
+        'alumnoId' => $alumnoId,
+        'cursoId' => $cursoId,
+        'issuedAt' => '2026-07-02',
+        'expiresAt' => null,
+    ], JSON_THROW_ON_ERROR));
+    assertStatus($fallbackEmission, 201, 'emisión HTTP sin config institucional');
+    $fallbackBody = assertJson($fallbackEmission, 'emisión HTTP sin config institucional');
+    if (!isset($fallbackBody['data']['publicValidationUrl'], $fallbackBody['data']['pdfDownloadUrl'], $fallbackBody['data']['tokenPrefix']) || isset($fallbackBody['data']['student']['documentNumber'])) {
+        throw new RuntimeException('emisión HTTP sin config institucional: DTO administrativo inválido.');
+    }
 } finally {
     proc_terminate($process);
     proc_close($process);
@@ -277,6 +306,26 @@ function assertError(array $response, int $status, string $code, string $label):
     $body = assertJson($response, $label);
     if (($body['error']['code'] ?? '') !== $code) {
         throw new RuntimeException("{$label}: código de error inválido.");
+    }
+}
+
+/** @param array{status:int,headers:array<string,string>,body:string} $response @param list<string> $expectedText */
+function assertPdfDownload(array $response, string $label, array $expectedText = []): void
+{
+    assertStatus($response, 200, $label);
+    if (!str_starts_with($response['headers']['content-type'] ?? '', 'application/pdf')) {
+        throw new RuntimeException("{$label}: Content-Type inválido.");
+    }
+    if (!str_contains($response['headers']['content-disposition'] ?? '', 'attachment')) {
+        throw new RuntimeException("{$label}: Content-Disposition inválido.");
+    }
+    if (!str_starts_with($response['body'], '%PDF-')) {
+        throw new RuntimeException("{$label}: cuerpo PDF inválido.");
+    }
+    foreach ($expectedText as $text) {
+        if (!str_contains($response['body'], $text)) {
+            throw new RuntimeException("{$label}: falta texto visible esperado: {$text}.");
+        }
     }
 }
 

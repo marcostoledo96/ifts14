@@ -1,10 +1,6 @@
-# Spec — admin-certificate-emission
+# Delta — admin-certificate-emission
 
-## Purpose
-
-Definir la emisión administrativa mínima de certificados QR con generación de PDF/QR: el endpoint `POST /certificados/api/admin/certificados` crea un certificado y un token de verificación permanente sobre el esquema `cert_` existente, sin migraciones nuevas, exige autorización administrativa, valida un payload mínimo ficticio/demo, persiste con PDO y prepared statements, genera y persiste el PDF/QR durante la emisión (antes del alta lógico) y responde con un DTO operativo seguro que NO expone el token completo; las respuestas operativas administrativas, logs y auditoría NO DEBEN exponer el DNI completo ni el token completo (salvo DTOs explícitamente públicos cuando la decisión institucional lo requiera), incluyendo `pdfDownloadUrl` para descarga administrativa del PDF. Esta spec separa explícitamente el acto de "token activo persistido + PDF emitido" (cubierto en este ciclo) de la "verificación pública del token recién emitido" (dependiente del mecanismo de entrega/reenvío, fuera de alcance).
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Emisión administrativa mínima de certificados
 
@@ -106,20 +102,3 @@ La respuesta `201` de `POST /certificados/api/admin/certificados` DEBE conservar
 - CUANDO se inspecciona el cuerpo JSON
 - ENTONCES NO DEBE aparecer el token completo como campo independiente.
 - Y `publicValidationUrl` DEBE ser el único link público previsto para entrega manual.
-
-### Requirement: Rechazo de JSON malformado en emisión
-
-El endpoint `POST /certificados/api/admin/certificados` MUST rechazar JSON malformado con `400 VALIDATION_ERROR` antes de emitir certificado, crear token, auditar acción de negocio o ejecutar cualquier persistencia.
-
-#### Scenario: Emisión con JSON malformado
-
-- **Given** un request autorizado a emisión con `Content-Type: application/json`
-- **When** el body JSON está malformado
-- **Then** la API MUST responder `400 VALIDATION_ERROR`.
-- **And** MUST NOT persistir certificado, token ni auditoría de emisión.
-
-#### Scenario: Emisión con JSON parseable
-
-- **Given** un request autorizado con JSON parseable
-- **When** el payload tiene campos requeridos ausentes o inválidos
-- **Then** la API MUST conservar `400 VALIDATION_ERROR` sin persistir certificado ni token.
