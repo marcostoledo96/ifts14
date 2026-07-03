@@ -63,6 +63,7 @@ final class AdminCertificateService
             $code = 'CERT-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(4)));
 
             $this->pdo->beginTransaction();
+            $this->assertNoActiveCertificateForPair($data['alumnoId'], $data['cursoId']);
             $statement = $this->pdo->prepare(<<<'SQL'
                 INSERT INTO cert_certificados (
                   alumno_id, curso_id, codigo_certificado, estado, alumno_nombre_mostrar, documento_hash,
@@ -80,7 +81,12 @@ final class AdminCertificateService
             $data['expiresAt'] === null
                 ? $statement->bindValue(9, null, PDO::PARAM_NULL)
                 : $statement->bindValue(9, $data['expiresAt']);
-            $statement->execute();
+            try {
+                $statement->execute();
+            } catch (PDOException $exception) {
+                $this->throwDuplicateCertificateIfActivePairConstraint($exception);
+                throw $exception;
+            }
 
             $id = (int) $this->pdo->lastInsertId();
             $statement = $this->pdo->prepare(<<<'SQL'
@@ -579,6 +585,36 @@ final class AdminCertificateService
         }
 
         return $rows;
+    }
+
+    private function assertNoActiveCertificateForPair(int $studentId, int $courseId): void
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT id
+            FROM cert_certificados
+            WHERE alumno_id = ?
+              AND curso_id = ?
+              AND estado = 'vigente'
+              AND revocado_en IS NULL
+            LIMIT 1
+            SQL);
+        $statement->execute([$studentId, $courseId]);
+
+        if ($statement->fetch() !== false) {
+            throw new AdminCertificateException(409, 'CERTIFICATE_ALREADY_EXISTS', 'Ya existe un certificado vigente para este alumno y curso.');
+        }
+    }
+
+    private function throwDuplicateCertificateIfActivePairConstraint(PDOException $exception): void
+    {
+        if (($exception->errorInfo[0] ?? $exception->getCode()) !== '23000') {
+            return;
+        }
+
+        $message = $exception->errorInfo[2] ?? $exception->getMessage();
+        if (is_string($message) && str_contains($message, 'uq_cert_certificados_alumno_curso_activo')) {
+            throw new AdminCertificateException(409, 'CERTIFICATE_ALREADY_EXISTS', 'Ya existe un certificado vigente para este alumno y curso.');
+        }
     }
 
     /** @param list<array{curso_fecha_id:int,fecha:string,descripcion:?string,orden:int}> $attendedDates */

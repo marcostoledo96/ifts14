@@ -40,6 +40,7 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/001_certificados_qr.
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/002_token_cifrado_entrega_manual.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/003_cursos_alumnos_asistencias.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/004_certificados_alumno_curso.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/005_prevenir_certificados_duplicados.sql');
 
 $tokenKey = str_repeat('t', 32);
 $dniKey = str_repeat('d', 32);
@@ -96,18 +97,6 @@ if ($snapshotCount !== 2) {
     throw new RuntimeException('El snapshot no excluyó asistencias canceladas/eliminadas.');
 }
 
-$pdo->exec('DELETE FROM cert_configuracion_institucional WHERE id = 1');
-$fallbackResult = $service->emitir([
-    'alumnoId' => $alumnoId,
-    'cursoId' => $cursoId,
-    'issuedAt' => '2026-07-02',
-    'expiresAt' => null,
-]);
-if (($fallbackResult['status'] ?? '') !== 'vigente' || !isset($fallbackResult['publicValidationUrl'], $fallbackResult['pdfDownloadUrl'], $fallbackResult['tokenPrefix'])) {
-    throw new RuntimeException('Emisión con configuración ausente no conservó DTO administrativo.');
-}
-assertPdfPersisted($pdf->pathForCode((string) $fallbackResult['certificateCode']), 'PDF institucional con fallback');
-
 $token = basename((string) parse_url((string) $result['publicValidationUrl'], PHP_URL_PATH));
 $validator = new CertificateValidator([
     'db_host' => '',
@@ -146,6 +135,89 @@ if (($dniKeyFailure['status'] ?? 0) !== 500 || ($dniKeyFailure['error']['code'] 
     throw new RuntimeException('Validación pública sin dni_cipher_key no falló cerrada.');
 }
 
+$beforeDuplicate = tableCounts($pdo);
+$directDuplicateRejected = false;
+try {
+    $pdo->prepare('INSERT INTO cert_certificados (alumno_id, curso_id, codigo_certificado, estado, alumno_nombre_mostrar, documento_enmascarado, curso_nombre, emitido_en) VALUES (?, ?, ?, \'vigente\', ?, ?, ?, ?)')
+        ->execute([$alumnoId, $cursoId, 'CERT-DIRECT-DUP', 'Alumno Demo', '12****78', 'Curso Demo', '2026-07-02']);
+} catch (PDOException $e) {
+    $directDuplicateRejected = ($e->errorInfo[0] ?? $e->getCode()) === '23000';
+}
+if (!$directDuplicateRejected || tableCounts($pdo) !== $beforeDuplicate) {
+    throw new RuntimeException('Constraint DB no rechazó duplicado vigente directo.');
+}
+
+$duplicateRejected = false;
+try {
+    $service->emitir([
+        'alumnoId' => $alumnoId,
+        'cursoId' => $cursoId,
+        'issuedAt' => '2026-07-02',
+        'expiresAt' => null,
+    ]);
+} catch (AdminCertificateException $e) {
+    $duplicateRejected = $e->status === 409 && $e->errorCode === 'CERTIFICATE_ALREADY_EXISTS';
+}
+if (!$duplicateRejected || tableCounts($pdo) !== $beforeDuplicate) {
+    throw new RuntimeException('Duplicado vigente no rechazó sin persistir filas.');
+}
+
+$pdo->exec('DELETE FROM cert_configuracion_institucional WHERE id = 1');
+// El fallback institucional reutiliza el par alumno+curso: revocar el certificado previo libera el slot.
+$pdo->prepare('UPDATE cert_certificados SET estado = \'revocado\', revocado_en = CURRENT_TIMESTAMP WHERE id = ?')->execute([$certificateId]);
+$fallbackResult = $service->emitir([
+    'alumnoId' => $alumnoId,
+    'cursoId' => $cursoId,
+    'issuedAt' => '2026-07-02',
+    'expiresAt' => null,
+]);
+if (($fallbackResult['status'] ?? '') !== 'vigente' || !isset($fallbackResult['publicValidationUrl'], $fallbackResult['pdfDownloadUrl'], $fallbackResult['tokenPrefix'])) {
+    throw new RuntimeException('Emisión con configuración ausente no conservó DTO administrativo.');
+}
+assertPdfPersisted($pdf->pathForCode((string) $fallbackResult['certificateCode']), 'PDF institucional con fallback');
+
+$fallbackCertificateId = (int) $fallbackResult['id'];
+$pdo->prepare('UPDATE cert_certificados SET vence_en = CURRENT_DATE - INTERVAL 1 DAY WHERE id = ?')->execute([$fallbackCertificateId]);
+$pastDueStillVigenteRejected = false;
+try {
+    $service->emitir([
+        'alumnoId' => $alumnoId,
+        'cursoId' => $cursoId,
+        'issuedAt' => '2026-07-02',
+        'expiresAt' => null,
+    ]);
+} catch (AdminCertificateException $e) {
+    $pastDueStillVigenteRejected = $e->status === 409 && $e->errorCode === 'CERTIFICATE_ALREADY_EXISTS';
+}
+if (!$pastDueStillVigenteRejected) {
+    throw new RuntimeException('Certificado con vence_en pasado pero estado vigente no bloqueó.');
+}
+
+$pdo->prepare('UPDATE cert_certificados SET estado = \'vencido\' WHERE id = ?')->execute([$fallbackCertificateId]);
+$expiredStateResult = $service->emitir([
+    'alumnoId' => $alumnoId,
+    'cursoId' => $cursoId,
+    'issuedAt' => '2026-07-02',
+    'expiresAt' => null,
+]);
+if (($expiredStateResult['status'] ?? '') !== 'vigente') {
+    throw new RuntimeException('Certificado con estado vencido bloqueó una nueva emisión.');
+}
+
+$pdo->prepare('UPDATE cert_certificados SET estado = \'revocado\', revocado_en = CURRENT_TIMESTAMP WHERE id = ?')->execute([(int) $expiredStateResult['id']]);
+$pdo->prepare('INSERT INTO cert_certificados (codigo_certificado, estado, alumno_nombre_mostrar, documento_enmascarado, curso_nombre, emitido_en) VALUES (?, \'vigente\', ?, ?, ?, ?)')
+    ->execute(['CERT-LEGACY-NULL', 'Legacy Null', '00****00', 'Curso Legacy', '2026-07-01']);
+$legacyNullResult = $service->emitir([
+    'alumnoId' => $alumnoId,
+    'cursoId' => $cursoId,
+    'issuedAt' => '2026-07-02',
+    'expiresAt' => null,
+]);
+if (($legacyNullResult['status'] ?? '') !== 'vigente') {
+    throw new RuntimeException('Certificado legacy sin alumno/curso bloqueó una nueva emisión.');
+}
+
+$pdo->prepare('UPDATE cert_certificados SET estado = \'revocado\', revocado_en = CURRENT_TIMESTAMP WHERE id = ?')->execute([(int) $legacyNullResult['id']]);
 $pdo->prepare('UPDATE cert_asistencias SET eliminado_en = CURRENT_TIMESTAMP WHERE alumno_id = ? AND curso_fecha_id = ?')->execute([$alumnoId, $fecha2]);
 $beforeNoAttendance = tableCounts($pdo);
 $noAttendanceRejected = false;
@@ -222,6 +294,11 @@ function applySqlFile(PDO $pdo, string $path): void
     ));
 
     foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
+        if (str_starts_with(strtoupper($statement), 'SELECT ')) {
+            $pdo->query($statement)?->closeCursor();
+            continue;
+        }
+
         $pdo->exec($statement);
     }
 }
