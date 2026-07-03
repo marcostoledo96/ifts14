@@ -142,6 +142,36 @@ try {
     ]);
     assertPdfDownload($pdf, 'descarga PDF HTTP', ['IFTS 14 HTTP', 'Texto institucional HTTP.', 'Rector HTTP', 'Rector', 'Asesora HTTP', 'Asesora Pedagogica']);
 
+    $unsafeCertificateCode = "CERT/2026\r\nBAD\\TOKEN";
+    $safeCertificateCode = 'CERT_2026__BAD_TOKEN';
+    $pdfFiles = glob($storagePath . '/*.pdf') ?: [];
+    if (count($pdfFiles) !== 1 || !rename($pdfFiles[0], $storagePath . '/' . $safeCertificateCode . '.pdf')) {
+        throw new RuntimeException('descarga PDF/QR HTTP: no se pudo preparar código inseguro de certificado.');
+    }
+    $pdo->prepare('UPDATE cert_certificados SET codigo_certificado = ? WHERE id = ?')
+        ->execute([$unsafeCertificateCode, $certificateId]);
+
+    $pdfWithUnsafeCode = request($port, 'GET', $pdfPath, [
+        'X-Admin-Key: ' . $adminKey,
+    ]);
+    assertPdfDownload($pdfWithUnsafeCode, 'descarga PDF HTTP con filename sanitizado');
+    assertContentDisposition($pdfWithUnsafeCode, 'attachment; filename="' . $safeCertificateCode . '.pdf"', 'descarga PDF HTTP con filename sanitizado');
+
+    $tokenSnapshotBeforeQr = tokenSnapshot($pdo, $certificateId);
+    $qr = request($port, 'GET', '/admin/certificados/' . $certificateId . '/qr.png', [
+        'X-Admin-Key: ' . $adminKey,
+    ]);
+    assertPngDownload($qr, 'descarga QR HTTP');
+    assertContentDisposition($qr, 'attachment; filename="' . $safeCertificateCode . '-qr.png"', 'descarga QR HTTP con filename sanitizado');
+    if (tokenSnapshot($pdo, $certificateId) !== $tokenSnapshotBeforeQr) {
+        throw new RuntimeException('descarga QR HTTP: mutó token o certificado.');
+    }
+
+    $missingQr = request($port, 'GET', '/admin/certificados/999999/qr.png', [
+        'X-Admin-Key: ' . $adminKey,
+    ]);
+    assertError($missingQr, 404, 'CERTIFICATE_NOT_FOUND', 'QR inexistente HTTP');
+
     $token = basename((string) parse_url($validationUrl, PHP_URL_PATH));
     $validation = request($port, 'GET', '/certificados/' . rawurlencode($token) . '/verificacion');
     assertStatus($validation, 200, 'validación pública HTTP');
@@ -180,6 +210,14 @@ try {
     if (!isset($fallbackBody['data']['publicValidationUrl'], $fallbackBody['data']['pdfDownloadUrl'], $fallbackBody['data']['tokenPrefix']) || isset($fallbackBody['data']['student']['documentNumber'])) {
         throw new RuntimeException('emisión HTTP sin config institucional: DTO administrativo inválido.');
     }
+
+    $fallbackCertificateId = (int) ($fallbackBody['data']['id'] ?? 0);
+    $pdo->prepare('UPDATE cert_tokens_verificacion SET token_cifrado = NULL WHERE certificado_id = ?')
+        ->execute([$fallbackCertificateId]);
+    $legacyQr = request($port, 'GET', '/admin/certificados/' . $fallbackCertificateId . '/qr.png', [
+        'X-Admin-Key: ' . $adminKey,
+    ]);
+    assertError($legacyQr, 409, 'TOKEN_NOT_RECOVERABLE', 'QR token no recuperable HTTP');
 } finally {
     proc_terminate($process);
     proc_close($process);
@@ -303,9 +341,47 @@ function assertJson(array $response, string $label): array
 function assertError(array $response, int $status, string $code, string $label): void
 {
     assertStatus($response, $status, $label);
+    assertSecurityHeaders($response, $label);
+    assertAntiCacheHeaders($response, $label);
+    if (!str_starts_with($response['headers']['content-type'] ?? '', 'application/json')) {
+        throw new RuntimeException("{$label}: Content-Type JSON inválido.");
+    }
     $body = assertJson($response, $label);
     if (($body['error']['code'] ?? '') !== $code) {
         throw new RuntimeException("{$label}: código de error inválido.");
+    }
+}
+
+/** @param array{status:int,headers:array<string,string>,body:string} $response */
+function assertContentDisposition(array $response, string $expected, string $label): void
+{
+    if (($response['headers']['content-disposition'] ?? '') !== $expected) {
+        throw new RuntimeException("{$label}: Content-Disposition no fue sanitizado.");
+    }
+}
+
+/** @param array{status:int,headers:array<string,string>,body:string} $response */
+function assertAntiCacheHeaders(array $response, string $label): void
+{
+    if (($response['headers']['cache-control'] ?? '') !== 'no-store, private, max-age=0') {
+        throw new RuntimeException("{$label}: falta Cache-Control anti-cache.");
+    }
+    if (($response['headers']['pragma'] ?? '') !== 'no-cache') {
+        throw new RuntimeException("{$label}: falta Pragma anti-cache.");
+    }
+    if (($response['headers']['expires'] ?? '') !== '0') {
+        throw new RuntimeException("{$label}: falta Expires anti-cache.");
+    }
+}
+
+/** @param array{status:int,headers:array<string,string>,body:string} $response */
+function assertSecurityHeaders(array $response, string $label): void
+{
+    if (($response['headers']['x-content-type-options'] ?? '') !== 'nosniff') {
+        throw new RuntimeException("{$label}: falta X-Content-Type-Options.");
+    }
+    if (($response['headers']['x-frame-options'] ?? '') !== 'SAMEORIGIN') {
+        throw new RuntimeException("{$label}: falta X-Frame-Options.");
     }
 }
 
@@ -327,6 +403,36 @@ function assertPdfDownload(array $response, string $label, array $expectedText =
             throw new RuntimeException("{$label}: falta texto visible esperado: {$text}.");
         }
     }
+}
+
+/** @param array{status:int,headers:array<string,string>,body:string} $response */
+function assertPngDownload(array $response, string $label): void
+{
+    assertStatus($response, 200, $label);
+    if (!str_starts_with($response['headers']['content-type'] ?? '', 'image/png')) {
+        throw new RuntimeException("{$label}: Content-Type inválido.");
+    }
+    if (!str_contains($response['headers']['content-disposition'] ?? '', 'attachment')) {
+        throw new RuntimeException("{$label}: Content-Disposition inválido.");
+    }
+    if (($response['headers']['cache-control'] ?? '') !== 'no-store, private, max-age=0') {
+        throw new RuntimeException("{$label}: Cache-Control inválido.");
+    }
+    if (($response['headers']['content-length'] ?? '') !== (string) strlen($response['body'])) {
+        throw new RuntimeException("{$label}: Content-Length inválido.");
+    }
+    if (!str_starts_with($response['body'], "\x89PNG\r\n\x1a\n")) {
+        throw new RuntimeException("{$label}: cuerpo PNG inválido.");
+    }
+}
+
+/** @return array<string, mixed> */
+function tokenSnapshot(PDO $pdo, int $certificateId): array
+{
+    $statement = $pdo->prepare('SELECT estado, token_prefijo, token_cifrado FROM cert_tokens_verificacion WHERE certificado_id = ? ORDER BY id');
+    $statement->execute([$certificateId]);
+
+    return $statement->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function cleanDir(string $path): void

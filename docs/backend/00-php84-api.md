@@ -32,6 +32,7 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 | `POST` | `/certificados/api/admin/certificados` | Emite certificado desde `alumnoId` + `cursoId` y asistencias activas; requiere `X-Admin-Key` y devuelve DTO seguro con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; sin DNI ni token completos como campos separados. |
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revoca certificado e invalida tokens activos; requiere `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/certificados/{id}/entrega-manual` | Entrega manual de solo lectura: devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para copia/descarga externa por Bedelía; sin email, sin rotación, sin escritura. |
+| `GET` | `/certificados/api/admin/certificados/{id}/qr.png` | Descarga administrativa del QR como PNG aislado (`image/png`, `attachment`) generado on-demand desde el mismo `publicValidationUrl`. No rota token, no persiste PNG, no envía email; requiere extensión PHP `gd` (o equivalente) en hosting. |
 | `POST/GET/PATCH` | `/certificados/api/admin/cursos`, `/admin/cursos/{id}`, `/admin/cursos/{id}/estado` | CRUD mínimo de cursos para datos maestros; requiere `X-Admin-Key`. |
 | `POST/GET/PATCH` | `/certificados/api/admin/alumnos`, `/admin/alumnos/{id}`, `/admin/alumnos/{id}/estado` | CRUD mínimo de alumnos con DNI cifrado/hash y DTO administrativo enmascarado; requiere `X-Admin-Key`. |
 | `POST/GET/PATCH` | `/certificados/api/admin/cursos/{cursoId}/fechas`, `/admin/cursos/{cursoId}/fechas/{fechaId}` | Carga y mantenimiento de fechas de curso ordenadas. |
@@ -72,6 +73,7 @@ Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, 
 - Auth admin simple con `X-Admin-Key` queda temporal; login real es fase posterior.
 - **Rate limiting público**: implementado como protección básica de nodo único con JSON temporal y `flock()`. No reemplaza controles anti-abuso distribuidos.
 - **Auditoría fault-injection**: disponible en `apps/backend-php/tests/fault-injection-audit.php` para DB demo ficticia; restaura `cert_eventos_auditoria` en `finally`.
+- **Dependencia runtime `gd` para QR PNG**: el endpoint `GET /certificados/api/admin/certificados/{id}/qr.png` exige la extensión PHP `gd` (o equivalente) en hosting. La imagen Docker `docker/php84/Dockerfile` instala `libpng-dev` y compila `gd`; `scripts/php-docker-modules-check.sh` valida el módulo. Confirmar `gd` habilitado en cPanel antes de deploy; si falta, la ruta responde `500 CONFIGURATION_ERROR` y queda como gate pendiente.
 
 ## Validación local con PHP 8.4
 

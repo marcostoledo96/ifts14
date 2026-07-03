@@ -23,6 +23,7 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revocar certificado e invalidar tokens activos. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/certificados/{id}/pdf` | Descargar el PDF persistido del certificado. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/certificados/{id}/entrega-manual` | Entrega manual de solo lectura: devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para copia/descarga externa. Sin email, sin rotación, sin escritura. | Admin con `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/certificados/{id}/qr.png` | Descarga administrativa del QR como PNG aislado (`image/png`, `attachment`), generado on-demand desde el mismo `publicValidationUrl`. Sin rotación de token, sin persistencia, sin email. | Admin con `X-Admin-Key`. Requiere extensión PHP `gd` (o equivalente) en el hosting. |
 | `POST` | `/certificados/api/admin/cursos` | Crear curso certificable. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/cursos` | Listar cursos; admite filtro `estado`. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/cursos/{id}` | Consultar curso. | Admin con `X-Admin-Key`. |
@@ -314,6 +315,53 @@ El DTO de entrega nunca incluye el token completo como campo separado: el token 
 
 El endpoint `POST /admin/certificados/{id}/reenviar` fue **removido** del contrato MVP. No existe flujo de email, SMTP, PHPMailer ni transporte `stub|smtp`. Cualquier invocación a esa ruta responde `404 NOT_FOUND`. La entrega manual reemplaza al reenvío: ver `GET /admin/certificados/{id}/entrega-manual`.
 
+### `GET /admin/certificados/{id}/qr.png`
+
+Descarga administrativa del QR como PNG aislado, generado on-demand desde el mismo `publicValidationUrl` del PDF. Permite a Bedelía obtener el QR para uso manual en diseños externos conservando el token/QR permanente: no rota token, no persiste el PNG, no muta base, no inserta auditoría y no envía email. La operación reutiliza el helper de `AdminCertificateService` que ya usa la entrega manual y comparte la misma validación de `X-Admin-Key`.
+
+> **Dependencia runtime.** El render del PNG exige extensión PHP `gd` (o equivalente) en el hosting. La imagen Docker `docker/php84/Dockerfile` instala `libpng-dev` y compila `gd`; `scripts/php-docker-modules-check.sh` declara `gd` como módulo requerido. Antes de deploy, confirmar que cPanel/staging tenga `gd` habilitado: si falta, la ruta responde `500 CONFIGURATION_ERROR` y se registra como gate pendiente.
+
+Headers:
+
+| Header | Regla |
+|---|---|
+| `X-Admin-Key` | Requerido. Se valida igual que en emisión/revocación/descarga. |
+| `Content-Type` | No se exige; el endpoint es `GET` y no acepta body. |
+
+Parámetros:
+
+| Campo | Ubicación | Regla |
+|---|---|---|
+| `id` | path | Requerido. Numérico entero mayor a 0. Si no es numérico, responde `400 VALIDATION_ERROR`. |
+
+Respuesta `200` con body binario PNG y headers:
+
+| Header | Valor |
+|---|---|
+| `Content-Type` | `image/png` |
+| `Content-Disposition` | `attachment; filename="{certificateCode_sanitizado}-qr.png"` |
+| `Content-Length` | Tamaño real del PNG (`strlen($png)`) |
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `SAMEORIGIN` |
+| `Cache-Control` | `no-store, private, max-age=0` |
+| `Pragma` | `no-cache` |
+| `Expires` | `0` |
+
+El filename se sanitiza con `preg_replace('/[^A-Za-z0-9_-]/', '_', $certificateCode)` (la misma regex aplicada a PDF) para impedir CRLF, path traversal, caracteres fuera de `[A-Za-z0-9_-]` o tokens embebidos. La sanitización también aplica al `Content-Disposition` del endpoint PDF (`{certificateCode}.pdf`) para cerrar la misma superficie.
+
+Errores:
+
+| HTTP | `code` | Uso |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | `id` no numérico o fuera de rango. |
+| 401 | `UNAUTHORIZED` | Falta `X-Admin-Key` o valor inválido. |
+| 404 | `CERTIFICATE_NOT_FOUND` | Certificado inexistente o no vigente. |
+| 405 | `METHOD_NOT_ALLOWED` | Método distinto de `GET` (con `Allow: GET`). |
+| 409 | `TOKEN_NOT_RECOVERABLE` | `token_cifrado` ausente, envelope inválido, clave inválida o descifrado fallido. No regenera token. |
+| 500 | `CONFIGURATION_ERROR` | Falta `gd` o equivalentes de cifrado/configuración. |
+
+La descarga QR no expone el token completo ni rutas internas en la respuesta, logs o auditoría. La URL pública codificada en el PNG es el mismo `publicValidationUrl` que devuelve `entrega-manual` y que ya viaja dentro del PDF.
+
 ## Sobre de errores
 
 Toda respuesta de error debe usar este formato:
@@ -383,8 +431,13 @@ Toda respuesta JSON de la API emite los siguientes headers de seguridad centrali
 
 | Header | Valor | Aplica a |
 |---|---|---|
-| `X-Content-Type-Options` | `nosniff` | Éxitos y errores JSON. |
-| `X-Frame-Options` | `SAMEORIGIN` | Éxitos y errores JSON. |
+| `X-Content-Type-Options` | `nosniff` | Éxitos y errores JSON, y descargas binarias PDF/QR. |
+| `X-Frame-Options` | `SAMEORIGIN` | Éxitos y errores JSON, y descargas binarias PDF/QR. |
+| `Cache-Control` | `no-store, private, max-age=0` | Éxitos y errores JSON, y descargas binarias PDF/QR. |
+| `Pragma` | `no-cache` | Éxitos y errores JSON, y descargas binarias PDF/QR. |
+| `Expires` | `0` | Éxitos y errores JSON, y descargas binarias PDF/QR. |
+
+Las cabeceras anti-cache (`Cache-Control`, `Pragma`, `Expires`) se aplican también a las descargas binarias PDF y QR para impedir caching de contenido administrativo sensible; el helper `Response::noStoreSecurityHeaders()` las centraliza en `apps/backend-php/src/Response.php` y se invoca desde `Response::json()`, `Response::error()`, `streamPdf()` y `streamQrPng()`.
 
 Los endpoints POST que esperan JSON (`POST /certificados/consulta`, `POST /admin/certificados`, `POST /admin/certificados/{id}/revocar`) deben recibir `Content-Type: application/json` (con o sin `; charset=...`). Si el header falta o no coincide, la API responde `415 UNSUPPORTED_MEDIA_TYPE` antes de cualquier side effect o rate-limit. `GET /admin/certificados/{id}/entrega-manual` y `GET /admin/certificados/{id}/pdf` no exigen `Content-Type` (son `GET`).
 
