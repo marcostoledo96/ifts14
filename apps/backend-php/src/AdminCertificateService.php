@@ -255,11 +255,38 @@ final class AdminCertificateService
      */
     public function entregaManual(int|string $id): array
     {
+        $data = $this->loadManualDeliveryData($this->validatedCertificateId($id));
+        $this->ensurePdfExists($data['certificateCode']);
+
+        return [
+            'certificadoId' => $data['certificateId'],
+            'publicValidationUrl' => $data['publicValidationUrl'],
+            'pdfDownloadUrl' => $this->buildPdfDownloadUrl($data['certificateId']),
+            'tokenPrefix' => $data['tokenPrefix'],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function deliveryTokenData(int|string $id): array
+    {
+        return $this->loadManualDeliveryData($this->validatedCertificateId($id));
+    }
+
+    private function validatedCertificateId(int|string $id): int
+    {
         $certificateId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         if (!is_int($certificateId)) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
 
+        return $certificateId;
+    }
+
+    /**
+     * @return array{certificateId:int,certificateCode:string,publicValidationUrl:string,tokenPrefix:string}
+     */
+    private function loadManualDeliveryData(int $certificateId): array
+    {
         // Lectura de certificado vigente + token actualmente válido. No abre
         // transacción: el endpoint es de solo lectura y no requiere FOR UPDATE.
         // Los predicados del token replican CertificateValidator::findCertificate
@@ -303,16 +330,15 @@ final class AdminCertificateService
 
         $tokenCipher = $this->readLobAsString($row['token_cifrado'] ?? null);
         $token = $this->recoverToken($tokenCipher);
-
-        // Verificación de PDF persistido: misma semántica de path que la
-        // descarga (CertificatePdfService::pathForCode). Si falta o es ilegible,
-        // respondemos el mismo error seguro que el endpoint de descarga.
-        $this->ensurePdfExists($row['codigo_certificado'] ?? null);
+        $certificateCode = is_string($row['codigo_certificado'] ?? null) ? $row['codigo_certificado'] : '';
+        if ($certificateCode === '') {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+        }
 
         return [
-            'certificadoId' => $certificateId,
+            'certificateId' => $certificateId,
+            'certificateCode' => $certificateCode,
             'publicValidationUrl' => $this->buildPublicValidationUrl($token),
-            'pdfDownloadUrl' => $this->buildPdfDownloadUrl($certificateId),
             'tokenPrefix' => $tokenPrefix,
         ];
     }
