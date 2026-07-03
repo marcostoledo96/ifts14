@@ -56,23 +56,6 @@ file_put_contents($configPath, '<?php return ' . var_export([
 ], true) . ';');
 
 $dni = '12345678';
-$pdo->prepare('INSERT INTO cert_alumnos (apellido_nombre, dni_hash, dni_cifrado, dni_mostrar, estado) VALUES (?, ?, ?, ?, \'activo\')')
-    ->execute(['Alumno HTTP Demo', hash('sha256', $dni, true), DniCipher::encrypt($dni, $dniKey), '12******78']);
-$alumnoId = (int) $pdo->lastInsertId();
-
-$pdo->prepare('INSERT INTO cert_cursos (codigo, nombre, estado) VALUES (?, ?, \'activo\')')
-    ->execute(['CUR-HTTP', 'Curso HTTP Demo']);
-$cursoId = (int) $pdo->lastInsertId();
-
-$insertDate = $pdo->prepare('INSERT INTO cert_curso_fechas (curso_id, fecha, descripcion, orden, estado) VALUES (?, ?, ?, ?, ?)');
-$insertDate->execute([$cursoId, '2026-06-01', 'Clase 1', 1, 'realizada']);
-$fecha1 = (int) $pdo->lastInsertId();
-$insertDate->execute([$cursoId, '2026-06-08', 'Clase 2', 2, 'programada']);
-$fecha2 = (int) $pdo->lastInsertId();
-
-$insertAttendance = $pdo->prepare('INSERT INTO cert_asistencias (alumno_id, curso_fecha_id, eliminado_en) VALUES (?, ?, NULL)');
-$insertAttendance->execute([$alumnoId, $fecha1]);
-$insertAttendance->execute([$alumnoId, $fecha2]);
 
 $port = random_int(21000, 21999);
 $previousConfigPath = getenv('CERTIFICADOS_CONFIG_PATH');
@@ -92,6 +75,41 @@ if (!is_resource($process)) {
 
 try {
     waitForServer($port);
+
+    $courseResponse = postJson($port, '/admin/cursos', $adminKey, [
+        'codigo' => 'CUR-HTTP',
+        'nombre' => 'Curso HTTP Demo',
+    ]);
+    assertStatus($courseResponse, 201, 'crear curso HTTP');
+    $cursoId = (int) (assertJson($courseResponse, 'crear curso HTTP')['data']['id'] ?? 0);
+
+    $studentResponse = postJson($port, '/admin/alumnos', $adminKey, [
+        'apellidoNombre' => 'Alumno HTTP Demo',
+        'dni' => $dni,
+    ]);
+    assertStatus($studentResponse, 201, 'crear alumno HTTP');
+    $alumnoId = (int) (assertJson($studentResponse, 'crear alumno HTTP')['data']['id'] ?? 0);
+
+    $date1Response = postJson($port, '/admin/cursos/' . $cursoId . '/fechas', $adminKey, [
+        'fecha' => '2026-06-01',
+        'descripcion' => 'Clase 1',
+        'orden' => 1,
+        'estado' => 'realizada',
+    ]);
+    assertStatus($date1Response, 201, 'crear fecha 1 HTTP');
+    $fecha1 = (int) (assertJson($date1Response, 'crear fecha 1 HTTP')['data']['id'] ?? 0);
+
+    $date2Response = postJson($port, '/admin/cursos/' . $cursoId . '/fechas', $adminKey, [
+        'fecha' => '2026-06-08',
+        'descripcion' => 'Clase 2',
+        'orden' => 2,
+        'estado' => 'programada',
+    ]);
+    assertStatus($date2Response, 201, 'crear fecha 2 HTTP');
+    $fecha2 = (int) (assertJson($date2Response, 'crear fecha 2 HTTP')['data']['id'] ?? 0);
+
+    assertStatus(postJson($port, '/admin/asistencias', $adminKey, ['alumnoId' => $alumnoId, 'cursoId' => $cursoId, 'cursoFechaId' => $fecha1]), 201, 'crear asistencia 1 HTTP');
+    assertStatus(postJson($port, '/admin/asistencias', $adminKey, ['alumnoId' => $alumnoId, 'cursoId' => $cursoId, 'cursoFechaId' => $fecha2]), 201, 'crear asistencia 2 HTTP');
 
     $emission = request($port, 'POST', '/admin/certificados', [
         'Content-Type: application/json',
@@ -222,6 +240,15 @@ function request(int $port, string $method, string $path, array $headers = [], s
     }
 
     return ['status' => (int) ($matches[1] ?? 0), 'headers' => $parsedHeaders, 'body' => $contents];
+}
+
+/** @return array{status:int,headers:array<string,string>,body:string} */
+function postJson(int $port, string $path, string $adminKey, array $body): array
+{
+    return request($port, 'POST', $path, [
+        'Content-Type: application/json',
+        'X-Admin-Key: ' . $adminKey,
+    ], json_encode($body, JSON_THROW_ON_ERROR));
 }
 
 /** @param array{status:int,headers:array<string,string>,body:string} $response */
