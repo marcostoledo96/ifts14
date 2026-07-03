@@ -9,6 +9,7 @@ require_once __DIR__ . '/src/Database.php';
 require_once __DIR__ . '/src/CertificateValidator.php';
 require_once __DIR__ . '/src/AuthGate.php';
 require_once __DIR__ . '/src/AdminCertificateService.php';
+require_once __DIR__ . '/src/AdminMasterDataService.php';
 
 $requestId = 'req_' . bin2hex(random_bytes(8));
 
@@ -77,6 +78,218 @@ if ($path === '/certificados/consulta') {
     return;
 }
 
+if ($path === '/admin/cursos') {
+    if (!in_array($method, ['GET', 'POST'], true)) {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+    $config = adminConfig($requestId, $method === 'POST');
+    if ($config === null) {
+        return;
+    }
+
+    $body = $method === 'POST' ? readJsonBody($requestId) : null;
+    if ($method === 'POST' && $body === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $method, $body): array {
+        $service = new AdminMasterDataService(Database::pdo($config), $requestId);
+        return $method === 'POST'
+            ? ['status' => 201, 'data' => $service->createCourse($body ?? [])]
+            : ['status' => 200, 'data' => $service->listCourses(is_string($_GET['estado'] ?? null) ? $_GET['estado'] : null)];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/cursos/(\d+)$#', $path, $matches) === 1) {
+    if ($method !== 'GET') {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+
+    $config = adminConfig($requestId);
+    if ($config === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $matches): array {
+        return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->getCourse((int) $matches[1])];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/cursos/(\d+)/estado$#', $path, $matches) === 1) {
+    if ($method !== 'PATCH') {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+    $config = adminConfig($requestId, true);
+    if ($config === null) {
+        return;
+    }
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $matches, $body): array {
+        return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->updateCourseStatus((int) $matches[1], $body)];
+    }, $requestId);
+    return;
+}
+
+if ($path === '/admin/alumnos') {
+    if (!in_array($method, ['GET', 'POST'], true)) {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+    $config = adminConfig($requestId, $method === 'POST');
+    if ($config === null) {
+        return;
+    }
+    $dniCipherKey = $method === 'POST' ? loadDniCipherKey($config, $requestId) : null;
+    if ($method === 'POST' && $dniCipherKey === null) {
+        return;
+    }
+    $body = $method === 'POST' ? readJsonBody($requestId) : null;
+    if ($method === 'POST' && $body === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $method, $body, $dniCipherKey): array {
+        $service = new AdminMasterDataService(Database::pdo($config), $requestId, $dniCipherKey);
+        return $method === 'POST'
+            ? ['status' => 201, 'data' => $service->createStudent($body ?? [])]
+            : ['status' => 200, 'data' => $service->listStudents()];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/alumnos/(\d+)$#', $path, $matches) === 1) {
+    if ($method !== 'GET') {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+
+    $config = adminConfig($requestId);
+    if ($config === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $matches): array {
+        return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->getStudent((int) $matches[1])];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/alumnos/(\d+)/estado$#', $path, $matches) === 1) {
+    if ($method !== 'PATCH') {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+    $config = adminConfig($requestId, true);
+    if ($config === null) {
+        return;
+    }
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $matches, $body): array {
+        return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->updateStudentStatus((int) $matches[1], $body)];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/cursos/(\d+)/fechas$#', $path, $matches) === 1) {
+    if (!in_array($method, ['GET', 'POST'], true)) {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+    $config = adminConfig($requestId, $method === 'POST');
+    if ($config === null) {
+        return;
+    }
+    $body = $method === 'POST' ? readJsonBody($requestId) : null;
+    if ($method === 'POST' && $body === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $method, $matches, $body): array {
+        $service = new AdminMasterDataService(Database::pdo($config), $requestId);
+        return $method === 'POST'
+            ? ['status' => 201, 'data' => $service->createCourseDate((int) $matches[1], $body ?? [])]
+            : ['status' => 200, 'data' => $service->listCourseDates((int) $matches[1])];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/cursos/(\d+)/fechas/(\d+)$#', $path, $matches) === 1) {
+    if ($method !== 'PATCH') {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+    $config = adminConfig($requestId, true);
+    if ($config === null) {
+        return;
+    }
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $matches, $body): array {
+        return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->updateCourseDate((int) $matches[1], (int) $matches[2], $body)];
+    }, $requestId);
+    return;
+}
+
+if ($path === '/admin/asistencias') {
+    if (!in_array($method, ['GET', 'POST'], true)) {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+    $config = adminConfig($requestId, $method === 'POST');
+    if ($config === null) {
+        return;
+    }
+    $body = $method === 'POST' ? readJsonBody($requestId) : null;
+    if ($method === 'POST' && $body === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $method, $body): array {
+        $service = new AdminMasterDataService(Database::pdo($config), $requestId);
+        if ($method === 'POST') {
+            return ['status' => 201, 'data' => $service->recordAttendance($body ?? [])];
+        }
+
+        $courseId = optionalPositiveQueryInt('cursoId');
+        $studentId = optionalPositiveQueryInt('alumnoId');
+        return ['status' => 200, 'data' => $service->listAttendances($courseId, $studentId)];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/asistencias/(\d+)$#', $path, $matches) === 1) {
+    if ($method !== 'DELETE') {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+
+    $config = adminConfig($requestId);
+    if ($config === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $matches): array {
+        return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->voidAttendance((int) $matches[1])];
+    }, $requestId);
+    return;
+}
+
 if ($path === '/admin/certificados') {
     if ($method !== 'POST') {
         header('Allow: POST');
@@ -84,12 +297,8 @@ if ($path === '/admin/certificados') {
         return;
     }
 
-    if (!requireJsonContentType($requestId)) {
-        return;
-    }
-
-    $config = Config::load();
-    if (!requireAdmin($config, $requestId)) {
+    $config = adminConfig($requestId, true);
+    if ($config === null) {
         return;
     }
 
@@ -145,12 +354,8 @@ if (preg_match('#^/admin/certificados/(\d+)/revocar$#', $path, $matches) === 1) 
         return;
     }
 
-    if (!requireJsonContentType($requestId)) {
-        return;
-    }
-
-    $config = Config::load();
-    if (!requireAdmin($config, $requestId)) {
+    $config = adminConfig($requestId, true);
+    if ($config === null) {
         return;
     }
 
@@ -187,8 +392,8 @@ if (preg_match('#^/admin/certificados/([^/]+)/pdf$#', $path, $matches) === 1) {
         return;
     }
 
-    $config = Config::load();
-    if (!requireAdmin($config, $requestId)) {
+    $config = adminConfig($requestId);
+    if ($config === null) {
         return;
     }
 
@@ -220,8 +425,8 @@ if (preg_match('#^/admin/certificados/([^/]+)/entrega-manual$#', $path, $matches
         return;
     }
 
-    $config = Config::load();
-    if (!requireAdmin($config, $requestId)) {
+    $config = adminConfig($requestId);
+    if ($config === null) {
         return;
     }
 
@@ -295,6 +500,40 @@ function requireAdmin(array $config, string $requestId): bool
     } catch (UnauthorizedException) {
         return false;
     }
+}
+
+/** @return array<string, mixed>|null */
+function adminConfig(string $requestId, bool $requiresJson = false): ?array
+{
+    if ($requiresJson && !requireJsonContentType($requestId)) {
+        return null;
+    }
+
+    $config = Config::load();
+    if (!requireAdmin($config, $requestId)) {
+        return null;
+    }
+
+    return $config;
+}
+
+function optionalPositiveQueryInt(string $name): ?int
+{
+    if (!array_key_exists($name, $_GET)) {
+        return null;
+    }
+
+    $value = $_GET[$name];
+    if (!is_string($value)) {
+        throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+    }
+
+    $id = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if (!is_int($id)) {
+        throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+    }
+
+    return $id;
 }
 
 /** @param callable(): array{status:int,data:array<string,mixed>} $handler */
