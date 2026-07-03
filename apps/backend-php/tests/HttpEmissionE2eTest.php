@@ -25,6 +25,7 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/001_certificados_qr.
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/002_token_cifrado_entrega_manual.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/003_cursos_alumnos_asistencias.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/004_certificados_alumno_curso.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/005_prevenir_certificados_duplicados.sql');
 
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-http-emission-e2e-' . bin2hex(random_bytes(4));
@@ -133,6 +134,14 @@ try {
         throw new RuntimeException('emisión HTTP: DTO administrativo inválido.');
     }
 
+    $duplicateEmission = postJson($port, '/admin/certificados', $adminKey, [
+        'alumnoId' => $alumnoId,
+        'cursoId' => $cursoId,
+        'issuedAt' => '2026-07-02',
+        'expiresAt' => null,
+    ]);
+    assertError($duplicateEmission, 409, 'CERTIFICATE_ALREADY_EXISTS', 'emisión duplicada HTTP');
+
     $pdfPath = (string) parse_url($pdfDownloadUrl, PHP_URL_PATH);
     if ($pdfPath === '') {
         throw new RuntimeException('emisión HTTP: URL de descarga PDF inválida.');
@@ -196,6 +205,8 @@ try {
     assertError($resend, 404, 'NOT_FOUND', 'reenvío removido HTTP');
 
     $pdo->exec('DELETE FROM cert_configuracion_institucional WHERE id = 1');
+    $revocation = postJson($port, '/admin/certificados/' . $certificateId . '/revocar', $adminKey, []);
+    assertStatus($revocation, 200, 'revocación HTTP previa a nueva emisión');
     $fallbackEmission = request($port, 'POST', '/admin/certificados', [
         'Content-Type: application/json',
         'X-Admin-Key: ' . $adminKey,
@@ -212,9 +223,21 @@ try {
     }
 
     $fallbackCertificateId = (int) ($fallbackBody['data']['id'] ?? 0);
-    $pdo->prepare('UPDATE cert_tokens_verificacion SET token_cifrado = NULL WHERE certificado_id = ?')
+    $pdo->prepare('UPDATE cert_certificados SET estado = \'vencido\' WHERE id = ?')
         ->execute([$fallbackCertificateId]);
-    $legacyQr = request($port, 'GET', '/admin/certificados/' . $fallbackCertificateId . '/qr.png', [
+    $expiredStateEmission = postJson($port, '/admin/certificados', $adminKey, [
+        'alumnoId' => $alumnoId,
+        'cursoId' => $cursoId,
+        'issuedAt' => '2026-07-02',
+        'expiresAt' => null,
+    ]);
+    assertStatus($expiredStateEmission, 201, 'emisión HTTP tras estado vencido');
+    $expiredStateBody = assertJson($expiredStateEmission, 'emisión HTTP tras estado vencido');
+    $expiredStateCertificateId = (int) ($expiredStateBody['data']['id'] ?? 0);
+
+    $pdo->prepare('UPDATE cert_tokens_verificacion SET token_cifrado = NULL WHERE certificado_id = ?')
+        ->execute([$expiredStateCertificateId]);
+    $legacyQr = request($port, 'GET', '/admin/certificados/' . $expiredStateCertificateId . '/qr.png', [
         'X-Admin-Key: ' . $adminKey,
     ]);
     assertError($legacyQr, 409, 'TOKEN_NOT_RECOVERABLE', 'QR token no recuperable HTTP');
@@ -264,6 +287,11 @@ function applySqlFile(PDO $pdo, string $path): void
     ));
 
     foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
+        if (str_starts_with(strtoupper($statement), 'SELECT ')) {
+            $pdo->query($statement)?->closeCursor();
+            continue;
+        }
+
         $pdo->exec($statement);
     }
 }

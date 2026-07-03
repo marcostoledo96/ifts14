@@ -36,6 +36,8 @@ Registra el certificado emitido y los datos mínimos necesarios para la respuest
 
 Desde la migración `004_certificados_alumno_curso.sql`, los certificados nuevos pueden guardar también `alumno_id` y `curso_id` nullable con FKs a `cert_alumnos` y `cert_cursos`. Los certificados legacy conservan esos campos en `NULL` y se validan con los datos denormalizados disponibles.
 
+La migración `005_prevenir_certificados_duplicados.sql` agrega `certificado_bloqueo_activo` como columna generada `STORED` y el índice único `uq_cert_certificados_alumno_curso_activo (alumno_id, curso_id, certificado_bloqueo_activo)`. La columna vale `1` solo para certificados con `estado='vigente'` y `revocado_en IS NULL`; en los demás casos vale `NULL`. Los legacy sin `alumno_id` o `curso_id` no bloquean porque esos campos nullable son parte del índice único. Por eso revocar o materializar `estado='vencido'` libera el slot, pero una fecha `vence_en` pasada no lo libera mientras el estado siga `vigente`.
+
 > **DNI completo: no migrado todavía.** La migración controlada `001_certificados_qr.sql` solo crea `documento_hash` y `documento_enmascarado`. El DTO público D0 exige DNI completo, pero **no existe columna `documento_completo` migrada**. Cualquier backend que siga el modelo actual no podría satisfacer el DTO D0. La columna `documento_completo` queda como **planificación futura** (ver "Tablas futuras" y el split `backend-contrato-token-permanente-dni-fechas` / `backend-token-permanente-dni-fechas`). No documentar `documento_completo` como columna actual de `cert_certificados` hasta que exista una migración controlada que la cree.
 
 Índices: único por `codigo_certificado`, índice por `estado`, índice por `emitido_en`.
@@ -93,6 +95,10 @@ La migración `database/migrations/003_cursos_alumnos_asistencias.sql` agrega el
 ### M4-04 — Vínculo certificado-alumno-curso
 
 La migración `004_certificados_alumno_curso.sql` agrega `alumno_id` y `curso_id` nullable en `cert_certificados`, con índices y FKs `ON UPDATE CASCADE` / `ON DELETE RESTRICT`. Es aditiva, no modifica `003` y no requiere backfill: los certificados nuevos se emiten desde alumno+curso; los legacy siguen sin vínculos ni snapshot inventado.
+
+### M4-05 — Bloqueo de certificado activo duplicado
+
+La migración `005_prevenir_certificados_duplicados.sql` bloquea en base de datos una segunda fila activa para el mismo `alumno_id` + `curso_id` mediante una columna generada determinística y un índice único. No usa `CURRENT_DATE` ni `vence_en` porque un índice no debe depender de una condición temporal no materializada. La expresión tampoco referencia `alumno_id`/`curso_id`: MariaDB 10.6 rechaza columnas generadas que usan columnas con FK, y la unicidad nullable del índice conserva la semántica legacy. Para liberar el slot se debe revocar el certificado (`revocado_en` no nulo) o cambiar explícitamente `estado` a `vencido`.
 
 #### Verificación local ficticia
 
