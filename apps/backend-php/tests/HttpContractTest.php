@@ -117,6 +117,23 @@ try {
     assertError($pdfNonNumericId, 400, 'VALIDATION_ERROR', 'PDF id no numérico');
     assertSecurityHeaders($pdfNonNumericId, 'PDF id no numérico');
 
+    // Endpoint de descarga QR PNG: contrato pre-DB (401, 405, 400 id no numérico).
+    $qrNoAuth = request($port, 'GET', '/admin/certificados/1/qr.png');
+    assertError($qrNoAuth, 401, 'UNAUTHORIZED', 'QR sin X-Admin-Key');
+
+    $qrWrongMethod = request($port, 'POST', '/admin/certificados/1/qr.png', [
+        'X-Admin-Key: ' . $adminKey,
+    ], '{}');
+    assertError($qrWrongMethod, 405, 'METHOD_NOT_ALLOWED', 'QR método no permitido');
+    if (($qrWrongMethod['headers']['allow'] ?? '') !== 'GET') {
+        throw new RuntimeException('QR método no permitido: falta Allow: GET.');
+    }
+
+    $qrNonNumericId = request($port, 'GET', '/admin/certificados/abc/qr.png', [
+        'X-Admin-Key: ' . $adminKey,
+    ]);
+    assertError($qrNonNumericId, 400, 'VALIDATION_ERROR', 'QR id no numérico');
+
     // --- Entrega manual: contrato del endpoint GET /admin/certificados/{id}/entrega-manual ---
 
     // 401 sin X-Admin-Key (antes de body/config).
@@ -218,9 +235,26 @@ function assertError(array $response, int $status, string $code, string $label):
 {
     assertStatus($response, $status, $label);
     assertSecurityHeaders($response, $label);
+    assertAntiCacheHeaders($response, $label);
     $body = json_decode($response['body'], true);
     if (($body['error']['code'] ?? '') !== $code) {
         throw new RuntimeException("{$label}: código de error inválido.");
+    }
+}
+
+/** @param array{status:int,headers:array<string,string>,body:string} $response */
+function assertAntiCacheHeaders(array $response, string $label): void
+{
+    if (($response['headers']['cache-control'] ?? '') !== 'no-store, private, max-age=0') {
+        throw new RuntimeException("{$label}: falta Cache-Control anti-cache.");
+    }
+
+    if (($response['headers']['pragma'] ?? '') !== 'no-cache') {
+        throw new RuntimeException("{$label}: falta Pragma anti-cache.");
+    }
+
+    if (($response['headers']['expires'] ?? '') !== '0') {
+        throw new RuntimeException("{$label}: falta Expires anti-cache.");
     }
 }
 

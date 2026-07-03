@@ -8,7 +8,7 @@ final class Response
     public static function json(int $status, array $data, ?string $requestId = null): void
     {
         http_response_code($status);
-        self::securityHeaders();
+        self::noStoreSecurityHeaders();
         header('Content-Type: application/json; charset=utf-8');
 
         echo json_encode([
@@ -22,7 +22,7 @@ final class Response
     public static function error(int $status, string $code, string $message, ?string $requestId = null): void
     {
         http_response_code($status);
-        self::securityHeaders();
+        self::noStoreSecurityHeaders();
         header('Content-Type: application/json; charset=utf-8');
 
         echo json_encode([
@@ -46,5 +46,13 @@ final class Response
     {
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: SAMEORIGIN');
+    }
+
+    public static function noStoreSecurityHeaders(): void
+    {
+        self::securityHeaders();
+        header('Cache-Control: no-store, private, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
     }
 }
