@@ -50,8 +50,9 @@ Los tokens públicos no se guardan en texto plano. El backend futuro debe compar
 | `database/migrations/002_token_cifrado_entrega_manual.sql` | Aditiva | `token_cifrado` recuperable para entrega manual sin rotar QR/token. |
 | `database/migrations/003_cursos_alumnos_asistencias.sql` | Aditiva | Alumnos, cursos, fechas, asistencias, snapshot de fechas y configuración institucional. |
 | `database/migrations/004_certificados_alumno_curso.sql` | Aditiva | `alumno_id` y `curso_id` nullable en certificados, con índices y FKs para emisión desde asistencias. |
+| `database/migrations/005_prevenir_certificados_duplicados.sql` | Integridad | Columna generada determinística e índice único para impedir un certificado activo duplicado por alumno y curso. |
 
-El detalle operativo de `004` vive en `database/docs/004-certificados-alumno-curso.md`. El seed ficticio opcional `database/seeds/002_cursos_alumnos_asistencias_demo.sql` sirve para verificar relaciones locales. No se usa en producción ni contiene datos reales.
+El detalle operativo de `004` vive en `database/docs/004-certificados-alumno-curso.md`; el de `005`, en `database/docs/005-prevenir-certificados-duplicados.md`. El seed ficticio opcional `database/seeds/002_cursos_alumnos_asistencias_demo.sql` sirve para verificar relaciones locales. No se usa en producción ni contiene datos reales.
 
 ## Hallazgos de auditoría (hipótesis)
 
