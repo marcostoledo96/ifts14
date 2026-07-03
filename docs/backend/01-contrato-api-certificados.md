@@ -185,6 +185,8 @@ Respuesta `201`:
 
 La emisión no devuelve DNI completo ni token completo como campo separado. El campo `documentMasked` (enmascarado) en la respuesta administrativa es el único dato de documento permitido; el DNI completo queda reservado para el DTO público de validación (decisión D0). `publicValidationUrl` es el único link público previsto y contiene el token permanente; `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. `tokenPrefix` es ayuda operativa segura. El token se persiste como `token_hash` (verificación), `token_prefijo` (soporte) y `token_cifrado` (recuperable, AES-256-GCM con clave externa a Git). Si la generación o persistencia del PDF falla, o si el cifrado del token falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional, fail closed).
 
+El PDF generado durante la emisión usa `cert_configuracion_institucional` (`id = 1`) cuando existe: `institucion_nombre`, `texto_certificado`, `rector_nombre`, `rector_cargo`, `asesor_nombre` y `asesor_cargo`. Si la fila falta o un campo está vacío, la emisión continúa con valores institucionales seguros por defecto. Esta configuración solo afecta el contenido del PDF; no cambia el DTO administrativo ni habilita edición de configuración por API.
+
 La emisión persiste `alumno_id`, `curso_id` y snapshot en `cert_certificado_fechas`. Si no hay asistencias activas (`cert_asistencias.eliminado_en IS NULL` y fecha de curso `programada|realizada`), responde `400 VALIDATION_ERROR` sin persistir certificado, token, PDF ni snapshot.
 
 ### `POST /admin/certificados/{id}/revocar`
@@ -216,6 +218,8 @@ Respuesta `200`:
 ### `GET /admin/certificados/{id}/pdf`
 
 Descarga el PDF persistido del certificado emitido. El PDF se genera sincrónicamente durante `POST /admin/certificados` y se almacena como `{certificateCode}.pdf` en `certificate_storage_path` (configuración externa, preferentemente fuera del webroot).
+
+El PDF es institucional y contiene nombre institucional, texto configurable con fallback, alumno, curso, DNI completo autorizado para el certificado, fechas certificadas del snapshot, rector/a, asesor/a pedagógica y QR al link permanente. No imprime el token completo como texto visible.
 
 Headers:
 
