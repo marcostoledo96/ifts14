@@ -412,6 +412,44 @@ if (preg_match('#^/admin/certificados/([^/]+)/pdf$#', $path, $matches) === 1) {
     return;
 }
 
+if (preg_match('#^/admin/certificados/([^/]+)/qr\.png$#', $path, $matches) === 1) {
+    if ($method !== 'GET') {
+        header('Allow: GET');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    $certificateId = filter_var($matches[1], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if (!is_int($certificateId)) {
+        Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
+        return;
+    }
+
+    $config = adminConfig($requestId);
+    if ($config === null) {
+        return;
+    }
+
+    if (!loadPdfDependencies($requestId)) {
+        return;
+    }
+
+    try {
+        $config = Config::requirePdfConfig($config);
+    } catch (RuntimeException) {
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return;
+    }
+
+    $tokenCipherKey = loadTokenCipherKey($config, $requestId);
+    if ($tokenCipherKey === null) {
+        return;
+    }
+
+    streamQrPng($config, $certificateId, $requestId, $tokenCipherKey);
+    return;
+}
+
 if (preg_match('#^/admin/certificados/([^/]+)/entrega-manual$#', $path, $matches) === 1) {
     if ($method !== 'GET') {
         header('Allow: GET');
@@ -618,11 +656,10 @@ function streamPdf(array $config, int $certificateId, string $requestId): void
         return;
     }
 
-    $filename = $code . '.pdf';
+    $filename = safeDownloadName($code) . '.pdf';
 
     http_response_code(200);
-    header('X-Content-Type-Options: nosniff');
-    header('X-Frame-Options: SAMEORIGIN');
+    Response::noStoreSecurityHeaders();
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Content-Length: ' . (string) $size);
@@ -634,6 +671,46 @@ function streamPdf(array $config, int $certificateId, string $requestId): void
             ob_end_clean();
         }
     }
+}
+
+/** @param array<string, mixed> $config */
+function streamQrPng(array $config, int $certificateId, string $requestId, string $tokenCipherKey): void
+{
+    try {
+        $service = new AdminCertificateService(
+            Database::pdo($config),
+            (string) $config['token_pepper'],
+            $requestId,
+            null,
+            (string) $config['app_salt'],
+            null,
+            (string) $config['public_base_url'],
+            $tokenCipherKey,
+            (string) $config['certificate_storage_path'],
+        );
+        $data = $service->deliveryTokenData($certificateId);
+        $png = (new CertificateQrImageService())->render((string) $data['publicValidationUrl']);
+    } catch (AdminCertificateException $exception) {
+        Response::error($exception->status, $exception->errorCode, $exception->getMessage(), $requestId);
+        return;
+    } catch (RuntimeException) {
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return;
+    }
+
+    $filename = safeDownloadName((string) $data['certificateCode']) . '-qr.png';
+
+    http_response_code(200);
+    Response::noStoreSecurityHeaders();
+    header('Content-Type: image/png');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . (string) strlen($png));
+    echo $png;
+}
+
+function safeDownloadName(string $value): string
+{
+    return preg_replace('/[^A-Za-z0-9_-]/', '_', $value) ?? $value;
 }
 
 /**
@@ -654,6 +731,7 @@ function loadPdfDependencies(string $requestId): bool
 
     require_once $autoloadPath;
     require_once __DIR__ . '/src/CertificatePdfService.php';
+    require_once __DIR__ . '/src/CertificateQrImageService.php';
 
     return true;
 }

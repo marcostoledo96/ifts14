@@ -7,7 +7,7 @@ if [[ ! -f docker/php84/Dockerfile ]]; then
 fi
 
 modules="$(sudo docker run --rm ifts14-php84 php -m)"
-required=(pdo_mysql openssl mbstring curl zip xml)
+required=(pdo_mysql openssl mbstring curl zip xml gd)
 missing=0
 
 echo "Installed PHP modules:"

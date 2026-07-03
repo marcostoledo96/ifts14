@@ -12,6 +12,7 @@ API PHP 8.4.21 del módulo `/certificados/`.
 - Mantener configuración real fuera de Git.
 - Separar controladores, servicios y acceso a datos cuando exista implementación.
 - Actualizar `docs/backend/` durante `sdd-archive`.
+- La descarga admin `qr.png` requiere extensión PHP `gd`; validar con `scripts/php-docker-build.sh` y `scripts/php-docker-modules-check.sh`.
 
 ## Prohibido
 
