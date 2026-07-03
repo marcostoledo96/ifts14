@@ -23,6 +23,20 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revocar certificado e invalidar tokens activos. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/certificados/{id}/pdf` | Descargar el PDF persistido del certificado. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/certificados/{id}/entrega-manual` | Entrega manual de solo lectura: devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para copia/descarga externa. Sin email, sin rotación, sin escritura. | Admin con `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/cursos` | Crear curso certificable. | Admin con `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/cursos` | Listar cursos; admite filtro `estado`. | Admin con `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/cursos/{id}` | Consultar curso. | Admin con `X-Admin-Key`. |
+| `PATCH` | `/certificados/api/admin/cursos/{id}/estado` | Actualizar estado del curso. | Admin con `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/alumnos` | Crear alumno con DNI cifrado/hash y DTO enmascarado. | Admin con `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/alumnos` | Listar alumnos con DNI enmascarado. | Admin con `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/alumnos/{id}` | Consultar alumno con DNI enmascarado. | Admin con `X-Admin-Key`. |
+| `PATCH` | `/certificados/api/admin/alumnos/{id}/estado` | Actualizar estado del alumno. | Admin con `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/cursos/{cursoId}/fechas` | Crear fecha de curso. | Admin con `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/cursos/{cursoId}/fechas` | Listar fechas ordenadas por `orden` y `fecha`. | Admin con `X-Admin-Key`. |
+| `PATCH` | `/certificados/api/admin/cursos/{cursoId}/fechas/{fechaId}` | Actualizar fecha, orden o estado. | Admin con `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/asistencias` | Registrar asistencia activa para alumno/fecha. | Admin con `X-Admin-Key`. |
+| `GET` | `/certificados/api/admin/asistencias?cursoId=&alumnoId=` | Listar asistencias activas. | Admin con `X-Admin-Key`. |
+| `DELETE` | `/certificados/api/admin/asistencias/{id}` | Anular asistencia por eliminación lógica. | Admin con `X-Admin-Key`. |
 
 La entrega manual está cubierta por el contrato `admin-certificate-delivery`: **conserva el token/QR permanente** del certificado (no rota token), descifra `token_cifrado` en memoria solo para reconstruir `publicValidationUrl` y responde `200` con DTO de entrega sin token completo como campo separado. No envía email, no usa SMTP/PHPMailer. Si `token_cifrado` está ausente, el envelope es inválido, la clave no decodifica a 32 bytes o el descifrado falla, responde `409 TOKEN_NOT_RECOVERABLE` sin regenerar ni auditar entrega. `POST /admin/certificados/{id}/reenviar` NO forma parte del contrato MVP: responde `404 NOT_FOUND`.
 
@@ -83,6 +97,43 @@ Request:
 ```
 
 La respuesta debe reutilizar el mismo DTO de verificación pública.
+
+### Endpoints admin de datos maestros
+
+Todos requieren `X-Admin-Key`. Los `POST` y `PATCH` exigen `Content-Type: application/json` y body JSON válido antes de persistir cambios.
+
+DTOs administrativos principales:
+
+```json
+{
+  "curso": { "id": 1, "codigo": "CUR-2026-01", "nombre": "Curso Demo", "estado": "activo", "createdAt": "2026-07-02 10:00:00", "updatedAt": "2026-07-02 10:00:00" },
+  "alumno": { "id": 2, "apellidoNombre": "Persona Demo", "dniMostrar": "12****78", "estado": "activo" },
+  "fecha": { "id": 3, "cursoId": 1, "fecha": "2026-08-01", "descripcion": "Clase 1", "orden": 1, "estado": "programada" },
+  "asistencia": { "id": 4, "alumnoId": 2, "cursoId": 1, "cursoFechaId": 3, "fecha": "2026-08-01", "fechaEstado": "programada", "registradoEn": "2026-07-02 10:00:00" }
+}
+```
+
+Reglas de privacidad y persistencia:
+
+- `POST /admin/alumnos` normaliza DNI a dígitos, exige longitud 7 a 10, calcula `dni_hash` binario como HMAC-SHA-256 usando `dni_cipher_key` y guarda `dni_cifrado` con esa misma clave externa.
+- Si `dni_cipher_key` falta o es inválida, responde `500 CONFIGURATION_ERROR` antes de insertar alumno.
+- `PATCH /admin/alumnos/{id}/estado` no requiere `dni_cipher_key`: solo actualiza el estado y conserva el DTO administrativo enmascarado.
+- Las respuestas admin usan `dniMostrar` y nunca devuelven DNI completo, `dni_hash`, `dni_cifrado`, tokens, SQL, secretos ni rutas internas.
+- Asistencia válida requiere alumno `activo`, curso `activo` y fecha `programada` o `realizada` del curso.
+- Los filtros `cursoId` y `alumnoId` de `GET /admin/asistencias` deben ser enteros positivos; si vienen informados con formato inválido, responden `400 VALIDATION_ERROR` en vez de ampliar el listado.
+- Una asistencia activa duplicada responde `409 CONFLICT`; la anulación usa `eliminado_en` y no hace `DELETE` físico.
+- `orden` de fechas de curso acepta solo `1..65535`; aplica a creación, actualización y al próximo orden automático. Si se supera el máximo, responde `400 VALIDATION_ERROR`.
+
+Errores específicos de datos maestros:
+
+| HTTP | `code` | Uso |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Payload inválido, estado no permitido, fecha inválida, curso/alumno/fecha no elegible para asistencia. |
+| 401 | `UNAUTHORIZED` | Falta `X-Admin-Key` o valor inválido. |
+| 404 | `COURSE_NOT_FOUND`, `STUDENT_NOT_FOUND`, `COURSE_DATE_NOT_FOUND`, `ATTENDANCE_NOT_FOUND`, `NOT_FOUND` | Recurso inexistente o ruta no disponible. |
+| 409 | `CONFLICT` | Código de curso, DNI, fecha/orden o asistencia activa duplicados. |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | `POST`/`PATCH` sin JSON compatible. |
+| 500 | `CONFIGURATION_ERROR` | Configuración externa requerida ausente o inválida, por ejemplo `dni_cipher_key` al crear alumnos. |
 
 ### `POST /admin/certificados`
 
@@ -284,9 +335,11 @@ Toda respuesta de error debe usar este formato:
 | 404 | `PDF_NOT_FOUND` | Certificado inexistente o PDF no persistido en `GET /admin/certificados/{id}/pdf`. |
 | 405 | `METHOD_NOT_ALLOWED` | Método HTTP no permitido. |
 | 409 | `CERTIFICATE_NOT_REVOCABLE` | El certificado existe pero no puede revocarse en su estado actual. |
+| 409 | `CONFLICT` | Duplicado de negocio en datos maestros administrativos. |
 | 409 | `TOKEN_NOT_RECOVERABLE` | `token_cifrado` ausente, envelope inválido, clave inválida o descifrado fallido en entrega manual. No regenera token. |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | POST JSON sin `Content-Type: application/json` (con o sin charset). |
 | 429 | `RATE_LIMITED` | Demasiadas consultas desde el mismo origen. |
+| 500 | `CONFIGURATION_ERROR` | Configuración externa faltante o inválida para PDF, token o DNI. |
 | 500 | `INTERNAL_ERROR` | Error no esperado sin datos internos. |
 
 ## Reglas de validación

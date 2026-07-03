@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Definir el contrato de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper, más el slice administrativo de emisión, revocación, descarga PDF y reenvío por email protegido por `X-Admin-Key`. El DTO público incluye DNI completo visible por decisión institucional y las fechas asistidas del curso como datos del certificado. El QR/token es permanente durante la vida del certificado; el reenvío normal conserva el token salvo revocación explícita.
+Definir el contrato de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper, más el slice administrativo de emisión, revocación, descarga PDF y entrega manual protegido por `X-Admin-Key`. La entrega manual reemplaza al reenvío por email: Bedelía copia el link público y descarga el PDF por canal externo, sin email, SMTP, PHPMailer ni transporte `stub`. El DTO público incluye DNI completo visible por decisión institucional y las fechas asistidas del curso como datos del certificado. El QR/token es permanente durante la vida del certificado; la entrega manual es de solo lectura y nunca rota el token salvo revocación explícita.
 
 ## Requirements
 
@@ -188,6 +188,87 @@ La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` p
 - CUANDO el MVP procesa la ruta
 - ENTONCES la API DEBE responder ruta inexistente o método no permitido con error seguro.
 - Y NO DEBE activar SMTP, PHPMailer ni transporte `stub`.
+
+### Requirement: Contrato administrativo de datos maestros
+
+La API DEBE exponer endpoints administrativos bajo `/certificados/api/admin/` para crear, listar, consultar y actualizar estado de cursos y alumnos; crear, listar y actualizar fechas de curso; registrar, listar y anular asistencias. Todos DEBEN requerir `X-Admin-Key`; `POST` y `PATCH` DEBEN exigir JSON. Las respuestas administrativas DEBEN usar DTOs seguros: alumnos con `dniMostrar` enmascarado, nunca DNI completo, `dni_hash`, `dni_cifrado`, token completo, SQL, secretos ni rutas internas. La creación de alumno DEBE fallar cerrado con `500 CONFIGURATION_ERROR` antes de persistir si `dni_cipher_key` falta o es inválida. No DEBE agregar frontend, SMTP, email automático ni migraciones nuevas.
+
+#### Scenario: CRUD mínimo de cursos
+
+- DADO un request admin autorizado con código y nombre válidos
+- CUANDO crea, lista, consulta y actualiza estado de un curso
+- ENTONCES la API DEBE responder con DTO `{id, codigo, nombre, estado, createdAt, updatedAt}`.
+- Y DEBE responder `409 CONFLICT` si el código de curso duplica un recurso activo o histórico existente.
+
+#### Scenario: Alumno con DNI cifrado y DTO seguro
+
+- DADO un request admin autorizado con `dni_cipher_key` válida
+- CUANDO crea un alumno con DNI válido
+- ENTONCES la API DEBE persistir `dni_hash` binario y `dni_cifrado`.
+- Y DEBE responder solo `{id, apellidoNombre, dniMostrar, estado}` sin DNI completo ni columnas internas.
+
+#### Scenario: Clave DNI ausente falla cerrado
+
+- DADO que falta `dni_cipher_key` o no decodifica a 32 bytes
+- CUANDO se invoca `POST /certificados/api/admin/alumnos`
+- ENTONCES la API DEBE responder `500 CONFIGURATION_ERROR`.
+- Y NO DEBE insertar filas en `cert_alumnos` ni exponer el DNI recibido.
+
+#### Scenario: Fechas de curso ordenadas
+
+- DADO un curso con fechas cargadas
+- CUANDO se consulta `GET /certificados/api/admin/cursos/{cursoId}/fechas`
+- ENTONCES la API DEBE devolver fechas ordenadas por `orden ASC, fecha ASC`.
+- Y DEBE rechazar estados fuera de `programada|realizada|cancelada` con `400 VALIDATION_ERROR`.
+
+#### Scenario: Asistencia activa y duplicado conflictivo
+
+- DADO alumno `activo`, curso `activo` y fecha del curso en estado `programada` o `realizada`
+- CUANDO se registra asistencia
+- ENTONCES la API DEBE crear una fila activa en `cert_asistencias`.
+- Y si ya existe una asistencia activa equivalente DEBE responder `409 CONFLICT` sin crear duplicado.
+
+#### Scenario: Anulación lógica de asistencia
+
+- DADO una asistencia activa existente
+- CUANDO se invoca `DELETE /certificados/api/admin/asistencias/{id}`
+- ENTONCES la API DEBE completar `eliminado_en`.
+- Y las listas de asistencias activas DEBEN excluirla sin ejecutar `DELETE` físico.
+
+### Requirement: Compatibilidad de emisión desde datos existentes
+
+La emisión administrativa existente DEBE poder consumir alumnos, cursos, fechas y asistencias activas creadas por la API nueva sin cambiar el contrato de emisión, PDF, entrega manual ni token permanente. La ausencia de asistencias activas o datos inactivos DEBE fallar con error seguro y testable.
+
+#### Scenario: Emisión smoke con datos cargados por API
+
+- DADO un curso activo, alumno activo, fechas elegibles y asistencias activas cargadas por API
+- CUANDO se invoca `POST /certificados/api/admin/certificados`
+- ENTONCES DEBE conservar el contrato actual con snapshot, PDF/QR, `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`.
+- Y NO DEBE rotar token ni enviar email.
+
+#### Scenario: Datos no elegibles para emisión
+
+- DADO curso/alumno inactivo, fecha no elegible o sin asistencias activas
+- CUANDO se intenta emitir
+- ENTONCES la API DEBE responder error seguro (`400 VALIDATION_ERROR` o `404`) sin crear certificado parcial.
+
+### Requirement: Auditoría y errores sin datos sensibles
+
+Las operaciones administrativas de datos maestros DEBEN registrar eventos seguros cuando corresponda y todos los errores DEBEN usar `{ error: { code, message, details }, meta: { requestId } }` sin DNI completo, token completo, SQL, secretos ni valores de configuración.
+
+#### Scenario: Error seguro de configuración DNI
+
+- DADO que `dni_cipher_key` falta o no decodifica a clave válida
+- CUANDO se crea un alumno
+- ENTONCES la API DEBE responder `500 CONFIGURATION_ERROR` sin persistir cambios.
+- Y logs/auditoría NO DEBEN incluir DNI completo ni clave.
+
+#### Scenario: Conflicto de asistencia duplicada
+
+- DADO una asistencia activa ya registrada para alumno y fecha
+- CUANDO se intenta registrar otra activa equivalente
+- ENTONCES la API DEBE responder `409 CONFLICT` con sobre seguro.
+- Y NO DEBE borrar ni modificar la asistencia previa.
 
 ### Requirement: DTO público desde snapshot certificado
 
