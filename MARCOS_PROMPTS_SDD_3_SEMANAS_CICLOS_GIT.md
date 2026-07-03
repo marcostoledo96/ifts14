@@ -32,7 +32,7 @@ Marcos debe aplicar estas reglas antes de iniciar ciclos con OpenCode/Gentle-AI:
 | Frontend | Puede tomar solo fundación Angular, validación pública, mocks/contratos frontend y build `/certificados/` cuando Matías esté bloqueado o se necesite destrabar backend. No inventar diseño final. |
 | Material privado | No modificar ni copiar contenido de `material_privado_no_versionar/`; solo nombres y riesgos generales cuando el ciclo lo autorice. |
 | Datos sensibles | No imprimir credenciales, dumps, logs, DNI completo en logs/auditoría ni tokens completos. El DTO público muestra DNI completo por decisión D0. |
-| Decisiones D0 | QR/token permanente (reenvío no rota); DNI completo público; certificado de curso con fechas asistidas; auth simple `X-Admin-Key` temporal; firmantes Rector/a + Asesor/a Pedagógica; gates Composer/SMTP; staging `/certificados_staging/`. |
+| Decisiones D0 | QR/token permanente (no se rota en operaciones operativas; solo revocación explícita o regeneración excepcional auditada); DNI completo público; certificado de curso con fechas asistidas; auth simple `X-Admin-Key` temporal; firmantes Rector/a + Asesor/a Pedagógica; entrega manual (copiar link + descargar PDF) sin email, SMTP, PHPMailer ni transporte `stub`; staging `/certificados_staging/`. |
 | Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. OpenCode puede crear o cambiar ramas (`git switch`, `git checkout`, `git branch`, `git switch -c`, `git checkout -b`) solo con aprobación explícita de Marcos, árbol limpio y rama fuente explícita/actualizada. |
 | Git — nota | Commit, push y PR requieren aprobación explícita de Marcos en el mismo turno. `git merge`, `git rebase`, `git push` a `main` y merge de PR quedan fuera de OpenCode. |
 
@@ -69,7 +69,7 @@ Reglas:
 | Rama | Ciclos incluidos | Criterio |
 |---|---|---|
 | `backend/public-endpoint-hardening` | `M3-01`, `M3-02` | Rate limiting y fault-injection endurecen el endpoint público ya implementado. |
-| `backend/admin-certificados` | `M3-03` | Emisión, revocación y reenvío comparten permisos, escritura, auditoría y API administrativa. |
+| `backend/admin-certificados` | `M3-03` | Emisión, revocación y entrega manual comparten permisos, escritura, auditoría y API administrativa. |
 | `qa/backend-hardening-certificados` | `M3-04` | Seguridad, privacidad, logs y QA backend antes de deploy. |
 | `deploy/cpanel-certificados` | `M3-05` | Ruta `/certificados/`, `.htaccess`, config externa, rollback y checklist se revisan juntos cuando backend esté listo. |
 | `integration/angular-api-contract` | `M3-06` | Checkpoint final PHP/Angular cuando exista flujo público y checklist compartida. |
@@ -420,7 +420,7 @@ Commit sugerido: `docs(integracion): cerrar checklist angular api`.
 
 ## Semana 4 — sincronización D0 y backend de certificados de curso
 
-Bloque M4 para alinear backend, DB, PDF, email, auth y deploy con las decisiones D0 confirmadas: QR/token permanente, DNI completo público, certificado de curso con fechas asistidas, auth simple temporal, firmantes institucionales, Composer/SMTP como gates y staging `/certificados_staging/`.
+Bloque M4 para alinear backend, DB, PDF, entrega manual, auth y deploy con las decisiones D0 confirmadas: QR/token permanente, DNI completo público, certificado de curso con fechas asistidas, auth simple temporal, firmantes institucionales, Composer como gate de dependencias PHP y staging `/certificados_staging/`. La entrega de certificados es manual (copiar link + descargar PDF); NO se ejecuta email, SMTP, PHPMailer ni transporte `stub` en el MVP.
 
 | Ciclo | Nombre | Objetivo | Rama sugerida |
 |---|---|---|---|
@@ -430,14 +430,14 @@ Bloque M4 para alinear backend, DB, PDF, email, auth y deploy con las decisiones
 | M4-03 | `backend-cursos-alumnos-asistencias-api` | API admin mínima para cursos, alumnos, fechas y asistencias con `X-Admin-Key`. | `backend/cursos-alumnos-asistencias-api` |
 | M4-04 | `backend-emision-desde-asistencias` | Emisión desde alumno+curso+fechas presentes, no texto libre. Token permanente. | `backend/emision-desde-asistencias` |
 | M4-05 | `pdf-certificado-curso-fechas` | PDF institucional de certificado de curso con QR, fechas asistidas y firmantes. | `backend/pdf-certificado-curso-fechas` |
-| M4-06 | `email-reenvio-token-permanente` | Reenvío con mismo QR/token y SMTP cuenta de prueba / `stub`. Depende de storage de token recuperable (`token_cifrado`). | `backend/email-reenvio-token-permanente` |
+| M4-06 | `email-reenvio-token-permanente` | **Cancelado por D0**: no se ejecuta email, SMTP, PHPMailer, transporte `stub` ni reenvío automático. La entrega es manual (copiar link público + descargar PDF) y la fila se conserva solo para trazabilidad histórica. | `backend/email-reenvio-token-permanente` (no se ejecuta) |
 | M4-07 | `staging-cpanel-real-certificados` | Subida integrada a `/certificados_staging/` con gates Composer/vendor, SMTP, DB staging y rollback. | `deploy/staging-cpanel-real` |
 
 ### Reglas del split M4-01
 
 - **M4-01A (contrato)** puede avanzar sin dependencias de implementación: solo docs/specs. No crea migraciones ni código.
 - **M4-01B (implementación)** depende de M4-02 (modelo de cursos/alumnos/asistencias) para emisión real y del storage de token recuperable (`token_cifrado`). No implementar M4-01B antes de que existan las dependencias del modelo.
-- El reenvío (M4-06) depende del storage de `token_cifrado`; hash-only NO habilita reenvío permanente.
+- M4-06 queda cancelado por D0: no se ejecuta email, SMTP, PHPMailer, transporte `stub` ni reenvío automático. La entrega es manual (copiar link + descargar PDF) y no requiere ciclo de implementación adicional.
 
 ### Reglas del bloque M4
 
@@ -446,8 +446,8 @@ Bloque M4 para alinear backend, DB, PDF, email, auth y deploy con las decisiones
 - Marcos lidera backend, DB, integración, deploy, arquitectura y seguridad.
 - Matías conserva UI/UX, adaptación visual y QA frontend; no hacer diseño final desde backend.
 - Coordinar con Matías sobre v0 actualizada (`muestra_pagina/MANIFIESTO_V0.md`).
-- Gates: Composer pendiente de localizar en cPanel; SMTP cuenta de prueba; `vendor/` nunca versionado.
-- QR/token permanente: el reenvío normal no rota token.
+- Gates: Composer pendiente de localizar en cPanel; `vendor/` nunca versionado. NO hay SMTP real ni cuenta de prueba: la entrega es manual.
+- QR/token permanente: el token NO se rota en ninguna operación operativa del MVP. Solo revocación explícita o regeneración excepcional auditada pueden reemplazarlo.
 - DNI completo visible en validación pública (D0); logs/auditoría sin DNI completo.
 
 ### Prompt base M4

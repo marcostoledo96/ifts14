@@ -32,6 +32,10 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 | `POST` | `/certificados/api/admin/certificados` | Emite certificado desde `alumnoId` + `cursoId` y asistencias activas; requiere `X-Admin-Key` y devuelve DTO seguro con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; sin DNI ni token completos como campos separados. |
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revoca certificado e invalida tokens activos; requiere `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/certificados/{id}/entrega-manual` | Entrega manual de solo lectura: devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para copia/descarga externa por Bedelía; sin email, sin rotación, sin escritura. |
+| `POST/GET/PATCH` | `/certificados/api/admin/cursos`, `/admin/cursos/{id}`, `/admin/cursos/{id}/estado` | CRUD mínimo de cursos para datos maestros; requiere `X-Admin-Key`. |
+| `POST/GET/PATCH` | `/certificados/api/admin/alumnos`, `/admin/alumnos/{id}`, `/admin/alumnos/{id}/estado` | CRUD mínimo de alumnos con DNI cifrado/hash y DTO administrativo enmascarado; requiere `X-Admin-Key`. |
+| `POST/GET/PATCH` | `/certificados/api/admin/cursos/{cursoId}/fechas`, `/admin/cursos/{cursoId}/fechas/{fechaId}` | Carga y mantenimiento de fechas de curso ordenadas. |
+| `POST/GET/DELETE` | `/certificados/api/admin/asistencias`, `/admin/asistencias/{id}` | Registro, listado y anulación lógica de asistencias activas. |
 
 La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_` o `-`. Los casos inexistentes, revocados, vencidos o fuera de ventana responden `404 CERTIFICATE_NOT_FOUND` sin revelar la causa. Los endpoints públicos aplican rate limiting mínimo por origen y responden `429 RATE_LIMITED` al superar el umbral configurado.
 
