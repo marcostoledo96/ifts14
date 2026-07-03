@@ -10,6 +10,7 @@ final class AdminMasterDataService
     private const array COURSE_STATES = ['borrador', 'activo', 'cerrado', 'archivado'];
     private const array STUDENT_STATES = ['activo', 'inactivo'];
     private const array DATE_STATES = ['programada', 'realizada', 'cancelada'];
+    private const int MAX_DATE_ORDER = 65535;
 
     public function __construct(
         private readonly PDO $pdo,
@@ -83,7 +84,7 @@ final class AdminMasterDataService
         $name = $this->shortString($body['apellidoNombre'] ?? null, 160);
         $dni = $this->normalizeDni($body['dni'] ?? null);
         $state = isset($body['estado']) ? $this->enum($body['estado'], self::STUDENT_STATES) : 'activo';
-        $dniHash = $this->hashDni($dni);
+        $dniHash = $this->hashDni($dni, $key);
         $dniCipher = DniCipher::encrypt($dni, $key);
         $dniDisplay = $this->maskDni($dni);
 
@@ -143,7 +144,7 @@ final class AdminMasterDataService
         $date = $this->dateString($body['fecha'] ?? null);
         $description = $this->nullableString($body['descripcion'] ?? null, 180);
         $state = isset($body['estado']) ? $this->enum($body['estado'], self::DATE_STATES) : 'programada';
-        $order = isset($body['orden']) ? $this->positiveId($body['orden']) : $this->nextDateOrder($courseId);
+        $order = isset($body['orden']) ? $this->courseDateOrder($body['orden']) : $this->nextDateOrder($courseId);
 
         try {
             $statement = $this->pdo->prepare('INSERT INTO cert_curso_fechas (curso_id, fecha, descripcion, orden, estado) VALUES (?, ?, ?, ?, ?)');
@@ -176,7 +177,7 @@ final class AdminMasterDataService
 
         $date = array_key_exists('fecha', $body) ? $this->dateString($body['fecha']) : $current['fecha'];
         $description = array_key_exists('descripcion', $body) ? $this->nullableString($body['descripcion'], 180) : $current['descripcion'];
-        $order = array_key_exists('orden', $body) ? $this->positiveId($body['orden']) : (int) $current['orden'];
+        $order = array_key_exists('orden', $body) ? $this->courseDateOrder($body['orden']) : (int) $current['orden'];
         $state = array_key_exists('estado', $body) ? $this->enum($body['estado'], self::DATE_STATES) : $current['estado'];
 
         try {
@@ -311,10 +312,10 @@ final class AdminMasterDataService
 
     private function nextDateOrder(int $courseId): int
     {
-        $statement = $this->pdo->prepare('SELECT COALESCE(MAX(orden), 0) + 1 FROM cert_curso_fechas WHERE curso_id = ?');
+        $statement = $this->pdo->prepare('SELECT COALESCE(MAX(orden), 0) FROM cert_curso_fechas WHERE curso_id = ?');
         $statement->execute([$courseId]);
 
-        return (int) $statement->fetchColumn();
+        return $this->courseDateOrder((int) $statement->fetchColumn() + 1);
     }
 
     /** @param array<string, mixed> $row @return array<string, mixed> */
@@ -395,9 +396,9 @@ final class AdminMasterDataService
         return substr($dni, 0, 2) . str_repeat('*', max(strlen($dni) - 4, 0)) . substr($dni, -2);
     }
 
-    private function hashDni(string $dni): string
+    private function hashDni(string $dni, string $key): string
     {
-        return hash('sha256', $dni, true);
+        return hash_hmac('sha256', $dni, $key, true);
     }
 
     /** @param list<string> $allowed */
@@ -413,6 +414,16 @@ final class AdminMasterDataService
     private function positiveId(mixed $value): int
     {
         $int = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if (!is_int($int)) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        return $int;
+    }
+
+    private function courseDateOrder(mixed $value): int
+    {
+        $int = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => self::MAX_DATE_ORDER]]);
         if (!is_int($int)) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }

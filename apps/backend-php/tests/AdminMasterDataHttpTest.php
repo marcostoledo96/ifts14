@@ -118,6 +118,10 @@ try {
     $date1Id = (int) (assertJson($date1, 'crear fecha 1')['data']['id'] ?? 0);
     $date2 = postJson($port, '/admin/cursos/' . $courseId . '/fechas', $adminKey, ['fecha' => '2026-08-08', 'descripcion' => 'Clase 2', 'orden' => 2, 'estado' => 'realizada']);
     assertStatus($date2, 201, 'crear fecha 2');
+    assertError(postJson($port, '/admin/cursos/' . $courseId . '/fechas', $adminKey, ['fecha' => '2026-08-22', 'orden' => 65536]), 400, 'VALIDATION_ERROR', 'orden fecha crear fuera de rango');
+    assertError(patchJson($port, '/admin/cursos/' . $courseId . '/fechas/' . $date1Id, $adminKey, ['orden' => 65536]), 400, 'VALIDATION_ERROR', 'orden fecha actualizar fuera de rango');
+    assertStatus(postJson($port, '/admin/cursos/' . $courseId . '/fechas', $adminKey, ['fecha' => '2026-08-22', 'orden' => 65535]), 201, 'crear fecha orden máximo');
+    assertError(postJson($port, '/admin/cursos/' . $courseId . '/fechas', $adminKey, ['fecha' => '2026-08-29']), 400, 'VALIDATION_ERROR', 'orden fecha automático fuera de rango');
     assertError(postJson($port, '/admin/cursos/' . $courseId . '/fechas', $adminKey, ['fecha' => '2026-08-08', 'orden' => 3]), 409, 'CONFLICT', 'fecha duplicada');
     assertError(patchJson($port, '/admin/cursos/' . $courseId . '/fechas/' . $date1Id, $adminKey, ['estado' => 'invalido']), 400, 'VALIDATION_ERROR', 'estado fecha inválido');
     assertStatus(request($port, 'GET', '/admin/cursos/' . $courseId . '/fechas', ['X-Admin-Key: ' . $adminKey]), 200, 'listar fechas');

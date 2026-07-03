@@ -24,7 +24,7 @@ La API DEBE permitir crear, listar, consultar detalle y actualizar estado de cur
 
 ### Requirement: Administración de alumnos con DNI seguro
 
-La API DEBE crear alumnos cifrando DNI con `dni_cipher_key`, guardar hash de búsqueda y responder DTOs administrativos con DNI enmascarado, nunca completo.
+La API DEBE crear alumnos cifrando DNI con `dni_cipher_key`, guardar HMAC-SHA-256 binario de búsqueda usando esa misma clave y responder DTOs administrativos con DNI enmascarado, nunca completo.
 
 #### Scenario: Alumno creado con DNI cifrado
 
@@ -46,7 +46,7 @@ La API DEBE crear alumnos cifrando DNI con `dni_cipher_key`, guardar hash de bú
 
 ### Requirement: Administración de fechas de curso
 
-La API DEBE crear, listar y actualizar fechas por curso con orden estable, estado permitido y sin depender del orden accidental de carga.
+La API DEBE crear, listar y actualizar fechas por curso con orden estable, estado permitido y sin depender del orden accidental de carga. El orden DEBE estar en el rango `1..65535` por compatibilidad con `SMALLINT UNSIGNED`.
 
 #### Scenario: Fechas listadas en orden estable
 
@@ -59,6 +59,12 @@ La API DEBE crear, listar y actualizar fechas por curso con orden estable, estad
 - DADO una fecha existente
 - CUANDO se actualiza con estado no permitido
 - ENTONCES la API DEBE rechazar el cambio con `400 VALIDATION_ERROR`.
+
+#### Scenario: Orden de fecha fuera de rango
+
+- DADO una creación o actualización de fecha de curso
+- CUANDO `orden` es menor a 1, mayor a 65535 o el próximo orden automático supera 65535
+- ENTONCES la API DEBE responder `400 VALIDATION_ERROR` sin delegar el error a MariaDB.
 
 ### Requirement: Registro y anulación lógica de asistencias
 
