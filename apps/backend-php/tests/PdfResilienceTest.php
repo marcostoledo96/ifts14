@@ -159,7 +159,31 @@ if (!$rejectedMissing) {
     throw new RuntimeException('streamPdf guardas: PDF inexistente no fue rechazado.');
 }
 
-@rmdir($storageDir);
+$generatedPath = $pdfService->generate('CERT-2026-INSTITUCIONAL', [
+    'studentDisplayName' => 'Alumno Demo',
+    'documentNumber' => '12345678',
+    'courseName' => 'Curso Demo',
+    'issuedAt' => '2026-07-02',
+    'expiresAt' => '',
+    'attendedDates' => ['2026-06-01', '2026-06-08'],
+    'institutionalConfig' => [
+        'institutionName' => 'IFTS 14 Demo',
+        'certificateText' => 'Texto institucional demo.',
+        'rectorName' => 'Rector Demo',
+        'rectorRole' => 'Rector',
+        'advisorName' => 'Asesora Demo',
+        'advisorRole' => 'Asesora Pedagogica',
+    ],
+], 'https://demo.example.edu.ar/certificados/validar/TOKEN_DEMO_PDF');
+
+$generatedPrefix = file_get_contents($generatedPath, false, null, 0, 5);
+$generatedSize = filesize($generatedPath);
+if ($generatedPrefix !== '%PDF-' || $generatedSize === false || $generatedSize <= 100) {
+    throw new RuntimeException('PDF institucional generado inválido.');
+}
+assertPdfContains($generatedPath, ['IFTS 14 Demo', 'Texto institucional demo.', 'Rector Demo', 'Rector', 'Asesora Demo', 'Asesora Pedagogica'], 'PDF institucional generado');
+
+cleanDir($storageDir);
 
 echo "OK PdfResilienceTest\n";
 
@@ -232,6 +256,21 @@ function assertSecurityHeaders(array $response, string $label): void
 
     if (($response['headers']['x-frame-options'] ?? '') !== 'SAMEORIGIN') {
         throw new RuntimeException("{$label}: falta X-Frame-Options.");
+    }
+}
+
+/** @param list<string> $expected */
+function assertPdfContains(string $path, array $expected, string $label): void
+{
+    $contents = file_get_contents($path);
+    if (!is_string($contents)) {
+        throw new RuntimeException("{$label}: no se pudo leer PDF generado.");
+    }
+
+    foreach ($expected as $text) {
+        if (!str_contains($contents, $text)) {
+            throw new RuntimeException("{$label}: falta texto visible esperado: {$text}.");
+        }
     }
 }
 

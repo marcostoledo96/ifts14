@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/TokenCipher.php';
 require_once __DIR__ . '/DniCipher.php';
+require_once __DIR__ . '/InstitutionalConfig.php';
 
 if (!interface_exists('LoggerInterface')) {
     interface LoggerInterface
@@ -50,6 +51,7 @@ final class AdminCertificateService
             $student = $this->loadActiveStudent($data['alumnoId']);
             $course = $this->loadActiveCourse($data['cursoId']);
             $attendedDates = $this->loadActiveAttendances($data['alumnoId'], $data['cursoId']);
+            $institutionalConfig = $this->loadInstitutionalConfig($this->pdo);
             $documentNumber = $this->decryptDocumentNumber($this->readLobAsString($student['dni_cifrado'] ?? null));
             $documentHash = $this->hashDocument($documentNumber);
             $documentMasked = $this->maskDocument($documentNumber);
@@ -102,6 +104,8 @@ final class AdminCertificateService
                 'issuedAt' => $data['issuedAt'],
                 'expiresAt' => $data['expiresAt'],
                 'attendedDates' => $attendedDates,
+                // ponytail: DTO en array, no value object nuevo.
+                'institutionalConfig' => $institutionalConfig,
             ], $token);
 
             $this->pdo->commit();
@@ -165,6 +169,7 @@ final class AdminCertificateService
             'issuedAt' => $data['issuedAt'],
             'expiresAt' => $data['expiresAt'] ?? '',
             'attendedDates' => $data['attendedDates'] ?? [],
+            'institutionalConfig' => InstitutionalConfig::normalize($data['institutionalConfig'] ?? []),
         ];
 
         $pdfPath = $this->pdfService->generate($code, $viewData, $validationUrl);
@@ -501,6 +506,21 @@ final class AdminCertificateService
         }
 
         return $row;
+    }
+
+    /** @return array{institutionName:string,certificateText:string,rectorName:string,rectorRole:string,advisorName:string,advisorRole:string} */
+    private function loadInstitutionalConfig(PDO $pdo): array
+    {
+        $statement = $pdo->prepare(<<<'SQL'
+            SELECT institucion_nombre, rector_nombre, rector_cargo, asesor_nombre, asesor_cargo, texto_certificado
+            FROM cert_configuracion_institucional
+            WHERE id = 1
+            LIMIT 1
+            SQL);
+        $statement->execute();
+        $row = $statement->fetch();
+
+        return InstitutionalConfig::fromDatabaseRow($row);
     }
 
     /** @return list<array{curso_fecha_id:int,fecha:string,descripcion:?string,orden:int}> */
