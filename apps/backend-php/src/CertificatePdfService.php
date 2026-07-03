@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/tecnickcom/tcpdf/tcpdf.php';
 require_once __DIR__ . '/../vendor/tecnickcom/tcpdf/tcpdf_barcodes_2d.php';
+require_once __DIR__ . '/InstitutionalConfig.php';
 
 /**
  * Generación y persistencia del PDF de un certificado con QR de validación.
@@ -13,6 +14,45 @@ require_once __DIR__ . '/../vendor/tecnickcom/tcpdf/tcpdf_barcodes_2d.php';
  */
 final class CertificatePdfService
 {
+    private const int CONTENT_X = 46;
+    private const int CONTENT_WIDTH = 205;
+    private const int CERTIFICATE_TEXT_Y = 43;
+    private const int STUDENT_NAME_Y = 65;
+    private const int SIGNATORY_Y = 145;
+    private const int SIGNATORY_WIDTH = 70;
+    private const int RECTOR_X = 32;
+    private const int ADVISOR_X = 130;
+    private const int QR_X = 235;
+    private const int QR_Y = 130;
+    private const int QR_SIZE = 40;
+    private const int FOOTER_Y = 172;
+    private const int PAGE_MARGIN = 18;
+    private const int PDF_FULL_WIDTH = 0;
+    private const int PDF_NO_BORDER = 0;
+    private const int PDF_NEXT_LINE = 1;
+    private const int QR_PADDING = 0;
+    private const array QR_FOREGROUND_COLOR = [0, 0, 0];
+    private const int INSTITUTION_FONT_SIZE = 16;
+    private const int INSTITUTION_CELL_HEIGHT = 8;
+    private const int CERTIFICATE_TITLE_FONT_SIZE = 22;
+    private const int CERTIFICATE_TITLE_CELL_HEIGHT = 12;
+    private const int BODY_FONT_SIZE = 12;
+    private const int CERTIFICATE_TEXT_HEIGHT = 18;
+    private const int STUDENT_NAME_FONT_SIZE = 16;
+    private const int STUDENT_NAME_CELL_HEIGHT = 9;
+    private const int BODY_CELL_HEIGHT = 7;
+    private const int COURSE_NAME_FONT_SIZE = 14;
+    private const int COURSE_NAME_CELL_HEIGHT = 8;
+    private const int DETAIL_FONT_SIZE = 11;
+    private const int DETAIL_CELL_HEIGHT = 6;
+    private const int CERTIFICATE_CODE_FONT_SIZE = 10;
+    private const int FOOTER_FONT_SIZE = 8;
+    private const int FOOTER_CELL_HEIGHT = 5;
+    private const int SIGNATORY_TEXT_OFFSET_Y = 2;
+    private const int SIGNATORY_NAME_FONT_SIZE = 10;
+    private const int SIGNATORY_ROLE_FONT_SIZE = 9;
+    private const int SIGNATORY_CELL_HEIGHT = 5;
+
     public function __construct(
         private readonly string $storagePath,
     ) {
@@ -34,66 +74,75 @@ final class CertificatePdfService
     public function generate(string $certificateCode, array $viewData, string $validationUrl): string
     {
         $finalPath = $this->pathForCode($certificateCode);
+        $institutionalConfig = InstitutionalConfig::normalize($viewData['institutionalConfig'] ?? []);
 
         $tcpdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $tcpdf->setCompression(false);
         $tcpdf->setPrintHeader(false);
         $tcpdf->setPrintFooter(false);
         $tcpdf->setAutoPageBreak(false);
-        $tcpdf->setMargins(18, 18, 18, true);
+        $tcpdf->setMargins(self::PAGE_MARGIN, self::PAGE_MARGIN, self::PAGE_MARGIN, true);
         $tcpdf->AddPage('L');
 
-        $tcpdf->setFont('helvetica', 'B', 22);
-        $tcpdf->Cell(0, 14, 'Certificado de Aprobación', 0, 1, 'C');
+        $tcpdf->setFont('helvetica', 'B', self::INSTITUTION_FONT_SIZE);
+        $tcpdf->Cell(self::PDF_FULL_WIDTH, self::INSTITUTION_CELL_HEIGHT, $institutionalConfig['institutionName'], self::PDF_NO_BORDER, self::PDF_NEXT_LINE, 'C');
 
-        $tcpdf->setFont('helvetica', '', 12);
-        $tcpdf->setY(40);
-        $tcpdf->MultiCell(0, 8, 'Se certifica que', 0, 'C');
+        $tcpdf->setFont('helvetica', 'B', self::CERTIFICATE_TITLE_FONT_SIZE);
+        $tcpdf->Cell(self::PDF_FULL_WIDTH, self::CERTIFICATE_TITLE_CELL_HEIGHT, 'Certificado de Curso', self::PDF_NO_BORDER, self::PDF_NEXT_LINE, 'C');
 
-        $tcpdf->setFont('helvetica', 'B', 16);
-        $tcpdf->MultiCell(0, 10, (string) ($viewData['studentDisplayName'] ?? ''), 0, 'C');
+        $tcpdf->setFont('helvetica', '', self::BODY_FONT_SIZE);
+        $tcpdf->setY(self::CERTIFICATE_TEXT_Y);
+        $tcpdf->writeHTMLCell(self::CONTENT_WIDTH, self::CERTIFICATE_TEXT_HEIGHT, self::CONTENT_X, self::CERTIFICATE_TEXT_Y, htmlspecialchars($institutionalConfig['certificateText'], ENT_QUOTES | ENT_HTML5, 'UTF-8'), self::PDF_NO_BORDER, self::PDF_NEXT_LINE, false, true, 'C');
 
-        $tcpdf->setFont('helvetica', '', 12);
-        $tcpdf->MultiCell(0, 8, 'ha aprobado', 0, 'C');
+        $tcpdf->setFont('helvetica', 'B', self::STUDENT_NAME_FONT_SIZE);
+        $tcpdf->setY(self::STUDENT_NAME_Y);
+        $tcpdf->MultiCell(self::CONTENT_WIDTH, self::STUDENT_NAME_CELL_HEIGHT, $this->visibleText($viewData['studentDisplayName'] ?? ''), self::PDF_NO_BORDER, 'C');
 
-        $tcpdf->setFont('helvetica', 'B', 14);
-        $tcpdf->MultiCell(0, 8, (string) ($viewData['courseName'] ?? ''), 0, 'C');
+        $tcpdf->setFont('helvetica', '', self::BODY_FONT_SIZE);
+        $tcpdf->MultiCell(self::CONTENT_WIDTH, self::BODY_CELL_HEIGHT, 'Curso certificado', self::PDF_NO_BORDER, 'C');
 
-        $tcpdf->setFont('helvetica', '', 11);
-        $tcpdf->MultiCell(0, 6, 'Documento: ' . (string) ($viewData['documentNumber'] ?? ''), 0, 'C');
-        $tcpdf->MultiCell(0, 6, 'Emitido el: ' . (string) ($viewData['issuedAt'] ?? ''), 0, 'C');
+        $tcpdf->setFont('helvetica', 'B', self::COURSE_NAME_FONT_SIZE);
+        $tcpdf->MultiCell(self::CONTENT_WIDTH, self::COURSE_NAME_CELL_HEIGHT, $this->visibleText($viewData['courseName'] ?? ''), self::PDF_NO_BORDER, 'C');
+
+        $tcpdf->setFont('helvetica', '', self::DETAIL_FONT_SIZE);
+        $tcpdf->MultiCell(self::CONTENT_WIDTH, self::DETAIL_CELL_HEIGHT, 'Documento: ' . $this->visibleText($viewData['documentNumber'] ?? ''), self::PDF_NO_BORDER, 'C');
+        $tcpdf->MultiCell(self::CONTENT_WIDTH, self::DETAIL_CELL_HEIGHT, 'Emitido el: ' . $this->visibleText($viewData['issuedAt'] ?? ''), self::PDF_NO_BORDER, 'C');
         if (isset($viewData['expiresAt']) && $viewData['expiresAt'] !== '') {
-            $tcpdf->MultiCell(0, 6, 'Vence el: ' . (string) ($viewData['expiresAt'] ?? ''), 0, 'C');
+            $tcpdf->MultiCell(self::CONTENT_WIDTH, self::DETAIL_CELL_HEIGHT, 'Vence el: ' . $this->visibleText($viewData['expiresAt'] ?? ''), self::PDF_NO_BORDER, 'C');
         }
 
         $attendedDates = $this->attendedDatesText($viewData['attendedDates'] ?? []);
         if ($attendedDates !== '') {
-            $tcpdf->MultiCell(0, 6, 'Fechas asistidas: ' . $attendedDates, 0, 'C');
+            $tcpdf->MultiCell(self::CONTENT_WIDTH, self::DETAIL_CELL_HEIGHT, 'Fechas asistidas: ' . $attendedDates, self::PDF_NO_BORDER, 'C');
         }
 
-        $tcpdf->setFont('helvetica', '', 10);
-        $tcpdf->MultiCell(0, 6, 'Código de certificado: ' . $certificateCode, 0, 'C');
+        $tcpdf->setFont('helvetica', '', self::CERTIFICATE_CODE_FONT_SIZE);
+        $tcpdf->MultiCell(self::CONTENT_WIDTH, self::DETAIL_CELL_HEIGHT, 'Código de certificado: ' . $this->visibleText($certificateCode), self::PDF_NO_BORDER, 'C');
+
+        $this->renderSignatory($tcpdf, self::RECTOR_X, self::SIGNATORY_Y, $institutionalConfig['rectorName'], $institutionalConfig['rectorRole']);
+        $this->renderSignatory($tcpdf, self::ADVISOR_X, self::SIGNATORY_Y, $institutionalConfig['advisorName'], $institutionalConfig['advisorRole']);
 
         // QR de validación en la esquina inferior derecha. El contenido del QR
         // es la URL pública; el token completo nunca se imprime como texto.
         $tcpdf->write2DBarcode(
             $validationUrl,
             'QRCODE',
-            235,
-            130,
-            40,
-            40,
+            self::QR_X,
+            self::QR_Y,
+            self::QR_SIZE,
+            self::QR_SIZE,
             [
                 'border' => false,
-                'padding' => 0,
-                'fgcolor' => [0, 0, 0],
+                'padding' => self::QR_PADDING,
+                'fgcolor' => self::QR_FOREGROUND_COLOR,
                 'bgcolor' => false,
             ],
             'T',
         );
 
-        $tcpdf->setFont('helvetica', '', 8);
-        $tcpdf->setY(172);
-        $tcpdf->MultiCell(0, 5, 'Escanee el QR para validar el certificado en la sede oficial.', 0, 'C');
+        $tcpdf->setFont('helvetica', '', self::FOOTER_FONT_SIZE);
+        $tcpdf->setY(self::FOOTER_Y);
+        $tcpdf->MultiCell(self::PDF_FULL_WIDTH, self::FOOTER_CELL_HEIGHT, 'Escanee el QR para validar el certificado en la sede oficial.', self::PDF_NO_BORDER, 'C');
 
         $tempPath = $finalPath . '.tmp';
         $pdfString = $tcpdf->Output('', 'S');
@@ -129,12 +178,36 @@ final class CertificatePdfService
         $values = [];
         foreach ($dates as $date) {
             if (is_array($date) && isset($date['fecha'])) {
-                $values[] = (string) $date['fecha'];
+                $values[] = $this->visibleText($date['fecha']);
             } elseif (is_string($date)) {
-                $values[] = $date;
+                $values[] = $this->visibleText($date);
             }
         }
 
         return implode(', ', $values);
+    }
+
+    private function visibleText(mixed $value): string
+    {
+        return mb_substr(trim((string) $value), 0, InstitutionalConfig::TEXT_MAX_LENGTH);
+    }
+
+    private function renderSignatory(TCPDF $tcpdf, int $x, int $y, string $name, string $role): void
+    {
+        $name = trim($name);
+        $role = trim($role);
+        if ($name === '') {
+            return;
+        }
+
+        $tcpdf->Line($x, $y, $x + self::SIGNATORY_WIDTH, $y);
+        $tcpdf->setXY($x, $y + self::SIGNATORY_TEXT_OFFSET_Y);
+        $tcpdf->setFont('helvetica', 'B', self::SIGNATORY_NAME_FONT_SIZE);
+        $tcpdf->MultiCell(self::SIGNATORY_WIDTH, self::SIGNATORY_CELL_HEIGHT, $name, self::PDF_NO_BORDER, 'C');
+        if ($role !== '') {
+            $tcpdf->setX($x);
+            $tcpdf->setFont('helvetica', '', self::SIGNATORY_ROLE_FONT_SIZE);
+            $tcpdf->MultiCell(self::SIGNATORY_WIDTH, self::SIGNATORY_CELL_HEIGHT, $role, self::PDF_NO_BORDER, 'C');
+        }
     }
 }

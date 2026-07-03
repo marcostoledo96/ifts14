@@ -143,3 +143,9 @@ Los siguientes gaps quedan registrados en specs y deben abordarse en ciclos SDD 
 - **Rate limiting distribuido**: el `RateLimiter` actual es de nodo único con JSON temporal y `flock`; no escala horizontalmente.
 - **Observabilidad real**: no hay agregador de logs, métricas ni trazas; el backend solo emite eventos puntuales.
 - **`ultimo_uso_en` en verificación pública**: la columna existe en el modelo, pero la verificación pública no la actualiza todavía.
+
+## PDF institucional
+
+La emisión administrativa genera el PDF con contenido institucional desde `cert_configuracion_institucional` (`id = 1`): nombre de institución, texto de certificado, rector/a y asesor/a pedagógica con sus cargos. Si la fila no existe o algún campo está vacío, el backend usa valores seguros por defecto y no aborta la emisión.
+
+El PDF conserva el contrato vigente: certificado de curso horizontal, DNI completo permitido solo dentro del certificado, fechas desde el snapshot `cert_certificado_fechas`, QR al link permanente y sin token completo como texto visible. No agrega endpoints, SMTP, reenvío automático ni edición de configuración institucional.
