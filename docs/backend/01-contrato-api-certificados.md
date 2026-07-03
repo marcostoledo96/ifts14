@@ -115,13 +115,14 @@ DTOs administrativos principales:
 
 Reglas de privacidad y persistencia:
 
-- `POST /admin/alumnos` normaliza DNI a dígitos, exige longitud 7 a 10, calcula `dni_hash` binario y guarda `dni_cifrado` con `dni_cipher_key` externa.
+- `POST /admin/alumnos` normaliza DNI a dígitos, exige longitud 7 a 10, calcula `dni_hash` binario como HMAC-SHA-256 usando `dni_cipher_key` y guarda `dni_cifrado` con esa misma clave externa.
 - Si `dni_cipher_key` falta o es inválida, responde `500 CONFIGURATION_ERROR` antes de insertar alumno.
 - `PATCH /admin/alumnos/{id}/estado` no requiere `dni_cipher_key`: solo actualiza el estado y conserva el DTO administrativo enmascarado.
 - Las respuestas admin usan `dniMostrar` y nunca devuelven DNI completo, `dni_hash`, `dni_cifrado`, tokens, SQL, secretos ni rutas internas.
 - Asistencia válida requiere alumno `activo`, curso `activo` y fecha `programada` o `realizada` del curso.
 - Los filtros `cursoId` y `alumnoId` de `GET /admin/asistencias` deben ser enteros positivos; si vienen informados con formato inválido, responden `400 VALIDATION_ERROR` en vez de ampliar el listado.
 - Una asistencia activa duplicada responde `409 CONFLICT`; la anulación usa `eliminado_en` y no hace `DELETE` físico.
+- `orden` de fechas de curso acepta solo `1..65535`; aplica a creación, actualización y al próximo orden automático. Si se supera el máximo, responde `400 VALIDATION_ERROR`.
 
 Errores específicos de datos maestros:
 
