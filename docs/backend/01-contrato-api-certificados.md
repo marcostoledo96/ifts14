@@ -188,7 +188,7 @@ La emisión no devuelve DNI completo ni token completo como campo separado. El c
 
 El PDF generado durante la emisión usa `cert_configuracion_institucional` (`id = 1`) cuando existe: `institucion_nombre`, `texto_certificado`, `rector_nombre`, `rector_cargo`, `asesor_nombre` y `asesor_cargo`. Si la fila falta o un campo está vacío, la emisión continúa con valores institucionales seguros por defecto. Esta configuración solo afecta el contenido del PDF; no cambia el DTO administrativo ni habilita edición de configuración por API.
 
-La emisión persiste `alumno_id`, `curso_id` y snapshot en `cert_certificado_fechas`. Si no hay asistencias activas (`cert_asistencias.eliminado_en IS NULL` y fecha de curso `programada|realizada`), responde `400 VALIDATION_ERROR` sin persistir certificado, token, PDF ni snapshot.
+La emisión persiste `alumno_id`, `curso_id` y snapshot en `cert_certificado_fechas`. Si no hay asistencias activas (`cert_asistencias.eliminado_en IS NULL` y fecha de curso `programada|realizada`), responde `400 VALIDATION_ERROR` sin persistir certificado, token, PDF ni snapshot. Si ya existe un certificado con `estado='vigente'` y `revocado_en IS NULL` para el mismo alumno y curso, responde `409 CERTIFICATE_ALREADY_EXISTS` sin persistir certificado, token, PDF ni snapshot. Revocar o pasar explícitamente el estado a `vencido` libera una nueva emisión; una fecha `vence_en` pasada no libera el slot mientras el estado siga `vigente`.
 
 ### `POST /admin/certificados/{id}/revocar`
 
@@ -387,6 +387,7 @@ Toda respuesta de error debe usar este formato:
 | 404 | `PDF_NOT_FOUND` | Certificado inexistente o PDF no persistido en `GET /admin/certificados/{id}/pdf`. |
 | 405 | `METHOD_NOT_ALLOWED` | Método HTTP no permitido. |
 | 409 | `CERTIFICATE_NOT_REVOCABLE` | El certificado existe pero no puede revocarse en su estado actual. |
+| 409 | `CERTIFICATE_ALREADY_EXISTS` | Ya existe un certificado vigente para el mismo alumno y curso. |
 | 409 | `CONFLICT` | Duplicado de negocio en datos maestros administrativos. |
 | 409 | `TOKEN_NOT_RECOVERABLE` | `token_cifrado` ausente, envelope inválido, clave inválida o descifrado fallido en entrega manual. No regenera token. |
 | 415 | `UNSUPPORTED_MEDIA_TYPE` | POST JSON sin `Content-Type: application/json` (con o sin charset). |
