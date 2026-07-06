@@ -23,7 +23,12 @@
               <dd>{{ v.certificate.student.displayName }}</dd>
 
               <dt>Documento</dt>
-              <dd>{{ v.certificate.student.documentMasked }}</dd>
+              <dd>{{ documentDisplay(v.certificate.student) }}</dd>
+
+              @if (v.certificate.course.attendedDates?.length) {
+                <dt>Fechas asistidas</dt>
+                <dd>{{ formatAttendedDates(v.certificate.course.attendedDates) }}</dd>
+              }
 
               <dt>Código de certificado</dt>
               <dd>{{ v.certificate.certificateCode }}</dd>

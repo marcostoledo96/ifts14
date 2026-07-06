@@ -1,6 +1,6 @@
 // Contratos públicos del módulo de validación de certificados.
 // Reflejan la respuesta de /certificados/api/certificados/{token}/verificacion.
-// Sin DNI completo, token completo, hash, pepper ni nombres de tablas.
+// D0: DNI completo visible (documentNumber) y fechas asistidas (attendedDates).
 
 export interface ApiEnvelope<T> {
   data: T;
@@ -12,14 +12,38 @@ export interface ApiErrorEnvelope {
   meta: { requestId: string };
 }
 
+export interface CertificateStudentDto {
+  displayName: string;
+  /** DNI completo visible en validación pública (D0). */
+  documentNumber?: string;
+  /** Solo certificados legados sin alumno/curso vinculado. */
+  documentMasked?: string;
+}
+
+export interface CertificateCourseDto {
+  name: string;
+  issuedAt: string;
+  /** Fechas del curso a las que asistió el alumno (D0). */
+  attendedDates?: string[];
+}
+
 // DTO público de verificación. Campos públicos seguros.
 export interface CertificateVerificationDto {
   valid: true;
   status: 'vigente';
   certificateCode: string;
-  student: { displayName: string; documentMasked: string };
-  course: { name: string; issuedAt: string };
+  student: CertificateStudentDto;
+  course: CertificateCourseDto;
   verifiedAt: string;
+}
+
+/** Texto de documento para la UI pública: D0 primero, legado enmascarado como fallback. */
+export function studentDocumentDisplay(student: CertificateStudentDto): string {
+  const documentNumber = student.documentNumber?.trim();
+  if (documentNumber) {
+    return documentNumber;
+  }
+  return student.documentMasked?.trim() ?? '';
 }
 
 // Estado de vista consumido por la UI pública.
