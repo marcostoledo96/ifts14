@@ -80,7 +80,7 @@ Reglas:
 - respetar identidad institucional del IFTS 14;
 - las credenciales demo de `login-form.tsx` son mock visual: no portarlas ni usarlas en el producto;
 - respetar D0: QR permanente, DNI completo público, fechas asistidas, auth simple temporal;
-- el inventario vive en `muestra_pagina/MANIFIESTO_V0.md`.
+- `muestra_pagina/` contiene la referencia visual v0 final y completa (export de Next.js/React con capturas para todos los flujos 4-22). El `MANIFIESTO_V0.md` histórico fue retirado al reemplazar la carpeta por el export final; el inventario se completa contra el listado seguro de la carpeta.
 
 ## Frontend
 

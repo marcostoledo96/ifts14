@@ -2,35 +2,35 @@
 
 ## Propósito
 
-Definir los requisitos documentales para reflejar el estado real de `muestra_pagina/` (referencia v0 utilizable para prompts 4-10, 12 pendientes) en la guía F0-F3, crear una guía operativa de Fase 2 para prompts 11-22 y mantener `docs/frontend/00-angular20-port-v0.md` como fuente de verdad del port visual, sin modificar código ni dependencias del producto.
+Definir los requisitos documentales vigentes para reflejar el estado real de `muestra_pagina/` (referencia v0 final y completa para flujos 4-22) en la guía unificada de Matías y mantener `docs/frontend/00-angular20-port-v0.md` como fuente de verdad del port visual, sin modificar código ni dependencias del producto.
 
 ## Requirements
 
-### Requirement: Guía F0-F3 de Matías actualizada al estado real
+### Requirement: Guía unificada de Matías actualizada al estado real
 
-La documentación DEBE actualizar `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` para indicar que `muestra_pagina/` ya contiene una referencia v0 utilizable para prompts 4-10, que quedan pendientes prompts 11-22 y que F0-F3 cierra con handoff explícito a Fase 2.
+La documentación DEBE mantener `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` como guía única de Matías para F0-F6, indicando que `muestra_pagina/` contiene la referencia v0 final y completa para flujos 4-22.
 
 #### Scenario: Estado real visible
-- DADO que Matías abre la guía F0-F3
-- CUANDO revisa la ruta rápida, uso de `muestra_pagina/` y cierre de F3-06
-- ENTONCES ve 7 pantallas disponibles, 12 pendientes y el próximo documento a usar
+- DADO que Matías abre la guía unificada
+- CUANDO revisa la ruta rápida y el uso de `muestra_pagina/`
+- ENTONCES ve que la referencia v0 está completa para flujos 4-22 y que los ciclos F4-F6 están en la misma guía
 
 #### Scenario: Sin ampliación de alcance
-- DADO que una tarea intenta sumar F4-F6 dentro de la guía F0-F3
+- DADO que una tarea intenta reabrir una guía separada para F4-F6
 - CUANDO se revisa el alcance documental
-- ENTONCES la guía mantiene F0-F3 y deriva Fase 2 al documento separado
+- ENTONCES la guía unificada conserva F0-F6 y no deriva a un documento operativo separado
 
-### Requirement: Planificación Fase 2 para prompts 11-22
+### Requirement: Planificación F4-F6 integrada para flujos 11-22
 
-La documentación DEBE crear `MATIAS_PROMPTS_SDD_FASE2.md` como guía operativa para prompts 11-22, agrupada en ciclos F4-F6 trazables, con límites, lecturas mínimas, validaciones, QA y cierre SDD.
+La documentación DEBE integrar los flujos 11-22 en `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`, agrupados en ciclos F4-F6 trazables, con límites, lecturas mínimas, validaciones, QA y cierre SDD.
 
-#### Scenario: Ejecución de un ciclo Fase 2
+#### Scenario: Ejecución de un ciclo F4-F6
 - DADO que Matías debe continuar con un prompt pendiente
-- CUANDO consulta `MATIAS_PROMPTS_SDD_FASE2.md`
+- CUANDO consulta `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`
 - ENTONCES identifica ciclo, objetivo, restricciones y evidencia esperada
 
 #### Scenario: Contrato no definido
-- DADO que un ciclo Fase 2 depende de API, PDF, QR o configuración no aprobada
+- DADO que un ciclo F4-F6 depende de API, PDF, QR o configuración no aprobada
 - CUANDO se prepara el prompt del ciclo
 - ENTONCES el documento DEBE exigir spec previa o bloqueo, sin inventar contrato
 
@@ -43,23 +43,23 @@ La documentación DEBE crear `MATIAS_PROMPTS_SDD_FASE2.md` como guía operativa 
 - CUANDO se consulta la documentación frontend
 - ENTONCES el inventario y riesgos están disponibles sin leer archivos privados ni código sensible
 
-### Requirement: README de `muestra_pagina/` sincronizado
+### Requirement: Referencia `muestra_pagina/` sincronizada
 
-`muestra_pagina/README.md` DEBE describir el estado actual de la carpeta como referencia v0 activa, con 7 pantallas disponibles, 12 pendientes y uso permitido solo como referencia visual/funcional.
+`docs/frontend/00-angular20-port-v0.md` DEBE describir el estado actual de `muestra_pagina/` como referencia v0 final y completa, con uso permitido solo como referencia visual/funcional. Si `muestra_pagina/` no incluye README propio, el inventario se verifica contra listado seguro de carpeta.
 
 #### Scenario: Carpeta ya no vacía
-- DADO que una persona abre `muestra_pagina/README.md`
-- CUANDO revisa el estado de la referencia
+- DADO que una persona revisa la documentación frontend o el listado seguro de `muestra_pagina/`
+- CUANDO revisa el estado de la referencia v0
 - ENTONCES entiende que ya existe material v0 y que no debe copiar código literalmente
 
 ### Requirement: Índice general actualizado
 
-`docs/00-indice-general.md` DEBE enlazar `MATIAS_PROMPTS_SDD_FASE2.md` dentro de la planificación vigente de Matías, evitando duplicar contenido ya definido en documentos fuente.
+`docs/00-indice-general.md` DEBE enlazar solo la guía unificada de Matías dentro de la planificación vigente, evitando duplicar contenido ya definido en documentos fuente.
 
 #### Scenario: Descubrimiento del plan vigente
 - DADO que Matías o Marcos buscan la planificación frontend vigente
 - CUANDO consultan el índice general
-- ENTONCES encuentran la guía F0-F3 y el plan Fase 2 con propósito diferenciado
+- ENTONCES encuentran la guía unificada F0-F6 de Matías
 
 #### Scenario: Sin duplicación documental
 - DADO que el índice se actualiza
