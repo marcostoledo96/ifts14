@@ -7,7 +7,7 @@ import {
   resource,
 } from '@angular/core';
 import { ValidationService } from '../../shared/certificates/validation.service';
-import { ValidationViewState } from '../../shared/certificates/dto';
+import { studentDocumentDisplay, ValidationViewState } from '../../shared/certificates/dto';
 
 // ponytail: resource() está en @angular/core desde v20, sin HttpClient.
 // params lee tokenCertificacion(); loader llama al servicio async.
@@ -36,4 +36,9 @@ export class PublicValidationPage {
   });
   readonly isLoading = computed(() => this.verification.isLoading());
   readonly hasError = computed(() => this.verification.error() !== undefined);
+
+  readonly documentDisplay = studentDocumentDisplay;
+
+  readonly formatAttendedDates = (dates: string[] | undefined): string =>
+    (dates ?? []).join(', ');
 }
