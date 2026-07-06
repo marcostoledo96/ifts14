@@ -17,6 +17,13 @@ El sistema DEBE exponer una pantalla pública para `/certificados/validar/:token
 - **Entonces** la pantalla DEBE mostrar certificado verificable, curso, fecha, DNI completo y fechas asistidas.
 - **Y** NO DEBE mostrar token completo ni datos reales.
 
+#### Scenario: Certificado legado con documentMasked
+
+- **Dado** una respuesta pública legada con `documentMasked` y sin `attendedDates`
+- **Cuando** el mapper valida el DTO
+- **Entonces** la pantalla DEBE mostrar el documento enmascarado y omitir el bloque de fechas asistidas.
+- **Y** NO DEBE colapsar a error técnico por ausencia de `documentNumber`.
+
 #### Scenario: Certificado revocado no verificable
 
 - **Dado** un token de mock marcado como revocado
