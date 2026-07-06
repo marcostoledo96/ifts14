@@ -6,6 +6,8 @@ Módulo: Certificados QR IFTS N.° 14
 Ruta productiva futura: `/certificados/`  
 Ruta staging confirmada: `/certificados_staging/`
 
+> **Actualización posterior.** Este documento queda como insumo histórico de auditoría. La planificación operativa vigente está en `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`, `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`, `docs/00-indice-general.md` y `docs/frontend/00-angular20-port-v0.md`. `muestra_pagina/` fue reemplazada por el export v0 final y completo; si se necesita inventario, usar listado seguro de carpeta.
+
 ---
 
 ## 1. Objetivo de este documento
@@ -452,7 +454,7 @@ Agregar:
 - no tocar cPanel;
 - usar ZIP v0 actualizado como referencia principal cuando esté subido.
 
-#### `MATIAS_PROMPTS_SDD_FASE2.md`
+#### `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` — ciclos F4-F6
 
 Actualizar:
 
@@ -1057,11 +1059,10 @@ Archivos a leer:
 - deploy/staging/CHECKLIST.md
 - MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md
 - MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md
-- MATIAS_PROMPTS_SDD_FASE2.md
+- docs/frontend/00-angular20-port-v0.md
 - openspec/specs/backend-contrato-api-certificados/spec.md
 - openspec/specs/backend-modelo-datos-certificados/spec.md
-- muestra_pagina/README.md
-- muestra_pagina/MANIFIESTO_V0.md
+- muestra_pagina/ (listado seguro; no ejecutar ni compilar)
 
 No leer todo el repositorio.
 
@@ -1184,10 +1185,8 @@ Archivos a leer:
 - AGENTS.md
 - apps/frontend-angular/AGENTS.md
 - docs/frontend/00-angular20-port-v0.md
-- muestra_pagina/README.md
-- muestra_pagina/MANIFIESTO_V0.md
+- muestra_pagina/ (listado seguro; no ejecutar ni compilar)
 - MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md
-- MATIAS_PROMPTS_SDD_FASE2.md
 
 Tareas:
 1. Inventariar pantallas v0 disponibles.

@@ -1,6 +1,5 @@
 import { HeaderInstitucional } from "@/components/validacion/header-institucional"
 import { FolioCertificado } from "@/components/validacion/folio-certificado"
-import { BloqueTrazabilidad } from "@/components/validacion/bloque-trazabilidad"
 import { FooterInstitucional } from "@/components/validacion/footer-institucional"
 
 export default function ValidarCertificadoPage() {
@@ -10,7 +9,6 @@ export default function ValidarCertificadoPage() {
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <FolioCertificado />
-        <BloqueTrazabilidad />
       </main>
 
       <FooterInstitucional />

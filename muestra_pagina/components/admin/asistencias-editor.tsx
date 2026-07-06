@@ -42,18 +42,18 @@ const CURSO = {
 }
 
 const ALUMNOS: Alumno[] = [
-  { id: "a1", legajo: "STD-2024-001", apellido: "Alvarez", nombre: "Martina Soledad", dni: "38.456.123", email: "m.alvarez@ifts14.edu.ar" },
-  { id: "a2", legajo: "STD-2024-002", apellido: "Benítez", nombre: "Carlos Miguel", dni: "39.123.456", email: "c.benitez@ifts14.edu.ar" },
-  { id: "a3", legajo: "STD-2024-003", apellido: "Domínguez", nombre: "Laura Inés", dni: "40.789.012", email: "l.dominguez@ifts14.edu.ar" },
-  { id: "a4", legajo: "STD-2024-004", apellido: "Fernández", nombre: "Julián", dni: "41.345.678", email: "j.fernandez@ifts14.edu.ar" },
-  { id: "a5", legajo: "STD-2024-005", apellido: "Gómez", nombre: "Sofía Belén", dni: "42.011.984", email: "s.gomez@ifts14.edu.ar" },
-  { id: "a6", legajo: "STD-2024-006", apellido: "Herrera", nombre: "Maximiliano", dni: "39.874.220", email: "m.herrera@ifts14.edu.ar" },
-  { id: "a7", legajo: "STD-2024-007", apellido: "Ibáñez", nombre: "Rocío Daniela", dni: "43.298.551", email: "r.ibanez@ifts14.edu.ar" },
-  { id: "a8", legajo: "STD-2024-008", apellido: "López", nombre: "Tomás Agustín", dni: "40.512.337", email: "t.lopez@ifts14.edu.ar" },
-  { id: "a9", legajo: "STD-2024-009", apellido: "Martínez", nombre: "Valentina", dni: "41.998.704", email: "v.martinez@ifts14.edu.ar" },
-  { id: "a10", legajo: "STD-2024-010", apellido: "Núñez", nombre: "Federico Ariel", dni: "38.220.165", email: "f.nunez@ifts14.edu.ar" },
-  { id: "a11", legajo: "STD-2024-011", apellido: "Ortega", nombre: "Camila", dni: "42.654.890", email: "c.ortega@ifts14.edu.ar" },
-  { id: "a12", legajo: "STD-2024-012", apellido: "Paz", nombre: "Lucas Emanuel", dni: "43.110.472", email: "l.paz@ifts14.edu.ar" },
+  { id: "a1", legajo: "STD-2024-001", apellido: "Ficticia", nombre: "Persona 101", dni: "DNI-FICTICIO-101", email: "persona.ficticia101@example.invalid" },
+  { id: "a2", legajo: "STD-2024-002", apellido: "Ficticia", nombre: "Persona 102", dni: "DNI-FICTICIO-102", email: "persona.ficticia102@example.invalid" },
+  { id: "a3", legajo: "STD-2024-003", apellido: "Ficticia", nombre: "Persona 103", dni: "DNI-FICTICIO-103", email: "persona.ficticia103@example.invalid" },
+  { id: "a4", legajo: "STD-2024-004", apellido: "Ficticia", nombre: "Persona 104", dni: "DNI-FICTICIO-104", email: "persona.ficticia104@example.invalid" },
+  { id: "a5", legajo: "STD-2024-005", apellido: "Ficticia", nombre: "Persona 105", dni: "DNI-FICTICIO-105", email: "persona.ficticia105@example.invalid" },
+  { id: "a6", legajo: "STD-2024-006", apellido: "Ficticia", nombre: "Persona 106", dni: "DNI-FICTICIO-106", email: "persona.ficticia106@example.invalid" },
+  { id: "a7", legajo: "STD-2024-007", apellido: "Ficticia", nombre: "Persona 107", dni: "DNI-FICTICIO-107", email: "persona.ficticia107@example.invalid" },
+  { id: "a8", legajo: "STD-2024-008", apellido: "Ficticia", nombre: "Persona 108", dni: "DNI-FICTICIO-108", email: "persona.ficticia108@example.invalid" },
+  { id: "a9", legajo: "STD-2024-009", apellido: "Ficticia", nombre: "Persona 109", dni: "DNI-FICTICIO-109", email: "persona.ficticia109@example.invalid" },
+  { id: "a10", legajo: "STD-2024-010", apellido: "Ficticia", nombre: "Persona 110", dni: "DNI-FICTICIO-110", email: "persona.ficticia110@example.invalid" },
+  { id: "a11", legajo: "STD-2024-011", apellido: "Ficticia", nombre: "Persona 111", dni: "DNI-FICTICIO-111", email: "persona.ficticia111@example.invalid" },
+  { id: "a12", legajo: "STD-2024-012", apellido: "Ficticia", nombre: "Persona 112", dni: "DNI-FICTICIO-112", email: "persona.ficticia112@example.invalid" },
 ]
 
 const FECHAS: FechaCurso[] = [
@@ -184,7 +184,7 @@ export function AsistenciasEditor() {
     e.preventDefault()
     if (!hayCambios) return
     // TODO: reemplazar por la llamada real al backend (Angular service).
-    // Payload: { fechaId, presentes: Array.from(presentes), reenviarCertificados: requiereReenvio }
+    // Payload: { fechaId, presentes: Array.from(presentes), nuevaEntrega: requiereReenvio }
     setGuardado(true)
     // En el port real, el baseline se actualizaría con la respuesta del backend.
     FECHAS.find((f) => f.id === fechaId)!.presentesGuardados = Array.from(presentes)
@@ -539,10 +539,10 @@ export function AsistenciasEditor() {
                       />
                       <p className="text-xs leading-relaxed text-foreground">
                         Si modificás una asistencia ya certificada, el certificado
-                        deberá reenviarse al alumno. El QR seguirá siendo el mismo.
+                        deberá entregarse nuevamente al alumno. El QR seguirá siendo el mismo.
                         {afectados > 0 ? (
                           <span className="mt-1 block font-medium">
-                            {afectados} certificado{afectados === 1 ? "" : "s"} a reenviar.
+                            {afectados} certificado{afectados === 1 ? "" : "s"} a entregar nuevamente.
                           </span>
                         ) : null}
                       </p>
@@ -559,7 +559,7 @@ export function AsistenciasEditor() {
                   className="flex w-full items-center justify-center gap-2 rounded-sm bg-ink px-4 py-2.5 text-sm font-semibold text-ink-foreground transition-colors hover:bg-ink/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Check className="h-4 w-4" strokeWidth={2.25} />
-                  {requiereReenvio ? "Guardar y reenviar" : "Guardar asistencias"}
+                  {requiereReenvio ? "Guardar y registrar entrega manual" : "Guardar asistencias"}
                 </button>
                 <button
                   type="button"

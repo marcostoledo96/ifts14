@@ -136,22 +136,22 @@ El ciclo F0-02 DEBE producir evidencia documental de que OpenCode/Gentle-AI resp
 
 ### Requirement: Misión de Matías sintetizada para onboarding frontend
 
-El ciclo F0-03 DEBE producir una síntesis operativa en `docs/opencode/onboarding-matias-frontend.md` que codifique la misión, el alcance permitido, el fuera de alcance, las fuentes de verdad y los límites de Matías antes de iniciar trabajo de producto frontend (ciclos F1+). La síntesis DEBE enlazar (no duplicar) las 8 fuentes vigentes: `README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md`, `apps/frontend-angular/AGENTS.md`. La síntesis DEBE declarar explícitamente el estado real de `muestra_pagina/` (NO vacía: v0 export con 7 pantallas disponibles y 12 pendientes) y respetar el scaffold Angular 20 preexistente de Marcos en `apps/frontend-angular/` (35/35 tests, build verde). El ciclo F0-03 es documental puro: no genera código de producto, no toca `apps/`, no toca `muestra_pagina/` (read-only), no toca `material_privado_no_versionar/`, no toca `openspec/changes/backend-public-endpoint-hardening/` (cambio activo de Marcos) y no toca las ramas no mergeadas `docs/matias-onboarding-f0-02-f0-03` ni `docs/policy-git-switch-checkout`.
+El ciclo F0-03 DEBE producir una síntesis operativa en `docs/opencode/onboarding-matias-frontend.md` que codifique la misión, el alcance permitido, el fuera de alcance, las fuentes de verdad y los límites de Matías antes de iniciar trabajo de producto frontend (ciclos F1+). La síntesis DEBE enlazar (no duplicar) las fuentes vigentes: `README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md`, `apps/frontend-angular/AGENTS.md` y el listado seguro de `muestra_pagina/`. La síntesis DEBE declarar explícitamente el estado real de `muestra_pagina/` (v0 export final y completo para flujos 4-22) y respetar el scaffold Angular 20 preexistente de Marcos en `apps/frontend-angular/` (35/35 tests, build verde). El ciclo F0-03 es documental puro: no genera código de producto, no toca `apps/`, no toca `muestra_pagina/` (read-only), no toca `material_privado_no_versionar/`, no toca `openspec/changes/backend-public-endpoint-hardening/` (cambio activo de Marcos) y no toca las ramas no mergeadas `docs/matias-onboarding-f0-02-f0-03` ni `docs/policy-git-switch-checkout`.
 
 #### Scenario: Mati puede explicar su misión, alcance y fuera de alcance a partir de la síntesis
 - DADO que Mati arrancó un nuevo ciclo de frontend o necesita responder una consulta sobre su rol
 - CUANDO consulta la síntesis operativa
 - ENTONCES encuentra una sección clara de "Misión", una de "Alcance permitido" (con bullets concretos de lo que SÍ le corresponde: Angular 20, adaptación de `muestra_pagina/`, UI/UX, Tailwind, responsive, accesibilidad) y una de "Fuera de alcance" (con bullets concretos de lo que NO le corresponde: backend PHP, MariaDB, deploy cPanel, `material_privado_no_versionar/`, secretos, dependencias no aprobadas, decisiones que requieren coordinación con Marcos)
 
-#### Scenario: La síntesis cita las 8 fuentes vigentes por nombre y las enlaza
+#### Scenario: La síntesis cita las fuentes vigentes por nombre y las enlaza
 - DADO que la síntesis operativa necesita ser breve y mantenible
 - CUANDO Mati o un revisor la lee
-- ENTONCES la síntesis NO duplica el contenido de las 8 fuentes; en su lugar, las enlaza explícitamente con su ruta relativa (`README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md`, `muestra_pagina/AGENTS.md`, `apps/frontend-angular/AGENTS.md`) y cita los puntos clave de cada una (1-3 bullets por fuente) que son relevantes para la misión
+- ENTONCES la síntesis NO duplica el contenido de las fuentes; en su lugar, las enlaza explícitamente con su ruta relativa (`README.md`, `GUIA.md`, `AGENTS.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md`, `apps/frontend-angular/AGENTS.md`) y cita que `muestra_pagina/` se consulta por listado seguro como referencia visual final
 
 #### Scenario: La síntesis declara el estado real de `muestra_pagina/` y del scaffold Angular
 - DADO que el estado del proyecto evolucionó desde la redacción original de F0-03
 - CUANDO Mati o un revisor lee la sección "Estado del proyecto" de la síntesis
-- ENTONCES encuentra una declaración explícita de que `muestra_pagina/` tiene v0 export con 7 pantallas disponibles (prompts 4-10) y 12 pendientes (prompts 11-22), y de que `apps/frontend-angular/` ya tiene el scaffold Angular 20 de Marcos con tests pasando. La síntesis incluye una sección "Qué sigue" que apunta a los ciclos F1+ como el lugar donde se arranca el trabajo de producto
+- ENTONCES encuentra una declaración explícita de que `muestra_pagina/` tiene v0 export final y completo para flujos 4-22, y de que `apps/frontend-angular/` ya tiene el scaffold Angular 20 de Marcos con tests pasando. La síntesis incluye una sección "Qué sigue" que apunta a los ciclos F1+ como el lugar donde se arranca el trabajo de producto
 
 #### Scenario: La síntesis respeta el scaffold preexistente y no propone rehacerlo
 - DADO que Marcos ya creó el scaffold Angular 20 con build verde

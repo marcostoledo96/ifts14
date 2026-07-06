@@ -292,7 +292,7 @@ Contenido obligatorio:
 - Número de certificado: IFTS14-CUR-2026-0001.
 - Fecha de emisión: 20/06/2026.
 - Fechas presentes: 05/06/2026, 12/06/2026, 19/06/2026.
-- Código parcial de validación: QR-8F3A-92K.
+- Código parcial de validación: QR-FICTICIO-00K.
 - Fecha y hora de consulta: 20/06/2026 · 18:35.
 - Texto: “El código QR no almacena datos personales; solo permite consultar este registro oficial.”
 - Acción secundaria: “Volver al sitio del instituto”.
@@ -389,7 +389,7 @@ Contenido obligatorio:
 - Número de certificado: IFTS14-CUR-2026-0001.
 - Fecha de emisión: 20/06/2026.
 - Fechas presentes: 05/06/2026, 12/06/2026, 19/06/2026.
-- Código parcial de validación: QR-8F3A-92K.
+- Código parcial de validación: QR-FICTICIO-00K.
 - Fecha y hora de consulta: 20/06/2026 · 18:35.
 - Texto: “El código QR no almacena datos personales; solo permite consultar este registro oficial.”
 - Acción secundaria: “Volver al sitio del instituto”.
@@ -454,7 +454,7 @@ Variante 1 — Certificación revocada:
   - Número de certificado: IFTS14-CUR-2026-0001
   - Fecha de emisión: 20/06/2026
 - No mostrar fechas presentes como si siguieran vigentes.
-- Incluir zona de control documental con código parcial: QR-8F3A-92K.
+- Incluir zona de control documental con código parcial: QR-FICTICIO-00K.
 - Usar rojo con moderación, como sello/estado, no como fondo dominante.
 
 Variante 2 — Certificación no encontrada:
@@ -563,7 +563,7 @@ Variante 1 — Certificación revocada:
 - Título: “Certificación revocada”.
 - Mensaje: “Esta certificación fue revocada por la institución.”
 - Mostrar datos mínimos si existen: alumno/a, DNI completo, curso, número de certificado y fecha de emisión.
-- Mostrar código parcial: QR-8F3A-92K.
+- Mostrar código parcial: QR-FICTICIO-00K.
 - No mostrar fechas presentes como si siguieran vigentes.
 
 Variante 2 — Certificación no encontrada:

@@ -1,4 +1,4 @@
-import { BookPlus, CalendarCheck, BadgePlus, Send, Upload } from "lucide-react"
+import { BookPlus, CalendarCheck, BadgePlus, Link2, Upload } from "lucide-react"
 
 const acciones = [
   {
@@ -20,9 +20,9 @@ const acciones = [
     primary: false,
   },
   {
-    label: "Reenviar certificado",
-    desc: "Volver a enviar al alumno",
-    icon: Send,
+    label: "Entrega manual",
+    desc: "Copiar link y descargar PDF",
+    icon: Link2,
     primary: false,
   },
   {

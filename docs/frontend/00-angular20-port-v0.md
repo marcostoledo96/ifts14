@@ -4,21 +4,21 @@ Este documento es la fuente de verdad para portar a Angular 20 la referencia vis
 
 ## Estado de referencia
 
-`muestra_pagina/` contiene una referencia v0 utilizable generada en Next.js/React, con código fuente exportado y capturas para los prompts 4-10. Se usa solo como referencia visual y funcional: no se copian componentes, rutas, hooks ni estilos literalmente.
+`muestra_pagina/` contiene la referencia visual v0 final y completa generada en Next.js/React, con código fuente exportado y capturas para todos los flujos 4-22. Se usa solo como referencia visual y funcional: no se copian componentes, rutas, hooks ni estilos literalmente. El `muestra_pagina/MANIFIESTO_V0.md` histórico fue retirado al reemplazar la carpeta por el export final; el inventario de referencia se completa contra el listado seguro de la carpeta.
 
 | Estado | Cantidad | Uso |
 |---|---:|---|
-| Pantallas disponibles | 7 | Base visual para prompts 4-10. |
-| Pantallas pendientes | 12 | Planificadas en `MATIAS_PROMPTS_SDD_FASE2.md`. |
+| Pantallas con referencia v0 | 19 | Base visual para flujos 4-22. |
+| Pantallas pendientes | 0 | — |
 
-La carpeta también debe incluir `muestra_pagina/MANIFIESTO_V0.md` para declarar origen, alcance, pantallas incluidas, capturas disponibles y pendientes antes de portar o auditar la referencia.
+Los flujos 11-22 se ejecutan con los ciclos F4-F6 definidos en `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` (guía unificada de Matías).
 
 ## División de responsabilidades frontend
 
 | Responsable | Ramas/ciclos | Alcance |
 |---|---|---|
 | Marcos | `frontend/angular-shell` (`F1-03`..`F1-05`), `frontend/public-validation-flow` (`F2-01`, `F2-02`), `frontend/api-readiness` (`F3-01`, `F3-02`, `F3-05`) | Fundación Angular, estructura semántica/accesible, validación pública con mocks ficticios, frontera de servicios y build `/certificados/`. No define el diseño visual final. |
-| Matías | `frontend/v0-design-system` (`F1-01`, `F1-02`), admin (`F2-03`..`F2-06`), QA/handoff (`F3-03`, `F3-04`, `F3-06`) y F4-F6 salvo nuevo acuerdo | Sistema visual desde v0, UI/UX final, admin, responsive, accesibilidad, QA visual y handoff. |
+| Matías | `frontend/v0-design-system` (`F1-01`, `F1-02`), admin (`F2-03`..`F2-06`), QA/handoff (`F3-03`, `F3-04`, `F3-06`) y F4-F6 (ciclos definidos en la guía unificada) salvo nuevo acuerdo | Sistema visual desde v0, UI/UX final, admin, responsive, accesibilidad, QA visual y handoff. |
 
 Secuencia de desbloqueo: Marcos puede iniciar `frontend/angular-shell`; Matías trabaja `frontend/v0-design-system`; Marcos avanza `frontend/public-validation-flow`; Matías aplica sistema visual y admin; Marcos formaliza `frontend/api-readiness`; Matías cierra QA/handoff. Coordinar cambios en archivos globales Angular antes de editar `angular.json`, `package.json`, estilos globales o rutas raíz.
 
@@ -34,9 +34,11 @@ Secuencia de desbloqueo: Marcos puede iniciar `frontend/angular-shell`; Matías 
 | 9 | Registrar asistencias presentes | `app/admin/cursos/[id]/asistencias/page.tsx`, `components/admin/asistencias-editor.tsx` |
 | 10 | Emitir certificación directa | `app/admin/certificaciones/nueva/page.tsx`, `components/admin/nueva-certificacion-editor.tsx` |
 
-## Inventario pendiente
+## Flujos 11-22 con referencia v0 y ejecución bloqueada por spec
 
-| Prompt | Pendiente | Complejidad | Regla antes de implementar |
+Los flujos 11-22 ya tienen referencia v0 disponible en `muestra_pagina/` y se ejecutan con los ciclos F4-F6 de `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`. Cada ciclo mantiene su regla de bloqueo antes de implementar (spec previa de PDF, QR, permisos, auditoría o configuración según corresponda).
+
+| Prompt | Flujo | Complejidad | Regla antes de implementar |
 |---:|---|---|---|
 | 11 | Detalle de certificación | Alta | Spec previa por PDF, QR, historial y revocación. |
 | 12 | Vista previa PDF complementario | Alta | Spec previa de PDF y diseño aprobado. |
@@ -96,7 +98,7 @@ Secuencia de desbloqueo: Marcos puede iniciar `frontend/angular-shell`; Matías 
 | Tokens de Tailwind/shadcn no trasladables | Convertirlos en criterios visuales o Tailwind aprobado para Angular, no en copia literal. |
 | Scope creep en PDF, QR o revocación | Exigir spec previa antes de implementar. |
 | Datos personales en pantallas admin | Minimizar exposición y usar mocks seguros. |
-| Referencia v0 cambia mientras se porta | Revisar `muestra_pagina/README.md` al iniciar cada ciclo. |
+| Referencia v0 cambia mientras se porta | Revisar el listado seguro de `muestra_pagina/` al iniciar cada ciclo. |
 
 ## Build para cPanel
 
