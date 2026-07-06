@@ -25,8 +25,22 @@ export const VALID_VALID_DTO: CertificateVerificationDto = {
   valid: true,
   status: 'vigente',
   certificateCode: 'CERT-2025-0001',
-  student: { displayName: 'Juan Pérez', documentMasked: '12.345.**' },
-  course: { name: 'Técnico Superior en Sistemas', issuedAt: '2025-03-15' },
+  student: { displayName: 'Juan Pérez', documentNumber: '12345678' },
+  course: {
+    name: 'Técnico Superior en Sistemas',
+    issuedAt: '2025-03-15',
+    attendedDates: ['2025-03-10', '2025-03-12'],
+  },
+  verifiedAt: '2025-06-29T10:00:00Z',
+};
+
+/** Fixture legado sin attendedDates ni documentNumber (certificados previos al modelo curso/alumno). */
+export const LEGACY_VALID_DTO: CertificateVerificationDto = {
+  valid: true,
+  status: 'vigente',
+  certificateCode: 'CERT-LEGACY-0001',
+  student: { displayName: 'Persona Legado', documentMasked: '12.345.**' },
+  course: { name: 'Curso histórico', issuedAt: '2024-01-10' },
   verifiedAt: '2025-06-29T10:00:00Z',
 };
 

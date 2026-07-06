@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { VALIDATION_SOURCE } from '../../shared/certificates/validation-source';
 import { ValidationSource, ValidationSourceResult } from '../../shared/certificates/validation-source';
-import { MockValidationSource } from '../../shared/certificates/mock-tokens';
+import { MockValidationSource, VALID_VALID_DTO } from '../../shared/certificates/mock-tokens';
 import { PublicValidationPage } from './public-validation-page';
 
 function configureProviders(source: ValidationSource) {
@@ -43,14 +43,7 @@ describe('PublicValidationPage', () => {
   const validResult: ValidationSourceResult = {
     ok: true,
     envelope: {
-      data: {
-        valid: true,
-        status: 'vigente',
-        certificateCode: 'CERT-2025-0001',
-        student: { displayName: 'Juan Pérez', documentMasked: '12.345.**' },
-        course: { name: 'Técnico Superior en Sistemas', issuedAt: '2025-03-15' },
-        verifiedAt: '2025-06-29T10:00:00Z',
-      },
+      data: VALID_VALID_DTO,
       meta: { requestId: 'req-v' },
     },
   };
@@ -72,14 +65,14 @@ describe('PublicValidationPage', () => {
 
   const techResult: ValidationSourceResult = { ok: false, error: null };
 
-  it('demo-valido → bloque válido con curso, fecha y documento enmascarado', async () => {
+  it('demo-valido → bloque válido con curso, DNI completo y fechas asistidas (D0)', async () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const text = textOf(fixture);
     expect(text).toContain('Certificado verificable');
     expect(text).toContain('Técnico Superior en Sistemas');
-    expect(text).toContain('12.345.**');
-    // No debe exponer DNI completo ni token.
-    expect(text).not.toContain('12345678');
+    expect(text).toContain('12345678');
+    expect(text).toContain('2025-03-10');
+    expect(text).toContain('2025-03-12');
     expect(text).not.toContain('demo-valido');
   });
 

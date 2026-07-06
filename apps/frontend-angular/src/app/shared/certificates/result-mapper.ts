@@ -3,7 +3,15 @@
 // inexistente y token ausente/mal formado (VALIDATION_ERROR) colapsan a
 // { kind: 'not-verifiable' }. El reason es interno.
 // 500 / red / JSON inválido → technical-error, sin detalles.
-import { ApiEnvelope, ApiErrorEnvelope, CertificateVerificationDto, ValidationViewState } from './dto';
+import {
+  ApiEnvelope,
+  ApiErrorEnvelope,
+  CertificateCourseDto,
+  CertificateStudentDto,
+  CertificateVerificationDto,
+  studentDocumentDisplay,
+  ValidationViewState,
+} from './dto';
 import { ValidationSourceResult } from './validation-source';
 
 export function mapResponseToViewState(
@@ -57,18 +65,45 @@ function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
 }
 
+function isNonEmptyStringArray(v: unknown): v is string[] {
+  return Array.isArray(v) && v.length > 0 && v.every((item) => isNonEmptyString(item));
+}
+
+function hasValidStudentDocument(student: CertificateStudentDto | undefined): boolean {
+  return studentDocumentDisplay(student ?? { displayName: '' }) !== '';
+}
+
+function hasValidCourseShape(course: CertificateCourseDto | undefined): boolean {
+  if (!course) {
+    return false;
+  }
+  return isNonEmptyString(course.name) && isNonEmptyString(course.issuedAt);
+}
+
 function hasValidCertificateShape(dto: Partial<CertificateVerificationDto> | null | undefined): boolean {
-  if (!dto) return false;
-  return (
-    isNonEmptyString(dto.certificateCode) &&
-    isNonEmptyString(dto.verifiedAt) &&
-    !!dto.student &&
-    isNonEmptyString(dto.student.displayName) &&
-    isNonEmptyString(dto.student.documentMasked) &&
-    !!dto.course &&
-    isNonEmptyString(dto.course.name) &&
-    isNonEmptyString(dto.course.issuedAt)
-  );
+  if (!dto) {
+    return false;
+  }
+  if (!isNonEmptyString(dto.certificateCode) || !isNonEmptyString(dto.verifiedAt)) {
+    return false;
+  }
+  if (!isNonEmptyString(dto.student?.displayName) || !hasValidStudentDocument(dto.student)) {
+    return false;
+  }
+  if (!hasValidCourseShape(dto.course)) {
+    return false;
+  }
+
+  const hasDocumentNumber = isNonEmptyString(dto.student?.documentNumber);
+  const hasDocumentMasked = isNonEmptyString(dto.student?.documentMasked);
+
+  // D0: documentNumber exige attendedDates no vacío.
+  if (hasDocumentNumber) {
+    return isNonEmptyStringArray(dto.course?.attendedDates);
+  }
+
+  // Legado: documentMasked sin attendedDates.
+  return hasDocumentMasked;
 }
 
 export function mapErrorToViewState(error: ApiErrorEnvelope | null): ValidationViewState {
