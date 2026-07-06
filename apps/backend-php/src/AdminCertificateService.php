@@ -699,4 +699,188 @@ final class AdminCertificateService
     {
         return hash_hmac('sha256', $document, $this->documentSalt ?? $this->tokenPepper, true);
     }
+
+    /**
+     * @param array{estado?:string|null,cursoId?:int|null,alumnoId?:int|null} $filters
+     * @return array{items:list<array<string,mixed>>}
+     */
+    public function listCertificados(array $filters = []): array
+    {
+        $where = [];
+        $params = [];
+
+        if (isset($filters['estado']) && is_string($filters['estado']) && $filters['estado'] !== '') {
+            $where[] = 'c.estado = ?';
+            $params[] = $this->enumCertificadoEstado($filters['estado']);
+        }
+        if (isset($filters['cursoId']) && $filters['cursoId'] !== null) {
+            $where[] = 'c.curso_id = ?';
+            $params[] = $filters['cursoId'];
+        }
+        if (isset($filters['alumnoId']) && $filters['alumnoId'] !== null) {
+            $where[] = 'c.alumno_id = ?';
+            $params[] = $filters['alumnoId'];
+        }
+
+        $sql = <<<'SQL'
+            SELECT c.id, c.codigo_certificado, c.estado, c.alumno_nombre_mostrar, c.documento_enmascarado,
+                   c.curso_nombre, c.emitido_en, c.vence_en, c.revocado_en, c.alumno_id, c.curso_id,
+                   (
+                     SELECT t.token_prefijo
+                     FROM cert_tokens_verificacion t
+                     WHERE t.certificado_id = c.id
+                       AND t.estado = 'activo'
+                       AND t.revocado_en IS NULL
+                     ORDER BY t.id DESC
+                     LIMIT 1
+                   ) AS token_prefijo
+            FROM cert_certificados c
+            SQL;
+
+        if ($where !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $sql .= ' ORDER BY c.emitido_en DESC, c.id DESC';
+
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($params);
+
+        $items = [];
+        while (($row = $statement->fetch()) !== false) {
+            $items[] = $this->certificateListDto($row);
+        }
+
+        return ['items' => $items];
+    }
+
+    /** @return array<string, mixed> */
+    public function getCertificado(int $id): array
+    {
+        $certificateId = $this->validatedCertificateId($id);
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT c.id, c.codigo_certificado, c.estado, c.alumno_nombre_mostrar, c.documento_enmascarado,
+                   c.curso_nombre, c.emitido_en, c.vence_en, c.revocado_en, c.motivo_revocacion,
+                   c.alumno_id, c.curso_id,
+                   (
+                     SELECT t.token_prefijo
+                     FROM cert_tokens_verificacion t
+                     WHERE t.certificado_id = c.id
+                       AND t.estado = 'activo'
+                       AND t.revocado_en IS NULL
+                     ORDER BY t.id DESC
+                     LIMIT 1
+                   ) AS token_prefijo
+            FROM cert_certificados c
+            WHERE c.id = ?
+            LIMIT 1
+            SQL);
+        $statement->execute([$certificateId]);
+        $row = $statement->fetch();
+
+        if (!is_array($row)) {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+        }
+
+        return $this->certificateDetailDto($row);
+    }
+
+    /** @param array<string, mixed> $row @return array<string, mixed> */
+    private function certificateListDto(array $row): array
+    {
+        return [
+            'id' => (int) $row['id'],
+            'certificateCode' => (string) $row['codigo_certificado'],
+            'status' => (string) $row['estado'],
+            'student' => [
+                'displayName' => (string) $row['alumno_nombre_mostrar'],
+                'documentMasked' => (string) $row['documento_enmascarado'],
+            ],
+            'course' => [
+                'id' => $row['curso_id'] !== null ? (int) $row['curso_id'] : null,
+                'name' => (string) $row['curso_nombre'],
+            ],
+            'alumnoId' => $row['alumno_id'] !== null ? (int) $row['alumno_id'] : null,
+            'cursoId' => $row['curso_id'] !== null ? (int) $row['curso_id'] : null,
+            'issuedAt' => (string) $row['emitido_en'],
+            'expiresAt' => is_string($row['vence_en'] ?? null) ? $row['vence_en'] : null,
+            'revokedAt' => is_string($row['revocado_en'] ?? null) ? $row['revocado_en'] : null,
+            'tokenPrefix' => is_string($row['token_prefijo'] ?? null) && $row['token_prefijo'] !== '' ? $row['token_prefijo'] : null,
+        ];
+    }
+
+    /** @param array<string, mixed> $row @return array<string, mixed> */
+    private function certificateDetailDto(array $row): array
+    {
+        $certificateId = (int) $row['id'];
+        $detail = $this->certificateListDto($row);
+        $detail['revocationReason'] = is_string($row['motivo_revocacion'] ?? null) ? $row['motivo_revocacion'] : null;
+        $detail['attendedDates'] = $this->loadCertificateSnapshotDates($certificateId);
+        $detail['auditEvents'] = $this->loadSafeAuditEvents($certificateId);
+        $detail['links'] = [
+            'pdf' => '/admin/certificados/' . $certificateId . '/pdf',
+            'manualDelivery' => '/admin/certificados/' . $certificateId . '/entrega-manual',
+            'qrPng' => '/admin/certificados/' . $certificateId . '/qr.png',
+        ];
+
+        return $detail;
+    }
+
+    /** @return list<array{fecha:string,descripcion:?string,orden:int}> */
+    private function loadCertificateSnapshotDates(int $certificateId): array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT cf.fecha, cf.descripcion, cf.orden
+            FROM cert_certificado_fechas ccf
+            JOIN cert_curso_fechas cf ON cf.id = ccf.curso_fecha_id
+            WHERE ccf.certificado_id = ?
+            ORDER BY cf.orden, cf.fecha
+            SQL);
+        $statement->execute([$certificateId]);
+
+        $dates = [];
+        while (($row = $statement->fetch()) !== false) {
+            $dates[] = [
+                'fecha' => (string) $row['fecha'],
+                'descripcion' => is_string($row['descripcion'] ?? null) ? $row['descripcion'] : null,
+                'orden' => (int) $row['orden'],
+            ];
+        }
+
+        return $dates;
+    }
+
+    /** @return list<array{eventType:string,result:string,createdAt:string}> */
+    private function loadSafeAuditEvents(int $certificateId): array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT tipo_evento, resultado, created_at
+            FROM cert_eventos_auditoria
+            WHERE certificado_id = ?
+            ORDER BY id DESC
+            LIMIT 10
+            SQL);
+        $statement->execute([$certificateId]);
+
+        $events = [];
+        while (($row = $statement->fetch()) !== false) {
+            $events[] = [
+                'eventType' => (string) $row['tipo_evento'],
+                'result' => (string) $row['resultado'],
+                'createdAt' => (string) $row['created_at'],
+            ];
+        }
+
+        return $events;
+    }
+
+    private function enumCertificadoEstado(string $estado): string
+    {
+        $allowed = ['borrador', 'vigente', 'revocado', 'vencido'];
+        if (!in_array($estado, $allowed, true)) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        return $estado;
+    }
 }
