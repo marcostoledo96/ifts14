@@ -55,7 +55,7 @@ export function LoginForm() {
 
     // Demo: credencial de prueba válida; el resto devuelve error.
     const ok =
-      email.toLowerCase() === "admin@ifts14.edu.ar" && password === "ifts14"
+      email.toLowerCase() === "usuario.demo@example.invalid" && password === "demo"
 
     if (ok) {
       // Acceso correcto: aquí se redirige al panel.
@@ -121,7 +121,7 @@ export function LoginForm() {
               required
               aria-invalid={isError}
               aria-describedby={isError ? errorId : undefined}
-              placeholder="docente.apellido@ifts14.edu.ar"
+              placeholder="usuario.demo@example.invalid"
               className="h-11 w-full rounded-sm border border-input bg-secondary/40 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-ring focus:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 aria-[invalid=true]:border-destructive/70 disabled:cursor-not-allowed"
             />
           </div>

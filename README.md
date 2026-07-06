@@ -28,7 +28,7 @@ Decisiones confirmadas por Marcos, fuente de verdad del proyecto hasta nueva ord
 | DNI en validación pública | DNI completo visible públicamente por decisión institucional. Logs, auditoría y errores no exponen DNI completo. |
 | Tipo de documento | Certificado de curso. Debajo muestra las fechas del curso a las que asistió el alumno. |
 | Auth admin | Auth simple protegida con `X-Admin-Key` temporal. Login real queda para fase posterior. |
-| Email | Cuenta de prueba / `stub`. Producción queda gated hasta aprobación. |
+| Email | Fuera del MVP. La entrega es manual; cualquier email futuro queda gated hasta aprobación. |
 | Composer en cPanel | Gate: si no está disponible, `vendor/` se genera localmente y se sube como artefacto operativo, nunca versionado. |
 | Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |
 | Staging | `/certificados_staging/` separado de producción `/certificados/`. |

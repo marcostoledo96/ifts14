@@ -1,9 +1,9 @@
-type Tipo = "emitida" | "asistencia" | "reenviado" | "revocada"
+type Tipo = "emitida" | "asistencia" | "nueva-entrega" | "revocada"
 
 const tipoMeta: Record<Tipo, { label: string; cls: string }> = {
   emitida: { label: "CERT. EMITIDA", cls: "bg-valid-soft text-valid" },
   asistencia: { label: "ASISTENCIA", cls: "bg-accent text-tech-blue" },
-  reenviado: { label: "REENVÍO", cls: "bg-warning-soft text-[#8a6100]" },
+  "nueva-entrega": { label: "NUEVA ENTREGA", cls: "bg-warning-soft text-[#8a6100]" },
   revocada: { label: "REVOCADA", cls: "bg-destructive-soft text-destructive" },
 }
 
@@ -31,8 +31,8 @@ const eventos: {
   {
     hora: "09:50",
     id: "EVT-9919",
-    tipo: "reenviado",
-    detalle: "Certificado reenviado · Quiroga, Diego A. (cambio de email)",
+    tipo: "nueva-entrega",
+    detalle: "Nueva entrega manual · Quiroga, Diego A. (canal externo)",
     autor: "bedelia.mpereyra",
   },
   {

@@ -5,7 +5,7 @@ import { ListaCertificaciones } from "@/components/admin/lista-certificaciones"
 export const metadata: Metadata = {
   title: "Certificaciones | Gestión Académica IFTS N.° 14",
   description:
-    "Archivo documental de certificaciones: emisión, validez y envío de credenciales académicas.",
+    "Archivo documental de certificaciones: emisión, validez y entrega de credenciales académicas.",
 }
 
 export default function CertificacionesPage() {

@@ -9,7 +9,6 @@ import {
   Mail,
   MailX,
   RefreshCw,
-  Send,
   Link2,
   Check,
   Copy,
@@ -24,13 +23,6 @@ import {
 /* ------------------------------------------------------------------ *
  * Modelo (mock). En el port a Angular se reemplaza por el resolver /
  * service del expediente. La UI no persiste nada por su cuenta.
- *
- * IMPORTANTE — muestra estática: este componente renderiza SIEMPRE el
- * mismo EXPEDIENTE de ejemplo (García / IFTS14-CUR-2024-0031) sin usar
- * el `id` de la ruta para seleccionar datos. Es una muestra visual fija,
- * no comportamiento real por registro. Al portar a Angular, reemplazar
- * por un resolver que use el id para cargar el expediente real o, si
- * no hay dataset mock, mantener el cartel "muestra estática" explícito.
  * ------------------------------------------------------------------ */
 
 type FechaPresente = { fecha: string; modulo: string; carga: number }
@@ -47,10 +39,10 @@ const CONFIG_INSTITUCIONAL = {
 
 const EXPEDIENTE = {
   alumno: {
-    nombre: "María Florencia",
-    apellido: "García",
-    dni: "34.567.890",
-    email: "m.garcia@ifts14.edu.ar",
+    nombre: "Persona",
+    apellido: "Ficticia",
+    dni: "DNI-FICTICIO-001",
+    email: "persona.ficticia@example.invalid",
   },
   curso: {
     nombre: "Desarrollo de Sistemas Web II",
@@ -65,12 +57,12 @@ const EXPEDIENTE = {
   admin: {
     numero: "IFTS14-CUR-2024-0031",
     emision: "2024-10-24 · 14:32 ART",
-    tokenParcial: "8F3A·····92K",
-    token: "8F3A-92K-7C1E",
+    tokenParcial: "FICTIO·····SAMPLE",
+    token: "FICTIO-SAMPLE-001",
   },
 }
 
-const VALIDACION_HOST = "ifts14.com.ar/certificados"
+const VALIDACION_HOST = "ifts14.edu.ar/certificados"
 
 /* ------------------------------------------------------------------ *
  * Helpers de formato
@@ -192,13 +184,12 @@ function FilaDato({
  * Historial / línea de tiempo
  * ------------------------------------------------------------------ */
 
-type EventoTipo = "creada" | "enviada" | "reenviada" | "regenerada" | "asistencia" | "revocada"
+type EventoTipo = "creada" | "entregada" | "regenerada" | "asistencia" | "revocada"
 type Evento = { tipo: EventoTipo; sello: string; detalle: string }
 
 const ICONO_EVENTO: Record<EventoTipo, typeof FileText> = {
   creada: FileText,
-  enviada: Mail,
-  reenviada: Send,
+  entregada: Link2,
   regenerada: RefreshCw,
   asistencia: Clock,
   revocada: Ban,
@@ -216,13 +207,12 @@ export function ExpedienteCertificacion({ id }: { id: string }) {
   const [copiado, setCopiado] = useState(false)
   const [accion, setAccion] = useState<string | null>(null)
   const [confirmarRevoca, setConfirmarRevoca] = useState(false)
-  const [ultimoEnvio, setUltimoEnvio] = useState("2024-10-24 · 14:35 ART")
+  const [ultimaEntrega, setUltimaEntrega] = useState("2024-10-24 · 14:35 ART")
   const [aviso, setAviso] = useState<string | null>(null)
 
   const [historial, setHistorial] = useState<Evento[]>([
     { tipo: "creada", sello: "2024-10-24 · 14:32 ART", detalle: "Certificado generado · firma digital verificada." },
-    { tipo: "enviada", sello: "2024-10-24 · 14:35 ART", detalle: `Enviado por email a ${alumno.email}.` },
-    { tipo: "reenviada", sello: "2024-11-02 · 09:10 ART", detalle: "Reenviado a pedido del alumno." },
+    { tipo: "entregada", sello: "2024-10-24 · 14:35 ART", detalle: "Entrega manual realizada · link y PDF compartidos por canal externo." },
     { tipo: "asistencia", sello: "2024-11-15 · 16:20 ART", detalle: "Asistencia corregida · PDF regenerado con el mismo QR." },
   ])
 
@@ -248,15 +238,15 @@ export function ExpedienteCertificacion({ id }: { id: string }) {
     setTimeout(() => setCopiado(false), 2200)
   }
 
-  async function onReenviar() {
-    await simular("reenviar")
+  async function onEntregarManual() {
+    await simular("entregar")
     const sello = ahoraSello()
-    setUltimoEnvio(sello)
+    setUltimaEntrega(sello)
     setHistorial((h) => [
       ...h,
-      { tipo: "reenviada", sello, detalle: `Reenviado por email a ${alumno.email}.` },
+      { tipo: "entregada", sello, detalle: "Entrega manual realizada · link y PDF compartidos por canal externo." },
     ])
-    setAviso(`Certificado reenviado a ${alumno.email} con el mismo QR.`)
+    setAviso("Entrega manual registrada. El QR/link es permanente y se mantiene.")
   }
 
   async function onRegenerar() {
@@ -266,7 +256,7 @@ export function ExpedienteCertificacion({ id }: { id: string }) {
       ...h,
       { tipo: "regenerada", sello, detalle: "PDF regenerado · el QR permanente se mantiene." },
     ])
-    setAviso("PDF regenerado. El QR no cambia: recordá reenviarlo al alumno.")
+    setAviso("PDF regenerado. El QR no cambia: compartí el link actualizado al alumno.")
   }
 
   async function onDescargar() {
@@ -317,10 +307,6 @@ export function ExpedienteCertificacion({ id }: { id: string }) {
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {curso.nombre} · {curso.ciclo}
-            </p>
-            <p className="mt-1 inline-flex items-center gap-1.5 rounded-sm border border-border bg-secondary px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              <Lock className="h-3 w-3" strokeWidth={2} aria-hidden="true" />
-              Muestra estática — el id de ruta no selecciona datos reales
             </p>
           </div>
           <EstadoBadge revocada={revocada} />
@@ -399,7 +385,7 @@ export function ExpedienteCertificacion({ id }: { id: string }) {
               <FilaDato etiqueta="Token (parcial)" mono>
                 {admin.tokenParcial}
               </FilaDato>
-              <FilaDato etiqueta="Estado de envío">
+              <FilaDato etiqueta="Estado de entrega">
                 {revocada ? (
                   <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                     <Ban className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
@@ -408,12 +394,12 @@ export function ExpedienteCertificacion({ id }: { id: string }) {
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-valid">
                     <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden="true" />
-                    Enviado
+                    Entregado
                   </span>
                 )}
               </FilaDato>
-              <FilaDato etiqueta="Último envío" mono>
-                {ultimoEnvio}
+              <FilaDato etiqueta="Última entrega" mono>
+                {ultimaEntrega}
               </FilaDato>
             </dl>
           </Panel>
@@ -431,12 +417,20 @@ export function ExpedienteCertificacion({ id }: { id: string }) {
                 Descargar PDF
               </AccionBtn>
               <AccionBtn
-                onClick={onReenviar}
-                cargando={accion === "reenviar"}
-                disabled={revocada || accion !== null || !alumno.email}
-                icon={Send}
+                onClick={copiarLink}
+                cargando={false}
+                disabled={revocada || accion !== null}
+                icon={Copy}
               >
-                {ultimoEnvio ? "Reenviar certificado" : "Enviar por email"}
+                {copiado ? "Link copiado" : "Copiar link"}
+              </AccionBtn>
+              <AccionBtn
+                onClick={onEntregarManual}
+                cargando={accion === "entregar"}
+                disabled={revocada || accion !== null}
+                icon={Link2}
+              >
+                Entrega manual
               </AccionBtn>
               <AccionBtn
                 onClick={onRegenerar}
@@ -450,14 +444,14 @@ export function ExpedienteCertificacion({ id }: { id: string }) {
               {revocada ? (
                 <p className="flex items-start gap-2 pt-1 text-xs leading-relaxed text-muted-foreground">
                   <Ban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" strokeWidth={2} aria-hidden="true" />
-                  La certificación está revocada: las acciones de envío y
+                  La certificación está revocada: las acciones de entrega y
                   documento quedan deshabilitadas.
                 </p>
               ) : (
                 <p className="flex items-start gap-2 pt-1 text-xs leading-relaxed text-muted-foreground">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-tech-blue" strokeWidth={2} aria-hidden="true" />
                   El QR es permanente. Si se corrigen fechas o asistencias, se
-                  debe reenviar el PDF al alumno con el mismo QR.
+                  debe compartir el link y el PDF actualizados al alumno con el mismo QR.
                 </p>
               )}
 

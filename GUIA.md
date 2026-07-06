@@ -41,7 +41,7 @@ Bedelía carga curso y fechas
 → registra asistencias presentes
 → emite certificación (certificado de curso con fechas asistidas)
 → genera PDF horizontal con QR (token permanente)
-→ envía o reenvía al alumno (mismo QR/token, no rota)
+→ Bedelía entrega el link/PDF por canal externo (mismo QR/token, no rota)
 → usuario externo escanea QR
 → verifica autenticidad (ve DNI completo del alumno)
 ```
@@ -54,7 +54,7 @@ Bedelía carga curso y fechas
 | DNI en validación pública | DNI completo visible por decisión institucional. Logs/auditoría/errores sin DNI completo. |
 | Certificado | Certificado de curso con fechas asistidas del alumno. |
 | Auth admin | `X-Admin-Key` temporal. Login real es fase posterior. |
-| Email | Cuenta de prueba / `stub`. Producción gated. |
+| Email | Fuera del MVP. La entrega es manual; cualquier email futuro queda gated. |
 | Composer | Gate: si no disponible en cPanel, `vendor/` local como artefacto, nunca versionado. |
 | Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |
 | Staging | `/certificados_staging/` separado de `/certificados/`. |
@@ -89,7 +89,7 @@ Reglas:
 - No copiar credenciales demo al producto: son mock visual v0.
 - `login-form.tsx` es mock visual; el producto usa `X-Admin-Key` temporal.
 - Respetar D0: QR permanente, DNI completo público, fechas asistidas, auth simple temporal.
-- Inventario en `muestra_pagina/MANIFIESTO_V0.md`.
+- Inventario: `muestra_pagina/` contiene la referencia visual v0 final y completa (export de Next.js/React con capturas para flujos 4-22). El `MANIFIESTO_V0.md` histórico fue retirado al reemplazar la carpeta por el export final; el inventario se completa contra el listado seguro de la carpeta.
 
 ## 6. Roles
 

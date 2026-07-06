@@ -82,7 +82,7 @@ export function CursoEditor({ modo }: { modo: Modo }) {
     esEdicion ? fechasIniciales : [],
   )
   const [fechasEmitidasRemovidas, setFechasEmitidasRemovidas] = useState(0)
-  const [reenviar, setReenviar] = useState(true)
+  const [nuevaEntrega, setNuevaEntrega] = useState(true)
   const [guardado, setGuardado] = useState(false)
 
   // ¿Hay impacto sobre certificados ya emitidos?
@@ -134,7 +134,7 @@ export function CursoEditor({ modo }: { modo: Modo }) {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     // TODO: reemplazar por la llamada real al backend (Angular service).
-    // Payload de ejemplo: { nombre, descripcion, cargaHoraria, modalidad, activo, fechas, reenviar: requiereReenvio && reenviar }
+    // Payload de ejemplo: { nombre, descripcion, cargaHoraria, modalidad, activo, fechas, nuevaEntrega: requiereReenvio && nuevaEntrega }
     setGuardado(true)
   }
 
@@ -403,9 +403,9 @@ export function CursoEditor({ modo }: { modo: Modo }) {
                         : "Este curso tiene certificados ya emitidos"}
                     </p>
                     <p className="text-xs leading-relaxed text-muted-foreground">
-                      Si modificás fechas de un curso con certificados ya enviados,
-                      será necesario reenviar el certificado al alumno. El QR seguirá
-                      siendo el mismo.
+                      Si modificás fechas de un curso con certificados ya emitidos,
+                      será necesario generar una nueva entrega manual del certificado
+                      al alumno. El QR seguirá siendo el mismo.
                     </p>
                   </div>
                 </div>
@@ -579,18 +579,19 @@ export function CursoEditor({ modo }: { modo: Modo }) {
               <label className="mb-3 flex cursor-pointer gap-2.5 rounded-sm border border-warning/40 bg-warning-soft p-3">
                 <input
                   type="checkbox"
-                  checked={reenviar}
-                  onChange={(e) => setReenviar(e.target.checked)}
+                  checked={nuevaEntrega}
+                  onChange={(e) => setNuevaEntrega(e.target.checked)}
                   className="mt-0.5 h-4 w-4 shrink-0 rounded-sm border-input accent-[#8a6100]"
                 />
                 <span className="text-xs leading-relaxed text-foreground">
                   <span className="font-medium">
-                    Reenviar certificados a {alumnosAfectados} alumno
+                    Nueva entrega manual para {alumnosAfectados} alumno
                     {alumnosAfectados === 1 ? "" : "s"} afectado
                     {alumnosAfectados === 1 ? "" : "s"}
                   </span>
                   <span className="mt-0.5 block text-muted-foreground">
-                    Se notificará el certificado actualizado. El QR no cambia.
+                    Se generará el PDF actualizado para copiar el link y
+                    descargarlo. El QR no cambia.
                   </span>
                 </span>
               </label>
@@ -602,7 +603,7 @@ export function CursoEditor({ modo }: { modo: Modo }) {
             >
               {esEdicion
                 ? requiereReenvio
-                  ? "Guardar y reenviar"
+                  ? "Guardar y registrar entrega manual"
                   : "Guardar cambios"
                 : "Guardar curso"}
             </button>
@@ -620,8 +621,8 @@ export function CursoEditor({ modo }: { modo: Modo }) {
               >
                 <Check className="h-4 w-4" strokeWidth={2.25} />
                 {esEdicion
-                  ? requiereReenvio && reenviar
-                    ? "Cambios guardados · reenvío encolado"
+                  ? requiereReenvio && nuevaEntrega
+                    ? "Cambios guardados · nueva entrega registrada"
                     : "Cambios guardados"
                   : "Curso creado"}
               </p>

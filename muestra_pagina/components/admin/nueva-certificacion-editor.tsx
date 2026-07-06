@@ -60,7 +60,7 @@ const CONFIG_INSTITUCIONAL = {
     nombre: "Prof. Daniel E. Roldán",
     cargo: "Asesor Pedagógico — IFTS N.° 14",
   },
-  validacionBase: "ifts14.com.ar/certificados",
+  validacionBase: "validar.ifts14.edu.ar",
 }
 
 const CURSOS: Curso[] = [
@@ -97,10 +97,10 @@ const CURSOS: Curso[] = [
 const ALUMNOS: Alumno[] = [
   {
     id: "a1",
-    apellido: "Gómez",
-    nombre: "Laura Valentina",
-    dni: "42.555.123",
-    email: null, // sin email → emisión física
+    apellido: "Ficticia",
+    nombre: "Persona Uno",
+    dni: "DNI-FICTICIO-011",
+    email: null, // sin email → entrega física/manual
     presentesPorCurso: {
       c1: ["2024-03-15", "2024-03-22", "2024-04-05"],
       c2: ["2024-03-18", "2024-04-15"],
@@ -109,10 +109,10 @@ const ALUMNOS: Alumno[] = [
   },
   {
     id: "a2",
-    apellido: "Quiroga",
-    nombre: "Martín Ezequiel",
-    dni: "40.218.764",
-    email: "m.quiroga@ifts14.edu.ar",
+    apellido: "Ficticia",
+    nombre: "Persona Dos",
+    dni: "DNI-FICTICIO-012",
+    email: "persona.dos@example.invalid",
     presentesPorCurso: {
       c1: ["2024-03-15", "2024-03-22", "2024-04-05", "2024-04-19"],
       c2: ["2024-03-18", "2024-04-01", "2024-04-15"],
@@ -122,10 +122,10 @@ const ALUMNOS: Alumno[] = [
   },
   {
     id: "a3",
-    apellido: "Sanabria",
-    nombre: "Carolina",
-    dni: "43.901.550",
-    email: "c.sanabria@ifts14.edu.ar",
+    apellido: "Ficticia",
+    nombre: "Persona Tres",
+    dni: "DNI-FICTICIO-013",
+    email: "persona.tres@example.invalid",
     presentesPorCurso: {
       c1: ["2024-03-22", "2024-04-05", "2024-04-19"],
       // sin presentes en Bases de Datos → aviso bloqueante si se elige c2
@@ -135,10 +135,10 @@ const ALUMNOS: Alumno[] = [
   },
   {
     id: "a4",
-    apellido: "Villalba",
-    nombre: "Tomás Ignacio",
-    dni: "41.677.209",
-    email: "t.villalba@ifts14.edu.ar",
+    apellido: "Ficticia",
+    nombre: "Persona Cuatro",
+    dni: "DNI-FICTICIO-014",
+    email: "persona.cuatro@example.invalid",
     presentesPorCurso: {
       c1: ["2024-03-15", "2024-04-05"],
     },
@@ -536,13 +536,13 @@ export function NuevaCertificacionEditor() {
   // Datos derivados para la vista previa
   const numeroCert = useMemo(() => {
     if (!alumno) return "—"
-    const seq = (Number(alumno.dni.replace(/\D/g, "")) % 9000) + 1000
+    const seq = (Number(alumno.id.replace(/\D/g, "") || "0") % 9000) + 1000
     return `IFTS14-CUR-2024-${String(seq).padStart(4, "0")}`
   }, [alumno])
 
   const folio = useMemo(() => {
     if (!alumno) return "—"
-    const n = (Number(alumno.dni.replace(/\D/g, "")) % 900) + 100
+    const n = (Number(alumno.id.replace(/\D/g, "") || "0") % 900) + 100
     return `14-2024-${n}`
   }, [alumno])
 
@@ -552,9 +552,9 @@ export function NuevaCertificacionEditor() {
     e.preventDefault()
     if (bloqueado) return
     // TODO (port Angular): llamar al service de emisión.
-    // payload: { alumnoId, cursoId, fechas: fechasPresentes.map(f => f.fecha),
-    //            enviarEmail: !sinEmail }
-    // La respuesta confirma QR permanente, PDF complementario y envío.
+    // payload: { alumnoId, cursoId, fechas: fechasPresentes.map(f => f.fecha) }
+    // La respuesta confirma QR permanente y PDF complementario; la entrega
+    // es manual (copiar link / descargar PDF / canal externo), sin envío por email.
     setEmitido(true)
   }
 
@@ -865,7 +865,7 @@ export function NuevaCertificacionEditor() {
                     <p className="mt-3 border-l-2 border-circuit pl-3 text-xs leading-relaxed text-muted-foreground">
                       Verificable en{" "}
                       <span className="font-mono text-foreground">
-                        {CONFIG_INSTITUCIONAL.validacionBase}/validar/{"{token}"}
+                        {CONFIG_INSTITUCIONAL.validacionBase}
                       </span>
                       . El QR permanente se genera al emitir y no contiene datos
                       personales.
@@ -937,16 +937,16 @@ export function NuevaCertificacionEditor() {
                           strokeWidth={2}
                           aria-hidden="true"
                         />
-                        Física
+                        Sin email
                       </>
                     ) : (
                       <>
-                        <Mail
+                        <Link2
                           className="h-3.5 w-3.5 text-tech-blue"
                           strokeWidth={2}
                           aria-hidden="true"
                         />
-                        Email
+                        Manual
                       </>
                     )}
                   </dd>
@@ -963,10 +963,9 @@ export function NuevaCertificacionEditor() {
                     titulo="Certificación emitida"
                     icon={ShieldCheck}
                   >
-                    Se generó el QR permanente y el PDF complementario
-                    {sinEmail
-                      ? ". Descargá el documento para la entrega física."
-                      : `. Se envió a ${alumno?.email}.`}
+                    Se generó el QR permanente y el PDF complementario. La
+                    entrega es manual: copiá el link de validación y/o descargá
+                    el PDF para compartirlos al alumno por el canal que corresponda.
                   </Aviso>
                 ) : null}
 
@@ -1011,8 +1010,9 @@ export function NuevaCertificacionEditor() {
                     titulo="Alumno sin email registrado"
                     icon={Info}
                   >
-                    La certificación se emite igual, pero la entrega será física.
-                    El QR y el PDF se generan normalmente.
+                    La certificación se emite igual y la entrega será manual
+                    (link y PDF por canal externo). El QR y el PDF se generan
+                    normalmente.
                   </Aviso>
                 ) : null}
               </div>
@@ -1036,7 +1036,7 @@ export function NuevaCertificacionEditor() {
                 ) : (
                   <>
                     <Send className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                    {emitido ? "Certificación emitida" : "Emitir y enviar"}
+                    {emitido ? "Certificación emitida" : "Emitir certificación"}
                   </>
                 )}
               </button>
@@ -1053,8 +1053,10 @@ export function NuevaCertificacionEditor() {
                   strokeWidth={1.75}
                   aria-hidden="true"
                 />
-                Después de emitir, se generará el QR permanente, el PDF
-                complementario y el envío al alumno.
+                Después de emitir se generan el QR permanente y el PDF
+                complementario. La entrega es manual: copiar el link de
+                validación y/o descargar el PDF para compartirlos por canal
+                externo.
               </p>
 
               {emitido ? (

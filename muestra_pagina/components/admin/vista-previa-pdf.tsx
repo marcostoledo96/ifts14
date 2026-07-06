@@ -33,7 +33,7 @@ const CONFIG_INSTITUCIONAL = {
 
 /** Datos del certificado (mock; en Angular llega del resolver/service). */
 const CERTIFICADO = {
-  alumno: { nombre: "María Florencia", apellido: "González", dni: "34.567.890" },
+  alumno: { nombre: "Persona", apellido: "Ficticia", dni: "DNI-FICTICIO-002" },
   curso: {
     nombre: "Introducción a Sistemas Embebidos e Internet de las Cosas",
     fechas: ["2024-03-15", "2024-07-05"],
@@ -43,11 +43,11 @@ const CERTIFICADO = {
     numero: "IFTS14-CUR-2024-0124",
     emision: "2024-08-15",
     folio: "2024-00124",
-    token: "a1b2c3d4e5",
+    token: "fictio-sample-002",
   },
 }
 
-const VALIDACION_HOST = "ifts14.com.ar/certificados"
+const VALIDACION_HOST = "certs.ifts14.edu.ar"
 
 /* --------------------------- helpers ----------------------------- */
 
@@ -218,7 +218,7 @@ export function VistaPreviaPdf({ id }: { id?: string }) {
   const desde = fechas[0]
   const hasta = fechas[fechas.length - 1]
   const periodo = `${capitalizar(fmtMesAnio.format(desde))} a ${capitalizar(fmtMesAnio.format(hasta))}`
-  const validarPath = `/validar/${admin.token}`
+  const validarPath = `/v/${admin.token}`
 
   async function onDescargar() {
     setDescargando(true)

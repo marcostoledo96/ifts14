@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 
 type Validez = "valida" | "revocada" | "pendiente"
-type Envio = "enviado" | "pendiente-envio" | "requiere-reenvio"
+type Envio = "entregado" | "pendiente-entrega" | "requiere-nueva-entrega"
 
 type Certificacion = {
   id: string
@@ -35,79 +35,79 @@ const CERTIFICACIONES: Certificacion[] = [
   {
     id: "ifts14-2024-001",
     numero: "IFTS14-2024-001",
-    alumno: "Mar\u00eda Gonz\u00e1lez",
-    dni: "34.567.890",
+    alumno: "Persona Ficticia 201",
+    dni: "DNI-FICTICIO-201",
     curso: "Desarrollo de Sistemas Web II",
     emision: "15/10/2024",
     emisionISO: "2024-10-15",
     validez: "valida",
-    envio: "enviado",
+    envio: "entregado",
   },
   {
     id: "ifts14-2024-002",
     numero: "IFTS14-2024-002",
-    alumno: "Lucas Mart\u00edn Rossi",
-    dni: "38.123.456",
+    alumno: "Persona Ficticia 202",
+    dni: "DNI-FICTICIO-202",
     curso: "Bases de Datos Avanzadas",
     emision: "18/10/2024",
     emisionISO: "2024-10-18",
     validez: "valida",
-    envio: "pendiente-envio",
+    envio: "pendiente-entrega",
   },
   {
     id: "ifts14-2023-145",
     numero: "IFTS14-2023-145",
-    alumno: "Ana Paula G\u00f3mez",
-    dni: "32.987.654",
+    alumno: "Persona Ficticia 203",
+    dni: "DNI-FICTICIO-203",
     curso: "Ciberseguridad e Infraestructura",
     emision: "02/11/2023",
     emisionISO: "2023-11-02",
     validez: "revocada",
-    envio: "enviado",
+    envio: "entregado",
   },
   {
     id: "ifts14-2024-003",
     numero: "IFTS14-2024-003",
-    alumno: "Carlos Dami\u00e1n Silva",
-    dni: "40.333.222",
+    alumno: "Persona Ficticia 204",
+    dni: "DNI-FICTICIO-204",
     curso: "Desarrollo de Sistemas Web II",
     emision: "20/10/2024",
     emisionISO: "2024-10-20",
     validez: "pendiente",
-    envio: "pendiente-envio",
+    envio: "pendiente-entrega",
   },
   {
     id: "ifts14-2024-004",
     numero: "IFTS14-2024-004",
-    alumno: "Sof\u00eda Rinaldi",
-    dni: "41.000.111",
+    alumno: "Persona Ficticia 205",
+    dni: "DNI-FICTICIO-205",
     curso: "Bases de Datos Avanzadas",
     emision: "21/10/2024",
     emisionISO: "2024-10-21",
     validez: "valida",
-    envio: "requiere-reenvio",
+    envio: "requiere-nueva-entrega",
   },
   {
     id: "ifts14-2024-005",
     numero: "IFTS14-2024-005",
-    alumno: "Mat\u00edas Ferreyra",
-    dni: "39.555.108",
+    alumno: "Persona Ficticia 206",
+    dni: "DNI-FICTICIO-206",
     curso: "Programaci\u00f3n Avanzada I",
     emision: "24/10/2024",
     emisionISO: "2024-10-24",
     validez: "valida",
-    envio: "enviado",
+    envio: "entregado",
   },
   {
     id: "ifts14-2024-006",
     numero: "IFTS14-2024-006",
-    alumno: "Valentina Acosta",
-    dni: "42.118.777",
+    alumno: "Persona Ficticia 207",
+    dni: "DNI-FICTICIO-207",
     curso: "Redes y Comunicaciones de Datos",
     emision: "25/10/2024",
     emisionISO: "2024-10-25",
     validez: "pendiente",
-    envio: "pendiente-envio",
+    envio: "pendiente-entrega",
   },
 ]
 
@@ -139,18 +139,18 @@ const ENVIO_META: Record<
   Envio,
   { etiqueta: string; clase: string; icon: typeof Send }
 > = {
-  enviado: {
-    etiqueta: "Enviado",
+  entregado: {
+    etiqueta: "Entregado",
     clase: "text-valid",
     icon: Send,
   },
-  "pendiente-envio": {
-    etiqueta: "Pendiente de env\u00edo",
+  "pendiente-entrega": {
+    etiqueta: "Pendiente de entrega",
     clase: "text-muted-foreground",
     icon: SendHorizontal,
   },
-  "requiere-reenvio": {
-    etiqueta: "Requiere reenv\u00edo",
+  "requiere-nueva-entrega": {
+    etiqueta: "Requiere nueva entrega",
     clase: "text-warning",
     icon: RotateCw,
   },
@@ -227,7 +227,7 @@ export function ListaCertificaciones() {
             Certificaciones
           </h1>
           <p className="mt-1 text-pretty text-sm text-muted-foreground">
-            Emisi&oacute;n, validez y env&iacute;o de credenciales acad&eacute;micas del Instituto.
+            Emisi&oacute;n, validez y entrega de credenciales acad&eacute;micas del Instituto.
           </p>
         </div>
         <a
@@ -286,21 +286,21 @@ export function ListaCertificaciones() {
             </ChipFiltro>
           </FiltroGrupo>
 
-          <FiltroGrupo etiqueta="Estado de envío">
-            <ChipFiltro activo={envios.has("enviado")} onClick={() => toggleEnvio("enviado")}>
-              Enviadas
+          <FiltroGrupo etiqueta="Estado de entrega">
+            <ChipFiltro activo={envios.has("entregado")} onClick={() => toggleEnvio("entregado")}>
+              Entregadas
             </ChipFiltro>
             <ChipFiltro
-              activo={envios.has("pendiente-envio")}
-              onClick={() => toggleEnvio("pendiente-envio")}
+              activo={envios.has("pendiente-entrega")}
+              onClick={() => toggleEnvio("pendiente-entrega")}
             >
-              Pendientes de env&iacute;o
+              Pendientes de entrega
             </ChipFiltro>
             <ChipFiltro
-              activo={envios.has("requiere-reenvio")}
-              onClick={() => toggleEnvio("requiere-reenvio")}
+              activo={envios.has("requiere-nueva-entrega")}
+              onClick={() => toggleEnvio("requiere-nueva-entrega")}
             >
-              Requieren reenv&iacute;o
+              Requieren nueva entrega
             </ChipFiltro>
           </FiltroGrupo>
         </div>
@@ -392,7 +392,7 @@ export function ListaCertificaciones() {
                     <EncabezadoCol>Validez</EncabezadoCol>
                   </th>
                   <th scope="col" className="px-4 py-3">
-                    <EncabezadoCol>Env&iacute;o</EncabezadoCol>
+                    <EncabezadoCol>Entrega</EncabezadoCol>
                   </th>
                   <th scope="col" className="px-4 py-3 text-right">
                     <EncabezadoCol className="justify-end">Acci&oacute;n</EncabezadoCol>
@@ -754,7 +754,7 @@ function EstadoVacio() {
         Todav&iacute;a no hay certificaciones
       </h2>
       <p className="mt-1 max-w-sm text-pretty text-sm text-muted-foreground">
-        Cuando emitas la primera credencial acad&eacute;mica, va a quedar registrada en este archivo con su estado de validez y env&iacute;o.
+        Cuando emitas la primera credencial acad&eacute;mica, va a quedar registrada en este archivo con su estado de validez y entrega.
       </p>
       <a
         href={NUEVA_CERTIFICACION_HREF}

@@ -50,10 +50,10 @@ type Alumno = {
 const ALUMNO: Alumno = {
   id: "leg-23910",
   legajo: "LEG-23910",
-  nombre: "Martina",
-  apellido: "Castro",
-  dni: "39.102.844",
-  email: "m.castro@est.ifts14.edu.ar",
+  nombre: "Persona 001",
+  apellido: "Ficticia",
+  dni: "DNI-FICTICIO-001",
+  email: "persona.ficticia001@example.invalid",
   ingreso: "2021",
   cursosConAsistencia: 4,
   certificacionesValidas: 2,
@@ -186,11 +186,11 @@ export function AlumnoDetalle() {
                   Nueva certificaci&oacute;n
                 </a>
                 <a
-                  href={`/admin/alumnos/${a.id}/enviar-certificado`}
+                  href={`/admin/alumnos/${a.id}/entregar-certificado`}
                   className="inline-flex h-10 items-center justify-center gap-2 rounded-sm border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                 >
                   <Send className="h-4 w-4" strokeWidth={1.75} />
-                  Enviar certificado
+                  Compartir por canal externo
                 </a>
                 <a
                   href={`/admin/alumnos/${a.id}/asistencias`}
