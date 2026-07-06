@@ -86,13 +86,19 @@ El repositorio MUST exponer carpetas base para futuras áreas de trabajo sin cre
 
 ### Requirement: Bloqueo explícito del frontend final
 
-La documentación MUST indicar que el frontend final no se implementa hasta que Marcos agregue la referencia v0 en `muestra_pagina/`.
+La documentación MUST indicar que el frontend final no se implementa sin una referencia visual utilizable en `muestra_pagina/`. Si `muestra_pagina/` está vacía o solo contiene documentación de bloqueo, el frontend final MUST tratarse como bloqueado; si existe una referencia v0 final y utilizable (export completo con capturas y prompts), el bloqueo se levanta y la regla efectiva pasa a ser "no inventar pantallas para flujos sin diseño aprobado".
 
-#### Scenario: Diseño v0 pendiente
+#### Scenario: Diseño v0 ausente
 
-- **Given** `muestra_pagina/` puede estar vacío o contener solo documentación de bloqueo
+- **Given** `muestra_pagina/` está vacío o contiene solo documentación de bloqueo sin referencia visual utilizable
 - **When** se planifique frontend
 - **Then** MUST tratarse como bloqueado hasta contar con la referencia visual indicada por Marcos.
+
+#### Scenario: Referencia v0 final utilizable
+
+- **Given** `muestra_pagina/` contiene la referencia v0 final y completa exportada (Next.js/React con capturas y prompts para los flujos vigentes)
+- **When** se planifique frontend
+- **Then** NO MUST aplicarse el bloqueo de frontend final; la regla efectiva MUST ser "no inventar pantallas para flujos sin diseño aprobado".
 
 ### Requirement: Verificación y mantenimiento SDD
 

@@ -11,7 +11,7 @@ Al cerrar cada ciclo SDD, se debe actualizar la documentación mínima necesaria
 | Tipo de cambio | Documentos a revisar |
 |---|---|
 | Cambio de alcance | `README.md`, `GUIA.md`, `docs/01-contexto-decisiones-stack.md` |
-| Cambio frontend | `docs/frontend/00-angular20-port-v0.md`, `muestra_pagina/README.md` si aplica |
+| Cambio frontend | `docs/frontend/00-angular20-port-v0.md`, listado seguro de `muestra_pagina/` si aplica |
 | Cambio backend | `docs/backend/00-php84-api.md` |
 | Cambio base de datos | `docs/database/00-mariadb.md`, `database/docs/` |
 | Cambio deploy | `docs/deploy/00-cpanel-certificados.md`, `deploy/` |

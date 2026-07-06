@@ -1,8 +1,10 @@
 # Auditoría de `muestra_pagina/` — F1-01
 
+> **Actualización posterior.** `muestra_pagina/` fue reemplazada por el export v0 final y completo (flujos 4-22). El estado "7 pantallas disponibles / 12 pendientes" de esta auditoría corresponde al momento del ciclo F1-01 y quedó superado; el inventario vigente está en `docs/frontend/00-angular20-port-v0.md` y los flujos 11-22 se ejecutan con los ciclos F4-F6 de `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`. El `MANIFIESTO_V0.md`, `README.md` y `AGENTS.md` de `muestra_pagina/` fueron retirados al reemplazar la carpeta. El cuerpo de abajo se conserva como registro histórico del ciclo.
+
 ## 1. Resumen ejecutivo
 
-La referencia visual v0 en `muestra_pagina/` contiene **7 pantallas disponibles** (prompts 4-10) y **12 flujos pendientes** (prompts 11-22). Este ciclo no genera código de producto ni modifica `apps/frontend-angular/`; solo verifica el inventario y deja registro en `docs/frontend/` para que F1-02 arranque sobre evidencia confirmada.
+En el momento del ciclo F1-01, la referencia visual v0 en `muestra_pagina/` contenía prompts 4-10 disponibles y prompts 11-22 pendientes. Ese estado quedó superado por el export final completo. Este registro no genera código de producto ni modifica `apps/frontend-angular/`; solo conserva evidencia histórica.
 
 ## 2. Estado de `muestra_pagina/`
 
@@ -12,9 +14,9 @@ Estructura real relevada (solo nombres, sin abrir contenido):
 - 11 archivos en raíz: `.gitignore`, `AGENTS.md`, `components.json`, `MANIFIESTO_V0.md`, `next.config.mjs`, `package.json`, `pnpm-lock.yaml`, `postcss.config.mjs`, `prompts_stitch_v0_ifts14.md`, `README.md`, `tsconfig.json`.
 - 25 capturas PNG en `capturas/` (el informe de exploración asumía 26; el conteo real es 25).
 
-Source of truth del inventario: `muestra_pagina/MANIFIESTO_V0.md`.
+Source of truth del inventario: `docs/frontend/00-angular20-port-v0.md` (el `MANIFIESTO_V0.md` de `muestra_pagina/` fue retirado al reemplazar la carpeta por el export final; ver nota de actualización al inicio de este documento).
 
-## 3. Las 7 pantallas disponibles
+## 3. Pantallas disponibles en ese momento
 
 | Prompt | Pantalla/flujo | Referencia v0 | Estado de portabilidad |
 |---|---|---|---|
@@ -28,9 +30,9 @@ Source of truth del inventario: `muestra_pagina/MANIFIESTO_V0.md`.
 
 ## 4. Las 12 pendientes
 
-Los prompts 11-22 no se implementan en Fase 1. Ya están derivados en `MATIAS_PROMPTS_SDD_FASE2.md`.
+Los prompts 11-22 no se implementaron en este ciclo. Hoy se ejecutan desde la guía unificada de Matías.
 
-| Prompt | Pendiente | Bloque Fase 2 | Bloqueo obligatorio |
+| Prompt | Pendiente | Ciclo actual | Bloqueo obligatorio |
 |---|---|---|---|
 | 11 | Detalle de certificación | F4 | Spec previa si incluye historial, QR o revocación real. |
 | 12 | Vista previa PDF complementario | F4 | Spec previa de PDF, layout y datos permitidos. |
@@ -63,7 +65,7 @@ El scaffold de Marcos en `apps/frontend-angular/` está verificado: 35/35 tests 
 
 ## 7. Próximos pasos
 
-- F1-02: construir el sistema visual propio de Angular 20 sobre el scaffold existente, usando las 7 pantallas disponibles como referencia.
-- F4-F6: abrir ciclos SDD para los prompts 11-22 cuando existan specs y diseños aprobados; `MATIAS_PROMPTS_SDD_FASE2.md` ya tiene los prompts listados.
+- F1-02: construir el sistema visual propio de Angular 20 sobre el scaffold existente, usando las pantallas disponibles en ese momento como referencia.
+- F4-F6: abrir ciclos SDD para los prompts 11-22 cuando existan specs y diseños aprobados; los prompts están integrados en `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`.
 - La decisión final sobre qué pantallas específicas se portan y en qué orden corresponde a ciclos F2+.
 - No se aplica patch a `docs/frontend/00-angular20-port-v0.md` en este ciclo: la información existente ya cubre el estado relevado.

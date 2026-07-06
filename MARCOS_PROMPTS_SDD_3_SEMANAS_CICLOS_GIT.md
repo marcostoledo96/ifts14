@@ -325,14 +325,14 @@ Commit sugerido: `test(backend): validar auditoria tolerante a fallas`.
 
 ### Ciclo M3-03 — endpoints administrativos de certificados
 
-Objetivo: definir e implementar, por SDD, endpoints/admin de emisión, revocación y reenvío con permisos, auditoría y privacidad.
+Objetivo: definir e implementar, por SDD, endpoints/admin de emisión, revocación y entrega manual con permisos, auditoría y privacidad.
 Rama sugerida: `backend/admin-certificados`.
 Leer antes: `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, `docs/database/01-modelo-datos-certificados.md`.
 
 Pedir a OpenCode:
 ```txt
 Trabajemos M3-03 — endpoints administrativos de certificados.
-Primero definí contrato y permisos para emisión, revocación y reenvío; después implementá solo lo aprobado.
+Primero definí contrato y permisos para emisión, revocación y entrega manual; después implementá solo lo aprobado.
 No toques Angular ni simules seguridad falsa. No uses datos reales.
 ```
 
@@ -445,7 +445,7 @@ Bloque M4 para alinear backend, DB, PDF, entrega manual, auth y deploy con las d
 - M4 no habilita implementación fuera de ciclo SDD verificado.
 - Marcos lidera backend, DB, integración, deploy, arquitectura y seguridad.
 - Matías conserva UI/UX, adaptación visual y QA frontend; no hacer diseño final desde backend.
-- Coordinar con Matías sobre v0 actualizada (`muestra_pagina/MANIFIESTO_V0.md`).
+- Coordinar con Matías sobre la referencia v0 final (`muestra_pagina/` — listado seguro); el `MANIFIESTO_V0.md` histórico fue retirado al reemplazar la carpeta por el export final.
 - Gates: Composer pendiente de localizar en cPanel; `vendor/` nunca versionado. NO hay SMTP real ni cuenta de prueba: la entrega es manual.
 - QR/token permanente: el token NO se rota en ninguna operación operativa del MVP. Solo revocación explícita o regeneración excepcional auditada pueden reemplazarlo.
 - DNI completo visible en validación pública (D0); logs/auditoría sin DNI completo.
@@ -458,7 +458,7 @@ Usá SDD completo: explore, propose, spec, design, tasks, apply, verify y archiv
 Leé AGENTS.md, docs/00-indice-general.md, docs/backend/01-contrato-api-certificados.md,
 docs/database/01-modelo-datos-certificados.md y los docs/specs indicados por el ciclo.
 Respetá D0: QR permanente, DNI completo público, fechas asistidas, auth simple temporal,
-firmantes Rector/a + Asesor/a Pedagógica, gates Composer/SMTP, staging /certificados_staging/.
+firmantes Rector/a + Asesor/a Pedagógica, entrega manual sin SMTP en el MVP, gates Composer, staging /certificados_staging/.
 No toques Angular salvo coordinación explícita. No modifiques material_privado_no_versionar/.
 No ejecutes commit, push ni PR sin aprobación explícita de Marcos. No ejecutes `git merge`,
 `git rebase`, `git push` a `main` ni merge de PR. Para cambiar o crear rama, primero verificá
