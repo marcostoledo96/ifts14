@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+// Harness: los notices del stream HTTP de file_get_contents() (Content-Type
+// ausente en GETs) se suprimen con `@` en request() para no silenciar
+// warnings/notices no relacionados del resto del harness.
+
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-http-contract-' . bin2hex(random_bytes(4));
 if (!mkdir($tmpDir, 0700) && !is_dir($tmpDir)) {
@@ -204,7 +208,10 @@ function request(int $port, string $method, string $path, array $headers = [], s
         'header' => implode("\r\n", $headers),
         'content' => $body,
     ]]);
-    $contents = file_get_contents('http://127.0.0.1:' . $port . $path, false, $context);
+    // ponytail: @ suprime el notice de Content-Type ausente en GETs del stream
+    // HTTP; error_reporting/display_errors globales quedan intactos para que
+    // warnings no relacionados sigan visibles en CI.
+    $contents = @file_get_contents('http://127.0.0.1:' . $port . $path, false, $context);
     if ($contents === false) {
         throw new RuntimeException($path . ': request fallido.');
     }
