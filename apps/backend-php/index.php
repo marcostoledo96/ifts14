@@ -10,6 +10,7 @@ require_once __DIR__ . '/src/CertificateValidator.php';
 require_once __DIR__ . '/src/AuthGate.php';
 require_once __DIR__ . '/src/AdminCertificateService.php';
 require_once __DIR__ . '/src/AdminMasterDataService.php';
+require_once __DIR__ . '/src/AdminInstitutionalConfigService.php';
 
 $requestId = 'req_' . bin2hex(random_bytes(8));
 
@@ -291,9 +292,39 @@ if (preg_match('#^/admin/asistencias/(\d+)$#', $path, $matches) === 1) {
 }
 
 if ($path === '/admin/certificados') {
-    if ($method !== 'POST') {
-        header('Allow: POST');
+    if (!in_array($method, ['GET', 'POST'], true)) {
+        header('Allow: GET, POST');
         Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    if ($method === 'GET') {
+        $config = adminConfig($requestId);
+        if ($config === null) {
+            return;
+        }
+
+        respondToAdmin(static function () use ($config, $requestId): array {
+            $estado = optionalQueryString('estado');
+            $cursoId = optionalPositiveQueryInt('cursoId');
+            $alumnoId = optionalPositiveQueryInt('alumnoId');
+            $service = new AdminCertificateService(
+                Database::pdo($config),
+                (string) $config['token_pepper'],
+                $requestId,
+                null,
+                (string) $config['app_salt'],
+            );
+
+            return [
+                'status' => 200,
+                'data' => $service->listCertificados([
+                    'estado' => $estado,
+                    'cursoId' => $cursoId,
+                    'alumnoId' => $alumnoId,
+                ]),
+            ];
+        }, $requestId);
         return;
     }
 
@@ -343,6 +374,68 @@ if ($path === '/admin/certificados') {
         );
 
         return ['status' => 201, 'data' => $service->emitir($body)];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/certificados/(\d+)$#', $path, $matches) === 1) {
+    if ($method !== 'GET') {
+        header('Allow: GET');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    $config = adminConfig($requestId);
+    if ($config === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $matches): array {
+        $service = new AdminCertificateService(
+            Database::pdo($config),
+            (string) $config['token_pepper'],
+            $requestId,
+            null,
+            (string) $config['app_salt'],
+        );
+
+        return ['status' => 200, 'data' => $service->getCertificado((int) $matches[1])];
+    }, $requestId);
+    return;
+}
+
+if ($path === '/admin/configuracion-institucional') {
+    if (!in_array($method, ['GET', 'PUT'], true)) {
+        header('Allow: GET, PUT');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    $config = adminConfig($requestId, $method === 'PUT');
+    if ($config === null) {
+        return;
+    }
+
+    if ($method === 'GET') {
+        respondToAdmin(static function () use ($config, $requestId): array {
+            return [
+                'status' => 200,
+                'data' => (new AdminInstitutionalConfigService(Database::pdo($config), $requestId))->get(),
+            ];
+        }, $requestId);
+        return;
+    }
+
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $body): array {
+        return [
+            'status' => 200,
+            'data' => (new AdminInstitutionalConfigService(Database::pdo($config), $requestId))->update($body),
+        ];
     }, $requestId);
     return;
 }
@@ -572,6 +665,20 @@ function optionalPositiveQueryInt(string $name): ?int
     }
 
     return $id;
+}
+
+function optionalQueryString(string $name): ?string
+{
+    if (!array_key_exists($name, $_GET)) {
+        return null;
+    }
+
+    $value = $_GET[$name];
+    if (!is_string($value)) {
+        throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+    }
+
+    return $value === '' ? null : $value;
 }
 
 /** @param callable(): array{status:int,data:array<string,mixed>} $handler */
