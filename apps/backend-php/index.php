@@ -305,7 +305,7 @@ if ($path === '/admin/certificados') {
         }
 
         respondToAdmin(static function () use ($config, $requestId): array {
-            $estado = isset($_GET['estado']) && is_string($_GET['estado']) ? $_GET['estado'] : null;
+            $estado = optionalQueryString('estado');
             $cursoId = optionalPositiveQueryInt('cursoId');
             $alumnoId = optionalPositiveQueryInt('alumnoId');
             $service = new AdminCertificateService(
@@ -665,6 +665,20 @@ function optionalPositiveQueryInt(string $name): ?int
     }
 
     return $id;
+}
+
+function optionalQueryString(string $name): ?string
+{
+    if (!array_key_exists($name, $_GET)) {
+        return null;
+    }
+
+    $value = $_GET[$name];
+    if (!is_string($value)) {
+        throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+    }
+
+    return $value === '' ? null : $value;
 }
 
 /** @param callable(): array{status:int,data:array<string,mixed>} $handler */

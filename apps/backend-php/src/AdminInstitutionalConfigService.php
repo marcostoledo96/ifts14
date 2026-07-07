@@ -35,6 +35,8 @@ final class AdminInstitutionalConfigService
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
 
+        InstitutionalConfig::assertRequestWithinDatabaseLimits($body);
+
         $normalized = InstitutionalConfig::normalize([
             'institutionName' => $body['institutionName'] ?? null,
             'certificateText' => $body['certificateText'] ?? null,
