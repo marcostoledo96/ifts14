@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../src/InstitutionalConfig.php';
+
 $dsn = getenv('IFTS14_TEST_DB_DSN');
 $user = getenv('IFTS14_TEST_DB_USER') ?: 'root';
 $pass = getenv('IFTS14_TEST_DB_PASS') ?: '';
@@ -144,6 +146,12 @@ try {
     }
 
     assertError(request($port, 'GET', '/admin/certificados?estado=invalido', ['X-Admin-Key: ' . $adminKey]), 400, 'VALIDATION_ERROR', 'filtro estado inválido');
+    assertError(request($port, 'GET', '/admin/certificados?estado%5B%5D=invalido', ['X-Admin-Key: ' . $adminKey]), 400, 'VALIDATION_ERROR', 'filtro estado no escalar');
+
+    assertError(putJson($port, '/admin/configuracion-institucional', $adminKey, [
+        'institutionName' => 'IFTS N.° 14',
+        'rectorRole' => str_repeat('x', InstitutionalConfig::ROLE_MAX_LENGTH + 1),
+    ]), 400, 'VALIDATION_ERROR', 'config PUT excede largo de cargo');
 
     $detail = request($port, 'GET', '/admin/certificados/' . $certificateId, ['X-Admin-Key: ' . $adminKey]);
     assertStatus($detail, 200, 'detalle certificado');
@@ -153,6 +161,17 @@ try {
     }
     if (!is_array($detailBody['attendedDates'] ?? null) || count($detailBody['attendedDates']) < 1) {
         throw new RuntimeException('detalle: faltan fechas asistidas del snapshot.');
+    }
+    if (($detailBody['attendedDates'][0]['descripcion'] ?? '') !== 'Clase consulta') {
+        throw new RuntimeException('detalle: descripción del snapshot inesperada.');
+    }
+
+    $updateLiveDate = $pdo->prepare('UPDATE cert_curso_fechas SET descripcion = ? WHERE id = ?');
+    $updateLiveDate->execute(['Clase editada post emisión', $fechaId]);
+    $detailAfterLiveEdit = request($port, 'GET', '/admin/certificados/' . $certificateId, ['X-Admin-Key: ' . $adminKey]);
+    $detailAfterLiveEditBody = assertJson($detailAfterLiveEdit, 'detalle tras editar fecha viva')['data'] ?? [];
+    if (($detailAfterLiveEditBody['attendedDates'][0]['descripcion'] ?? '') !== 'Clase consulta') {
+        throw new RuntimeException('detalle: driftó al editar cert_curso_fechas en lugar de leer snapshot.');
     }
     if (!isset($detailBody['links']['manualDelivery'], $detailBody['links']['pdf'])) {
         throw new RuntimeException('detalle: faltan links administrativos relativos.');

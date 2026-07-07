@@ -830,11 +830,10 @@ final class AdminCertificateService
     private function loadCertificateSnapshotDates(int $certificateId): array
     {
         $statement = $this->pdo->prepare(<<<'SQL'
-            SELECT cf.fecha, cf.descripcion, cf.orden
+            SELECT ccf.fecha, ccf.descripcion, ccf.orden
             FROM cert_certificado_fechas ccf
-            JOIN cert_curso_fechas cf ON cf.id = ccf.curso_fecha_id
             WHERE ccf.certificado_id = ?
-            ORDER BY cf.orden, cf.fecha
+            ORDER BY ccf.orden, ccf.fecha
             SQL);
         $statement->execute([$certificateId]);
 
