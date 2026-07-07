@@ -1,0 +1,61 @@
+name: Backend tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  php-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_ROOT_PASSWORD: test_root_only
+          MARIADB_DATABASE: ifts14_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h127.0.0.1 -uroot -ptest_root_only --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build PHP image
+        run: docker build -t ifts14-php84 -f docker/php84/Dockerfile .
+
+      - name: Unit tests (sin base de datos)
+        run: |
+          docker run --rm -v "$PWD/apps/backend-php":/app -w /app ifts14-php84 sh -lc '
+            php tests/AuthGateTest.php &&
+            php tests/NormalizePathTest.php &&
+            php tests/EntregaManualTest.php &&
+            php tests/AdminCertificateServiceTest.php &&
+            php tests/HttpContractTest.php &&
+            php tests/PdfResilienceTest.php
+          '
+
+      - name: E2E con MariaDB
+        env:
+          IFTS14_TEST_DB_DSN: mysql:host=127.0.0.1;dbname=ifts14_test
+          IFTS14_TEST_DB_USER: root
+          IFTS14_TEST_DB_PASS: test_root_only
+          IFTS14_TEST_DB_ALLOW_RESET: "1"
+        run: |
+          docker run --rm --network host \
+            -v "$PWD":/workspace -w /workspace \
+            -e IFTS14_TEST_DB_DSN \
+            -e IFTS14_TEST_DB_USER \
+            -e IFTS14_TEST_DB_PASS \
+            -e IFTS14_TEST_DB_ALLOW_RESET \
+            ifts14-php84 sh -lc '
+              php apps/backend-php/tests/SnapshotEmissionTest.php &&
+              php apps/backend-php/tests/HttpEmissionE2eTest.php &&
+              php apps/backend-php/tests/AdminMasterDataHttpTest.php &&
+              php apps/backend-php/tests/AdminCertificadosConsultaHttpTest.php
+            '
