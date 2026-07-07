@@ -1,0 +1,61 @@
+<a class="skip-link" href="#contenido">Saltar al contenido principal</a>
+<div class="layout">
+  <aside class="sidebar-desktop" aria-label="Navegación admin">
+    <app-sidebar-admin (cerrarSesion)="cerrarSesion()" />
+  </aside>
+  <div class="content">
+    <header class="topbar" role="banner">
+      <div class="topbar-row">
+        <button
+          type="button"
+          class="menu-btn"
+          aria-label="Abrir navegación admin"
+          aria-expanded="{{ menuAbierto() }}"
+          [attr.aria-controls]="menuAbierto() ? 'admin-drawer' : null"
+          (click)="abrirMenu()"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <span class="monograma" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="6" height="6" fill="currentColor" />
+            <rect x="12" y="2" width="6" height="6" fill="var(--color-circuit)" />
+            <rect x="2" y="12" width="6" height="6" fill="var(--color-circuit)" />
+            <rect x="12" y="12" width="6" height="6" fill="currentColor" />
+          </svg>
+        </span>
+        <div class="topbar-titles">
+          <p class="topbar-title">IFTS N.° 14 — Admin</p>
+          <p class="topbar-subtitle">Panel administrativo</p>
+        </div>
+        <span class="badge-mock">
+          <span class="badge-dot" aria-hidden="true"></span>
+          Sesión mock
+        </span>
+      </div>
+    </header>
+    <main id="contenido" role="main">
+      <app-admin-dashboard-page />
+    </main>
+    <footer role="contentinfo">
+      <p>Instituto de Formación Técnica Superior N.º 14 — Panel administrativo</p>
+    </footer>
+  </div>
+</div>
+<!-- Drawer mobile: overlay + panel condicional. Solo visible < 64rem.
+     Click en overlay cierra. Render condicional para que el contenido
+     focusable (nav/logout) NO quede expuesto a teclado/screen readers
+     cuando el drawer está cerrado. -->
+@if (menuAbierto()) {
+  <div class="drawer-overlay" (click)="cerrarMenu()" aria-hidden="true"></div>
+  <aside
+    id="admin-drawer"
+    class="drawer-mobile drawer-open"
+    role="navigation"
+    aria-label="Navegación admin (móvil)"
+  >
+    <app-sidebar-admin (cerrarSesion)="cerrarSesion()" />
+  </aside>
+}

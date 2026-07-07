@@ -7,9 +7,10 @@ import { appConfig } from './app.config';
 import { VALIDATION_SOURCE } from './shared/certificates/validation-source';
 import { MockValidationSource } from './shared/certificates/mock-tokens';
 import { HttpValidationSource } from './shared/certificates/http-validation.source';
+import { MOCK_SESSION, InMemoryMockSession } from './features/admin/mock-session';
 import { environment } from '../environments/environment';
 
-type Provider = { provide?: unknown; useClass?: unknown };
+type Provider = { provide?: unknown; useClass?: unknown; useExisting?: unknown };
 
 describe('app.config (M3-06 conmutación)', () => {
   function validationProvider(): Provider | undefined {
@@ -35,5 +36,27 @@ describe('app.config (M3-06 conmutación)', () => {
     // expone y es distinto de MockValidationSource.
     expect(HttpValidationSource).toBeDefined();
     expect(HttpValidationSource).not.toBe(MockValidationSource);
+  });
+});
+
+// F2-03 gate: el token MOCK_SESSION debe estar provisto a nivel app, si no,
+// LoginPage/AdminShell/adminGuard fallarían en runtime al inyectar un token
+// sin provider. Sin este assertion, el wiring del provider sería invisible a
+// los tests (cada spec lo provee en su propio TestBed y enmascara el fallo).
+describe('app.config (F2-03 provider MOCK_SESSION a nivel app)', () => {
+  function mockSessionProvider(): Provider | undefined {
+    const providers = (appConfig.providers ?? []) as unknown[];
+    return providers.find(
+      (p): p is Provider =>
+        !!p &&
+        typeof p === 'object' &&
+        (p as Provider).provide === MOCK_SESSION,
+    );
+  }
+
+  it('provee MOCK_SESSION a nivel app', () => {
+    const provider = mockSessionProvider();
+    expect(provider).toBeDefined();
+    expect(provider?.useExisting).toBe(InMemoryMockSession);
   });
 });
