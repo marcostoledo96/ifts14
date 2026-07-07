@@ -206,8 +206,17 @@ function applySqlFile(PDO $pdo, string $path): void
     if (!is_string($sql)) {
         throw new RuntimeException('No se pudo leer migración: ' . $path);
     }
-    $sql = implode("\n", array_filter(explode("\n", $sql), static fn (string $line): bool => !str_starts_with(trim($line), '--')));
+    $sql = implode("\n", array_filter(
+        explode("\n", $sql),
+        static fn (string $line): bool => !str_starts_with(trim($line), '--')
+    ));
+
     foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
+        if (str_starts_with(strtoupper($statement), 'SELECT ')) {
+            $pdo->query($statement)?->closeCursor();
+            continue;
+        }
+
         $pdo->exec($statement);
     }
 }
