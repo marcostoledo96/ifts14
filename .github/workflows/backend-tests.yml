@@ -29,6 +29,14 @@ jobs:
       - name: Build PHP image
         run: docker build -t ifts14-php84 -f docker/php84/Dockerfile .
 
+      - name: Instalar dependencias Composer
+        run: |
+          docker run --rm \
+            -v "$PWD":/workspace \
+            -w /workspace/apps/backend-php \
+            composer:2 \
+            composer install --no-dev --no-interaction --prefer-dist
+
       - name: Unit tests (sin base de datos)
         run: |
           docker run --rm -v "$PWD/apps/backend-php":/app -w /app ifts14-php84 sh -lc '
