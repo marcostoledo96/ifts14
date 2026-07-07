@@ -8,6 +8,8 @@ import {
 } from '@angular/core';
 import { ValidationService } from '../../shared/certificates/validation.service';
 import { studentDocumentDisplay, ValidationViewState } from '../../shared/certificates/dto';
+import { BandaEstado } from '../../shared/ui/banda-estado';
+import { CampoDato } from '../../shared/ui/campo-dato';
 
 // ponytail: resource() está en @angular/core desde v20, sin HttpClient.
 // params lee tokenCertificacion(); loader llama al servicio async.
@@ -15,6 +17,7 @@ import { studentDocumentDisplay, ValidationViewState } from '../../shared/certif
 @Component({
   selector: 'app-public-validation-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [BandaEstado, CampoDato],
   templateUrl: './public-validation-page.html',
   styleUrl: './public-validation-page.css',
 })
