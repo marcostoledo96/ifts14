@@ -126,13 +126,13 @@ Conmutación local mock/API real sin reescribir la pantalla pública:
 
 Smoke local documentado (no ejecutado en este turno — PHP CLI no instalado localmente):
 
-1. Levantar API PHP local en `:8080` (`bash scripts/m3-06-smoke.sh` requiere `php` CLI + MariaDB local ficticia alcanzable; prueba las rutas `/certificados/api/health` y `/certificados/api/certificados/{token}/verificacion`, valida el JSON de respuesta, usa token ficticio BIEN formado de 32+ chars → 404 `CERTIFICATE_NOT_FOUND` controlado cuando no hay certificado sembrado; 400, 404 genérico y 500 = FAIL conforme a spec).
+1. Levantar API PHP local en `:8080` (`bash scripts/m3-06-smoke.sh` resuelve `php` CLI primero y, si no está, cae a la imagen Docker local `ifts14-php84`; prueba las rutas `/certificados/api/health` y `/certificados/api/certificados/{token}/verificacion`, valida el JSON de respuesta, usa token ficticio BIEN formado de 32+ chars → 404 `CERTIFICATE_NOT_FOUND` controlado cuando no hay certificado sembrado; 400, 404 genérico y 500 = FAIL conforme a spec). **Falta de `php` CLI ya no es un hard blocker si la imagen Docker está disponible.**
 2. En `environment.development.ts`, pasar `useRealApi: true` (solo local).
 3. `ng serve` (proxy.conf.json activo) → abrir `http://localhost:4200/certificados/validar/<token-ficticio>`.
 4. Capturar evidencia con tokens ficticios; sin datos reales.
 5. Revertir `useRealApi` a `false`.
 
-Evidencia de verificación de este turno (sin PHP CLI): `npm test --watch=false` 70/70 SUCCESS (incluye 2 casos nuevos de `apiBaseUrl` y 2 de `app.config`), `npm run build` verde (253.42 kB initial / 72 kB transfer, dentro de presupuestos). Smoke `scripts/m3-06-smoke.sh` queda **BLOCKED** hasta disponer de `php` CLI; el script está creado y documentado para ejecución manual futura.
+Evidencia de verificación de este turno (sin PHP CLI): `npm test --watch=false` 74/74 SUCCESS (incluye los casos de `apiBaseUrl`, `app.config` y alineación D0), `npm run build` verde (253.46 kB initial / 72.04 kB transfer, dentro de presupuestos). Smoke `scripts/m3-06-smoke.sh`: sin `php` CLI pero con la imagen `ifts14-php84` disponible, el fallback Docker levanta la API (ver `docs/backend/01-contrato-api-certificados.md`); end-to-end real requiere DB demo sembrada.
 
 ### Estructura técnica
 
@@ -147,6 +147,54 @@ Evidencia de verificación de este turno (sin PHP CLI): `npm test --watch=false`
 ### Límites de UI final
 
 Base técnica, no diseño visual final. Diseño visual corresponde a Matías (F1-01/F1-02). Admin, PDF, QR, entrega manual y configuración institucional quedan fuera de este ciclo.
+
+## Checkpoint M3-06 final — smoke Angular/API
+
+Cierre documental post-merge del ciclo `m3-06-final-angular-api-smoke`. Verifica que la frontera pública Angular puede consumir la API PHP local con datos ficticios, sin deploy ni cambios de producto. No rotó token/QR, no activó email/SMTP/PHPMailer, no deployó ni tocó `public_html`.
+
+### Checklist Angular/API (D0)
+
+| Ítem | Estado |
+|---|---|
+| Conmutación mock/API real vía `environment.useRealApi` | OK: `false` por defecto en prod y dev; toggle local manual en dev. |
+| `app.config.ts` selecciona `HttpValidationSource`/`MockValidationSource` | OK: frontera única, sin reescribir la pantalla pública. |
+| `http-validation.source.ts` URL `${apiBaseUrl}/certificados/{encodeURIComponent(token)}/verificacion` | OK: coincide con el contrato backend. |
+| `proxy.conf.json` reenvía `/certificados/api` → `127.0.0.1:8080` en `ng serve` | OK: no se habilita CORS/preflight en backend productivo. |
+| DTO público D0: `documentNumber` + `attendedDates`; legado `documentMasked` fallback | OK: `dto.ts` y `result-mapper.ts` alineados con backend. |
+| 404 `CERTIFICATE_NOT_FOUND` → estado no verificable (no error técnico) | OK: `result-mapper.ts` colapsa 404/revocado/expirado/inexistente a `not-verifiable`. |
+| 5xx/red/JSON inválido → error técnico genérico | OK: sin revelar infraestructura. |
+| UI pública no pide DNI como input de búsqueda pública | OK: solo lee token desde la ruta. |
+| QR/token permanente sin rotación normal | OK: no hay lógica de rotación en el frontend. |
+| `X-Admin-Key` no llega al bundle Angular público | OK: admin queda fuera del bundle público. |
+
+### Comandos Angular reproducibles
+
+```bash
+# Tests unitarios (Karma + ChromeHeadless)
+cd apps/frontend-angular && npm test -- --watch=false --browsers=ChromeHeadless
+
+# Build producción con base href /certificados/
+cd apps/frontend-angular && npm run build
+```
+
+### Evidencia de verificación M3-06 final
+
+| Verificación | Resultado | Entorno |
+|---|---|---|
+| `npm test --watch=false` | **74/74 SUCCESS** (0.148 s) | Node 24.18.0, npm 11.16.0, Chrome Headless 149. |
+| `npm run build` | **Verde**: 253.46 kB initial / 72.04 kB transfer; lazy `public-validation-page` 5.18 kB. Base href `/certificados/`. | Angular CLI 20.3.30, presupuesto 500 kB warn / 1 MB error. |
+| Backend unit (Docker) | **6/6 OK** (6 scripts ejecutados): AuthGate, NormalizePath, EntregaManual, AdminCertificateService, HttpContract, PdfResilience. | `ifts14-php84` (PHP 8.4-cli + gd/pdo_mysql/mbstring/xml/zip), mismo Dockerfile que CI. |
+| Backend E2E (Docker + MariaDB 10.6) | **4/4 OK**: SnapshotEmission, HttpEmissionE2e, AdminMasterDataHttp, AdminCertificadosConsultaHttp. | Red Docker `m3-06-net`, MariaDB `mariadb:10.6`, DSN `host=m3-06-mariadb`. Reproduce `.github/workflows/backend-tests.yml`. |
+| Smoke `scripts/m3-06-smoke.sh` | **BLOCKED** localmente: `php` CLI no instalado en PATH y el script aún no tenía fallback Docker (evidencia del ciclo `m3-06-final-angular-api-smoke`). El ciclo `m3-06-warning-cleanup` agregó fallback Docker; ver `docs/backend/01-contrato-api-certificados.md`. | Evidencia alternativa: backend Docker + CI. |
+
+### Estado smoke/manual Angular→PHP
+
+`scripts/m3-06-smoke.sh` resuelve PHP al inicio: prefiere `php` CLI en PATH; si no está, cae a la imagen Docker local `ifts14-php84`; si ninguna está, sale `2` (BLOCKED). **Falta de `php` CLI ya no es un hard blocker si la imagen Docker está disponible.** Requiere además curl y MariaDB/MySQL ficticia en `127.0.0.1` para end-to-end real.
+
+- Evidencia ciclo `m3-06-final-angular-api-smoke` (histórico): host sin `php` CLI y script sin fallback Docker → smoke **BLOCKED** (exit 2). Evidencia reproducible alternativa: backend unit + E2E vía Docker (`ifts14-php84` + `mariadb:10.6`) que replica `.github/workflows/backend-tests.yml`, más `npm test`/`npm run build` Angular.
+- Evidencia ciclo `m3-06-warning-cleanup` (actual): con `php` CLI ausente e imagen `ifts14-php84` presente, el fallback Docker levantó la API, `/health` dio 200 y el `trap` limpió el contenedor; la verificación con token ficticio respondió 500 por DB demo ausente → smoke exit 1 esperado del entorno (no regresión). End-to-end real requiere DB demo sembrada con credenciales ficticias válidas.
+
+El flujo manual Angular→PHP vía `proxy.conf.json` (`environment.development.ts` con `useRealApi: true` local, `ng serve`) se documenta como paso operativo futuro; no usa datos reales.
 
 ## Contrato API esperado
 
