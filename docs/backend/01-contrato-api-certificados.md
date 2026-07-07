@@ -186,9 +186,116 @@ Respuesta `201`:
 
 La emisión no devuelve DNI completo ni token completo como campo separado. El campo `documentMasked` (enmascarado) en la respuesta administrativa es el único dato de documento permitido; el DNI completo queda reservado para el DTO público de validación (decisión D0). `publicValidationUrl` es el único link público previsto y contiene el token permanente; `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. `tokenPrefix` es ayuda operativa segura. El token se persiste como `token_hash` (verificación), `token_prefijo` (soporte) y `token_cifrado` (recuperable, AES-256-GCM con clave externa a Git). Si la generación o persistencia del PDF falla, o si el cifrado del token falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional, fail closed).
 
-El PDF generado durante la emisión usa `cert_configuracion_institucional` (`id = 1`) cuando existe: `institucion_nombre`, `texto_certificado`, `rector_nombre`, `rector_cargo`, `asesor_nombre` y `asesor_cargo`. Si la fila falta o un campo está vacío, la emisión continúa con valores institucionales seguros por defecto. Esta configuración solo afecta el contenido del PDF; no cambia el DTO administrativo ni habilita edición de configuración por API.
+El PDF generado durante la emisión usa `cert_configuracion_institucional` (`id = 1`) cuando existe. Si la fila falta o un campo está vacío, la emisión continúa con valores institucionales seguros por defecto. La edición de configuración se realiza por `PUT /admin/configuracion-institucional`.
 
 La emisión persiste `alumno_id`, `curso_id` y snapshot en `cert_certificado_fechas`. Si no hay asistencias activas (`cert_asistencias.eliminado_en IS NULL` y fecha de curso `programada|realizada`), responde `400 VALIDATION_ERROR` sin persistir certificado, token, PDF ni snapshot. Si ya existe un certificado con `estado='vigente'` y `revocado_en IS NULL` para el mismo alumno y curso, responde `409 CERTIFICATE_ALREADY_EXISTS` sin persistir certificado, token, PDF ni snapshot. Revocar o pasar explícitamente el estado a `vencido` libera una nueva emisión; una fecha `vence_en` pasada no libera el slot mientras el estado siga `vigente`.
+
+### `GET /admin/certificados`
+
+Listado administrativo de certificados. Requiere `X-Admin-Key`. No expone DNI completo, token completo, hash, clave ni rutas internas.
+
+Query opcionales:
+
+| Parámetro | Regla |
+|---|---|
+| `estado` | `borrador`, `vigente`, `revocado` o `vencido`. Valor inválido → `400 VALIDATION_ERROR`. |
+| `cursoId` | Entero positivo. |
+| `alumnoId` | Entero positivo. |
+
+Respuesta `200`:
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "id": 10,
+        "certificateCode": "CERT-2026-AB12CD34",
+        "status": "vigente",
+        "student": {
+          "displayName": "Persona Demo",
+          "documentMasked": "00******00"
+        },
+        "course": { "id": 2, "name": "Curso Demo" },
+        "alumnoId": 1,
+        "cursoId": 2,
+        "issuedAt": "2026-06-26",
+        "expiresAt": "2026-12-31",
+        "revokedAt": null,
+        "tokenPrefix": "prefijo_demo"
+      }
+    ]
+  },
+  "meta": { "requestId": "req_admin_no_sensible" }
+}
+```
+
+### `GET /admin/certificados/{id}`
+
+Detalle administrativo (expediente) de un certificado. Requiere `X-Admin-Key`. `id` numérico entero mayor a 0.
+
+Incluye snapshot de fechas asistidas (`attendedDates`), eventos de auditoría seguros (`auditEvents` sin DNI ni token), y `links` relativos a PDF, entrega manual y QR PNG. No devuelve token completo ni DNI completo.
+
+Respuesta `200` extiende el ítem de listado con:
+
+```json
+{
+  "revocationReason": null,
+  "attendedDates": [
+    { "fecha": "2026-06-05", "descripcion": "Clase 1", "orden": 1 }
+  ],
+  "auditEvents": [
+    { "eventType": "emision", "result": "ok", "createdAt": "2026-06-26 14:00:00" }
+  ],
+  "links": {
+    "pdf": "/admin/certificados/10/pdf",
+    "manualDelivery": "/admin/certificados/10/entrega-manual",
+    "qrPng": "/admin/certificados/10/qr.png"
+  }
+}
+```
+
+Errores: `400 VALIDATION_ERROR` si `id` no es numérico; `404 CERTIFICATE_NOT_FOUND` si no existe.
+
+### `GET /admin/configuracion-institucional`
+
+Lectura de la configuración institucional single-row (`id = 1`). Si no existe fila, devuelve fallback seguro documentado en `InstitutionalConfig`.
+
+Respuesta `200`:
+
+```json
+{
+  "data": {
+    "institutionName": "IFTS N.° 14",
+    "certificateText": "Se certifica que...",
+    "rectorName": "",
+    "rectorRole": "Rector/a",
+    "advisorName": "",
+    "advisorRole": "Asesor/a Pedagógica",
+    "updatedAt": null
+  },
+  "meta": { "requestId": "req_admin_no_sensible" }
+}
+```
+
+### `PUT /admin/configuracion-institucional`
+
+Actualiza la configuración institucional. Requiere `X-Admin-Key` y `Content-Type: application/json`. `institutionName` es obligatorio y no vacío. Campos opcionales usan fallback seguro cuando llegan vacíos.
+
+Request:
+
+```json
+{
+  "institutionName": "IFTS N.° 14",
+  "certificateText": "Texto del certificado.",
+  "rectorName": "Nombre Rector/a",
+  "rectorRole": "Rector/a",
+  "advisorName": "Nombre Asesor/a",
+  "advisorRole": "Asesor/a Pedagógica"
+}
+```
+
+Respuesta `200`: mismo DTO que `GET`, con `updatedAt` persistido.
 
 ### `POST /admin/certificados/{id}/revocar`
 
