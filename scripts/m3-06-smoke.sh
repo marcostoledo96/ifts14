@@ -32,6 +32,26 @@ BACKEND_DIR="$REPO_ROOT/apps/backend-php"
 PORT=127.0.0.1:8080
 DOCKER_IMG="ifts14-php84"
 
+# Resuelve cómo invocar Docker en setups donde el socket requiere sudo.
+# Estrategia mínima: probar `docker` directo; si falla por permisos y existe
+# `sudo`, usar `sudo docker`; si no, fallar con mensaje accionable.
+# `DOCKER_SUDO` se mantiene vacío en el caso normal (sin sudo) para no alterar
+# los comandos existentes. Cuando se setea, se interpola delante de `docker`.
+DOCKER_SUDO=""
+resolve_docker_cmd() {
+  if docker info >/dev/null 2>&1; then
+    DOCKER_SUDO=""
+    return 0
+  fi
+  if command -v sudo >/dev/null 2>&1 && sudo -n docker info >/dev/null 2>&1; then
+    DOCKER_SUDO="sudo"
+    return 0
+  fi
+  echo "[m3-06-smoke] BLOCKED: docker no accesible (permiso denegado al socket)." >&2
+  echo "  Agregá tu usuario al grupo 'docker' o ejecutá el smoke con sudo." >&2
+  return 1
+}
+
 if ! command -v curl >/dev/null 2>&1; then
   echo "[m3-06-smoke] BLOCKED: curl no disponible en PATH." >&2
   exit 2
@@ -48,7 +68,16 @@ if ! command -v php >/dev/null 2>&1; then
     echo "[m3-06-smoke] BLOCKED: ni php CLI ni docker disponibles en PATH." >&2
     exit 2
   fi
-  if ! docker image inspect "$DOCKER_IMG" >/dev/null 2>&1; then
+  # Docker requiere permisos: resolver `docker` vs `sudo docker` una vez aquí
+  # ANTES de image inspect, porque en hosts sudo-only el `docker` directo falla
+  # por permisos y se reportaría falsamente como "imagen faltante". Reusar
+  # DOCKER_SUDO en todos los comandos posteriores (run, rm -f del cleanup).
+  # `sudo -n` evita prompt interactivo: si necesita password, falla limpio
+  # antes de arrancar el server.
+  if ! resolve_docker_cmd; then
+    exit 2
+  fi
+  if ! $DOCKER_SUDO docker image inspect "$DOCKER_IMG" >/dev/null 2>&1; then
     echo "[m3-06-smoke] BLOCKED: falta php CLI y la imagen Docker '$DOCKER_IMG' no está construida." >&2
     echo "  Construí la imagen con: bash scripts/php-docker-build.sh" >&2
     echo "  O directamente: docker build -t $DOCKER_IMG -f docker/php84/Dockerfile ." >&2
@@ -57,7 +86,7 @@ if ! command -v php >/dev/null 2>&1; then
   PHP_MODE="docker"
   # /tmp:ro permite que los helpers `php -r` lean los JSON que `curl -o /tmp/...`
   # escribe en el host (mismo path dentro del contenedor).
-  PHP_CMD=(docker run --rm -i -v "$REPO_ROOT":/app -w /app -v /tmp:/tmp:ro "$DOCKER_IMG" php)
+  PHP_CMD=($DOCKER_SUDO docker run --rm -i -v "$REPO_ROOT":/app -w /app -v /tmp:/tmp:ro "$DOCKER_IMG" php)
 fi
 
 # Config ficticia: no usar en producción. Sin DB real de producción.
@@ -100,7 +129,7 @@ PHP
 cleanup() {
   rm -f "$CFG" "$HEALTH_JSON" "$VERIF_JSON" "$SERVER_LOG"
   [[ -n "${SERVER_PID:-}" ]] && kill "$SERVER_PID" 2>/dev/null || true
-  [[ -n "${DOCKER_CONTAINER:-}" ]] && docker rm -f "$DOCKER_CONTAINER" >/dev/null 2>&1 || true
+  [[ -n "${DOCKER_CONTAINER:-}" ]] && $DOCKER_SUDO docker rm -f "$DOCKER_CONTAINER" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -120,12 +149,20 @@ else
   # 127.0.0.1:3306 del host (donde bind real). Sin --network host, el
   # contenedor no vería 127.0.0.1 del host y la DB quedaría inalcanzable.
   DOCKER_CONTAINER="ifts14-m3-06-smoke-$$"
-  docker run -d --rm \
+  # Forward del override opcional de DB al contenedor: el config generado lee
+  # `getenv('M3_06_DB_NAME')` (default 'ifts14_certificados_demo'). Sin esto,
+  # el contenedor no ve la var del host y siempre usa el default.
+  DB_ENV_ARGS=()
+  if [[ -n "${M3_06_DB_NAME:-}" ]]; then
+    DB_ENV_ARGS+=(-e "M3_06_DB_NAME=$M3_06_DB_NAME")
+  fi
+  $DOCKER_SUDO docker run -d --rm \
     --name "$DOCKER_CONTAINER" \
     --network host \
     -v "$BACKEND_DIR":/app/apps/backend-php:ro \
     -v "$CFG":/tmp/m3-06-cfg.php:ro \
     -e CERTIFICADOS_CONFIG_PATH=/tmp/m3-06-cfg.php \
+    "${DB_ENV_ARGS[@]}" \
     "$DOCKER_IMG" \
     php -S 127.0.0.1:8080 -t /app/apps/backend-php /app/apps/backend-php/index.php \
     >"$SERVER_LOG" 2>&1

@@ -33,6 +33,7 @@ vendor/
 *.pfx
 
 # Configuraciones reales sensibles (no entran al contexto)
+**/config.php
 **/config.local.php
 **/database.php
 **/db.php
