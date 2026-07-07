@@ -1,1 +1,119 @@
-/* You can add global styles to this file, and also import other style files */
+/* styles.css — Tokens visuales v0 (F1-02) y base global.
+   Fuente de intención: muestra_pagina/app/globals.css (lectura segura).
+   Sin Tailwind, sin dependencias nuevas. Solo CSS custom properties. */
+
+:root {
+  /* Paleta institucional — mapeo semántico desde v0 */
+  --color-ink: #0b1f33;
+  --color-ink-foreground: #ffffff;
+  --color-tech-blue: #1565c0;
+  --color-circuit: #00a8c6;
+
+  /* Estados */
+  --color-valid: #2e7d32;
+  --color-valid-foreground: #ffffff;
+  --color-valid-soft: #e8f5e9;
+  --color-destructive: #c62828;
+  --color-destructive-foreground: #ffffff;
+  --color-destructive-soft: #fbeaea;
+  --color-warning: #f9a825;
+  --color-warning-soft: #fff6e0;
+
+  /* Superficies y texto */
+  --color-paper: #f5f7fa;
+  --color-background: #f5f7fa;
+  --color-foreground: #263238;
+  --color-card: #ffffff;
+  --color-card-foreground: #263238;
+  --color-muted: #eef2f6;
+  --color-muted-foreground: #54677a;
+  --color-border: #d9e0e8;
+  --color-ring: #1565c0;
+
+  /* Tipografía */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --tracking-caps: 0.18em;
+  --tracking-caps-tight: 0.12em;
+  --tracking-caps-membrete: 0.22em;
+
+  /* Radios */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+
+  /* Layout — anchos máximos de página y folio (F1-02).
+     Centraliza los magic numbers 56rem/42rem usados en app, header,
+     folio y validación pública para mantener consistencia responsive. */
+  --layout-page-max: 56rem;
+  --layout-folio-max: 42rem;
+
+  /* Espaciado — escala 4-32px */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* Foco y motion */
+  --focus-ring: 0 0 0 2px var(--color-ring);
+  --motion-fast: 120ms;
+}
+
+/* Base tipográfica */
+html {
+  font-family: var(--font-sans);
+  color: var(--color-foreground);
+  background: var(--color-background);
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Foco visible global — preserva skip-link existente */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+/* Clases compartidas para pares dt/dd (W2: mantienen dl/dt/dd válidos).
+   Usadas por la directiva appCampoDato. Evitan wrappers custom dentro de <dl>. */
+.campo-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: var(--tracking-caps-tight);
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+.campo-value {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--color-foreground);
+}
+
+.campo-mono {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.campo-highlight {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+/* Motion reducido */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

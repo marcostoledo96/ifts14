@@ -1,49 +1,40 @@
 <section class="validation" aria-labelledby="validation-title">
   <h1 id="validation-title">Validación de certificado</h1>
 
-  <div aria-live="polite" aria-atomic="true">
+  <div>
     @if (isLoading()) {
-      <p class="state state-loading">Verificando…</p>
-    } @else if (hasError(); as err) {
+      <app-banda-estado kind="loading" title="Verificando…" />
+    } @else if (hasError()) {
       <!-- ponytail: error de resource (no del mapper) → técnico genérico -->
-      <p class="state state-error">No se pudo completar la verificación. Intente nuevamente.</p>
+      <app-banda-estado kind="error" title="No se pudo completar la verificación. Intente nuevamente." />
     } @else if (view(); as v) {
       @switch (v.kind) {
         @case ('valid') {
           <article class="state state-valid" aria-labelledby="valid-title">
             <h2 id="valid-title">Certificado verificable</h2>
             <dl>
-              <dt>Curso</dt>
-              <dd>{{ v.certificate.course.name }}</dd>
-
-              <dt>Fecha de emisión</dt>
-              <dd>{{ v.certificate.course.issuedAt }}</dd>
-
-              <dt>Estudiante</dt>
-              <dd>{{ v.certificate.student.displayName }}</dd>
-
-              <dt>Documento</dt>
-              <dd>{{ documentDisplay(v.certificate.student) }}</dd>
-
+              <dt appCampoDato>Curso</dt>
+              <dd appCampoDato>{{ v.certificate.course.name }}</dd>
+              <dt appCampoDato>Fecha de emisión</dt>
+              <dd appCampoDato>{{ v.certificate.course.issuedAt }}</dd>
+              <dt appCampoDato>Estudiante</dt>
+              <dd appCampoDato variant="highlight">{{ v.certificate.student.displayName }}</dd>
+              <dt appCampoDato>Documento</dt>
+              <dd appCampoDato variant="mono">{{ documentDisplay(v.certificate.student) }}</dd>
               @if (v.certificate.course.attendedDates?.length) {
-                <dt>Fechas asistidas</dt>
-                <dd>{{ formatAttendedDates(v.certificate.course.attendedDates) }}</dd>
+                <dt appCampoDato>Fechas asistidas</dt>
+                <dd appCampoDato>{{ formatAttendedDates(v.certificate.course.attendedDates) }}</dd>
               }
-
-              <dt>Código de certificado</dt>
-              <dd>{{ v.certificate.certificateCode }}</dd>
+              <dt appCampoDato>Código de certificado</dt>
+              <dd appCampoDato variant="mono">{{ v.certificate.certificateCode }}</dd>
             </dl>
           </article>
         }
         @case ('not-verifiable') {
-          <p class="state state-not-verifiable">
-            El certificado no es verificable.
-          </p>
+          <app-banda-estado kind="not-verifiable" title="El certificado no es verificable." />
         }
         @case ('technical-error') {
-          <p class="state state-error">
-            No se pudo completar la verificación. Intente nuevamente.
-          </p>
+          <app-banda-estado kind="error" title="No se pudo completar la verificación. Intente nuevamente." />
         }
       }
     }

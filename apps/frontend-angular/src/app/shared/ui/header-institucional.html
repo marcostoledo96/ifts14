@@ -1,0 +1,24 @@
+<header class="header" role="banner">
+  <div class="header-row">
+    <span class="monograma" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <rect x="2" y="2" width="6" height="6" fill="currentColor" />
+        <rect x="12" y="2" width="6" height="6" fill="var(--color-circuit)" />
+        <rect x="2" y="12" width="6" height="6" fill="var(--color-circuit)" />
+        <rect x="12" y="12" width="6" height="6" fill="currentColor" />
+      </svg>
+    </span>
+    <div class="header-titles">
+      <p class="header-title">IFTS N.° 14</p>
+      <p class="header-subtitle">{{ subtitle() }}</p>
+    </div>
+    @if (showOnlineBadge()) {
+      <span class="badge">
+        <span class="badge-dot" aria-hidden="true"></span>
+        <span class="badge-text">Sistema en línea</span>
+      </span>
+    }
+  </div>
+  <div class="filete-grueso" aria-hidden="true"></div>
+  <div class="filete-fino" aria-hidden="true"></div>
+</header>
