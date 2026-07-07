@@ -64,6 +64,8 @@ Los flujos 11-22 ya tienen referencia v0 disponible en `muestra_pagina/` y se ej
 | Espaciado | Aire suficiente entre bloques; evitar tarjetas anidadas sin necesidad. |
 | Estados | Diferenciar válido, revocado, no encontrado y error técnico sin lenguaje ambiguo. |
 
+> **Aplicado en F1-02.** Los tokens concretos (color, tipografía, radio, espaciado, foco, motion) están definidos en `apps/frontend-angular/src/styles.css` y documentados como fuente de verdad en `docs/frontend/02-sistema-visual-v0-f1-02.md`. Primitivos Angular (`BandaEstado`, `CampoDato`, `HeaderInstitucional`, `FolioShell`) disponibles en `apps/frontend-angular/src/app/shared/ui/`. Tailwind queda diferido a F1-04.
+
 ## Componentes candidatos
 
 | Componente Angular futuro | Responsabilidad |

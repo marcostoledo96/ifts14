@@ -107,12 +107,54 @@ describe('PublicValidationPage', () => {
     expect(text).not.toContain('/api/');
   });
 
-  it('usa aria-live polite en el contenedor de estado', async () => {
+  it('BandaEstado es el único dueño de aria-live (sin región anidada)', async () => {
+    const fixture = await renderWith('demo-revocado', new StubSource(revokedResult));
+    const el = fixture.nativeElement as HTMLElement;
+    // W3: el contenedor genérico ya no expone aria-live; BandaEstado es el único dueño.
+    const liveRegions = el.querySelectorAll('[aria-live="polite"]');
+    expect(liveRegions.length).toBe(1);
+    expect(liveRegions[0].closest('app-banda-estado')).not.toBeNull();
+    expect(liveRegions[0].getAttribute('aria-atomic')).toBe('true');
+    // El wrapper genérico de la página no debe replicar live semantics.
+    const wrapper = el.querySelector('section.validation > div');
+    expect(wrapper?.hasAttribute('aria-live')).toBe(false);
+  });
+
+  it('estado válido se anuncia vía BandaEstado (única región live, contiene texto válido)', async () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const el = fixture.nativeElement as HTMLElement;
-    const live = el.querySelector('[aria-live="polite"]');
-    expect(live).not.toBeNull();
-    expect(live?.getAttribute('aria-atomic')).toBe('true');
+    // W4 (Codex PR #33): el estado válido también debe comunicarse vía BandaEstado.
+    const liveRegions = el.querySelectorAll('[aria-live="polite"]');
+    expect(liveRegions.length).toBe(1);
+    expect(liveRegions[0].closest('app-banda-estado')).not.toBeNull();
+    expect(liveRegions[0].getAttribute('aria-atomic')).toBe('true');
+    const banda = el.querySelector('app-banda-estado');
+    expect(banda).not.toBeNull();
+    expect(banda?.textContent ?? '').toContain('Certificado verificable');
+    // Sin región live anidada dentro del bloque de detalles.
+    const article = el.querySelector('article.state-valid');
+    expect(article?.querySelectorAll('[aria-live]').length ?? 0).toBe(0);
+  });
+
+  it('render basado en primitivos: dl/dt/dd nativos válidos en bloque válido (W2)', async () => {
+    const fixture = await renderWith('demo-valido', new StubSource(validResult));
+    const el = fixture.nativeElement as HTMLElement;
+    // W2: el bloque válido usa dt/dd nativos dentro de un dl; sin wrappers custom.
+    const dl = el.querySelector('dl');
+    expect(dl).not.toBeNull();
+    expect(dl?.querySelector('dt')).not.toBeNull();
+    expect(dl?.querySelector('dd')).not.toBeNull();
+    // Sin elementos custom dentro del <dl> (content model válido).
+    expect(dl?.querySelector('app-campo-dato, app-banda-estado, app-folio-shell')).toBeNull();
+  });
+
+  it('no expone token, stack ni rutas en el render válido', async () => {
+    const fixture = await renderWith('demo-valido', new StubSource(validResult));
+    const text = textOf(fixture);
+    expect(text).not.toContain('demo-valido');
+    // Sin rutas internas ni stack traces.
+    expect(text).not.toMatch(/\/api\//);
+    expect(text).not.toMatch(/stack/i);
   });
 
   it('con MockValidationSource real: demo-valido → válido (smoke del wiring)', async () => {

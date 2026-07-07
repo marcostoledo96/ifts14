@@ -1,0 +1,31 @@
+<article class="folio">
+  <header class="folio-membrete">
+    <p class="folio-kicker">{{ kicker() }}</p>
+    <h1 class="folio-title">{{ title() }}</h1>
+    @if (description()) {
+      <p class="folio-desc">{{ description() }}</p>
+    }
+    @if (certificateCode()) {
+      <p class="folio-code">
+        <span class="folio-code-label">Código</span>
+        <span class="folio-code-value">{{ certificateCode() }}</span>
+      </p>
+    }
+  </header>
+
+  <div class="folio-status">
+    <ng-content select="[folio-status]" />
+  </div>
+
+  <div class="folio-body">
+    <ng-content select="[folio-body]" />
+  </div>
+
+  <aside class="folio-aside">
+    <ng-content select="[folio-aside]" />
+  </aside>
+
+  <footer class="folio-footer">
+    <ng-content select="[folio-footer]" />
+  </footer>
+</article>

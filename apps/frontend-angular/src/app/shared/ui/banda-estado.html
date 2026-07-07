@@ -1,0 +1,29 @@
+<section
+  class="banda"
+  [class.banda-valid]="kind() === 'valid'"
+  [class.banda-revoked]="kind() === 'revoked' || kind() === 'not-verifiable'"
+  [class.banda-error]="kind() === 'error'"
+  [class.banda-loading]="kind() === 'loading'"
+  [attr.role]="isAlert() ? 'alert' : 'status'"
+  aria-live="polite"
+  aria-atomic="true"
+>
+  <span class="banda-icon" aria-hidden="true">
+    @switch (kind()) {
+      @case ('valid') { ✓ }
+      @case ('revoked') { ◆ }
+      @case ('not-verifiable') { ◆ }
+      @case ('error') { ! }
+      @case ('loading') { … }
+    }
+  </span>
+  <div class="banda-content">
+    <p class="banda-title">{{ title() }}</p>
+    @if (description()) {
+      <p class="banda-desc">{{ description() }}</p>
+    }
+  </div>
+  @if (stateLabel()) {
+    <span class="banda-state-label">{{ stateLabel() }}</span>
+  }
+</section>
