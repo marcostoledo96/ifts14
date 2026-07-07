@@ -127,4 +127,56 @@ footer {
   .sidebar-desktop {
     display: block;
   }
+
+  /* En desktop el menú hamburguesa y el drawer quedan ocultos. */
+  .menu-btn {
+    display: none;
+  }
+
+  .drawer-mobile {
+    display: none;
+  }
+
+  .drawer-overlay {
+    display: none;
+  }
+}
+
+/* --- Drawer mobile (< 64rem) --- */
+.menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  cursor: pointer;
+}
+
+.menu-btn:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--color-ink) 60%, transparent);
+}
+
+.drawer-mobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  width: 16rem;
+  max-width: 80vw;
+  background: var(--color-card);
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
 }

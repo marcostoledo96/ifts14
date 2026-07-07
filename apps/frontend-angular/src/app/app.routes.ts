@@ -39,6 +39,16 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/admin/admin-shell').then((m) => m.AdminShell),
   },
+  // Aislamiento admin: captura cualquier /admin/* no matcheado arriba
+  // (/admin/cursos, /admin/typo) ANTES de que caiga al wildcard público.
+  // pathMatch: 'prefix' hace de catch-all admin; el redirect manda al
+  // dashboard, donde adminGuard envía sin sesión a /admin/login.
+  // Va después de admin/login y admin/dashboard para no interceptarlas.
+  {
+    path: 'admin',
+    pathMatch: 'prefix',
+    redirectTo: '/admin/dashboard',
+  },
   // Las URLs inválidas no deben colisionar con un token de demo conocido.
   // Llevan a una página no encontrada que no valida nada.
   {

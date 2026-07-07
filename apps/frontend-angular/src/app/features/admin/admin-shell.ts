@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MOCK_SESSION } from './mock-session';
 import { SidebarAdmin } from './sidebar-admin';
@@ -18,6 +18,19 @@ import { AdminDashboardPage } from './admin-dashboard-page';
 export class AdminShell {
   private readonly session = inject(MOCK_SESSION);
   private readonly router = inject(Router);
+
+  // Drawer mobile: cerrado por defecto. El botón hamburguesa abre;
+  // click en overlay cierra. Render condicional para evitar exponer
+  // nav/logout a teclado/screen readers cuando está cerrado.
+  readonly menuAbierto = signal(false);
+
+  abrirMenu(): void {
+    this.menuAbierto.set(true);
+  }
+
+  cerrarMenu(): void {
+    this.menuAbierto.set(false);
+  }
 
   cerrarSesion(): void {
     this.session.signOut();

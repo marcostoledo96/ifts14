@@ -68,6 +68,7 @@ El sistema DEBE construir `AdminShell`, `SidebarAdmin`, `LoginPage`, `LoginForm`
 - **Given** una persona navega con teclado o lector de pantalla
 - **When** recorre login, sidebar y dashboard
 - **Then** DEBEN existir labels, landmarks, foco visible y estado activo comprensible.
+- **And** el control del drawer mobile (`aria-controls`, `aria-expanded`) solo DEBE apuntar a un elemento presente en el DOM: cuando el drawer está cerrado y renderizado condicionalmente fuera del árbol, `aria-controls` DEBE omitirse (no apuntar a un id inexistente).
 
 #### Scenario: Sin dependencias visuales nuevas
 
