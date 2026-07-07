@@ -1,8 +1,12 @@
-<a class="skip-link" href="#contenido">Saltar al contenido principal</a>
-<app-header-institucional />
-<main id="contenido" role="main">
+@if (!esRutaAdmin()) {
+  <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
+  <app-header-institucional />
+  <main id="contenido" role="main">
+    <router-outlet />
+  </main>
+  <footer role="contentinfo">
+    <p>Instituto de Formación Técnica Superior N.º 14</p>
+  </footer>
+} @else {
   <router-outlet />
-</main>
-<footer role="contentinfo">
-  <p>Instituto de Formación Técnica Superior N.º 14</p>
-</footer>
+}

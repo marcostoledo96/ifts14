@@ -1,0 +1,130 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: var(--color-paper);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar-desktop {
+  display: none;
+  width: 16rem;
+  flex: 0 0 16rem;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-card);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--color-card) 90%, transparent);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.topbar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.monograma {
+  flex: 0 0 2.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-ink);
+  color: var(--color-ink-foreground);
+}
+
+.topbar-titles {
+  min-width: 0;
+}
+
+.topbar-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.topbar-subtitle {
+  margin: var(--space-1) 0 0;
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+.badge-mock {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  background: var(--color-warning-soft);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: var(--tracking-caps-tight);
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+.badge-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--color-warning);
+}
+
+main#contenido {
+  flex: 1;
+  padding: var(--space-5) var(--space-4);
+  max-width: var(--layout-page-max);
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+footer {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+  text-align: center;
+}
+
+@media (min-width: 64rem) {
+  .sidebar-desktop {
+    display: block;
+  }
+}

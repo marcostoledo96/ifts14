@@ -4,11 +4,28 @@ import { routes } from './app.routes';
 import { NotFoundPage } from './features/not-found/not-found-page';
 import { PublicValidationPage } from './features/public-validation/public-validation-page';
 import { LandingPage } from './features/landing/landing-page';
+import { LoginPage } from './features/admin/login-page';
+import { AdminShell } from './features/admin/admin-shell';
+import { MOCK_SESSION, InMemoryMockSession } from './features/admin/mock-session';
 
 // Verifica que ninguna ruta apunte a un token de demo salvo la validación
 // explícita en validar/:tokenCertificacion, evitando que una URL inválida
 // o la raíz disparen validación con token de demo.
 describe('app.routes', () => {
+  async function setupRouter(initialUrl?: string) {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const router = TestBed.inject(Router);
+    if (initialUrl) {
+      await router.navigateByUrl(initialUrl);
+    }
+    return router;
+  }
+
   it("raíz carga LandingPage (no redirige a demo-valido)", () => {
     const root = routes.find((r) => r.path === '');
     expect(root?.redirectTo).toBeUndefined();
@@ -52,9 +69,7 @@ describe('app.routes', () => {
   });
 
   it("navegación real: raíz no termina en demo-valido ni en validar", async () => {
-    await TestBed.configureTestingModule({
-      providers: [provideRouter(routes)],
-    }).compileComponents();
+    await setupRouter();
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');
     expect(router.url).not.toContain('demo-valido');
@@ -62,12 +77,96 @@ describe('app.routes', () => {
   });
 
   it("navegación real: wildcard no termina en demo-valido", async () => {
-    await TestBed.configureTestingModule({
-      providers: [provideRouter(routes)],
-    }).compileComponents();
+    await setupRouter();
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/ruta-inexistente');
     expect(router.url).not.toContain('demo-valido');
     expect(router.url).not.toContain('/validar/');
+  });
+
+  // --- Rutas admin F2-03 ---
+
+  it("admin/login carga LoginPage", () => {
+    const r = routes.find((x) => x.path === 'admin/login');
+    expect(r?.loadComponent).toBeDefined();
+  });
+
+  it("admin/dashboard tiene adminGuard", () => {
+    const r = routes.find((x) => x.path === 'admin/dashboard');
+    expect(r?.canActivate).toBeDefined();
+    expect(r?.canActivate?.length).toBeGreaterThan(0);
+  });
+
+  it("admin redirige a /admin/dashboard (pathMatch full)", () => {
+    const r = routes.find((x) => x.path === 'admin');
+    expect(r?.redirectTo).toBe('/admin/dashboard');
+    expect(r?.pathMatch).toBe('full');
+    expect(r?.loadComponent).toBeUndefined();
+  });
+
+  it("admin/login precede al wildcard en el array de rutas", () => {
+    const adminLogin = routes.findIndex((x) => x.path === 'admin/login');
+    const wildcard = routes.findIndex((x) => x.path === '**');
+    expect(adminLogin).toBeGreaterThanOrEqual(0);
+    expect(wildcard).toBeGreaterThan(adminLogin);
+  });
+
+  it("navegación real /admin/login carga LoginPage sin sesión", async () => {
+    await setupRouter('/admin/login');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("navegación real /admin sin sesión redirige a /admin/login", async () => {
+    await setupRouter('/admin');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("navegación real /admin/dashboard sin sesión redirige a /admin/login", async () => {
+    await setupRouter('/admin/dashboard');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("navegación real /admin con sesión redirige a /admin/dashboard", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin');
+    expect(router.url).toBe('/admin/dashboard');
+  });
+
+  it("wildcard NO captura /admin/* (la navegación admin no cae en NotFound)", async () => {
+    await setupRouter('/admin/login');
+    const router = TestBed.inject(Router);
+    expect(router.url).not.toContain('not-found');
+  });
+
+  it("rutas públicas intactas tras agregar admin", async () => {
+    await setupRouter('/');
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
+    expect(router.url).toBe('/');
+    await router.navigateByUrl('/validar/demo-valido');
+    expect(router.url).toContain('/validar/');
+  });
+
+  it("loadComponent de admin/login devuelve LoginPage", async () => {
+    const r = routes.find((x) => x.path === 'admin/login');
+    const cmp = await (r!.loadComponent as () => Promise<unknown>)();
+    expect(cmp).toBe(LoginPage);
+  });
+
+  it("loadComponent de admin/dashboard devuelve AdminShell", async () => {
+    const r = routes.find((x) => x.path === 'admin/dashboard');
+    const cmp = await (r!.loadComponent as () => Promise<unknown>)();
+    expect(cmp).toBe(AdminShell);
   });
 });

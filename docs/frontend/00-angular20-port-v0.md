@@ -86,7 +86,7 @@ Los flujos 11-22 ya tienen referencia v0 disponible en `muestra_pagina/` y se ej
 - En validación pública, mostrar DNI completo por decisión institucional (D0); no exponer tokens completos ni datos reales.
 - El certificado es de curso y debe mostrar fechas asistidas (`attendedDates`).
 - QR/token permanente: las pantallas de entrega manual deben indicar "mismo QR"; no portar rotación de QR desde v0. El MVP no envía emails: la entrega es manual (copiar link / descargar PDF).
-- Auth admin simple temporal (`X-Admin-Key`); no portar credenciales demo de `login-form.tsx`.
+- Auth admin simple temporal (clave admin temporal, no portada al bundle); no portar credenciales demo de `login-form.tsx`.
 - Firmantes PDF: Rector/a y Asesor/a Pedagógica vía configuración institucional.
 - Usar mocks solo si el ciclo los declara explícitamente.
 - Priorizar foco visible, navegación por teclado, responsive y contraste.
@@ -115,6 +115,27 @@ No desplegar ni copiar artefactos a cPanel desde OpenCode.
 ## Estado de la app Angular 20 (ciclo `frontend-angular-shell-public-validation-api-readiness`)
 
 App creada en `apps/frontend-angular/` con Angular CLI 20.3.30 standalone. Desplegable bajo `/certificados/`. Shell semántico + página pública con `resource()` (tres bloques: `valid` / `not-verifiable` / `technical-error`, `aria-live="polite"`). Verificación: 35/35 tests, build prod verde (252.97 kB initial / 71.88 kB transfer, lazy 3.88 kB). Requiere `export PATH="$HOME/.local/bin:$PATH"`.
+
+### Estado F2-03 — login y shell administrativo (mock)
+
+Ciclo `f2-03-admin-login-shell` sobre rama `frontend/admin-foundation`. Base navegable del panel admin Angular 20 con sesión mock en memoria para desbloquear F2-04..F2-06. Sin auth real, sin clave admin temporal en bundle, sin storage/cookies/red ni datos mock de dominio.
+
+Archivos creados en `apps/frontend-angular/src/app/features/admin/`:
+
+- `mock-session.ts` — `InjectionToken<MockSession>` + `InMemoryMockSession` (`signal<boolean>`, `signIn`/`signOut`/`hasSession`).
+- `admin-guard.ts` — `adminGuard` (`CanActivateFn`, `inject(Router)` y `inject(MOCK_SESSION)`). Redirección `/admin` → `/admin/dashboard` declarada en `app.routes.ts`.
+- `admin-shell.{ts,html,css,spec.ts}` — shell admin con `role="banner"` sticky, sidebar, `main#contenido`, footer admin y badge "Sesión mock".
+- `sidebar-admin.{ts,html,css,spec.ts}` — 5 ítems (Inicio, Cursos, Alumnos, Asistencias, Certificaciones) con SVG inline, `aria-current="page"`, botón "Cerrar sesión".
+- `login-page.{ts,html,css,spec.ts}` — layout two-column responsive, subtítulo visible de simulación.
+- `login-form.{ts,html,css,spec.ts}` — `fieldset/legend sr-only`, labels asociados, `autocomplete`, validación local, `role="alert"` con foco.
+- `admin-dashboard-page.{ts,html,css,spec.ts}` — 3 tarjetas placeholder "Próximamente" (Cursos/Asistencias/Certificaciones).
+
+Modificados:
+
+- `app.routes.ts` — bloque `/admin/login`, `/admin` (`redirectTo: '/admin/dashboard'`, `pathMatch: 'full'`), `/admin/dashboard` con `adminGuard`, antes del wildcard `**`.
+- `app.{ts,html,spec.ts}` — shell raíz route-aware: en `/admin/*` no renderiza `HeaderInstitucional` raíz ni `main#contenido`/`footer` públicos; `AdminShell` provee sus propios landmarks.
+
+Límites explícitos (handoff a F2-04..F2-06): no backend, deploy, base de datos, `.htaccess`, material privado, auth real, clave admin temporal en Angular, cookies/`localStorage`/`sessionStorage`/IndexedDB, credenciales demo de `muestra_pagina/`, mocks de cursos/alumnos/asistencias/certificaciones, Tailwind/shadcn/lucide/CVA ni copia literal React/Next. Verificación: 146/146 tests verde, build sin warnings (283.68 kB initial / 81.34 kB transfer; lazy admin-shell 10.38 kB / 2.78 kB, login-page 29.32 kB / 6.97 kB). Checks negativos de clave admin temporal, storage y red en `apps/frontend-angular/src/app/features/admin` pasan (0 matches de literales exactos en Angular `src`).
 
 ### Checkpoint M3-06 — integración Angular/API local
 
@@ -167,7 +188,7 @@ Cierre documental post-merge del ciclo `m3-06-final-angular-api-smoke`. Verifica
 | 5xx/red/JSON inválido → error técnico genérico | OK: sin revelar infraestructura. |
 | UI pública no pide DNI como input de búsqueda pública | OK: solo lee token desde la ruta. |
 | QR/token permanente sin rotación normal | OK: no hay lógica de rotación en el frontend. |
-| `X-Admin-Key` no llega al bundle Angular público | OK: admin queda fuera del bundle público. |
+| Clave admin temporal no llega al bundle Angular público | OK: admin queda fuera del bundle público; 0 matches del literal en `apps/frontend-angular/src`. |
 
 ### Comandos Angular reproducibles
 

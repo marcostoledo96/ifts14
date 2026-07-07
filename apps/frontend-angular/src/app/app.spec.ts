@@ -1,12 +1,17 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { App } from './app';
+import { routes } from './app.routes';
+import { MOCK_SESSION, InMemoryMockSession } from './features/admin/mock-session';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
     }).compileComponents();
   });
 
@@ -16,7 +21,9 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('debe renderizar el shell semántico con header, main#contenido y footer', () => {
+  it('en ruta pública renderiza shell semántico con header, main#contenido y footer', async () => {
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
@@ -25,11 +32,24 @@ describe('App', () => {
     expect(compiled.querySelector('footer[role="contentinfo"]')).not.toBeNull();
   });
 
-  it('debe incluir un skip link hacia #contenido', () => {
+  it('en ruta pública incluye skip link hacia #contenido', async () => {
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const skip = compiled.querySelector('a.skip-link');
     expect(skip?.getAttribute('href')).toBe('#contenido');
+  });
+
+  it('en /admin/* NO renderiza header institucional ni footer del root', async () => {
+    const router = TestBed.inject(Router);
+    // /admin sin sesión redirige a /admin/login, que igual es /admin/*
+    await router.navigateByUrl('/admin/login');
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-header-institucional')).toBeNull();
+    expect(compiled.querySelector('footer[role="contentinfo"]')).toBeNull();
   });
 });
