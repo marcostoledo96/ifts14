@@ -143,10 +143,78 @@ describe('app.routes', () => {
     expect(router.url).toBe('/admin/dashboard');
   });
 
-  it("wildcard NO captura /admin/* (la navegación admin no cae en NotFound)", async () => {
+  it("navegación real /admin/login resuelve a LoginPage sin caer en NotFound", async () => {
     await setupRouter('/admin/login');
     const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
     expect(router.url).not.toContain('not-found');
+  });
+
+  // --- Aislamiento admin wildcard (Codex PR #34) ---
+  // /admin/* desconocido NO debe caer en el wildcard público; debe usar
+  // el redirect admin específico (pathMatch prefix) y preservar el wildcard
+  // público para URLs no-admin.
+
+  it("existe una ruta admin catch-all (pathMatch prefix) antes del wildcard público", () => {
+    const adminCatchall = routes.findIndex(
+      (x) => x.path === 'admin' && x.pathMatch === 'prefix',
+    );
+    const publicWildcard = routes.findIndex((x) => x.path === '**');
+    expect(adminCatchall).toBeGreaterThanOrEqual(0);
+    expect(publicWildcard).toBeGreaterThan(adminCatchall);
+  });
+
+  it("admin catch-all (prefix) redirige a /admin/dashboard (no usa loadComponent público)", () => {
+    const r = routes.find((x) => x.path === 'admin' && x.pathMatch === 'prefix');
+    expect(r?.redirectTo).toBe('/admin/dashboard');
+    expect(r?.loadComponent).toBeUndefined();
+  });
+
+  it("admin catch-all no es el wildcard público (aislamiento de rutas)", () => {
+    const adminCatchall = routes.find(
+      (x) => x.path === 'admin' && x.pathMatch === 'prefix',
+    );
+    const publicWildcard = routes.find((x) => x.path === '**');
+    expect(adminCatchall).toBeDefined();
+    expect(publicWildcard).toBeDefined();
+    expect(adminCatchall?.path).not.toBe(publicWildcard?.path);
+  });
+
+  it("navegación real /admin/typo sin sesión termina en /admin/login (no en NotFound)", async () => {
+    await setupRouter('/admin/typo');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+    expect(router.url).not.toContain('not-found');
+  });
+
+  it("navegación real /admin/cursos sin sesión termina en /admin/login (no en NotFound)", async () => {
+    await setupRouter('/admin/cursos');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+    expect(router.url).not.toContain('not-found');
+  });
+
+  it("navegación real /admin/typo con sesión termina en /admin/dashboard", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/typo');
+    expect(router.url).toBe('/admin/dashboard');
+  });
+
+  it("wildcard público sigue capturando URLs no-admin desconocidas", async () => {
+    await setupRouter('/ruta-publica-inexistente');
+    const router = TestBed.inject(Router);
+    // La wildcard pública carga NotFoundPage; no redirige a admin.
+    expect(router.url).not.toContain('/admin/');
+    // Tampoco debe redirigir: la URL inválida pública se preserva.
+    expect(router.url).toBe('/ruta-publica-inexistente');
   });
 
   it("rutas públicas intactas tras agregar admin", async () => {
