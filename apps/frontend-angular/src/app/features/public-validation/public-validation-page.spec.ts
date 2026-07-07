@@ -120,6 +120,22 @@ describe('PublicValidationPage', () => {
     expect(wrapper?.hasAttribute('aria-live')).toBe(false);
   });
 
+  it('estado válido se anuncia vía BandaEstado (única región live, contiene texto válido)', async () => {
+    const fixture = await renderWith('demo-valido', new StubSource(validResult));
+    const el = fixture.nativeElement as HTMLElement;
+    // W4 (Codex PR #33): el estado válido también debe comunicarse vía BandaEstado.
+    const liveRegions = el.querySelectorAll('[aria-live="polite"]');
+    expect(liveRegions.length).toBe(1);
+    expect(liveRegions[0].closest('app-banda-estado')).not.toBeNull();
+    expect(liveRegions[0].getAttribute('aria-atomic')).toBe('true');
+    const banda = el.querySelector('app-banda-estado');
+    expect(banda).not.toBeNull();
+    expect(banda?.textContent ?? '').toContain('Certificado verificable');
+    // Sin región live anidada dentro del bloque de detalles.
+    const article = el.querySelector('article.state-valid');
+    expect(article?.querySelectorAll('[aria-live]').length ?? 0).toBe(0);
+  });
+
   it('render basado en primitivos: dl/dt/dd nativos válidos en bloque válido (W2)', async () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const el = fixture.nativeElement as HTMLElement;
