@@ -1,0 +1,69 @@
+# Exclusiones del contexto Docker (simétricas a .gitignore donde aplica).
+# Docker NO lee .gitignore; este archivo evita que metadata local, tooling
+# IA y material no versionable entren al build context.
+# No modificar .gitignore desde aquí; son mecanismos independientes.
+
+# Metadata local de tooling IA
+.codegraph/
+.atl/
+graphify-out/
+
+# VCS y build artifacts
+.git/
+node_modules/
+.angular/
+.cache/
+.next/
+out/
+dist/
+coverage/
+
+# PHP / Composer
+vendor/
+# composer.lock NO se excluye globalmente: el backend versiona su lock en
+# apps/backend-php/composer.lock para builds reproducibles.
+
+# Entornos y secretos
+.env
+.env.*
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+
+# Configuraciones reales sensibles (no entran al contexto)
+**/config.php
+**/config.local.php
+**/database.php
+**/db.php
+**/conexion.php
+**/connection.php
+**/credentials.php
+**/secrets.php
+
+# Backups, dumps y descargas del servidor
+*.sql
+*.sql.gz
+*.dump
+*.bak
+*.backup
+*.zip
+*.tar
+*.tar.gz
+*.7z
+error_log
+*.log
+
+# Material privado local: nunca al contexto Docker
+material_privado_no_versionar/
+backups/
+backups_originales/
+db_dumps_originales/
+servidor_original/
+well-known/
+
+# cPanel / deploy temporal
+.cpanel.yml.local
+deploy_tmp/
+tmp_deploy/

@@ -619,3 +619,75 @@ Los siguientes gaps del contrato quedan registrados y deben abordarse en ciclos 
 - **Rate limiting distribuido**: el `RateLimiter` actual es de nodo único con JSON temporal y `flock`; no escala horizontalmente.
 - **Observabilidad real**: no hay agregador de logs, métricas ni trazas; el backend solo emite eventos puntuales.
 - **`ultimo_uso_en` en verificación pública**: la columna existe en el modelo, pero la verificación pública no la actualiza todavía.
+
+## Checkpoint M3-06 final — checklist compartido Angular/API
+
+Cierre documental post-merge del ciclo `m3-06-final-angular-api-smoke`. Registra el checklist D0 compartido y la evidencia CI Docker/MariaDB reproducible. No agrega deploy, cPanel, rotación de token/QR, email, SMTP/PHPMailer ni vendor versionado.
+
+### DTO público D0
+
+| Ítem | Estado |
+|---|---|
+| `student.documentNumber` (DNI completo) sólo en DTO/UI pública | OK: decisión institucional aprobada. |
+| `course.attendedDates` para certificados vigentes nuevos | OK: snapshot en `cert_certificado_fechas`. |
+| Legado tolerado: `student.documentMasked` sin fechas cuando no hay snapshot D0 | OK: mapper Angular lo admite como fallback. |
+| UI pública no pide DNI como input de búsqueda pública | OK: solo token desde ruta. |
+
+### DTO administrativo
+
+| Ítem | Estado |
+|---|---|
+| `documentMasked` (enmascarado) en respuestas admin; nunca DNI completo | OK: emisión, listado, detalle y entrega manual. |
+| `tokenPrefix` (prefijo no reversible); nunca token completo como campo separado | OK: el token solo vive dentro de `publicValidationUrl`. |
+| `links` relativos a PDF, entrega manual y QR PNG en detalle | OK: `/admin/certificados/{id}/{pdf,entrega-manual,qr.png}`. |
+| `attendedDates` en detalle administrativo (expediente) | OK: snapshot seguro sin DNI ni token. |
+| `auditEvents` sin DNI completo ni token completo | OK: eventos no sensibles. |
+
+### Códigos de error y estados no verificables
+
+| Ítem | Estado |
+|---|---|
+| `404 CERTIFICATE_NOT_FOUND` → estado público no verificable | OK: token inexistente, revocado, vencido o inválido colapsan a no verificable sin revelar causa. |
+| `400 VALIDATION_ERROR` | OK: token ausente o formato inválido, body malformado, `id` no numérico. |
+| `401 UNAUTHORIZED` | OK: falta/invalida `X-Admin-Key`. |
+| `405 METHOD_NOT_ALLOWED` | OK: método no permitido con `Allow`. |
+| `409 CERTIFICATE_ALREADY_EXISTS`, `CERTIFICATE_NOT_REVOCABLE`, `CONFLICT`, `TOKEN_NOT_RECOVERABLE` | OK: conflictos de negocio y token recuperable. |
+| `415 UNSUPPORTED_MEDIA_TYPE` | OK: POST/PATCH sin JSON. |
+| `429 RATE_LIMITED` | OK: rate limiting público de nodo único. |
+| `500 CONFIGURATION_ERROR`, `INTERNAL_ERROR` | OK: config externa faltante/inválida y error no esperado, sin datos internos. |
+
+### Privacidad
+
+| Ítem | Estado |
+|---|---|
+| Logs, auditoría, errores y respuestas administrativas NO exponen DNI completo | OK: solo el DTO público de validación lo muestra. |
+| Logs, auditoría, errores y respuestas NO exponen token completo, claves, IV, tag, ciphertext, SQL ni rutas internas | OK. |
+| `X-Admin-Key` no se expone en bundles Angular ni en `localStorage`/`sessionStorage` | OK: admin queda fuera del bundle público; UI admin futura requerirá login PHP/Basic Auth. |
+| `details` no incluye valores sensibles | OK. |
+
+### Invariantes D0
+
+| Ítem | Estado |
+|---|---|
+| Token/QR permanente: sin rotación normal | OK: reenvío normal y entrega manual no rotan token. |
+| Sin email, sin SMTP/PHPMailer, sin transporte `stub|smtp` | OK: `POST /admin/certificados/{id}/reenviar` responde `404 NOT_FOUND`. |
+| `X-Admin-Key` temporal: login real es fase posterior | OK: validación con `hash_equals()`, fail closed si la clave < 16 chars. |
+| Token recuperable: `token_hash` + `token_prefijo` + `token_cifrado` (AES-256-GCM, clave externa) | OK: entrega manual conserva el QR sin rotar. |
+| Sin vendor versionado | OK: dependencias Composer bajo `apps/backend-php/composer.json`. |
+
+### Evidencia CI reproducible
+
+| Verificación | Comando | Entorno |
+|---|---|---|
+| Backend unit (sin DB) | `docker run --rm -v "$PWD/apps/backend-php":/app -w /app ifts14-php84 sh -lc 'php tests/AuthGateTest.php && php tests/NormalizePathTest.php && php tests/EntregaManualTest.php && php tests/AdminCertificateServiceTest.php && php tests/HttpContractTest.php && php tests/PdfResilienceTest.php'` | `ifts14-php84` (PHP 8.4-cli + ext gd/pdo_mysql/mbstring/xml/zip). **6/6 OK local** (6 scripts ejecutados: AuthGate, NormalizePath, EntregaManual, AdminCertificateService, HttpContract, PdfResilience). CI: `.github/workflows/backend-tests.yml` step "Unit tests". |
+| Backend E2E (MariaDB 10.6) | `docker network create m3-06-net && docker run -d --name m3-06-mariadb --network m3-06-net -e MARIADB_ROOT_PASSWORD=test_root_only -e MARIADB_DATABASE=ifts14_test mariadb:10.6` luego `docker run --rm --network m3-06-net -v "$PWD":/workspace -w /workspace -e IFTS14_TEST_DB_DSN='mysql:host=m3-06-mariadb;dbname=ifts14_test' -e IFTS14_TEST_DB_USER=root -e IFTS14_TEST_DB_PASS=test_root_only -e IFTS14_TEST_DB_ALLOW_RESET=1 ifts14-php84 sh -lc 'php apps/backend-php/tests/SnapshotEmissionTest.php && php apps/backend-php/tests/HttpEmissionE2eTest.php && php apps/backend-php/tests/AdminMasterDataHttpTest.php && php apps/backend-php/tests/AdminCertificadosConsultaHttpTest.php'` | Red Docker aislada, MariaDB 10.6, DSN host = nombre del contenedor. 4/4 OK local; CI: step "E2E con MariaDB" (`--network host` con service container `mariadb:10.6` en `3306:3306`). |
+
+> **Nota operativa local.** El host del entorno de verificación tiene MySQL/MariaDB escuchando en `127.0.0.1:3306` (auth distinta), por lo que la reproducción local del E2E usa una red Docker aislada con el contenedor MariaDB y DSN apuntando al nombre del contenedor. El workflow CI usa `--network host` con el service container en `3306:3306`; ambos caminos ejecutan los mismos tests contra la misma imagen `ifts14-php84` y `mariadb:10.6`. El test `HttpEmissionE2eTest.php` parsea el DSN sin `port` (sólo `host`/`dbname`), por lo que el E2E local requiere que el host del DSN sea alcanzable en el puerto default 3306 — condición que se cumple con la red Docker aislada y el contenedor MariaDB exponiendo 3306 interno.
+
+### Bloqueo local documentado
+
+`scripts/m3-06-smoke.sh` (smoke backend-only Angular↔PHP con token ficticio) resuelve PHP al inicio: prefiere `php` CLI en PATH; si no está, cae a la imagen Docker local `ifts14-php84` (construida con `bash scripts/php-docker-build.sh`); si ninguna está disponible, sale `2` (BLOCKED). **Falta de `php` CLI ya no es un hard blocker si la imagen Docker está disponible**: el script levanta la API vía `docker run --network host`, `curl` desde el host golpea `127.0.0.1:8080` y el `trap` limpia el contenedor.
+
+Evidencia del ciclo `m3-06-final-angular-api-smoke` (histórico): el host de verificación no tenía `php` CLI y el script aún no tenía fallback Docker, por lo que el smoke quedó **BLOCKED** (exit 2); la evidencia reproducible alternativa fue backend unit + E2E vía Docker + `npm test`/`npm run build` Angular.
+
+Evidencia del ciclo `m3-06-warning-cleanup` (actual): con `php` CLI ausente y la imagen `ifts14-php84` presente, el fallback Docker levantó la API, `/health` respondió 200 y el `trap` limpió el contenedor. La verificación con token ficticio respondió **500** porque la DB demo local no estaba sembrada/rechazaba credenciales ficticias → el smoke sale 1 (FAIL esperado del entorno, no regresión del fallback). **End-to-end real todavía requiere DB demo sembrada con credenciales ficticias válidas** para alcanzar 404 `CERTIFICATE_NOT_FOUND` controlado o 200 con DTO. El flujo manual Angular→PHP vía `proxy.conf.json` (`environment.development.ts` con `useRealApi: true` local, `ng serve`) se documenta como paso operativo futuro; no usa datos reales.
