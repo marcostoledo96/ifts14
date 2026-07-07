@@ -1,14 +1,18 @@
 :host {
   display: block;
   min-height: 100vh;
+  background: var(--color-paper);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
 }
 
 .skip-link {
   position: absolute;
   left: -999px;
   top: 0;
-  padding: 0.5rem 1rem;
-  background: #fff;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-card);
+  color: var(--color-foreground);
   z-index: 1000;
 }
 
@@ -16,12 +20,17 @@
   left: 0;
 }
 
-header,
-footer {
-  padding: 1rem;
-}
-
 main {
   flex: 1;
-  padding: 1rem;
+  padding: var(--space-4);
+  max-width: var(--layout-page-max);
+  margin: 0 auto;
+}
+
+footer {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+  text-align: center;
 }

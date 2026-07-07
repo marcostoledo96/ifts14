@@ -3,48 +3,26 @@
 }
 
 .validation {
-  max-width: 42rem;
+  max-width: var(--layout-folio-max);
   margin: 0 auto;
 }
 
 .state {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.25rem;
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
 }
 
 .state-valid {
-  border-color: #16a34a;
-  background: #f0fdf4;
-}
-
-.state-not-verifiable {
-  border-color: #d97706;
-  background: #fffbeb;
-}
-
-.state-error {
-  border-color: #dc2626;
-  background: #fef2f2;
-}
-
-.state-loading {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--color-valid);
+  background: var(--color-valid-soft);
 }
 
 dl {
-  margin: 0.5rem 0 0;
+  margin: var(--space-2) 0 0;
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 0.25rem 1rem;
-}
-
-dt {
-  font-weight: 600;
-}
-
-dd {
-  margin: 0;
+  gap: var(--space-1) var(--space-4);
 }
