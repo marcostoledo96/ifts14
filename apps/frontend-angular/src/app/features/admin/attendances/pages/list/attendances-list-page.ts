@@ -53,12 +53,14 @@ export class AttendancesListPage {
       const filas: FilaAsistencia[] = [];
       for (const c of list) {
         const det = await this.courses.obtener(c.id);
-        // Total de alumnos del curso (seed ficticio, memoria).
+        // Filtrar fechas asistibles antes de cargar alumnos: un curso sin
+        // fechas marcables (nuevo o solo canceladas) no genera error y no
+        // llama listarAlumnos (que rechaza para cursoId sin seed).
+        const asistibles = det.fechas.filter((f) => f.estado !== 'cancelada');
+        if (asistibles.length === 0) continue;
         const alumnos = await this.attendance.listarAlumnos(c.id);
         const total = alumnos.length;
-        for (const f of det.fechas) {
-          // Excluir canceladas: no se marcan presentes.
-          if (f.estado === 'cancelada') continue;
+        for (const f of asistibles) {
           // Conteo demostrativo: presentes ya registrados para esta fecha.
           const asistencias = await this.attendance.listarAsistencias(c.id, f.id);
           filas.push({ curso: c, fecha: f, presentes: asistencias.length, total });

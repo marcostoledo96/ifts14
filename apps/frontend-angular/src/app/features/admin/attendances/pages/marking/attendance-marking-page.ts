@@ -113,6 +113,10 @@ export class AttendanceMarkingPage {
     this.ok.set('');
     this.error.set('');
     this.cargando.set(true);
+    // Si había un guardado en vuelo de la ruta anterior, cancelar su flag:
+    // cargar() corre por el effect al cambiar de ruta, y el finally de
+    // guardar() de la ruta anterior no debe dejar guardando atascado.
+    this.guardando.set(false);
     if (cid === null || fid === null) {
       if (gen === this.loadGen) this.error.set('Curso o fecha no encontrados.');
       this.cargando.set(false);
@@ -170,6 +174,12 @@ export class AttendanceMarkingPage {
     this.guardando.set(true);
     this.error.set('');
     this.ok.set('');
+    // Generación de guardado: si la ruta cambia (route reuse) mientras
+    // marcar() está en vuelo, el resultado es stale y no debe mutar
+    // baseline/ok/guardando de la pantalla vigente. Guard el par (cid, fid)
+    // vigente al iniciar el guardado.
+    const saveCid = cid;
+    const saveFid = fid;
     try {
       // Contrato: enviamos todos los alumnos con su estado presente/ausente.
       // marcar() solo registra presentes, pero recibimos el set completo
@@ -179,12 +189,17 @@ export class AttendanceMarkingPage {
         presente: this.seleccion().has(a.id),
       }));
       const asistencias = await this.attendance.marcar(cid, fid, todosMarcados);
+      // Si la ruta cambió durante el guardado, descartar el resultado stale.
+      if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
       this.baseline.set(new Set(asistencias.map((a) => a.alumnoId)));
       this.ok.set('Asistencia guardada en memoria (demo). No persiste al recargar.');
     } catch (e) {
+      if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
       this.error.set((e as Error).message);
     } finally {
-      this.guardando.set(false);
+      if (this.courseId() === saveCid && this.fechaIdNumber() === saveFid) {
+        this.guardando.set(false);
+      }
     }
   }
 

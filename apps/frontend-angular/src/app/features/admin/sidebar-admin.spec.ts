@@ -106,6 +106,23 @@ describe('SidebarAdmin', () => {
     expect(current?.textContent).toContain('Asistencias');
   });
 
+  it('Asistencias queda activo en ruta de marcado /admin/cursos/:id/fechas/:fechaId/asistencias', async () => {
+    const f = await render('/admin/cursos/1/fechas/11/asistencias');
+    const el = f.nativeElement as HTMLElement;
+    const current = el.querySelector('nav a[aria-current="page"]');
+    expect(current?.textContent).toContain('Asistencias');
+    // Cursos NO debe quedar activo en esta ruta.
+    expect(current?.textContent).not.toContain('Cursos');
+  });
+
+  it('Asistencias queda activo en ruta de marcado aunque tenga query o fragmento', async () => {
+    const f = await render('/admin/cursos/1/fechas/11/asistencias?desde=detalle#alumnos');
+    const el = f.nativeElement as HTMLElement;
+    const current = el.querySelector('nav a[aria-current="page"]');
+    expect(current?.textContent).toContain('Asistencias');
+    expect(current?.textContent).not.toContain('Cursos');
+  });
+
   it('Inicio NO queda activo cuando active=/admin/cursos', async () => {
     const f = await render('/admin/cursos');
     const el = f.nativeElement as HTMLElement;

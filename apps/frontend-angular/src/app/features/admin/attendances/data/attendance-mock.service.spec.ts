@@ -1,11 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 import { ATTENDANCE_SOURCE } from '../data/attendance.token';
 import { AttendanceMockService } from '../data/attendance-mock.service';
+import { COURSES_SOURCE } from '../../courses/courses.service';
+import { InMemoryCoursesService } from '../../courses/in-memory-courses.service';
 
 describe('AttendanceMockService', () => {
   async function setup() {
     await TestBed.configureTestingModule({
-      providers: [{ provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService }],
+      providers: [
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
+      ],
     }).compileComponents();
     const svc = TestBed.inject(ATTENDANCE_SOURCE);
     // __reset para arrancar limpio entre specs.
@@ -89,6 +94,39 @@ describe('AttendanceMockService', () => {
     await expectAsync(svc.marcar(1, 999, marcados)).toBeRejectedWithError(
       /Fecha no encontrada/,
     );
+  });
+
+  it('marcar reconoce fecha creada en la sesión (no está en seed estático)', async () => {
+    const svc = await setup();
+    const courses = TestBed.inject(COURSES_SOURCE);
+    const det = await courses.obtener(1);
+    const nueva = await courses.guardarFecha(1, {
+      id: null,
+      fecha: '2026-07-20',
+      descripcion: 'Fecha extra creada en sesión',
+      orden: 99,
+      estado: 'programada',
+    });
+    const alumnos = await svc.listarAlumnos(1);
+    const marcados = alumnos.slice(0, 2).map((a) => ({ alumnoId: a.id, presente: true }));
+    const result = await svc.marcar(1, nueva.id, marcados);
+    expect(result.length).toBe(2);
+    expect(result[0].fecha).toBe('2026-07-20');
+    expect(result[0].fechaEstado).toBe('programada');
+    const after = await svc.listarAsistencias(1, nueva.id);
+    expect(after.length).toBe(2);
+  });
+
+  it('marcar rechaza fecha cancelada con error controlado', async () => {
+    const svc = await setup();
+    // Curso 5, fecha 51 está cancelada en el seed.
+    const alumnos = await svc.listarAlumnos(5);
+    const marcados = alumnos.slice(0, 2).map((a) => ({ alumnoId: a.id, presente: true }));
+    await expectAsync(svc.marcar(5, 51, marcados)).toBeRejectedWithError(
+      /cancelada/,
+    );
+    const after = await svc.listarAsistencias(5, 51);
+    expect(after.length).toBe(0);
   });
 
   it('anular elimina una asistencia por id', async () => {

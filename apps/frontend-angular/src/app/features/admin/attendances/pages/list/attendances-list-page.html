@@ -55,7 +55,11 @@
               <dt>Presentes</dt>
               <dd class="card-asis-conteo">{{ fila.presentes }}/{{ fila.total }}</dd>
             </dl>
-            <a class="card-asis-link" [routerLink]="linkMarcado(fila)">
+            <a
+              class="card-asis-link"
+              [routerLink]="linkMarcado(fila)"
+              [attr.aria-label]="'Tomar asistencia de ' + fila.curso.nombre + ' — ' + fila.fecha.fecha"
+            >
               Tomar asistencia
             </a>
           </article>

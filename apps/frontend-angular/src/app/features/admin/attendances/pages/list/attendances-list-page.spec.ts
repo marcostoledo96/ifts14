@@ -135,4 +135,40 @@ describe('AttendancesListPage', () => {
     await render();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
+
+  it('curso sin fechas asistibles no rompe la lista (no llama listarAlumnos)', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AttendancesListPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
+      ],
+    }).compileComponents();
+    const courses = TestBed.inject(COURSES_SOURCE);
+    // Crear un curso vacío (sin fechas): antes del fix, listarAlumnos(cursoId)
+    // rechazaba y hacía errorar a /admin/asistencias.
+    await courses.crear({ codigo: 'VACIO', nombre: 'Curso vacío', estado: 'borrador' });
+    const f = TestBed.createComponent(AttendancesListPage);
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.estado-error')).toBeNull();
+    expect(el.textContent).not.toContain('Curso no encontrado');
+  });
+
+  it('cada enlace Tomar asistencia tiene aria-label contextual con curso y fecha', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const links = Array.from(el.querySelectorAll('.card-asis-link')) as HTMLAnchorElement[];
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      const card = link.closest('.card-asis') as HTMLElement;
+      const curso = card.querySelector('.card-asis-title')?.textContent?.trim() ?? '';
+      const fecha = card.querySelector('.card-asis-meta dd')?.textContent?.trim() ?? '';
+      const label = link.getAttribute('aria-label') ?? '';
+      expect(label).toBe(`Tomar asistencia de ${curso} — ${fecha}`);
+    }
+  });
 });
