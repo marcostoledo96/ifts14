@@ -137,6 +137,36 @@ Modificados:
 
 Límites explícitos (handoff a F2-04..F2-06): no backend, deploy, base de datos, `.htaccess`, material privado, auth real, clave admin temporal en Angular, cookies/`localStorage`/`sessionStorage`/IndexedDB, credenciales demo de `muestra_pagina/`, mocks de cursos/alumnos/asistencias/certificaciones, Tailwind/shadcn/lucide/CVA ni copia literal React/Next. Verificación: 146/146 tests verde, build sin warnings (283.68 kB initial / 81.34 kB transfer; lazy admin-shell 10.38 kB / 2.78 kB, login-page 29.32 kB / 6.97 kB). Checks negativos de clave admin temporal, storage y red en `apps/frontend-angular/src/app/features/admin` pasan (0 matches de literales exactos en Angular `src`).
 
+### Estado F2-04 — cursos y fechas admin (mock)
+
+Ciclo `f2-04-admin-courses-dates` sobre rama `frontend/admin-courses-dates`. UI administrativa Angular 20 para cursos y fechas, navegable, contract-ready y testeable. Datos en memoria, sin auth real, sin `X-Admin-Key`, sin storage, sin HTTP desde el browser. Habilita Asistencias (F2-05) y Certificaciones (F2-06) sobre la misma base.
+
+Archivos creados en `apps/frontend-angular/src/app/features/admin/courses/`:
+
+- `courses.models.ts` — `EstadoCurso` (`borrador|activo|cerrado|archivado`, alineado al backend real), `EstadoFecha` (`programada|realizada|cancelada`), `Curso`, `CursoDetalle`, `CursoFecha`, `CursoDraft`, `CursoFechaDraft`, `CursosFiltros`. Sin DNI, email, token, matrícula ni nombres reales.
+- `courses.service.ts` — interfaz `CoursesService` + token `COURSES_SOURCE` listo para futura sustitución por `HttpCoursesService` cuando la auth real esté aprobada. La implementación en memoria vive en `in-memory-courses.service.ts`.
+- `in-memory-courses.service.ts` — `InMemoryCoursesService` con `listar`, `obtener`, `crear`, `actualizarEstado`, `listarFechas`, `guardarFecha` y `reemplazarFechas` (reemplazo completo del set de fechas: crea nuevas, actualiza existentes y elimina las quitadas). Seed ficticio de 6 cursos y 1–3 fechas por curso; mutaciones solo en instancia; banner "Datos de demostración: los cambios no se persisten al recargar".
+- `courses-list-page.{ts,html,css,spec.ts}` — `<input type="search">` nativo, filtro por estado, `<section>` + `<article>`, banner de demo, enlaces a nuevo/detalle.
+- `course-detail-page.{ts,html,css,spec.ts}` — nombre, código, estado (banda de estado styled `<p class="banda-estado" aria-live="polite">`, no el primitivo `BandaEstado`), `<dl>` de fechas y enlaces a `editar` y al listado.
+- `course-editor-page.{ts,html,css,spec.ts}` — `data.mode` (`create`/`edit`), `fieldset/legend` por fechas, `<input type="date">`, validación local; al crear invoca `CoursesService.crear`/`guardarFecha` y al editar usa `reemplazarFechas` para persistir altas, cambios y quitas en memoria.
+- `__checks__/no-secrets.spec.ts` y `__checks__/no-real-data.spec.ts` — tests negativos de seguridad y datos.
+
+Archivos modificados en `apps/frontend-angular/src/app/`:
+
+- `app.routes.ts` — rutas admin hijas (`/admin/dashboard` con `loadComponent`, `/admin/cursos`, `/admin/cursos/nuevo`, `/admin/cursos/:id`, `/admin/cursos/:id/editar`); orden: `nuevo` y `:id/editar` antes de `:id`, `:id` antes de `cursos`; catch-all admin antes de `**`; `COURSES_SOURCE` provisto a nivel de ruta.
+- `features/admin/admin-shell.{ts,html,spec.ts}` — `<app-admin-dashboard-page />` reemplazado por `<router-outlet />`; el shell expone `rutaActual` (signal desde `router.events`/`NavigationEnd`).
+- `features/admin/sidebar-admin.{ts,html,spec.ts}` — ítem `Cursos` con `route: '/admin/cursos'`; `isActive()` por prefijo (`startsWith('/admin/cursos')`) para activar Cursos en todas sus rutas hijas; `Inicio` solo activo en `/admin/dashboard` exacto.
+- `features/admin/admin-dashboard-page.{ts,html,spec.ts}` — tarjeta "Cursos activos" como `<a routerLink="/admin/cursos">` con conteo ficticio; Asistencias/Certificaciones siguen como placeholders deshabilitados.
+- `app.routes.spec.ts` — carga real de `CoursesListPage`, `CourseDetailPage`, `CourseEditorPage` con `RouterTestingHarness` + `withComponentInputBinding()`; id inválido (`/admin/cursos/abc`) no revienta, muestra "no encontrado".
+
+Límites explícitos (F2-04): sin backend, deploy, base, material privado, auth real, `X-Admin-Key`, clave admin temporal, cookies/`localStorage`/`sessionStorage`/IndexedDB, HTTP/HttpClient/fetch/XMLHttpRequest desde el browser, datos reales, DNI, tokens, matrículas, emails, credenciales demo de `muestra_pagina/`, mocks de alumnos/asistencias/certificaciones, Tailwind/shadcn/lucide/CVA, copia literal React/Next, ni dependencias nuevas (`package.json`/lockfiles sin cambios). La sustitución real por `HttpCoursesService` queda para un ciclo con sesión segura aprobada (PHP HttpOnly o equivalente).
+
+Verificación (`openspec/changes/archive/2026-07-07-f2-04-admin-courses-dates/verify-report.md`): **PASS WITH WARNINGS**. Tests: `npm run test:ci` 239/239 SUCCESS. Build: `npm run build` verde (Initial total 306.01 kB raw / 88.57 kB transfer; lazy `course-editor-page` 12.03 kB, `courses-list-page` 8.03 kB, `course-detail-page` 7.27 kB). Compliance: 11/13 escenarios compliant; 2/13 `PARTIAL` por tareas documentales propias de `sdd-archive` (ahora cerradas). Negative checks (script Python sobre 12 archivos no spec de `src/app/features/admin/courses` y sobre los chunks `course-editor-page`/`courses-list-page`/`course-detail-page`/`admin-shell`/`admin-dashboard-page`): 0 matches para `X-Admin-Key`/admin key, storage/cookies/IndexedDB, HTTP/fetch/HttpClient, campos DNI/token/email/alumno/student, emails y números DNI-like. `main` conserva código público existente de validación (`documentNumber`/mock público y `HttpValidationSource`); está fuera del alcance F2-04 y amparado por D0 público.
+
+**Advertencia de tamaño de revisión**: diff estimado ~3452 líneas (3384 altas + 68 bajas) contra presupuesto 1500; medición real posterior ~3800. Pre-PR reviews no hallaron blockers CRITICAL tras corregir persistencia de quitas de fechas. Maintainer (Matías) aprobó **`size:exception`** (2026-07-07) antes de la preparación del PR; no se aplica split. Evidencia de archive OpenSpec del ciclo permanece en el mismo PR salvo cambio posterior. Esta decisión queda registrada en el archive report del ciclo.
+
+Handoff a F2-05 (asistencias) y F2-06 (certificaciones): `CursoFecha` y `InMemoryCoursesService` ya están listos para reuso. Asistencias y Certificaciones siguen como placeholders deshabilitados en el dashboard ("Próximamente: Asistencias"/"Certificaciones", handoff F2-05/F2-06). El detalle del curso aún no muestra placeholders de asistencias/certificaciones: quedan para F2-05/F2-06. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:

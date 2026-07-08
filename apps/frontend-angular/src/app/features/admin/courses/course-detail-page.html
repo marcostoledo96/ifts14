@@ -1,0 +1,58 @@
+<section aria-labelledby="curso-title">
+  <p class="volver">
+    <a routerLink="/admin/cursos">← Volver al listado</a>
+  </p>
+
+  @if (cargando()) {
+    <p class="estado-linea">Cargando curso…</p>
+  }
+  @if (error()) {
+    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (detalle(); as d) {
+    <header class="curso-header">
+      <p class="kicker">Curso · {{ d.codigo }}</p>
+      <h1 id="curso-title" class="title">{{ d.nombre }}</h1>
+      <p class="banda-estado estado-{{ d.estado }}" aria-live="polite">
+        Estado: {{ d.estado }}
+      </p>
+    </header>
+
+    <dl class="curso-meta">
+      <dt>Código</dt>
+      <dd>{{ d.codigo }}</dd>
+      <dt>Creado</dt>
+      <dd>{{ d.createdAt | date: 'short' }}</dd>
+      <dt>Actualizado</dt>
+      <dd>{{ d.updatedAt | date: 'short' }}</dd>
+    </dl>
+
+    <div class="acciones">
+      <a class="btn-primary" [routerLink]="['/admin/cursos', d.id, 'editar']">
+        Editar fechas
+      </a>
+      <a class="btn-secondary" routerLink="/admin/cursos">Volver al listado</a>
+    </div>
+
+    <section aria-labelledby="fechas-title" class="fechas">
+      <h2 id="fechas-title" class="subtitle">Fechas</h2>
+      @if (d.fechas.length === 0) {
+        <p class="estado-linea">Este curso no tiene fechas programadas.</p>
+      } @else {
+        <dl class="fechas-lista">
+          @for (f of d.fechas; track f.id) {
+            <div class="fecha-row">
+              <dt>{{ f.fecha }}</dt>
+              <dd>
+                <span class="fecha-desc">{{ f.descripcion || 'Sin descripción' }}</span>
+                <span class="fecha-orden">Orden {{ f.orden }}</span>
+                <span class="fecha-estado estado-{{ f.estado }}">{{ f.estado }}</span>
+              </dd>
+            </div>
+          }
+        </dl>
+      }
+    </section>
+  }
+</section>

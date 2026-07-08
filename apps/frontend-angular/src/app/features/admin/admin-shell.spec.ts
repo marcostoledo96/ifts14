@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { AdminShell } from './admin-shell';
+import { SidebarAdmin } from './sidebar-admin';
 import { MOCK_SESSION, InMemoryMockSession } from './mock-session';
 
 describe('AdminShell', () => {
@@ -17,12 +19,41 @@ describe('AdminShell', () => {
     return fixture;
   }
 
+  async function renderWithRoutes(initialUrl: string) {
+    await TestBed.configureTestingModule({
+      imports: [AdminShell],
+      providers: [
+        provideRouter([
+          { path: 'admin/dashboard', component: AdminShell },
+          { path: 'admin/cursos', component: AdminShell },
+          { path: 'admin/cursos/:id', component: AdminShell },
+          { path: '**', redirectTo: 'admin/dashboard' },
+        ]),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl(initialUrl);
+    const fixture = TestBed.createComponent(AdminShell);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
   it('renderiza banner único (role=banner) sin duplicar main ni contentinfo del root', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelectorAll('[role="banner"]').length).toBe(1);
     expect(el.querySelectorAll('[role="main"]').length).toBe(1);
     expect(el.querySelectorAll('[role="contentinfo"]').length).toBe(1);
+  });
+
+  it('expone <router-outlet> y NO renderiza el dashboard inline', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('router-outlet')).not.toBeNull();
+    expect(el.querySelector('app-admin-dashboard-page')).toBeNull();
   });
 
   it('muestra badge Sesión mock en topbar', async () => {
@@ -133,5 +164,35 @@ describe('AdminShell', () => {
     f.componentInstance.cerrarSesion();
     expect(session.hasSession()).toBe(false);
     expect(navSpy).toHaveBeenCalledWith(['/admin/login']);
+  });
+
+  // --- Bind de ruta activa (gate correctivo F2-04) ---
+  // AdminShell expone la ruta actual del router y la pasa como [active] a
+  // SidebarAdmin para que marque la sección vigente.
+
+  it('rutaActual refleja la URL inicial del router', async () => {
+    const f = await renderWithRoutes('/admin/cursos');
+    expect(f.componentInstance.rutaActual()).toContain('/admin/cursos');
+  });
+
+  it('pasa [active] al SidebarAdmin desktop con la ruta actual', async () => {
+    const f = await renderWithRoutes('/admin/cursos');
+    f.detectChanges();
+    const de = f.debugElement.query(By.css('.sidebar-desktop app-sidebar-admin'));
+    expect(de).not.toBeNull();
+    const sidebar = de.componentInstance as SidebarAdmin;
+    expect(sidebar.active()).toContain('/admin/cursos');
+  });
+
+  it('al navegar a /admin/cursos/1, marca Cursos como activo en el sidebar', async () => {
+    const f = await renderWithRoutes('/admin/cursos/1');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    // isActive usa startsWith('/admin/cursos') → /admin/cursos/1 entra.
+    const cursosLink = el.querySelector('.sidebar-desktop a.active') as HTMLAnchorElement | null;
+    expect(cursosLink).not.toBeNull();
+    expect(cursosLink?.textContent).toContain('Cursos');
   });
 });
