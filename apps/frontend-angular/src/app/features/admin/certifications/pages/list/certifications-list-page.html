@@ -1,0 +1,77 @@
+<section aria-labelledby="cert-title">
+  <div class="header-row">
+    <div>
+      <p class="kicker">Admin · Certificaciones</p>
+      <h1 id="cert-title" class="title">Certificaciones</h1>
+    </div>
+  </div>
+
+  <p class="demo-banner" role="status">
+    Datos de demostración — No persiste al recargar.
+  </p>
+
+  <div class="filtros">
+    <label class="filtro-search">
+      <span class="filtro-label">Buscar</span>
+      <input
+        type="search"
+        [value]="q()"
+        (input)="onSearch($event)"
+        placeholder="Alumno o curso…"
+        aria-label="Buscar certificación por alumno o curso"
+      />
+    </label>
+    <label class="filtro-estado">
+      <span class="filtro-label">Estado</span>
+      <select [value]="estado()" (change)="onEstado($event)" aria-label="Filtrar por estado">
+        <option value="todos">Todos</option>
+        @for (e of estados; track e) {
+          <option [value]="e">{{ e }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (cargando()) {
+    <p class="estado-linea">Cargando certificaciones…</p>
+  }
+  @if (error()) {
+    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (!cargando() && certificados().length === 0) {
+    <output class="estado-linea" aria-live="polite">
+      No hay certificaciones que coincidan con los filtros.
+    </output>
+  }
+
+  @if (!cargando() && certificados().length > 0) {
+    <ul class="lista-certs">
+      @for (c of certificados(); track c.id) {
+        <li>
+          <article class="card-cert">
+            <header class="card-cert-header">
+              <h2 class="card-cert-title">{{ c.cursoNombre }}</h2>
+              <span class="estado-chip estado-{{ c.estado }}">{{ c.estado }}</span>
+            </header>
+            <dl class="card-cert-meta">
+              <dt>Alumno</dt>
+              <dd>{{ c.nombreAlumno }}</dd>
+              <dt>Documento</dt>
+              <dd>{{ c.documentMasked }}</dd>
+              <dt>Token</dt>
+              <dd>{{ c.tokenPrefix }}</dd>
+              @if (c.emitidoEn) {
+                <dt>Emitido</dt>
+                <dd>{{ c.emitidoEn }}</dd>
+              }
+            </dl>
+            <a class="card-cert-link" [routerLink]="['/admin/certificaciones', c.id]">
+              Ver detalle
+            </a>
+          </article>
+        </li>
+      }
+    </ul>
+  }
+</section>

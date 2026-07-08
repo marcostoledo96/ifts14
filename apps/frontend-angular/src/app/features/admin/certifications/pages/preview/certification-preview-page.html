@@ -1,0 +1,86 @@
+<section aria-labelledby="cert-title">
+  <p class="volver">
+    <a routerLink="/admin/certificaciones">← Volver al listado</a>
+  </p>
+
+  @if (cargando()) {
+    <p class="estado-linea">Cargando certificación…</p>
+  }
+  @if (error()) {
+    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (detalle(); as d) {
+    <header class="cert-header">
+      <p class="kicker">Certificación · {{ d.tokenPrefix }}</p>
+      <h1 id="cert-title" class="title">{{ d.cursoNombre }}</h1>
+      <p class="banda-estado estado-{{ d.estado }}" aria-live="polite">
+        Estado: {{ d.estado }}
+      </p>
+    </header>
+
+    <dl class="detalle-meta">
+      <dt>Alumno</dt>
+      <dd>{{ d.nombreAlumno }}</dd>
+      <dt>Documento (mascarado)</dt>
+      <dd>{{ d.documentMasked }}</dd>
+      <dt>Token (prefijo)</dt>
+      <dd>{{ d.tokenPrefix }}</dd>
+      @if (d.emitidoEn) {
+        <dt>Emitido</dt>
+        <dd>{{ d.emitidoEn }}</dd>
+      }
+      @if (d.venceEn) {
+        <dt>Vence</dt>
+        <dd>{{ d.venceEn }}</dd>
+      }
+      <dt>URL pública (truncada)</dt>
+      <dd class="public-url">{{ d.publicValidationUrl }}</dd>
+    </dl>
+
+    <section aria-labelledby="attended-title" class="attended">
+      <h2 id="attended-title" class="subtitle">Fechas asistidas</h2>
+      <ul class="attended-dates">
+        @for (f of d.attendedDates; track f) {
+          <li>{{ f }}</li>
+        }
+      </ul>
+    </section>
+
+    <section aria-labelledby="audit-title" class="audit">
+      <h2 id="audit-title" class="subtitle">Auditoría mínima</h2>
+      <ul class="audit-events">
+        @for (ev of d.auditEvents; track ev.at) {
+          <li>
+            <span class="audit-at">{{ ev.at }}</span>
+            <span class="audit-accion">{{ ev.accion }}</span>
+            <span class="audit-detalle">{{ ev.detalle }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <div class="acciones">
+      <button type="button" class="btn-disabled" disabled aria-disabled="true">
+        Emitir (F4-01)
+      </button>
+      <button type="button" class="btn-disabled" disabled aria-disabled="true">
+        Descargar PDF (F4-02)
+      </button>
+      <button type="button" class="btn-disabled" disabled aria-disabled="true">
+        Entrega manual (F5-04)
+      </button>
+      <button type="button" class="btn-disabled" disabled aria-disabled="true">
+        Revocar (F5-04)
+      </button>
+      <button type="button" class="btn-disabled" disabled aria-disabled="true">
+        Listado real (F6-01)
+      </button>
+      <a class="btn-secondary" routerLink="/admin/certificaciones">Volver al listado</a>
+    </div>
+
+    <p class="handoff-banner" role="status">
+      Disponible en F4/F5/F6 — Emisión, PDF, entrega, revocación y listado real son handoff.
+    </p>
+  }
+</section>
