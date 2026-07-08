@@ -1,0 +1,222 @@
+:host {
+  display: block;
+}
+
+.volver {
+  margin: 0 0 var(--space-3);
+}
+
+.volver a {
+  color: var(--color-muted-foreground);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.volver a:hover {
+  text-decoration: underline;
+}
+
+.volver a:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.editor-header {
+  margin-bottom: var(--space-3);
+}
+
+.kicker {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: var(--tracking-caps-tight);
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.demo-banner {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-soft);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-card);
+  padding: var(--space-4);
+}
+
+legend {
+  padding: 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps-tight);
+  color: var(--color-muted-foreground);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+
+.campo-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps-tight);
+  color: var(--color-muted-foreground);
+}
+
+input,
+select {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  color: var(--color-foreground);
+  font-size: 0.875rem;
+  font-family: inherit;
+}
+
+input:focus-visible,
+select:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+input:disabled,
+select:disabled {
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+  cursor: not-allowed;
+}
+
+.fechas-ayuda {
+  margin: 0 0 var(--space-3);
+  font-size: 0.8125rem;
+  color: var(--color-muted-foreground);
+}
+
+.fecha-fieldset {
+  border: 1px dashed var(--color-border);
+  margin-bottom: var(--space-3);
+}
+
+.fecha-campos {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+@media (min-width: 40rem) {
+  .fecha-campos {
+    grid-template-columns: auto 1fr auto auto;
+    align-items: end;
+  }
+}
+
+.campo-fecha {
+  flex: 0 0 auto;
+}
+
+.btn-quitar {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-destructive);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.btn-quitar:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  font-size: 0.875rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--color-muted);
+}
+
+.btn-secondary:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background: var(--color-ink);
+  color: var(--color-ink-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.estado-linea {
+  margin: var(--space-3) 0;
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.estado-error {
+  color: var(--color-destructive);
+}
+
+.estado-ok {
+  color: var(--color-valid);
+}
