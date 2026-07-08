@@ -2,7 +2,7 @@
   <p class="kicker">Panel administrativo — sesión mock</p>
   <h1 id="dash-title" class="title">Dashboard</h1>
   <p class="intro">
-    Vista placeholder sin datos reales. Certificaciones se incorpora en el ciclo siguiente.
+    Vista placeholder sin datos reales. Todos los módulos son navegables en modo demostración.
   </p>
   <ul class="cards">
     <li class="card card--action">
@@ -21,9 +21,13 @@
         <span class="card-count" aria-label="Cantidad de fechas pendientes en demo">{{ asistenciasCount }}</span>
       </a>
     </li>
-    <li class="card">
-      <h2 class="card-title">Próximamente: Certificaciones</h2>
-      <p class="card-desc">Emisión de certificados — handoff F2-06.</p>
+    <li class="card card--action">
+      <h2 class="card-title">Certificaciones</h2>
+      <p class="card-desc">Emisión y revocación de certificados — base mock-only.</p>
+      <a class="card-link" routerLink="/admin/certificaciones">
+        <span>Abrir Certificaciones</span>
+        <span class="card-count" aria-label="Cantidad de certificaciones en demo">{{ certificacionesCount() }}</span>
+      </a>
     </li>
   </ul>
 </section>

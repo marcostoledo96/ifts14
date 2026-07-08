@@ -15,6 +15,8 @@ import { COURSES_SOURCE } from './features/admin/courses/courses.service';
 import { InMemoryCoursesService } from './features/admin/courses/in-memory-courses.service';
 import { ATTENDANCE_SOURCE } from './features/admin/attendances/data/attendance.token';
 import { AttendanceMockService } from './features/admin/attendances/data/attendance-mock.service';
+import { CERTIFICATIONS_SOURCE } from './features/admin/certifications/certifications.service';
+import { InMemoryCertificationsService } from './features/admin/certifications/in-memory-certifications.service';
 
 // Verifica que ninguna ruta apunte a un token de demo salvo la validación
 // explícita en validar/:tokenCertificacion, evitando que una URL inválida
@@ -643,6 +645,149 @@ describe('app.routes', () => {
   });
 
   it("rutas públicas intactas tras agregar admin/asistencias", async () => {
+    await setupRouter('/');
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
+    expect(router.url).toBe('/');
+    await router.navigateByUrl('/validar/demo-valido');
+    expect(router.url).toContain('/validar/');
+  });
+
+  // --- Rutas admin/certificaciones F2-06 ---
+
+  it("admin children define certificaciones y certificaciones/:id", () => {
+    const children = adminChildren();
+    const paths = children.map((c) => c.path);
+    expect(paths).toContain('certificaciones');
+    expect(paths).toContain('certificaciones/:id');
+  });
+
+  it("orden seguro: certificaciones/:id ANTES que certificaciones (listado)", () => {
+    const children = adminChildren();
+    const idxId = children.findIndex((c) => c.path === 'certificaciones/:id');
+    const idxList = children.findIndex((c) => c.path === 'certificaciones');
+    expect(idxId).toBeGreaterThanOrEqual(0);
+    expect(idxList).toBeGreaterThanOrEqual(0);
+    expect(idxId).toBeLessThan(idxList);
+  });
+
+  it("orden seguro: certificaciones va después de cursos y dashboard", () => {
+    const children = adminChildren();
+    const idxDash = children.findIndex((c) => c.path === 'dashboard');
+    const idxCursos = children.findIndex((c) => c.path === 'cursos');
+    const idxCert = children.findIndex((c) => c.path === 'certificaciones');
+    expect(idxDash).toBeGreaterThanOrEqual(0);
+    expect(idxCursos).toBeGreaterThanOrEqual(0);
+    expect(idxCert).toBeGreaterThan(idxDash);
+    expect(idxCert).toBeGreaterThan(idxCursos);
+  });
+
+  it("navegación real /admin/certificaciones sin sesión termina en /admin/login", async () => {
+    await setupRouter('/admin/certificaciones');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("navegación real /admin/certificaciones con sesión carga CertificationsListPage", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/certificaciones');
+    expect(router.url).toBe('/admin/certificaciones');
+  });
+
+  it("navegación real /admin/certificaciones/1 con sesión carga CertificationPreviewPage", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes, withComponentInputBinding()),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/certificaciones/1');
+    expect(router.url).toBe('/admin/certificaciones/1');
+  });
+
+  it("runtime: /admin/certificaciones instancia CertificationsListPage via route injector sin NullInjectorError", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/certificaciones');
+    const cmp = harness.routeNativeElement?.querySelector('app-certifications-list-page');
+    expect(cmp).not.toBeNull();
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cards = cmp?.querySelectorAll('article') || [];
+    expect(cards.length).toBeGreaterThanOrEqual(3);
+    expect(cards.length).toBeLessThanOrEqual(6);
+  });
+
+  it("runtime: /admin/certificaciones/1 instancia CertificationPreviewPage via route injector sin NullInjectorError", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/certificaciones/1');
+    const cmp = harness.routeNativeElement?.querySelector('app-certification-preview-page');
+    expect(cmp).not.toBeNull();
+  });
+
+  it("runtime: /admin/certificaciones/1 renderiza datos del seed (cursoNombre)", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/certificaciones/1');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-certification-preview-page');
+    expect(cmp).not.toBeNull();
+    const text = cmp?.textContent || '';
+    expect(text).toContain('Curso de introducción a la gestión');
+  });
+
+  it("runtime: /admin/certificaciones/abc (id inválido) NO revienta y muestra estado de no encontrado", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/certificaciones/abc');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-certification-preview-page');
+    expect(cmp).not.toBeNull();
+    const text = cmp?.textContent || '';
+    expect(text).toContain('no encontrada');
+  });
+
+  it("regresión: sin CERTIFICATIONS_SOURCE en la ruta admin, /admin/certificaciones revienta en runtime", async () => {
+    const adminRoute = routes.find(
+      (x) => x.path === 'admin' && x.children !== undefined,
+    )!;
+    // Replica routes sin el provider CERTIFICATIONS_SOURCE de la ruta admin.
+    const stripped: Routes = [
+      ...routes.filter((x) => x !== adminRoute),
+      {
+        ...adminRoute,
+        providers: [
+          { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+          { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
+        ],
+        children: adminRoute.children,
+      },
+    ];
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(stripped),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    await expectAsync(RouterTestingHarness.create('/admin/certificaciones')).toBeRejected();
+  });
+
+  it("rutas públicas intactas tras agregar admin/certificaciones", async () => {
     await setupRouter('/');
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');
