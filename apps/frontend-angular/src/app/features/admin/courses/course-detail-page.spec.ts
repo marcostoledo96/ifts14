@@ -50,6 +50,17 @@ describe('CourseDetailPage', () => {
     expect(volver).not.toBeNull();
   });
 
+  it('muestra enlace Tomar asistencia por fecha', async () => {
+    const f = await render(1);
+    const el = f.nativeElement as HTMLElement;
+    const asistLinks = Array.from(el.querySelectorAll('.fecha-asistencia')) as HTMLAnchorElement[];
+    // Curso 1 tiene 3 fechas → 3 enlaces Tomar asistencia.
+    expect(asistLinks.length).toBe(3);
+    const first = asistLinks[0];
+    expect(first.getAttribute('href')).toContain('/admin/cursos/1/fechas/11/asistencias');
+    expect(first.getAttribute('aria-label')).toContain('Tomar asistencia');
+  });
+
   it('id inexistente muestra error', async () => {
     const f = await render(999);
     const el = f.nativeElement as HTMLElement;
