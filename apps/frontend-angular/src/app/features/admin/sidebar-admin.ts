@@ -35,12 +35,24 @@ export class SidebarAdmin {
 
   // Inicio usa igualdad exacta; Cursos y Asistencias usan prefijo para que
   // sus rutas hijas (nuevo, editar, detalle, marcado por fecha) también
-  // queden activos en la navegación.
+  // queden activos en la navegación. La ruta de marcado
+  // /admin/cursos/:id/fechas/:fechaId/asistencias pertenece a Asistencias
+  // (no a Cursos): debe verificarse antes del prefijo /admin/cursos para
+  // que el match de Asistencias gane.
   isActive(item: NavItem): boolean {
     if (item.route === null) return false;
-    if (item.route === '/admin/cursos' || item.route === '/admin/asistencias') {
-      return this.active().startsWith(item.route);
+    const active = this.active().split(/[?#]/, 1)[0];
+    const isAttendanceRoute =
+      active === '/admin/asistencias' ||
+      active.startsWith('/admin/asistencias/') ||
+      /^\/admin\/cursos\/[^/]+\/fechas\/[^/]+\/asistencias$/.test(active);
+    if (isAttendanceRoute) {
+      // Asistencias engloba /admin/asistencias y el marcado por fecha.
+      return item.route === '/admin/asistencias';
     }
-    return item.route === this.active();
+    if (item.route === '/admin/cursos' || item.route === '/admin/asistencias') {
+      return active.startsWith(item.route);
+    }
+    return item.route === active;
   }
 }

@@ -310,4 +310,99 @@ describe('AttendanceMarkingPage', () => {
       'Curso de herramientas administrativas',
     );
   });
+
+  // CRITICAL: el guard `saveCid/saveFid` descarta el resultado de un guardado
+  // stale cuando la ruta cambia mientras marcar() está en vuelo. Sin este
+  // guard, baseline/ok/guardando de la pantalla vigente se mutan con datos
+  // de la ruta anterior. Fake de servicios permite resolver manualmente.
+  it('route reuse: guardado stale no muta baseline/ok de pantalla vigente (out-of-order save)', async () => {
+    const pendingMarcar = new Map<
+      string,
+      { resolve: (v: readonly Asistencia[]) => void; reject: (e: Error) => void }
+    >();
+
+    const fakeCourses: CoursesService = {
+      listar: () => Promise.resolve([]),
+      obtener: (id: number) =>
+        Promise.resolve({
+          id,
+          codigo: `CUR-${String(id).padStart(3, '0')}`,
+          nombre: `Curso ${id}`,
+          estado: 'activo' as const,
+          createdAt: '',
+          updatedAt: '',
+          fechas: [{ id: id * 10 + 1, cursoId: id, fecha: '2026-01-01', descripcion: null, orden: 1, estado: 'programada' as const }],
+        }),
+      crear: () => Promise.reject(new Error('noop')),
+      actualizarEstado: () => Promise.reject(new Error('noop')),
+      listarFechas: () => Promise.resolve([]),
+      guardarFecha: () => Promise.reject(new Error('noop')),
+      reemplazarFechas: () => Promise.reject(new Error('noop')),
+    };
+    const fakeAttendance: AttendanceService = {
+      listarAlumnos: () => Promise.resolve([
+        { id: 1, apellidoNombre: 'A1 B1', dniMostrar: '11****11', estado: 'activo' as const },
+        { id: 2, apellidoNombre: 'A2 B2', dniMostrar: '22****22', estado: 'activo' as const },
+      ]),
+      listarAsistencias: () => Promise.resolve([]),
+      marcar: (cid: number, fid: number) =>
+        new Promise<readonly Asistencia[]>((resolve, reject) => {
+          pendingMarcar.set(`${cid}-${fid}`, { resolve, reject });
+        }),
+      anular: () => Promise.resolve(),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [AttendanceMarkingPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useValue: fakeCourses },
+        { provide: ATTENDANCE_SOURCE, useValue: fakeAttendance },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AttendanceMarkingPage);
+    fixture.componentRef.setInput('id', '1');
+    fixture.componentRef.setInput('fechaId', '11');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // Marcar un presente y disparar guardar().
+    const checks = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('input[type="checkbox"]'),
+    ) as HTMLInputElement[];
+    checks[0].checked = true;
+    checks[0].dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    const btn = (fixture.nativeElement as HTMLElement).querySelector('.btn-primary') as HTMLButtonElement;
+    btn.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    // marcar(1,11) está pendiente. Guardando=true.
+    expect(fixture.componentInstance.guardando()).toBe(true);
+    expect(pendingMarcar.has('1-11')).toBe(true);
+
+    // Cambiar la ruta a curso 2/fecha 21 sin resolver el guardado de 1.
+    fixture.componentRef.setInput('id', '2');
+    fixture.componentRef.setInput('fechaId', '21');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.courseId()).toBe(2);
+
+    // Resolver el guardado stale de 1-11 AHORA (fuera de orden).
+    pendingMarcar.get('1-11')!.resolve([
+      { id: 5000, alumnoId: 1, cursoId: 1, cursoFechaId: 11, fecha: '2026-01-01', fechaEstado: 'programada' as const, registradoEn: '' },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // La pantalla vigente (curso 2) no debe reflejar el guardado de curso 1:
+    // ok vacío, baseline sin el alumno del curso 1, guardando no atascado.
+    expect(fixture.componentInstance.ok()).toBe('');
+    expect(fixture.componentInstance.baseline().size).toBe(0);
+    expect(fixture.componentInstance.guardando()).toBe(false);
+  });
 });

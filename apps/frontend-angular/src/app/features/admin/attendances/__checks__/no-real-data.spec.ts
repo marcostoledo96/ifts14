@@ -4,13 +4,18 @@
 import { TestBed } from '@angular/core/testing';
 import { ATTENDANCE_SOURCE } from '../data/attendance.token';
 import { AttendanceMockService } from '../data/attendance-mock.service';
+import { COURSES_SOURCE } from '../../courses/courses.service';
+import { InMemoryCoursesService } from '../../courses/in-memory-courses.service';
 
 describe('no-real-data en seed de asistencias', () => {
   let svc: import('../models/attendance.types').AttendanceService;
 
   beforeAll(async () => {
     await TestBed.configureTestingModule({
-      providers: [{ provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService }],
+      providers: [
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
+      ],
     }).compileComponents();
     svc = TestBed.inject(ATTENDANCE_SOURCE);
     (svc as unknown as { __reset: () => void }).__reset();

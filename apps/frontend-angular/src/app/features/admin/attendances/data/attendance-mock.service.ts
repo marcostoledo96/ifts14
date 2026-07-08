@@ -2,7 +2,7 @@
 // Seed ficticio: 12–15 personas por curso, dniMostrar enmascarado (XX****XX).
 // Sin email, DNI completo, token, legajo ni matrícula. Mutaciones solo en
 // instancia; se pierden al recargar. Ver spec admin-attendances-frontend.
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   Asistencia,
   AsistenciaAlumno,
@@ -10,7 +10,7 @@ import {
   AttendanceService,
   EstadoAlumno,
 } from '../models/attendance.types';
-import { EstadoFecha } from '../../courses/courses.models';
+import { COURSES_SOURCE } from '../../courses/courses.service';
 
 // ponytail: nombres institucionmente neutros, no plausibles como reales.
 // Evitar nombres propios comunes que parezcan datos reales de estudiantes.
@@ -59,6 +59,7 @@ function clone<T>(value: T): T {
 @Injectable({ providedIn: 'root' })
 export class AttendanceMockService implements AttendanceService {
   private state: State;
+  private readonly courses = inject(COURSES_SOURCE);
 
   constructor() {
     this.state = this.freshState();
@@ -97,16 +98,26 @@ export class AttendanceMockService implements AttendanceService {
     return Promise.resolve(clone(list));
   }
 
-  marcar(
+  async marcar(
     cursoId: number,
     fechaId: number,
     marcados: readonly AsistenciaMarcado[],
   ): Promise<readonly Asistencia[]> {
-    const fechaMeta = fechaMetaFor(cursoId, fechaId);
-    if (!fechaMeta) {
+    // Metadatos de fecha desde el estado vigente del curso (COURSES_SOURCE),
+    // no desde una tabla estática: así las fechas creadas/editadas en la
+    // sesión se reconocen y las canceladas se rechazan. Sin duplicar el
+    // seed de fechas acá.
+    const det = await this.courses.obtener(cursoId);
+    const fecha = det.fechas.find((f) => f.id === fechaId);
+    if (!fecha) {
       // No normaliza una fecha inexistente: rechaza con error controlado.
       return Promise.reject(
         new Error(`Fecha no encontrada para curso ${cursoId}: ${fechaId}`),
+      );
+    }
+    if (fecha.estado === 'cancelada') {
+      return Promise.reject(
+        new Error(`No se puede marcar asistencia en una fecha cancelada: ${fechaId}`),
       );
     }
     // Eliminar asistencias existentes para esta fecha (reemplazo completo).
@@ -121,8 +132,8 @@ export class AttendanceMockService implements AttendanceService {
         alumnoId: m.alumnoId,
         cursoId,
         cursoFechaId: fechaId,
-        fecha: fechaMeta.fecha,
-        fechaEstado: fechaMeta.estado,
+        fecha: fecha.fecha,
+        fechaEstado: fecha.estado,
         registradoEn: new Date().toISOString(),
       };
       this.state.asistencias.push(a);
@@ -140,32 +151,6 @@ export class AttendanceMockService implements AttendanceService {
     return Promise.resolve();
   }
 }
-
-// Metadatos de fecha para construir Asistencia al marcar.
-// ponytail: tabla estática alineada con el seed de InMemoryCoursesService.
-// Retorna null para fechaId desconocido: no normaliza una fecha inexistente.
-function fechaMetaFor(
-  cursoId: number,
-  fechaId: number,
-): { fecha: string; estado: EstadoFecha } | null {
-  const meta = FECHA_META.find((f) => f.cursoId === cursoId && f.fechaId === fechaId);
-  return meta ? { fecha: meta.fecha, estado: meta.estado } : null;
-}
-
-const FECHA_META: { cursoId: number; fechaId: number; fecha: string; estado: EstadoFecha }[] = [
-  { cursoId: 1, fechaId: 11, fecha: '2026-03-02', estado: 'programada' },
-  { cursoId: 1, fechaId: 12, fecha: '2026-03-09', estado: 'programada' },
-  { cursoId: 1, fechaId: 13, fecha: '2026-03-16', estado: 'programada' },
-  { cursoId: 2, fechaId: 21, fecha: '2026-04-05', estado: 'programada' },
-  { cursoId: 2, fechaId: 22, fecha: '2026-04-12', estado: 'programada' },
-  { cursoId: 3, fechaId: 31, fecha: '2026-05-04', estado: 'programada' },
-  { cursoId: 4, fechaId: 41, fecha: '2025-09-01', estado: 'realizada' },
-  { cursoId: 4, fechaId: 42, fecha: '2025-09-08', estado: 'realizada' },
-  { cursoId: 5, fechaId: 51, fecha: '2025-06-10', estado: 'cancelada' },
-  { cursoId: 6, fechaId: 61, fecha: '2026-06-01', estado: 'programada' },
-  { cursoId: 6, fechaId: 62, fecha: '2026-06-08', estado: 'programada' },
-  { cursoId: 6, fechaId: 63, fecha: '2026-06-15', estado: 'programada' },
-];
 
 // Seed de asistencias: algunas fechas realizadas ya tienen presentes.
 // ponytail: seed mínimo para que listarAsistencias tenga datos en fechas realizadas.
