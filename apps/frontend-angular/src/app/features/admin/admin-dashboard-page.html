@@ -2,8 +2,7 @@
   <p class="kicker">Panel administrativo — sesión mock</p>
   <h1 id="dash-title" class="title">Dashboard</h1>
   <p class="intro">
-    Vista placeholder sin datos reales. Asistencias y Certificaciones se incorporan en ciclos
-    siguientes.
+    Vista placeholder sin datos reales. Certificaciones se incorpora en el ciclo siguiente.
   </p>
   <ul class="cards">
     <li class="card card--action">
@@ -14,9 +13,13 @@
         <span class="card-count" aria-label="Cantidad de cursos en demo">{{ cursosCount }}</span>
       </a>
     </li>
-    <li class="card">
-      <h2 class="card-title">Próximamente: Asistencias</h2>
-      <p class="card-desc">Registro de asistencias — handoff F2-05.</p>
+    <li class="card card--action">
+      <h2 class="card-title">Asistencias</h2>
+      <p class="card-desc">Registro de presentes por fecha — disponible.</p>
+      <a class="card-link" routerLink="/admin/asistencias">
+        <span>Abrir Asistencias</span>
+        <span class="card-count" aria-label="Cantidad de fechas pendientes en demo">{{ asistenciasCount }}</span>
+      </a>
     </li>
     <li class="card">
       <h2 class="card-title">Próximamente: Certificaciones</h2>

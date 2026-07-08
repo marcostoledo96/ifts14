@@ -189,6 +189,25 @@
   font-size: 0.75rem;
 }
 
+.fecha-asistencia {
+  margin-left: auto;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-foreground);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.fecha-asistencia:hover {
+  background: var(--color-muted);
+}
+
+.fecha-asistencia:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
 .estado-linea {
   margin: var(--space-3) 0;
   color: var(--color-muted-foreground);
