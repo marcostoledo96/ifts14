@@ -13,6 +13,8 @@ import { CourseDetailPage } from './features/admin/courses/course-detail-page';
 import { CourseEditorPage } from './features/admin/courses/course-editor-page';
 import { COURSES_SOURCE } from './features/admin/courses/courses.service';
 import { InMemoryCoursesService } from './features/admin/courses/in-memory-courses.service';
+import { ATTENDANCE_SOURCE } from './features/admin/attendances/data/attendance.token';
+import { AttendanceMockService } from './features/admin/attendances/data/attendance-mock.service';
 
 // Verifica que ninguna ruta apunte a un token de demo salvo la validación
 // explícita en validar/:tokenCertificacion, evitando que una URL inválida
@@ -519,5 +521,133 @@ describe('app.routes', () => {
     const text = cmp?.textContent || '';
     // Id no numérico en modo edit → estado de error controlado, sin excepción.
     expect(text).toContain('no encontrado');
+  });
+
+  // --- Rutas admin/asistencias F2-05 ---
+
+  it("admin children define asistencias y cursos/:id/fechas/:fechaId/asistencias", () => {
+    const children = adminChildren();
+    const paths = children.map((c) => c.path);
+    expect(paths).toContain('asistencias');
+    expect(paths).toContain('cursos/:id/fechas/:fechaId/asistencias');
+  });
+
+  it("orden seguro: asistencias va después de dashboard y antes de cursos/nuevo", () => {
+    const children = adminChildren();
+    const idxDash = children.findIndex((c) => c.path === 'dashboard');
+    const idxAsis = children.findIndex((c) => c.path === 'asistencias');
+    const idxNuevo = children.findIndex((c) => c.path === 'cursos/nuevo');
+    expect(idxDash).toBeGreaterThanOrEqual(0);
+    expect(idxAsis).toBeGreaterThan(idxDash);
+    expect(idxNuevo).toBeGreaterThan(idxAsis);
+  });
+
+  it("orden seguro: cursos/:id/fechas/:fechaId/asistencias ANTES que cursos/:id", () => {
+    const children = adminChildren();
+    const idxProfunda = children.findIndex(
+      (c) => c.path === 'cursos/:id/fechas/:fechaId/asistencias',
+    );
+    const idxId = children.findIndex((c) => c.path === 'cursos/:id');
+    expect(idxProfunda).toBeGreaterThanOrEqual(0);
+    expect(idxId).toBeGreaterThanOrEqual(0);
+    expect(idxProfunda).toBeLessThan(idxId);
+  });
+
+  it("navegación real /admin/asistencias sin sesión termina en /admin/login", async () => {
+    await setupRouter('/admin/asistencias');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("navegación real /admin/asistencias con sesión carga AttendancesListPage", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/asistencias');
+    expect(router.url).toBe('/admin/asistencias');
+  });
+
+  it("navegación real /admin/cursos/1/fechas/11/asistencias con sesión resuelve ruta profunda", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes, withComponentInputBinding()),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/cursos/1/fechas/11/asistencias');
+    expect(router.url).toBe('/admin/cursos/1/fechas/11/asistencias');
+  });
+
+  it("runtime: /admin/asistencias instancia AttendancesListPage via route injector sin NullInjectorError", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/asistencias');
+    const cmp = harness.routeNativeElement?.querySelector('app-attendances-list-page');
+    expect(cmp).not.toBeNull();
+  });
+
+  it("runtime: /admin/cursos/1/fechas/11/asistencias instancia AttendanceMarkingPage via route injector", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/cursos/1/fechas/11/asistencias');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-attendance-marking-page');
+    expect(cmp).not.toBeNull();
+    const text = cmp?.textContent || '';
+    expect(text).toContain('Curso de introducción a la gestión');
+  });
+
+  it("runtime: /admin/cursos/abc/fechas/11/asistencias (id inválido) NO revienta y muestra error", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/cursos/abc/fechas/11/asistencias');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-attendance-marking-page');
+    expect(cmp).not.toBeNull();
+    const text = cmp?.textContent || '';
+    expect(text).toContain('no encontrad');
+  });
+
+  it("regresión: sin ATTENDANCE_SOURCE en la ruta admin, /admin/asistencias revienta en runtime", async () => {
+    const adminRoute = routes.find(
+      (x) => x.path === 'admin' && x.children !== undefined,
+    )!;
+    // Replica routes sin el provider ATTENDANCE_SOURCE de la ruta admin.
+    const stripped: Routes = [
+      ...routes.filter((x) => x !== adminRoute),
+      {
+        ...adminRoute,
+        providers: [{ provide: COURSES_SOURCE, useClass: InMemoryCoursesService }],
+        children: adminRoute.children,
+      },
+    ];
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(stripped),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    await expectAsync(RouterTestingHarness.create('/admin/asistencias')).toBeRejected();
+  });
+
+  it("rutas públicas intactas tras agregar admin/asistencias", async () => {
+    await setupRouter('/');
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
+    expect(router.url).toBe('/');
+    await router.navigateByUrl('/validar/demo-valido');
+    expect(router.url).toContain('/validar/');
   });
 });

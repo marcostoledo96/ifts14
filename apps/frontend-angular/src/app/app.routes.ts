@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { adminGuard } from './features/admin/admin-guard';
 import { COURSES_SOURCE } from './features/admin/courses/courses.service';
 import { InMemoryCoursesService } from './features/admin/courses/in-memory-courses.service';
+import { ATTENDANCE_SOURCE } from './features/admin/attendances/data/attendance.token';
+import { AttendanceMockService } from './features/admin/attendances/data/attendance-mock.service';
 
 export const routes: Routes = [
   // La raíz carga una página de inicio no validante: no llama a la API ni usa
@@ -46,6 +48,10 @@ export const routes: Routes = [
     // NullInjectorError en runtime (no en specs, que lo proveen a mano).
     providers: [
       { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+      // ponytail: provee ATTENDANCE_SOURCE solo en el árbol admin; sin
+      // HTTP/storage/secretos. Si se saca, /admin/asistencias* falla con
+      // NullInjectorError en runtime (no en specs, que lo proveen a mano).
+      { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
     ],
     loadComponent: () =>
       import('./features/admin/admin-shell').then((m) => m.AdminShell),
@@ -57,10 +63,28 @@ export const routes: Routes = [
           import('./features/admin/admin-dashboard-page').then((m) => m.AdminDashboardPage),
       },
       {
+        path: 'asistencias',
+        title: 'Admin · Asistencias (mock) — IFTS 14',
+        loadComponent: () =>
+          import('./features/admin/attendances/pages/list/attendances-list-page').then(
+            (m) => m.AttendancesListPage,
+          ),
+      },
+      {
         path: 'cursos/nuevo',
         data: { mode: 'create' },
         loadComponent: () =>
           import('./features/admin/courses/course-editor-page').then((m) => m.CourseEditorPage),
+      },
+      {
+        // Ruta profunda de marcado por fecha: va ANTES que cursos/:id para
+        // que :id no la capture. Orden seguro preserva catch-all admin.
+        path: 'cursos/:id/fechas/:fechaId/asistencias',
+        title: 'Admin · Marcar asistencias (mock) — IFTS 14',
+        loadComponent: () =>
+          import('./features/admin/attendances/pages/marking/attendance-marking-page').then(
+            (m) => m.AttendanceMarkingPage,
+          ),
       },
       {
         path: 'cursos/:id/editar',

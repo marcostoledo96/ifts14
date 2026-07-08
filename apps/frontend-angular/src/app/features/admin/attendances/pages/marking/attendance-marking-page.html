@@ -1,0 +1,104 @@
+<section aria-labelledby="marcado-title">
+  <p class="volver">
+    <a routerLink="/admin/asistencias">← Volver a Asistencias</a>
+  </p>
+
+  @if (cargando()) {
+    <p class="estado-linea">Cargando asistencias…</p>
+  }
+
+  @if (error()) {
+    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (!cargando() && detalle(); as d) {
+    <header class="marcado-header">
+      <p class="kicker">Curso · {{ d.codigo }}</p>
+      <h1 id="marcado-title" class="title">Asistencias — {{ d.nombre }}</h1>
+    </header>
+
+    <p class="demo-banner" role="status">
+      Datos de demostración: los cambios no se persisten al recargar.
+    </p>
+
+    @if (fechaActual(); as f) {
+      <dl class="fecha-resumen">
+        <dt>Fecha</dt>
+        <dd>{{ f.fecha }}</dd>
+        <dt>Estado</dt>
+        <dd>{{ f.estado }}</dd>
+        @if (f.descripcion) {
+          <dt>Detalle</dt>
+          <dd>{{ f.descripcion }}</dd>
+        }
+      </dl>
+
+      <div class="filtros">
+        <label class="filtro-search">
+          <span class="filtro-label">Buscar alumno</span>
+          <input
+            type="search"
+            [value]="q()"
+            (input)="onSearch($event)"
+            placeholder="Nombre o documento…"
+            aria-label="Buscar alumno por nombre o documento enmascarado"
+          />
+        </label>
+      </div>
+
+      <fieldset class="alumnos-fieldset">
+        <legend>Presentes ({{ marcadosCount() }})</legend>
+
+        @if (alumnosFiltrados().length === 0) {
+          <p class="estado-linea">No hay alumnos que coincidan con la búsqueda.</p>
+        } @else {
+          <ul class="alumnos-lista">
+            @for (a of alumnosFiltrados(); track a.id) {
+              <li class="alumno-row">
+                <label class="alumno-label">
+                  <input
+                    type="checkbox"
+                    [checked]="estaMarcado(a.id)"
+                    (change)="togglePresente(a.id, $event)"
+                    [attr.aria-label]="'Marcar presente a ' + a.apellidoNombre"
+                  />
+                  <span class="alumno-nombre">{{ a.apellidoNombre }}</span>
+                  <span class="alumno-dni">{{ a.dniMostrar }}</span>
+                  @if (a.estado === 'inactivo') {
+                    <span class="alumno-estado">inactivo</span>
+                  }
+                </label>
+              </li>
+            }
+          </ul>
+        }
+      </fieldset>
+
+      <div class="acciones">
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="guardar()"
+          [disabled]="guardando()"
+        >
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="descartar()">
+          Descartar
+        </button>
+      </div>
+
+      <output class="guardado-feedback" aria-live="polite">{{ ok() }}</output>
+    } @else if (fechaNoEncontrada()) {
+      <p class="estado-linea estado-error" role="alert">
+        Fecha no encontrada. La fecha indicada no pertenece al curso.
+      </p>
+      <p class="volver">
+        <a routerLink="/admin/asistencias">← Volver a Asistencias</a>
+      </p>
+      <p class="volver">
+        <a [routerLink]="['/admin/cursos', courseId()]">Ver detalle del curso</a>
+      </p>
+    }
+  }
+</section>

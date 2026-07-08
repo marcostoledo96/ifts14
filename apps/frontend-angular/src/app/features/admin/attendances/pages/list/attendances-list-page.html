@@ -1,0 +1,66 @@
+<section aria-labelledby="asist-title">
+  <div class="header-row">
+    <div>
+      <p class="kicker">Admin · Asistencias</p>
+      <h1 id="asist-title" class="title">Asistencias</h1>
+    </div>
+  </div>
+
+  <p class="demo-banner" role="status">
+    Datos de demostración: los cambios no se persisten al recargar.
+  </p>
+
+  <div class="filtros">
+    <label class="filtro-search">
+      <span class="filtro-label">Buscar</span>
+      <input
+        type="search"
+        [value]="q()"
+        (input)="onSearch($event)"
+        placeholder="Curso, código o fecha…"
+        aria-label="Buscar fechas por curso, código o fecha"
+      />
+    </label>
+  </div>
+
+  @if (cargando()) {
+    <p class="estado-linea">Cargando asistencias…</p>
+  }
+  @if (error()) {
+    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (!cargando() && filtradas().length === 0) {
+    <p class="estado-linea">No hay fechas que coincidan con la búsqueda.</p>
+  }
+
+  @if (!cargando() && filtradas().length > 0) {
+    <ul class="lista-asis">
+      @for (fila of filtradas(); track fila.fecha.id) {
+        <li>
+          <article class="card-asis">
+            <header class="card-asis-header">
+              <h2 class="card-asis-title">{{ fila.curso.nombre }}</h2>
+              <span class="estado-chip estado-{{ fila.fecha.estado }}">{{ fila.fecha.estado }}</span>
+            </header>
+            <dl class="card-asis-meta">
+              <dt>Fecha</dt>
+              <dd>{{ fila.fecha.fecha }}</dd>
+              <dt>Curso</dt>
+              <dd>{{ fila.curso.codigo }}</dd>
+              @if (fila.fecha.descripcion) {
+                <dt>Detalle</dt>
+                <dd>{{ fila.fecha.descripcion }}</dd>
+              }
+              <dt>Presentes</dt>
+              <dd class="card-asis-conteo">{{ fila.presentes }}/{{ fila.total }}</dd>
+            </dl>
+            <a class="card-asis-link" [routerLink]="linkMarcado(fila)">
+              Tomar asistencia
+            </a>
+          </article>
+        </li>
+      }
+    </ul>
+  }
+</section>

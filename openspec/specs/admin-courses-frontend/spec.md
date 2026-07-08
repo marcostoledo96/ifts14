@@ -67,3 +67,14 @@ El sistema DEBE documentar límites de F2-04 y el traspaso a F2-05 asistencias y
 - **When** se actualiza la documentación frontend
 - **Then** DEBEN constar exclusiones de backend, deploy, auth real, HTTP, datos reales, Tailwind/deps nuevas y copia React/Next.
 - **And** DEBE quedar indicado que asistencias y certificaciones continúan en F2-05/F2-06.
+
+### Requirement: Enlace de toma de asistencia por fecha
+
+El sistema DEBE permitir abrir la pantalla de marcado de asistencia desde cada fecha de curso ficticia sin cambiar la persistencia mock ni exponer datos sensibles.
+
+#### Scenario: Navegación desde detalle de curso
+
+- **Given** existe una sesión mock activa y se visualiza el detalle de un curso
+- **When** se activa “Tomar asistencia” en una fecha
+- **Then** DEBE navegar a `/admin/cursos/:id/fechas/:fechaId/asistencias`.
+- **And** NO DEBE mostrar DNI completo, email, token, legajo ni matrícula.

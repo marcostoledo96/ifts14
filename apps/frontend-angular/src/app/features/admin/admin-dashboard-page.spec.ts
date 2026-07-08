@@ -23,10 +23,19 @@ describe('AdminDashboardPage', () => {
   it('muestra tarjeta Cursos como enlace a /admin/cursos', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const link = el.querySelector('a[routerLink]') as HTMLAnchorElement | null;
-    expect(link).not.toBeNull();
-    expect(link?.textContent).toContain('Abrir Cursos');
-    expect(link?.getAttribute('href')).toContain('/admin/cursos');
+    const links = Array.from(el.querySelectorAll('a[routerLink]')) as HTMLAnchorElement[];
+    const cursosLink = links.find((a) => a.textContent?.includes('Abrir Cursos'));
+    expect(cursosLink).toBeDefined();
+    expect(cursosLink?.getAttribute('href')).toContain('/admin/cursos');
+  });
+
+  it('muestra tarjeta Asistencias como enlace a /admin/asistencias', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const links = Array.from(el.querySelectorAll('a[routerLink]')) as HTMLAnchorElement[];
+    const asistLink = links.find((a) => a.textContent?.includes('Abrir Asistencias'));
+    expect(asistLink).toBeDefined();
+    expect(asistLink?.getAttribute('href')).toContain('/admin/asistencias');
   });
 
   it('muestra conteo ficticio de cursos en demo', async () => {
@@ -35,17 +44,15 @@ describe('AdminDashboardPage', () => {
     expect(el.textContent).toContain('6');
   });
 
-  it('mantiene Asistencias y Certificaciones como placeholders', async () => {
+  it('mantiene Certificaciones como placeholder', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Próximamente: Asistencias');
     expect(el.textContent).toContain('Próximamente: Certificaciones');
   });
 
-  it('indica handoff F2-05 y F2-06', async () => {
+  it('indica handoff F2-06', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('F2-05');
     expect(el.textContent).toContain('F2-06');
   });
 

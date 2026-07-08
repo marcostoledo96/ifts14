@@ -48,6 +48,13 @@
                 <span class="fecha-desc">{{ f.descripcion || 'Sin descripción' }}</span>
                 <span class="fecha-orden">Orden {{ f.orden }}</span>
                 <span class="fecha-estado estado-{{ f.estado }}">{{ f.estado }}</span>
+                <a
+                  class="fecha-asistencia"
+                  [routerLink]="['/admin/cursos', d.id, 'fechas', f.id, 'asistencias']"
+                  [attr.aria-label]="'Tomar asistencia de la fecha ' + f.fecha"
+                >
+                  Tomar asistencia
+                </a>
               </dd>
             </div>
           }
