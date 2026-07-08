@@ -1,0 +1,140 @@
+<section aria-labelledby="editor-title">
+  <p class="volver">
+    <a routerLink="/admin/cursos">← Volver al listado</a>
+  </p>
+
+  @if (cargando()) {
+    <p class="estado-linea">Cargando editor…</p>
+  }
+
+  @if (!cargando()) {
+    <header class="editor-header">
+      <p class="kicker">{{ mode() === 'create' ? 'Nuevo curso' : 'Editar curso' }}</p>
+      <h1 id="editor-title" class="title">
+        {{ mode() === 'create' ? 'Crear curso' : 'Fechas de ' + (detalle()?.nombre || '') }}
+      </h1>
+    </header>
+
+    <p class="demo-banner" role="status">
+      Datos de demostración: los cambios no se persisten al recargar.
+    </p>
+
+    @if (error()) {
+      <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    }
+    @if (ok()) {
+      <p class="estado-linea estado-ok" role="status">{{ ok() }}</p>
+    }
+
+    <form (ngSubmit)="guardar()">
+      <fieldset class="curso-fieldset">
+        <legend>Datos del curso</legend>
+        <label class="campo">
+          <span class="campo-label">Código</span>
+          <input
+            type="text"
+            [value]="codigo()"
+            (input)="onCodigo($event)"
+            [disabled]="mode() === 'edit'"
+            aria-label="Código del curso"
+            required
+          />
+        </label>
+        <label class="campo">
+          <span class="campo-label">Nombre</span>
+          <input
+            type="text"
+            [value]="nombre()"
+            (input)="onNombre($event)"
+            [disabled]="mode() === 'edit'"
+            aria-label="Nombre del curso"
+            required
+          />
+        </label>
+        <label class="campo">
+          <span class="campo-label">Estado</span>
+          <select
+            [value]="estado()"
+            (change)="onEstado($event)"
+            [disabled]="mode() === 'edit'"
+            aria-label="Estado del curso"
+          >
+            @for (e of estados; track e) {
+              <option [value]="e">{{ e }}</option>
+            }
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset class="fechas-fieldset">
+        <legend>Fechas</legend>
+        <p class="fechas-ayuda">
+          En modo edición, agregá o modificá fechas. En modo creación, las fechas se guardan
+          después de crear el curso.
+        </p>
+
+        @if (fechas().length === 0) {
+          <p class="estado-linea">No hay fechas cargadas.</p>
+        }
+
+        @for (f of fechas(); track $index) {
+          <fieldset class="fecha-fieldset">
+            <legend>Fecha {{ $index + 1 }}</legend>
+            <div class="fecha-campos">
+              <label class="campo campo-fecha">
+                <span class="campo-label">Fecha</span>
+                <input
+                  type="date"
+                  [value]="f.fecha"
+                  (input)="onFechaInput($index, $event)"
+                  aria-label="Fecha del curso"
+                  required
+                />
+              </label>
+              <label class="campo campo-desc">
+                <span class="campo-label">Descripción</span>
+                <input
+                  type="text"
+                  [value]="f.descripcion || ''"
+                  (input)="onDescripcionInput($index, $event)"
+                  aria-label="Descripción de la fecha"
+                />
+              </label>
+              <label class="campo campo-estado">
+                <span class="campo-label">Estado</span>
+                <select
+                  [value]="f.estado"
+                  (change)="onEstadoFecha($index, $event)"
+                  aria-label="Estado de la fecha"
+                >
+                  @for (e of estadosFecha; track e) {
+                    <option [value]="e">{{ e }}</option>
+                  }
+                </select>
+              </label>
+              <button
+                type="button"
+                class="btn-quitar"
+                (click)="quitarFecha($index)"
+                aria-label="Quitar fecha {{ $index + 1 }}"
+              >
+                Quitar
+              </button>
+            </div>
+          </fieldset>
+        }
+
+        <button type="button" class="btn-secondary" (click)="agregarFecha()">
+          + Agregar fecha
+        </button>
+      </fieldset>
+
+      <div class="acciones">
+        <button type="submit" class="btn-primary" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+        <a class="btn-secondary" routerLink="/admin/cursos">Cancelar</a>
+      </div>
+    </form>
+  }
+</section>

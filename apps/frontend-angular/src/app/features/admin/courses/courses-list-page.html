@@ -1,0 +1,72 @@
+<section aria-labelledby="cursos-title">
+  <div class="header-row">
+    <div>
+      <p class="kicker">Admin · Cursos</p>
+      <h1 id="cursos-title" class="title">Cursos</h1>
+    </div>
+    <a class="btn-primary" routerLink="/admin/cursos/nuevo">
+      <span>Nuevo curso</span>
+    </a>
+  </div>
+
+  <p class="demo-banner" role="status">
+    Datos de demostración: los cambios no se persisten al recargar.
+  </p>
+
+  <div class="filtros">
+    <label class="filtro-search">
+      <span class="filtro-label">Buscar</span>
+      <input
+        type="search"
+        [value]="q()"
+        (input)="onSearch($event)"
+        placeholder="Código o nombre…"
+        aria-label="Buscar curso por código o nombre"
+      />
+    </label>
+    <label class="filtro-estado">
+      <span class="filtro-label">Estado</span>
+      <select [value]="estado()" (change)="onEstado($event)" aria-label="Filtrar por estado">
+        <option value="todos">Todos</option>
+        @for (e of estados; track e) {
+          <option [value]="e">{{ e }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (cargando()) {
+    <p class="estado-linea">Cargando cursos…</p>
+  }
+  @if (error()) {
+    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (!cargando() && cursos().length === 0) {
+    <p class="estado-linea">No hay cursos que coincidan con los filtros.</p>
+  }
+
+  @if (!cargando() && cursos().length > 0) {
+    <ul class="lista-cursos">
+      @for (c of cursos(); track c.id) {
+        <li>
+          <article class="card-curso">
+            <header class="card-curso-header">
+              <h2 class="card-curso-title">{{ c.nombre }}</h2>
+              <span class="estado-chip estado-{{ c.estado }}">{{ c.estado }}</span>
+            </header>
+            <dl class="card-curso-meta">
+              <dt>Código</dt>
+              <dd>{{ c.codigo }}</dd>
+              <dt>Actualizado</dt>
+              <dd>{{ c.updatedAt | date: 'short' }}</dd>
+            </dl>
+            <a class="card-curso-link" [routerLink]="['/admin/cursos', c.id]">
+              Ver detalle
+            </a>
+          </article>
+        </li>
+      }
+    </ul>
+  }
+</section>
