@@ -9,16 +9,16 @@ interface NavItem {
   readonly icon: string; // SVG path data inline
 }
 
-// Solo /admin/dashboard, /admin/cursos y /admin/asistencias están habilitados
-// hoy (F2-05). El resto queda como placeholder deshabilitado para evitar
-// hrefs absolutos que escapen el base href /certificados/ y recarguen la app
-// perdiendo la sesión mock en memoria.
+// Solo /admin/dashboard, /admin/cursos, /admin/asistencias y
+// /admin/certificaciones están habilitados hoy (F2-06). El resto queda como
+// placeholder deshabilitado para evitar hrefs absolutos que escapen el base
+// href /certificados/ y recarguen la app perdiendo la sesión mock en memoria.
 const ITEMS: readonly NavItem[] = [
   { label: 'Inicio', route: '/admin/dashboard', icon: 'M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10' },
   { label: 'Cursos', route: '/admin/cursos', icon: 'M4 6h16M4 12h16M4 18h10' },
   { label: 'Alumnos', route: null, icon: 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 20a8 8 0 0 1 16 0' },
   { label: 'Asistencias', route: '/admin/asistencias', icon: 'M5 3v18M9 3v18M5 8h4M5 14h4M19 5l-2 14-4-2' },
-  { label: 'Certificaciones', route: null, icon: 'M5 3h9l5 5v13H5zM14 3v5h5M8 13h8M8 17h5' },
+  { label: 'Certificaciones', route: '/admin/certificaciones', icon: 'M5 3h9l5 5v13H5zM14 3v5h5M8 13h8M8 17h5' },
 ];
 
 @Component({
@@ -33,12 +33,12 @@ export class SidebarAdmin {
   readonly items = ITEMS;
   readonly cerrarSesion = output<void>();
 
-  // Inicio usa igualdad exacta; Cursos y Asistencias usan prefijo para que
-  // sus rutas hijas (nuevo, editar, detalle, marcado por fecha) también
-  // queden activos en la navegación. La ruta de marcado
-  // /admin/cursos/:id/fechas/:fechaId/asistencias pertenece a Asistencias
-  // (no a Cursos): debe verificarse antes del prefijo /admin/cursos para
-  // que el match de Asistencias gane.
+  // Inicio usa igualdad exacta; Cursos, Asistencias y Certificaciones usan
+  // prefijo para que sus rutas hijas (nuevo, editar, detalle, marcado por
+  // fecha, previsualización) también queden activos en la navegación. La
+  // ruta de marcado /admin/cursos/:id/fechas/:fechaId/asistencias pertenece a
+  // Asistencias (no a Cursos): debe verificarse antes del prefijo
+  // /admin/cursos para que el match de Asistencias gane.
   isActive(item: NavItem): boolean {
     if (item.route === null) return false;
     const active = this.active().split(/[?#]/, 1)[0];
@@ -50,7 +50,11 @@ export class SidebarAdmin {
       // Asistencias engloba /admin/asistencias y el marcado por fecha.
       return item.route === '/admin/asistencias';
     }
-    if (item.route === '/admin/cursos' || item.route === '/admin/asistencias') {
+    if (
+      item.route === '/admin/cursos' ||
+      item.route === '/admin/asistencias' ||
+      item.route === '/admin/certificaciones'
+    ) {
       return active.startsWith(item.route);
     }
     return item.route === active;

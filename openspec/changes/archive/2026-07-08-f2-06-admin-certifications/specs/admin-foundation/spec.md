@@ -1,10 +1,6 @@
-# Especificación — admin-foundation
+# Delta — admin-foundation
 
-## Propósito
-
-Definir la base navegable del panel administrativo Angular 20 para F2-04..F2-06: rutas admin, login visual, shell administrativo y sesión mock en memoria, sin autenticación real ni integración backend.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Rutas administrativas aisladas
 
@@ -42,24 +38,6 @@ El sistema DEBE presentar login, shell y dashboard como UI simulada honesta; NO 
 - **When** se abre `/admin/dashboard`
 - **Then** DEBE mostrarse un dashboard sin datos reales.
 - **And** DEBE enlazar Cursos, Asistencias y Certificaciones con conteos ficticios o estados de demostración.
-
-### Requirement: Sesión mock solo en memoria
-
-El sistema DEBE usar una sesión mock en memoria para habilitar la navegación visual. NO DEBE usar claves admin reales o temporales embebidas, credenciales reales o demo, `localStorage`, `sessionStorage`, cookies, IndexedDB ni llamadas API.
-
-#### Scenario: Inicio y cierre de sesión mock
-
-- **Given** el login recibe datos formalmente válidos
-- **When** se confirma el acceso simulado
-- **Then** la sesión mock DEBE activarse solo en memoria.
-- **And** cerrar sesión DEBE limpiar solo ese estado en memoria.
-
-#### Scenario: Sin persistencia ni red
-
-- **Given** se usa el flujo admin F2-03
-- **When** se inspecciona el comportamiento del login, guard y shell
-- **Then** NO DEBE existir escritura en storage, cookies ni llamadas HTTP.
-- **And** NO DEBE aparecer ninguna clave admin real o temporal embebida en código Angular ni bundle.
 
 ### Requirement: Shell accesible, responsive y alineado a F1-02
 
