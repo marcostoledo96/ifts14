@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { COURSES_SOURCE } from './courses.service';
@@ -19,7 +28,7 @@ import {
   templateUrl: './course-editor-page.html',
   styleUrl: './course-editor-page.css',
 })
-export class CourseEditorPage implements OnInit {
+export class CourseEditorPage {
   // El route define data.mode ('create' | 'edit'). Angular inyecta el
   // snapshot de la ruta en `data` vía withComponentInputBinding().
   readonly mode = input<'create' | 'edit'>('create');
@@ -53,23 +62,45 @@ export class CourseEditorPage implements OnInit {
     return !this.id() || Number.isNaN(n) || n <= 0 ? null : n;
   });
 
-  // ngOnInit: las signals de input() se ligan antes del primer
-  // detectChanges, no en el ctor. Inicializar acá garantiza que mode()/id()
-  // ya tengan valor.
-  ngOnInit(): void {
-    void this.inicializar();
+  // ponytail: generación de carga para descartar resultados stale cuando el
+  // id/mode cambia antes de que termine la carga anterior (route reuse).
+  private loadGen = 0;
+
+  constructor() {
+    // Reacciona a cambios de mode()/id() tras la ligadura inicial y también
+    // cuando Angular reutiliza la misma instancia de componente al navegar
+    // entre URLs que comparten la misma route config (p.ej. /cursos/1/editar
+    // -> /cursos/2/editar). ngOnInit no vuelve a correr en ese caso, pero el
+    // effect sí re-ejecuta porque las signals input() cambian.
+    effect(() => {
+      const mode = this.mode();
+      const id = this.id();
+      untracked(() => void this.recargar(mode, id));
+    });
   }
 
-  async inicializar(): Promise<void> {
+  private async recargar(mode: 'create' | 'edit', id: string): Promise<void> {
+    const gen = ++this.loadGen;
+    // Reset de estado stale antes de cargar para que no queden fechas del
+    // curso anterior visibles/ediciones mientras carga el nuevo.
+    this.detalle.set(null);
+    this.fechas.set([]);
+    this.codigo.set('');
+    this.nombre.set('');
+    this.estado.set('borrador');
+    this.ok.set('');
+    this.error.set('');
     this.cargando.set(true);
     try {
-      if (this.mode() === 'edit') {
-        const cid = this.idNumber();
+      if (mode === 'edit') {
+        const n = Number(id);
+        const cid = !id || Number.isNaN(n) || n <= 0 ? null : n;
         if (cid === null) {
-          this.error.set('Curso no encontrado.');
+          if (gen === this.loadGen) this.error.set('Curso no encontrado.');
           return;
         }
         const d = await this.courses.obtener(cid);
+        if (gen !== this.loadGen) return; // carga stale, ignorar
         this.detalle.set(d);
         this.codigo.set(d.codigo);
         this.nombre.set(d.nombre);
@@ -85,9 +116,9 @@ export class CourseEditorPage implements OnInit {
         );
       }
     } catch (e) {
-      this.error.set((e as Error).message);
+      if (gen === this.loadGen) this.error.set((e as Error).message);
     } finally {
-      this.cargando.set(false);
+      if (gen === this.loadGen) this.cargando.set(false);
     }
   }
 
