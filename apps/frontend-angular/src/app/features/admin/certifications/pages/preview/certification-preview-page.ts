@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle } from '../../certifications.models';
@@ -12,7 +12,7 @@ import { CertificacionDetalle } from '../../certifications.models';
   templateUrl: './certification-preview-page.html',
   styleUrl: './certification-preview-page.css',
 })
-export class CertificationPreviewPage implements OnInit {
+export class CertificationPreviewPage {
   // withComponentInputBinding() pasa los route params como strings.
   readonly id = input<string>('');
 
@@ -33,26 +33,40 @@ export class CertificationPreviewPage implements OnInit {
     return Number.isNaN(n) || n <= 0 ? null : n;
   });
 
-  ngOnInit(): void {
-    void this.cargar();
+  // ponytail: generación de carga para descartar resultados stale cuando el
+  // id cambia antes de que termine la carga anterior (route reuse).
+  private loadGen = 0;
+
+  constructor() {
+    // Reacciona a cambios de id() tras la ligadura inicial y cuando Angular
+    // reutiliza la misma instancia al navegar entre URLs de previsualización.
+    // ngOnInit no vuelve a correr en route reuse, pero el effect sí.
+    effect(() => {
+      this.id();
+      untracked(() => void this.cargar());
+    });
   }
 
   async cargar(): Promise<void> {
-    this.cargando.set(true);
-    this.error.set('');
+    const gen = ++this.loadGen;
     const cid = this.certId();
+    // Reset stale antes de cargar.
+    this.detalle.set(null);
+    this.error.set('');
+    this.cargando.set(true);
     if (cid === null) {
-      this.error.set('Certificación no encontrada.');
+      if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
       this.cargando.set(false);
       return;
     }
     try {
       const det = await this.certs.obtener(cid);
+      if (gen !== this.loadGen) return; // carga stale, ignorar
       this.detalle.set(det);
     } catch (e) {
-      this.error.set((e as Error).message);
+      if (gen === this.loadGen) this.error.set((e as Error).message);
     } finally {
-      this.cargando.set(false);
+      if (gen === this.loadGen) this.cargando.set(false);
     }
   }
 }

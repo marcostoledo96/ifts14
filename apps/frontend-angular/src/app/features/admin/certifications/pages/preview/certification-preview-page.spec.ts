@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { CertificationPreviewPage } from './certification-preview-page';
-import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
+import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
+import { CertificacionDetalle } from '../../certifications.models';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
 import { URL_PUBLICA_MAX } from '../../in-memory-certifications.service';
 
@@ -126,5 +127,144 @@ describe('CertificationPreviewPage', () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  });
+
+  // --- Route reuse ---
+
+  it('route reuse: navegar de cert 1 a cert 2 recarga el detalle nuevo', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    expect(f.componentInstance.detalle()?.id).toBe(1);
+    expect(el.querySelector('#cert-title')?.textContent).toContain(
+      'Curso de introducción a la gestión',
+    );
+    f.componentRef.setInput('id', '2');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.componentInstance.detalle()?.id).toBe(2);
+    expect(f.componentInstance.detalle()?.cursoNombre).toBe(
+      'Curso de herramientas administrativas',
+    );
+    // DOM: muestra contenido de cert 2, ya no muestra contenido de cert 1.
+    expect(el.querySelector('#cert-title')?.textContent).toContain(
+      'Curso de herramientas administrativas',
+    );
+    expect(el.textContent).not.toContain('Curso de introducción a la gestión');
+    expect(el.textContent).not.toContain('Alumno Demo Uno');
+    expect(el.textContent).toContain('Alumno Demo Dos');
+  });
+
+  it('route reuse: navegar a id inválido limpia detalle sin retener datos previos', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    expect(f.componentInstance.detalle()?.id).toBe(1);
+    expect(el.querySelector('#cert-title')?.textContent).toContain(
+      'Curso de introducción a la gestión',
+    );
+    f.componentRef.setInput('id', 'abc');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.componentInstance.detalle()).toBeNull();
+    expect(f.componentInstance.error()).toContain('no encontrada');
+    // DOM: muestra "Certificación no encontrada" y no retiene contenido de cert 1.
+    expect(el.querySelector('.estado-error')?.textContent).toContain(
+      'Certificación no encontrada',
+    );
+    expect(el.querySelector('#cert-title')).toBeNull();
+    expect(el.textContent).not.toContain('Curso de introducción a la gestión');
+    expect(el.textContent).not.toContain('Alumno Demo Uno');
+  });
+
+  // CRITICAL: el guard `loadGen` descarta cargas stale cuando el id cambia
+  // antes de que obtener() resuelva. Sin este guard, la promise de la carga
+  // anterior resuelve DESPUÉS de la nueva y sobrescribe la pantalla vigente
+  // con el certificado viejo. Este fake permite resolver manualmente las
+  // promises fuera de orden para verificar el guard de forma determinística.
+  it('route reuse: carga stale no sobrescribe pantalla vigente (out-of-order)', async () => {
+    const pending = new Map<number, { resolve: (v: unknown) => void }>();
+
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      obtener: (id: number) =>
+        new Promise<CertificacionDetalle>((resolve) => {
+          pending.set(id, { resolve: resolve as (v: unknown) => void });
+        }),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [CertificationPreviewPage],
+      providers: [
+        provideRouter([]),
+        { provide: CERTIFICATIONS_SOURCE, useValue: fakeCerts },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(CertificationPreviewPage);
+    fixture.componentRef.setInput('id', '1');
+    fixture.detectChanges();
+    // obtener(1) pendiente.
+    expect(pending.has(1)).toBe(true);
+
+    // Cambiar a cert 2 sin resolver la carga de 1 todavía.
+    fixture.componentRef.setInput('id', '2');
+    fixture.detectChanges();
+    expect(pending.has(2)).toBe(true);
+
+    // Resolver cert 2 PRIMERO (orden correcto de llegada).
+    pending.get(2)!.resolve({
+      id: 2,
+      nombreAlumno: 'Alumno Demo Dos',
+      cursoNombre: 'Curso de herramientas administrativas',
+      estado: 'vigente',
+      documentMasked: '34****56',
+      tokenPrefix: 'prefijo_demo_c2d',
+      emitidoEn: '2026-04-05',
+      venceEn: '2027-04-05',
+      publicValidationUrl: 'https://ifrm/validar/prefijo_demo_c2d…',
+      attendedDates: ['2026-04-05', '2026-04-12'],
+      auditEvents: [{ at: '2026-04-05', accion: 'emision', detalle: 'Emisión mock.' }],
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.detalle()?.id).toBe(2);
+
+    // Ahora resolver cert 1 TARDE (carga stale). loadGen debe descartarla.
+    pending.get(1)!.resolve({
+      id: 1,
+      nombreAlumno: 'Alumno Demo Uno',
+      cursoNombre: 'Curso de introducción a la gestión',
+      estado: 'vigente',
+      documentMasked: '12****34',
+      tokenPrefix: 'prefijo_demo_a1b',
+      emitidoEn: '2026-03-01',
+      venceEn: '2027-03-01',
+      publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
+      attendedDates: ['2026-03-02', '2026-03-09', '2026-03-16'],
+      auditEvents: [{ at: '2026-03-01', accion: 'emision', detalle: 'Emisión mock.' }],
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // La pantalla sigue mostrando cert 2; la carga stale de 1 se descartó.
+    expect(fixture.componentInstance.detalle()?.id).toBe(2);
+    expect(fixture.componentInstance.detalle()?.cursoNombre).toBe(
+      'Curso de herramientas administrativas',
+    );
+
+    // DOM: muestra contenido de cert 2 (id vigente), sin contenido stale de cert 1.
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('#cert-title')?.textContent).toContain(
+      'Curso de herramientas administrativas',
+    );
+    expect(el.textContent).toContain('Alumno Demo Dos');
+    expect(el.textContent).toContain('prefijo_demo_c2d');
+    expect(el.textContent).not.toContain('Curso de introducción a la gestión');
+    expect(el.textContent).not.toContain('Alumno Demo Uno');
+    expect(el.textContent).not.toContain('prefijo_demo_a1b');
   });
 });
