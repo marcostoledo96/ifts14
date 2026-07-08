@@ -1,0 +1,207 @@
+:host {
+  display: block;
+}
+
+.volver {
+  margin: 0 0 var(--space-3);
+}
+
+.volver a {
+  color: var(--color-muted-foreground);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.volver a:hover {
+  text-decoration: underline;
+}
+
+.volver a:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.kicker {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: var(--tracking-caps-tight);
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+.title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin: 0 0 var(--space-3);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.banda-estado {
+  display: inline-block;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps-tight);
+  background: var(--color-muted);
+}
+
+.estado-vigente {
+  background: color-mix(in srgb, var(--color-valid) 20%, transparent);
+}
+
+.estado-borrador {
+  background: var(--color-warning-soft);
+}
+
+.estado-revocado,
+.estado-vencido {
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+}
+
+.detalle-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-4);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.detalle-meta dt {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps-tight);
+  color: var(--color-muted-foreground);
+}
+
+.detalle-meta dd {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.public-url {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  word-break: break-all;
+}
+
+.attended,
+.audit {
+  margin-top: var(--space-4);
+}
+
+.attended-dates,
+.audit-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.attended-dates li {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.audit-events li {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+}
+
+.audit-at {
+  font-family: var(--font-mono);
+  color: var(--color-muted-foreground);
+}
+
+.audit-accion {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps-tight);
+  font-size: 0.6875rem;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+
+.btn-disabled {
+  display: inline-flex;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+  font-size: 0.8125rem;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.btn-secondary:hover {
+  background: var(--color-muted);
+}
+
+.btn-secondary:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.handoff-banner {
+  margin: var(--space-3) 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-soft);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+.estado-linea {
+  margin: var(--space-3) 0;
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.estado-error {
+  color: var(--color-destructive);
+}

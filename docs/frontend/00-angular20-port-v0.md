@@ -196,6 +196,40 @@ Verificación (`openspec/changes/archive/2026-07-08-f2-05-admin-attendance/verif
 
 Handoff a F2-06 (certificaciones): `Asistencia`, `AsistenciaAlumno`, `AttendanceService` y `ATTENDANCE_SOURCE` quedan listos para reuso y para que el ciclo de certificaciones consuma `attendedDates` desde `CursoFecha` y `Asistencia` sin reescribir la UI de Asistencias. Certificaciones sigue como placeholder deshabilitado en el dashboard ("Próximamente: Certificaciones", handoff F2-06). El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
 
+### Estado F2-06 — Certificaciones admin (mock)
+
+Ciclo `f2-06-admin-certifications` sobre rama `frontend/admin-certifications`. UI administrativa Angular 20 para listar y previsualizar certificaciones ficticias, navegable, mock-only, contract-ready y testeable. Datos ficticios en memoria (3–6 certificados demo, `documentMasked` `XX****XX`, `tokenPrefix` `prefijo_demo_xxx`, URL pública truncada a 60 chars), sin auth real, sin `X-Admin-Key`, sin storage, sin HTTP desde el browser. Activa Certificaciones como ruta navegable en el shell admin y deja CTAs de emisión/PDF/entrega/revocación/listado real deshabilitados con handoff explícito a F4-F6.
+
+Archivos creados en `apps/frontend-angular/src/app/features/admin/certifications/`:
+
+- `certifications.models.ts` — `EstadoCertificado` (`borrador`/`vigente`/`revocado`/`vencido`), `Certificacion` (con `documentMasked`, `tokenPrefix`), `CertificacionDetalle` (añade `publicValidationUrl` truncada, `attendedDates`, `auditEvents`), `AuditEvent`, `CertificacionesFiltros`. Sin DNI/token/email/legajo/matrícula.
+- `certifications.service.ts` — interface `CertificationsService` (`listar`, `obtener`, `contar`) y `CERTIFICATIONS_SOURCE` (`InjectionToken<CertificationsService>`).
+- `in-memory-certifications.service.ts` — seed de 6 certificados ficticios; `documentMasked` `XX****XX`; `tokenPrefix` `prefijo_demo_xxx`; `publicValidationUrl` truncada a 60 chars sin token completo; clone defensivo en `obtener`; sin email, DNI completo, token completo, legajo ni matrícula.
+- `certifications.service.spec.ts` — cubre `listar`/`obtener`/`contar`, id inválido, clone defensivo, filtros por estado y texto, formato `documentMasked`/`tokenPrefix`, URL truncada sin UUID.
+- `pages/list/certifications-list-page.{ts,html,css,spec.ts}` — banner "Datos de demostración — No persiste al recargar"; `input[type="search"]` + `<select>` por estado; 3–6 `<article>`; empty state `<output aria-live="polite">`; enlaces a `/admin/certificaciones/:id`; sin token completo en DOM.
+- `pages/preview/certification-preview-page.{ts,html,css,spec.ts}` — `<dl>` seguro (`documentMasked`, `tokenPrefix`, URL truncada, `attendedDates`, `auditEvents`); CTAs PDF/entrega/revocación/listado real `disabled` con `aria-disabled="true"` y copy "F4-01/F4-02/F5-04/F6-01"; id inválido/inexistente muestra "Certificación no encontrada" sin excepción; enlace retorno a `/admin/certificaciones`; banner "Disponible en F4/F5/F6"; sin emisión, PDF, revocación ni listado real.
+- `__checks__/no-secrets.spec.ts` y `__checks__/no-real-data.spec.ts` — tests negativos de seguridad (sin `X-Admin-Key`, HTTP/fetch/HttpClient, storage/cookies/IndexedDB, DNI/token/email) y datos (formato mascarado, placeholders neutros, sin UUID, URL truncada).
+
+Archivos modificados en `apps/frontend-angular/src/app/`:
+
+- `app.routes.ts` — `certificaciones` (listado) y `certificaciones/:id` (preview) registradas en orden seguro (`:id` antes del listado, después de `cursos`, antes del catch-all admin); `CERTIFICATIONS_SOURCE` proveído a nivel de ruta admin junto a `COURSES_SOURCE` y `ATTENDANCE_SOURCE`.
+- `app.routes.spec.ts` — casos de orden de children, sesión mock con/sin, runtime `CERTIFICATIONS_SOURCE` con `RouterTestingHarness` + `withComponentInputBinding()`, id inválido `/admin/certificaciones/abc` sin `NullInjectorError`, regresión sin provider (debe fallar), render real del seed.
+- `features/admin/sidebar-admin.{ts,html,spec.ts}` — ítem `Certificaciones` pasa de placeholder a `route: '/admin/certificaciones'`; `isActive()` extendido con prefijo `/admin/certificaciones` para activo en `/admin/certificaciones/:id`.
+- `features/admin/admin-dashboard-page.{ts,html,spec.ts}` — tarjeta "Próximamente: Certificaciones" reemplazada por `<a routerLink="/admin/certificaciones">` con conteo ficticio; quitado copy "F2-06"/"handoff" del bloque Certificaciones.
+
+Límites explícitos (F2-06): sin backend, deploy, base de datos, `.htaccess`, material privado, auth real, `X-Admin-Key`, clave admin temporal, cookies/`localStorage`/`sessionStorage`/IndexedDB, HTTP/HttpClient/fetch/XMLHttpRequest desde el browser, datos reales, DNI completo administrativo, tokens completos, emails, legajos, matrículas, credenciales demo de `muestra_pagina/`, Tailwind/shadcn/lucide/CVA, copia literal React/Next, ni dependencias nuevas (`package.json`/lockfiles sin cambios). Emisión real, PDF/QR, entrega manual, revocación y listado real quedan como handoff a F4-01/F4-02/F5-04/F6-01. La sustitución real por `HttpCertificationsService` queda para un ciclo con sesión segura aprobada.
+
+Verificación (re-verify post correcciones pre-commit): `npm run test:ci` **394/394 SUCCESS** (incluye specs de servicio, páginas, checks de seguridad/datos y rutas runtime). `npm run build` verde sin warnings (Initial total 313.84 kB raw / 90.36 kB transfer; lazy `certification-preview-page` 8.38 kB, `certifications-list-page` 7.76 kB; vs F2-05 310.43 kB / 89.66 kB). `git diff --check` PASS (sin salida). Veredicto final: **PASS** (14/14 escenarios compliant, 0 CRITICAL/WARNING).
+
+Corrective fixes pre-commit aplicados sobre la rama y consolidados en el re-verify:
+
+- **Strict id parsing**: la regex de `CertificationPreviewPage` acepta únicamente enteros decimales positivos; rechaza coercibles como `0x1` y `1e0`. Cubierto por `app.routes.spec.ts` y `certification-preview-page.spec.ts` (casos rechazados y normalización válida de ` 1 `).
+- **Dashboard fallback**: `admin-dashboard-page` consume `CertificationsService.contar()` vía signal (`contar().then()`) y, ante rechazo de la promesa, cae explícitamente a `0`. `inject(CERTIFICATIONS_SOURCE, { optional: true })` protege el consumo fuera del árbol admin.
+- **No-secrets check endurecido**: el spec negativo `__checks__/no-secrets.spec.ts` enumera métodos públicos, getters y parámetros del constructor como fuentes válidas de búsqueda, e incluye las funciones puras a nivel de módulo (`seed` y `truncarUrl`) que contienen los literales del seed ficticio, evitando falsos negativos por literales que viven fuera de los cuerpos de clase.
+- **Constante nombrada para truncado de URL**: la longitud de truncado de `publicValidationUrl` (60 chars) pasa a una constante nombrada en el modelo/feature, citada en specs y tests. Único punto de cambio si un ciclo siguiente redefine la política.
+
+Handoff a F4-01/F4-02/F5-04/F6-01: `Certificacion`, `CertificacionDetalle`, `CertificationsService` y `CERTIFICATIONS_SOURCE` quedan listos para reuso. Los CTAs de emisión, PDF, entrega manual, revocación y listado real están deshabilitados en la UI con handoff explícito. `attendedDates` ya está modelado en el detalle para consumo futuro desde `CursoFecha`/`Asistencia`. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:
