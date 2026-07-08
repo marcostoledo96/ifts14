@@ -50,6 +50,29 @@ describe('CourseDetailPage', () => {
     expect(volver).not.toBeNull();
   });
 
+  it('muestra enlace Tomar asistencia por fecha', async () => {
+    const f = await render(1);
+    const el = f.nativeElement as HTMLElement;
+    const asistLinks = Array.from(el.querySelectorAll('.fecha-asistencia')) as HTMLAnchorElement[];
+    // Curso 1 tiene 3 fechas → 3 enlaces Tomar asistencia.
+    expect(asistLinks.length).toBe(3);
+    const first = asistLinks[0];
+    expect(first.getAttribute('href')).toContain('/admin/cursos/1/fechas/11/asistencias');
+    expect(first.getAttribute('aria-label')).toContain('Tomar asistencia');
+  });
+
+  it('oculta Tomar asistencia para fecha cancelada y muestra texto no accionable', async () => {
+    // Curso 5 tiene una fecha cancelada (id 51).
+    const f = await render(5);
+    const el = f.nativeElement as HTMLElement;
+    const links = Array.from(el.querySelectorAll('a.fecha-asistencia')) as HTMLAnchorElement[];
+    // No debe haber enlace de asistencia para la fecha cancelada.
+    expect(links.length).toBe(0);
+    const span = el.querySelector('.fecha-asistencia-cancelada');
+    expect(span).not.toBeNull();
+    expect(span?.textContent).toContain('Fecha cancelada: no se toma asistencia');
+  });
+
   it('id inexistente muestra error', async () => {
     const f = await render(999);
     const el = f.nativeElement as HTMLElement;

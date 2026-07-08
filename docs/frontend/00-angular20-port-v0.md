@@ -167,6 +167,35 @@ Verificación (`openspec/changes/archive/2026-07-07-f2-04-admin-courses-dates/ve
 
 Handoff a F2-05 (asistencias) y F2-06 (certificaciones): `CursoFecha` y `InMemoryCoursesService` ya están listos para reuso. Asistencias y Certificaciones siguen como placeholders deshabilitados en el dashboard ("Próximamente: Asistencias"/"Certificaciones", handoff F2-05/F2-06). El detalle del curso aún no muestra placeholders de asistencias/certificaciones: quedan para F2-05/F2-06. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
 
+### Estado F2-05 — Asistencias admin (mock)
+
+Ciclo `f2-05-admin-attendance` sobre rama `frontend/admin-attendance`. UI administrativa Angular 20 para listar fechas con asistencia pendiente y marcar presentes por fecha, navegable, mock-only, contract-ready y testeable. Datos ficticios en memoria (12–15 personas demo por curso, `dniMostrar` enmascarado `XX****XX`), sin auth real, sin `X-Admin-Key`, sin storage, sin HTTP desde el browser. Habilita la base de integración con Certificaciones (F2-06) sobre el mismo shell admin y el patrón `COURSES_SOURCE`/`ATTENDANCE_SOURCE`.
+
+Archivos creados en `apps/frontend-angular/src/app/features/admin/attendances/`:
+
+- `models/attendance.types.ts` — `EstadoAlumno` (`activo`/`inactivo`), `AsistenciaAlumno` (`id`, `apellidoNombre`, `dniMostrar`, `estado`), `Asistencia`, `AsistenciaMarcado` e interface `AttendanceService` (`listarAlumnos`, `listarAsistencias`, `marcar`, `anular`).
+- `data/attendance-mock.service.ts` — seed de 12–15 personas demo por curso; `dniMostrar` con formato `XX****XX`; sin email, DNI completo, token, legajo ni matrícula. `marcar()` rechaza fechaId desconocido (no normaliza fechas inexistentes).
+- `data/attendance.token.ts` — `ATTENDANCE_SOURCE` (`InjectionToken<AttendanceService>`) provisto a nivel de ruta admin junto a `COURSES_SOURCE`.
+- `pages/list/attendances-list-page.{ts,html,css,spec.ts}` — `<input type="search">` nativo, listado de cursos/fechas, conteo `presentes/total` desde `ATTENDANCE_SOURCE`, CTA a la primera fecha activa/programada/realizada disponible con `aria-label` y breadcrumb.
+- `pages/marking/attendance-marking-page.{ts,html,css,spec.ts}` — `effect()` reactivo sobre `cursoId()`/`fechaId()` con guard `loadGen` anti-stale; checkboxes nativos con `<label>` asociado, contador de marcados, botones Guardar/Descartar, resumen de fecha en `<dl>` nativo, `<output aria-live="polite">` para feedback de guardado, `<p role="alert">` para error/carga y estado controlado "Fecha no encontrada" con enlace de retorno cuando el `fechaId` no pertenece al curso. No usa `appCampoDato` ni `BandaEstado` (usa `<dl>`, `<p role="alert">` y `<output>` nativos).
+- `__checks__/no-secrets.spec.ts` y `__checks__/no-real-data.spec.ts` — tests negativos de seguridad y datos.
+
+Archivos modificados en `apps/frontend-angular/src/app/`:
+
+- `app.routes.ts` — `/admin/asistencias` y `/admin/cursos/:id/fechas/:fechaId/asistencias` registradas en el orden seguro (dashboard, asistencias, cursos/nuevo, cursos/:id/fechas/:fechaId/asistencias, cursos/:id/editar, cursos/:id, cursos) antes de `pathMatch:'prefix'` y `**`; `ATTENDANCE_SOURCE` proveído a nivel de ruta.
+- `app.routes.spec.ts` — casos de orden, sesión mock con/sin, runtime provider `ATTENDANCE_SOURCE`, ids inválidos y carga real de `AttendancesListPage` y `AttendanceMarkingPage` con `RouterTestingHarness` + `withComponentInputBinding()`.
+- `features/admin/sidebar-admin.{ts,html,spec.ts}` — ítem `Asistencias` con `route: '/admin/asistencias'`; `isActive()` por prefijo (`startsWith('/admin/asistencias')`) para activarlo en todas sus rutas hijas; `Certificaciones` sigue como placeholder.
+- `features/admin/admin-dashboard-page.{ts,html,spec.ts}` — tarjeta Asistencias pasa de placeholder deshabilitado a `<a routerLink="/admin/asistencias">` con conteo ficticio; Certificaciones sigue deshabilitado.
+- `features/admin/courses/course-detail-page.{ts,html,spec.ts}` — link `Tomar asistencia` por fecha con `aria-label` y query limpia hacia `/admin/cursos/:id/fechas/:fechaId/asistencias`.
+
+Límites explícitos (F2-05): sin backend, deploy, base de datos, `.htaccess`, material privado, auth real, `X-Admin-Key`, clave admin temporal, cookies/`localStorage`/`sessionStorage`/IndexedDB, HTTP/HttpClient/fetch/XMLHttpRequest desde el browser, datos reales, DNI completo administrativo, emails, tokens, matrículas, credenciales demo de `muestra_pagina/`, mocks de certificaciones, Tailwind/shadcn/lucide/CVA, copia literal React/Next, ni dependencias nuevas (`package.json`/lockfiles sin cambios). La sustitución real por `HttpAttendanceService` queda para un ciclo con sesión segura aprobada (PHP HttpOnly o equivalente). Solo datos de estudiantes: enmascarados (`dniMostrar` `XX****XX`); sin email, DNI completo, token, legajo ni matrícula. No se usa HTTP, `X-Admin-Key`, auth real, storage, ni dependencias nuevas en el frontend.
+
+Verificación (`openspec/changes/archive/2026-07-08-f2-05-admin-attendance/verify-report.md`): **PASS WITH WARNINGS**. Tests: `npm run test:ci` 315/315 SUCCESS. Build: `npm run build` verde (Initial total 310.43 kB raw / 89.66 kB transfer; lazy `attendance-marking-page` 11.44 kB, `attendances-list-page` 7.48 kB). Compliance: 9/10 grupos compliant; 1/10 partial por cierre documental propio de `sdd-archive` (cerrado en este archive). Negative checks (script Python sobre 9 archivos no spec de `src/app/features/admin/attendances` + sobre los chunks `attendance-marking-page` y `attendances-list-page` + specs `__checks__`): 0 matches para `X-Admin-Key`/admin key, storage/cookies/IndexedDB, HTTP/fetch/HttpClient, DNI/token/email/alumno/student, emails y números DNI-like.
+
+**Advertencia de tamaño de revisión**: diff estimado ~2.870 líneas (2.841 altas / 29 bajas) contra presupuesto 1.500; medición real posterior consistente. Maintainer (Matías) aprobó **`size:exception`** antes de la preparación del PR; no se aplica split. Esta decisión queda registrada en el archive report del ciclo (`openspec/changes/archive/2026-07-08-f2-05-admin-attendance/archive-report.md`).
+
+Handoff a F2-06 (certificaciones): `Asistencia`, `AsistenciaAlumno`, `AttendanceService` y `ATTENDANCE_SOURCE` quedan listos para reuso y para que el ciclo de certificaciones consuma `attendedDates` desde `CursoFecha` y `Asistencia` sin reescribir la UI de Asistencias. Certificaciones sigue como placeholder deshabilitado en el dashboard ("Próximamente: Certificaciones", handoff F2-06). El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:
