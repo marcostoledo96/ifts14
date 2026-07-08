@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter, Router, Routes, withComponentInputBinding } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './app.routes';
 import { NotFoundPage } from './features/not-found/not-found-page';
 import { PublicValidationPage } from './features/public-validation/public-validation-page';
@@ -7,6 +8,11 @@ import { LandingPage } from './features/landing/landing-page';
 import { LoginPage } from './features/admin/login-page';
 import { AdminShell } from './features/admin/admin-shell';
 import { MOCK_SESSION, InMemoryMockSession } from './features/admin/mock-session';
+import { CoursesListPage } from './features/admin/courses/courses-list-page';
+import { CourseDetailPage } from './features/admin/courses/course-detail-page';
+import { CourseEditorPage } from './features/admin/courses/course-editor-page';
+import { COURSES_SOURCE } from './features/admin/courses/courses.service';
+import { InMemoryCoursesService } from './features/admin/courses/in-memory-courses.service';
 
 // Verifica que ninguna ruta apunte a un token de demo salvo la validación
 // explícita en validar/:tokenCertificacion, evitando que una URL inválida
@@ -91,16 +97,17 @@ describe('app.routes', () => {
     expect(r?.loadComponent).toBeDefined();
   });
 
-  it("admin/dashboard tiene adminGuard", () => {
-    const r = routes.find((x) => x.path === 'admin/dashboard');
+  it("admin (shell) tiene adminGuard", () => {
+    // F2-04: admin/dashboard pasó a ser hijo; el guard vive en la ruta admin
+    // que carga AdminShell con children.
+    const r = routes.find((x) => x.path === 'admin' && x.children !== undefined);
     expect(r?.canActivate).toBeDefined();
     expect(r?.canActivate?.length).toBeGreaterThan(0);
   });
 
   it("admin redirige a /admin/dashboard (pathMatch full)", () => {
-    const r = routes.find((x) => x.path === 'admin');
+    const r = routes.find((x) => x.path === 'admin' && x.pathMatch === 'full');
     expect(r?.redirectTo).toBe('/admin/dashboard');
-    expect(r?.pathMatch).toBe('full');
     expect(r?.loadComponent).toBeUndefined();
   });
 
@@ -232,9 +239,285 @@ describe('app.routes', () => {
     expect(cmp).toBe(LoginPage);
   });
 
-  it("loadComponent de admin/dashboard devuelve AdminShell", async () => {
-    const r = routes.find((x) => x.path === 'admin/dashboard');
+  it("loadComponent de admin (shell) devuelve AdminShell", async () => {
+    // F2-04: AdminShell ahora es loadComponent de la ruta admin con children.
+    const r = routes.find((x) => x.path === 'admin' && x.children !== undefined);
     const cmp = await (r!.loadComponent as () => Promise<unknown>)();
     expect(cmp).toBe(AdminShell);
+  });
+
+  // --- Rutas admin/cursos F2-04 ---
+
+  function adminChildren() {
+    const adminRoute = routes.find((x) => x.path === 'admin' && x.children !== undefined);
+    return adminRoute?.children || [];
+  }
+
+  it("admin children define dashboard, cursos, cursos/nuevo, cursos/:id, cursos/:id/editar", () => {
+    const children = adminChildren();
+    const paths = children.map((c) => c.path);
+    expect(paths).toContain('dashboard');
+    expect(paths).toContain('cursos');
+    expect(paths).toContain('cursos/nuevo');
+    expect(paths).toContain('cursos/:id');
+    expect(paths).toContain('cursos/:id/editar');
+  });
+
+  it("orden: cursos/nuevo ANTES que cursos/:id (no cae en :id=nuevo)", () => {
+    const children = adminChildren();
+    const idxNuevo = children.findIndex((c) => c.path === 'cursos/nuevo');
+    const idxId = children.findIndex((c) => c.path === 'cursos/:id');
+    expect(idxNuevo).toBeGreaterThanOrEqual(0);
+    expect(idxId).toBeGreaterThanOrEqual(0);
+    expect(idxNuevo).toBeLessThan(idxId);
+  });
+
+  it("orden: cursos/:id/editar ANTES que cursos/:id (no cae en :id=:id/editar)", () => {
+    const children = adminChildren();
+    const idxEditar = children.findIndex((c) => c.path === 'cursos/:id/editar');
+    const idxId = children.findIndex((c) => c.path === 'cursos/:id');
+    expect(idxEditar).toBeGreaterThanOrEqual(0);
+    expect(idxId).toBeGreaterThanOrEqual(0);
+    expect(idxEditar).toBeLessThan(idxId);
+  });
+
+  it("orden: cursos/:id ANTES que cursos (listado)", () => {
+    const children = adminChildren();
+    const idxId = children.findIndex((c) => c.path === 'cursos/:id');
+    const idxList = children.findIndex((c) => c.path === 'cursos');
+    expect(idxId).toBeLessThan(idxList);
+  });
+
+  it("navegación real /admin/cursos/nuevo con sesión NO cae en :id", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/cursos/nuevo');
+    expect(router.url).toBe('/admin/cursos/nuevo');
+  });
+
+  it("navegación real /admin/cursos/123/editar con sesión NO cae en :id ni en nuevo", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/cursos/123/editar');
+    expect(router.url).toBe('/admin/cursos/123/editar');
+  });
+
+  it("navegación real /admin/cursos/nuevo sin sesión termina en /admin/login", async () => {
+    await setupRouter('/admin/cursos/nuevo');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("navegación real /admin/cursos/123/editar sin sesión termina en /admin/login", async () => {
+    await setupRouter('/admin/cursos/123/editar');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("navegación real /admin/cursos sin sesión termina en /admin/login", async () => {
+    await setupRouter('/admin/cursos');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("navegación real /admin/cursos con sesión carga CoursesListPage", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/cursos');
+    expect(router.url).toBe('/admin/cursos');
+  });
+
+  it("navegación real /admin/cursos/1 con sesión carga CourseDetailPage", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/cursos/1');
+    expect(router.url).toBe('/admin/cursos/1');
+  });
+
+  it("navegación real /admin/cursos/nuevo con sesión carga CourseEditorPage (mode=create)", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/cursos/nuevo');
+    expect(router.url).toBe('/admin/cursos/nuevo');
+  });
+
+  it("rutas públicas intactas tras agregar admin/cursos", async () => {
+    await setupRouter('/');
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
+    expect(router.url).toBe('/');
+    await router.navigateByUrl('/validar/demo-valido');
+    expect(router.url).toContain('/validar/');
+  });
+
+  // --- Provider runtime COURSES_SOURCE (gate correctivo F2-04) ---
+  // Sin este provider en el árbol admin, /admin/cursos* revienta en runtime
+  // con NullInjectorError. Los specs de componentes lo proveen a mano, lo que
+  // enmascara el bug. Estos tests usan la config de rutas REAL y dejan que el
+  // router instancie el componente enrutado dentro del route injector (donde
+  // vive el provider), para probar el wiring runtime de verdad.
+
+  async function setupHarnessWithSession() {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes, withComponentInputBinding()),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    return session;
+  }
+
+  it("runtime: /admin/cursos instancia CoursesListPage via route injector sin NullInjectorError", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/cursos');
+    const cmp = harness.routeNativeElement?.querySelector('app-courses-list-page');
+    expect(cmp).not.toBeNull();
+    // El seed del in-memory carga 6 cursos: prueba que el provider real
+    // (no un stub vacío) está conectado. esperamos estabilidad porque
+    // CoursesListPage dispara recargar() async en el constructor.
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cards = cmp?.querySelectorAll('.card-curso') || [];
+    expect(cards.length).toBe(6);
+  });
+
+  it("runtime: /admin/cursos/1 instancia CourseDetailPage via route injector sin NullInjectorError", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/cursos/1');
+    const cmp = harness.routeNativeElement?.querySelector('app-course-detail-page');
+    expect(cmp).not.toBeNull();
+  });
+
+  it("runtime: /admin/cursos/nuevo instancia CourseEditorPage via route injector sin NullInjectorError", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/cursos/nuevo');
+    const cmp = harness.routeNativeElement?.querySelector('app-course-editor-page');
+    expect(cmp).not.toBeNull();
+  });
+
+  it("regresión: sin COURSES_SOURCE en la ruta admin, /admin/cursos revienta en runtime", async () => {
+    // Replica routes sin el provider COURSES_SOURCE de la ruta admin y
+    // verifica que el router NO puede instanciar CoursesListPage: el route
+    // injector lanza NullInjectorError. Esto prueba que el gate dependía
+    // exclusivamente del route provider agregado en este fix.
+    const adminRoute = routes.find(
+      (x) => x.path === 'admin' && x.children !== undefined,
+    )!;
+    const stripped: Routes = [
+      ...routes.filter((x) => x !== adminRoute),
+      {
+        ...adminRoute,
+        providers: [], // simula la config rota del gate.
+        children: adminRoute.children,
+      },
+    ];
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(stripped),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    await expectAsync(RouterTestingHarness.create('/admin/cursos')).toBeRejected();
+  });
+
+  // --- Route params como strings (gate correctivo F2-04) ---
+  // withComponentInputBinding() pasa los route params como strings. Los
+  // componentes CourseDetailPage/CourseEditorPage declaran `id` como
+  // input<string>('') y computan el id numérico con un helper validado.
+  // Estos tests navegan con el router real y prueban el wiring end-to-end
+  // contra el seed del InMemoryCoursesService.
+
+  it("runtime: /admin/cursos/1 renderiza el nombre y código del curso seed (CUR-001)", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/cursos/1');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-course-detail-page');
+    expect(cmp).not.toBeNull();
+    const text = cmp?.textContent || '';
+    expect(text).toContain('Curso de introducción a la gestión');
+    expect(text).toContain('CUR-001');
+  });
+
+  it("runtime: /admin/cursos/1/editar renderiza editor con datos del curso seed cargados", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/cursos/1/editar');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-course-editor-page');
+    expect(cmp).not.toBeNull();
+    const text = cmp?.textContent || '';
+    // El editor en modo edit muestra "Fechas de <nombre>" y carga las fechas.
+    expect(text).toContain('Curso de introducción a la gestión');
+    const fechaFieldsets = cmp?.querySelectorAll('.fecha-fieldset') || [];
+    expect(fechaFieldsets.length).toBe(3);
+  });
+
+  it("runtime: /admin/cursos/abc (id inválido) NO revienta y muestra estado de error/not found", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/cursos/abc');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-course-detail-page');
+    expect(cmp).not.toBeNull();
+    const text = cmp?.textContent || '';
+    // Id no numérico → estado de error controlado, sin excepción.
+    expect(text).toContain('no encontrado');
+  });
+
+  it("runtime: /admin/cursos/abc/editar (id inválido) NO revienta y muestra error controlado", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/cursos/abc/editar');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-course-editor-page');
+    expect(cmp).not.toBeNull();
+    const text = cmp?.textContent || '';
+    // Id no numérico en modo edit → estado de error controlado, sin excepción.
+    expect(text).toContain('no encontrado');
   });
 });

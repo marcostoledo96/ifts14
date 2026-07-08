@@ -1,7 +1,7 @@
 <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
 <div class="layout">
   <aside class="sidebar-desktop" aria-label="Navegación admin">
-    <app-sidebar-admin (cerrarSesion)="cerrarSesion()" />
+    <app-sidebar-admin [active]="rutaActual()" (cerrarSesion)="cerrarSesion()" />
   </aside>
   <div class="content">
     <header class="topbar" role="banner">
@@ -37,7 +37,7 @@
       </div>
     </header>
     <main id="contenido" role="main">
-      <app-admin-dashboard-page />
+      <router-outlet />
     </main>
     <footer role="contentinfo">
       <p>Instituto de Formación Técnica Superior N.º 14 — Panel administrativo</p>
@@ -56,6 +56,6 @@
     role="navigation"
     aria-label="Navegación admin (móvil)"
   >
-    <app-sidebar-admin (cerrarSesion)="cerrarSesion()" />
+    <app-sidebar-admin [active]="rutaActual()" (cerrarSesion)="cerrarSesion()" />
   </aside>
 }
