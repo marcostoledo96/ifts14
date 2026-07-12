@@ -435,3 +435,7 @@ Cuando exista integración real:
 - la UI pública no debe pedir DNI como input de búsqueda pública;
 - QR/token permanente: pantallas de entrega manual indican "mismo QR", no rotación;
 - los modelos TypeScript futuros deben respetar `docs/backend/01-contrato-api-certificados.md`.
+
+## Ver también
+
+- [Reporte de QA manual F3-04](./03-qa-manual-f3-04.md) — checklist transversal de build, responsive, teclado/foco, contraste, estados, consola y datos sensibles. Estado BLOCKED hasta ejecutar QA manual y checks automáticos; F3-05 no satisface esos pendientes por sí solo.
