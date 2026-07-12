@@ -2,8 +2,9 @@
 // ponytail: escaneo lineal de src, sin deps. Suficiente para repo de este tamaño.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('../src', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../src', import.meta.url));
 const PATTERNS = [/\bfdescribe\s*\(/, /\bfit\s*\(/, /\.only\s*\(/];
 const violations = [];
 
