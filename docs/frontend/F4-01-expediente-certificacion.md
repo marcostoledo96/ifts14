@@ -26,10 +26,10 @@ Expediente administrativo mock-only que reemplaza la previsualización mínima d
 
 | Acción | Estado | Handoff |
 |---|---|---|
-| Descargar PDF | `disabled` + `aria-disabled="true"` | F4-02 |
+| Descargar PDF | `<a routerLink="/admin/certificaciones/:id/pdf">` | F4-02 (navega) |
 | Copiar link | `disabled` + `aria-disabled="true"` | F6-03 |
 | Entrega manual | `disabled` + `aria-disabled="true"` | F5-04 |
-| Regenerar PDF | `disabled` + `aria-disabled="true"` | F4-02 |
+| Regenerar PDF | `<a routerLink="/admin/certificaciones/:id/pdf">` | F4-02 (navega) |
 | Revocar certificación | `disabled` + `aria-disabled="true"` | F6-01 |
 
 ## Frontera de datos
@@ -40,9 +40,9 @@ Expediente administrativo mock-only que reemplaza la previsualización mínima d
 - Sin email, legajo ni matrícula en el DOM.
 - Sin HTTP, storage, cookies, IndexedDB ni `X-Admin-Key`.
 
-## F4-02 diferido
+## F4-02 habilitado
 
-La réplica documental visible en F4-01 cubre el expediente. Una ruta/vista PDF imprimible (F4-02) queda diferida; no se implementa en este cambio.
+La réplica documental visible en F4-01 cubre el expediente. Los CTAs `Descargar PDF` y `Regenerar PDF` ahora navegan a `/admin/certificaciones/:id/pdf` (vista imprimible mock-only de F4-02) vía `routerLink`. `Copiar link` (F6-03), `Entrega manual` (F5-04) y `Revocar certificación` (F6-01) siguen `disabled` con `aria-disabled="true"`. Detalle de la vista imprimible: `docs/frontend/F4-02-vista-previa-pdf.md`.
 
 ## Evidencia visual
 
