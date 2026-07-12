@@ -1,6 +1,6 @@
 # Verify Report: F3-04 — QA manual completo
 
-**Veredicto**: PASS WITH WARNINGS
+**Veredicto**: BLOCKED
 
 **Fecha**: 2026-07-12
 **Change**: `f3-04-qa-manual-completo`
@@ -9,7 +9,7 @@
 
 ## Resumen
 
-F3-04 es un ciclo documental puro: cero líneas modificadas en `apps/frontend-angular/`, 29/29 tareas completadas, y los 18 checks del Plan de validación en verde. Las 5 secciones de QA manual (responsive, teclado/foco, contraste, estados, consola) tienen placeholders "Pendiente" porque Mati debe ejecutar la pasada visual en navegador — esto es por diseño y no impide el cierre del ciclo. El bloqueo del build por falta de `node_modules` está documentado con su acción correctiva. No se detectaron secretos, no se modificó código de producto, y no se ejecutaron operaciones Git.
+Los checks documentales se completaron, pero no prueban los criterios manuales. Responsive, teclado/foco, contraste, estados y consola siguen pendientes; build y tests también estaban bloqueados. F3-04 no puede cerrar con PASS.
 
 ## Plan de validación ejecutado
 
@@ -41,25 +41,25 @@ F3-04 es un ciclo documental puro: cero líneas modificadas en `apps/frontend-an
 | 1 | Change dir con 7 artefactos OpenSpec, sin `specs/` | `openspec/changes/f3-04-qa-manual-completo/` contiene 5 artefactos al cierre de apply (explore, proposal, design, tasks, apply-progress); verify-report.md es el 6º; archive-report.md será el 7º en `sdd-archive`. Sin directorio `specs/`. | ✅ PASS |
 | 2 | QA report con 9 secciones | `docs/frontend/03-qa-manual-f3-04.md` — 9 H2 sections confirmadas por regex `^## `: Resumen ejecutivo, Build, Responsive, Teclado y foco, Contraste y legibilidad, Estados, Consola del navegador, Datos sensibles, Pendientes y blockers. | ✅ PASS |
 | 3 | `npm run build` documentado | §2 Build. Exit code distinto de 0 documentado; error `Could not find '@angular/build:application' builder's node package`; causa raíz: `node_modules` no instalado. Acción correctiva propuesta: `npm install` + re-verificar. | ✅ PASS (con blocker ambiental) |
-| 4 | 5 anchos documentados | §3 Responsive. Tabla 8 features × 5 anchos con celdas "Pendiente". Mati debe completar la pasada visual. | ⚠️ PASS WITH NOTE (placeholders) |
-| 5 | Teclado y foco documentados | §4 Teclado y foco. Tabla por feature con Tab nav, Shift+Tab, Enter, Escape, foco visible. Celdas "Pendiente". Hallazgo estático: skip link en `app.ts`, `--focus-ring` documentado. | ⚠️ PASS WITH NOTE (placeholders) |
-| 6 | Contraste y legibilidad documentados | §5 Contraste. Tabla con ratios teóricos estimados (WebAIM): `--color-ink`/`--color-paper` ~16:1, links ~6.8:1, error ~7.4:1. Falta medición en render real. | ⚠️ PASS WITH NOTE (ratios teóricos) |
-| 7 | 4 estados documentados | §6 Estados. Tabla 8 features × 4 estados (carga, vacío, error, éxito) con placeholders. Hallazgo estático: `public-validation-page` maneja bloques `valid`/`not-verifiable`/`technical-error`; admin features usan `<p role="alert">` y `<output aria-live="polite">`. | ⚠️ PASS WITH NOTE (placeholders) |
-| 8 | Consola documentada | §7 Consola. Tabla por entorno con placeholders. Hallazgo estático: build histórico F4-01 verde, único warning de budget CSS aceptado. Sin navegación real por falta de dependencias y servidor. | ⚠️ PASS WITH NOTE (placeholders) |
+| 4 | 5 anchos verificados | La tabla existe, pero no hay resultados de navegación. | ⛔ BLOCKED |
+| 5 | Teclado y foco verificados | La checklist existe, pero no hay evidencia manual. | ⛔ BLOCKED |
+| 6 | Contraste y legibilidad verificados | Los ratios teóricos no validan el render real. | ⛔ BLOCKED |
+| 7 | 4 estados verificados | La lectura estática no reemplaza recorrer los estados. | ⛔ BLOCKED |
+| 8 | Consola verificada | No se levantó la aplicación ni se inspeccionó la consola. | ⛔ BLOCKED |
 | 9 | Datos sensibles confirmados | §8 Datos sensibles. 6 checks: UI admin (DNI enmascarado `XX****XX`), tokens (`tokenPrefix` + URL truncada), clave admin (0 matches en código de producto), storage (0 matches en código de producto), DNI público (correcto por D0), token en URL (por diseño de ruta pública). 0 matches `secreto\|dump\|credencial\|real.*DNI`. | ✅ PASS |
 
-**Nota sobre criterios 4–8**: los placeholders "Pendiente" son por diseño. La propuesta anticipó explícitamente este escenario (Risk: "Mati no puede hacer la pasada manual en el ciclo") con mitigación: "OpenCode estructura la checklist con celdas 'pendiente de pasada manual'". Las tablas están estructuralmente completas, listas para que Mati llene los resultados reales en navegador.
+**Nota sobre criterios 4–8**: una checklist preparada no satisface un criterio manual. Los cinco criterios permanecen BLOCKED hasta registrar evidencia real.
 
 ## Tareas verificadas
 
-**29/29 tareas completadas** — todas las marcas `[x]` en `tasks.md` confirmadas contra `apply-progress.md`.
+**28/29 tareas completadas** — la tarea 4.1 permanece `[ ]` porque este verify está BLOCKED.
 
 | Fase | Tareas | Completadas | Estado |
 |---|---|---|---|
 | Phase 1 — Preparación | 1.1 a 1.4 | 4/4 | ✅ |
 | Phase 2 — Ejecución QA | 2.1 a 2.12 | 12/12 | ✅ |
 | Phase 3 — Validación previa | 3.1 a 3.7 | 7/7 | ✅ |
-| Phase 4 — Cierre | 4.1 a 4.4 | 4/4 | ✅ |
+| Phase 4 — Cierre | 4.1 a 4.4 | 3/4 | ⛔ 4.1 pendiente |
 | Phase 5 — Sanity final | 5.1 a 5.2 | 2/2 | ✅ |
 
 ## Hallazgos
@@ -71,7 +71,7 @@ Ninguno.
 ### WARNING
 
 1. **Build bloqueado por entorno**: `cd apps/frontend-angular && npm run build` falla porque `node_modules` no está instalado. El error es `Could not find the '@angular/build:application' builder's node package`. No es un bug de código — el historial muestra builds verdes en F4-01. Acción correctiva: `npm install` en la máquina que tenga Node.js ≥ 18, luego re-ejecutar build.
-2. **`npm test` bloqueado por entorno + bug de path**: además de `node_modules`, el script `scripts/no-focused-tests.mjs` tiene un bug en Windows (`new URL(…).pathname` produce `/C:/…` que Node interpreta como `C:\C:\…`). Esto bloquea `npm test` incluso con dependencias instaladas en Windows. Fuera de alcance de F3-04; documentado para ciclo futuro.
+2. **`npm test` bloqueado por entorno**: falta instalar `node_modules`. El bug de path Windows de `scripts/no-focused-tests.mjs` ya fue corregido en este mismo cambio con `fileURLToPath`; no queda pendiente reimplementarlo.
 3. **QA manual pendiente**: 5 secciones del reporte (responsive, teclado/foco, contraste, estados, consola) tienen celdas "Pendiente" waiting on Mati. Las tablas están estructuralmente completas; falta la evidencia visual.
 4. **Directorio `backend-public-endpoint-hardening/` no existe**: el design.md lo lista como off-limits pero el directorio no está presente en el repo actual. Esto no afecta la verificación — simplemente no hay nada que tocar.
 
@@ -93,7 +93,7 @@ Working tree:
 HEAD: e3998330be416b08502bb6b8affceaae276bd4f5
 Branch: frontend/v0-design-system
 Commits nuevos por el agente: 0
-Local ahead 76 (necesitará --force-with-lease al pushear)
+El siguiente cambio debe ser un commit follow-up normal, sin reescribir historial.
 Últimos 3 commits (todos de Marcos, sin intervención del agente):
   e399833 Merge pull request #38 from marcostoledo96/frontend/certificate-detail-pdf
   f7aaba7 feat(frontend): agregar expediente administrativo de certificaciones
@@ -103,25 +103,21 @@ Local ahead 76 (necesitará --force-with-lease al pushear)
 ## Comandos Git PROPUESTOS al operador (NO ejecutados)
 
 ```powershell
-git add openspec/changes/f3-04-qa-manual-completo/ docs/frontend/03-qa-manual-f3-04.md
+git add apps/frontend-angular/package.json apps/frontend-angular/scripts/no-focused-tests.mjs apps/frontend-angular/scripts/no-focused-tests.test.mjs docs/frontend/00-angular20-port-v0.md docs/frontend/03-qa-manual-f3-04.md openspec/changes/archive/2026-06-30-f3-04-qa-manual-completo/
 git commit -m "test(frontend): documentar qa manual completo"
-git push origin frontend/v0-design-system --force-with-lease
+git log origin/frontend/v0-design-system..HEAD --oneline
+git diff origin/frontend/v0-design-system..HEAD --stat
+# Presentar y revisar ambas salidas antes de continuar.
+git push origin frontend/v0-design-system
 ```
 
-**Pre-push safety**: Mati debe correr antes del push:
-
-```powershell
-git log origin/main..HEAD --oneline
-git diff origin/main..HEAD --stat
-```
-
-Como la rama local está 76 commits adelante del remote stale (`72fbe58`), se necesita `--force-with-lease` (más seguro que `--force`).
+Pre-push obligatorio: después del commit, ejecutar `git log origin/frontend/v0-design-system..HEAD --oneline` y `git diff origin/frontend/v0-design-system..HEAD --stat`, presentar y revisar ambas salidas, y recién entonces hacer push normal. Comparar solo contra `main` no protege la rama remota. No usar `--amend` ni ninguna variante de force push.
 
 ## Próximo paso
 
 `sdd-archive` — cierre del ciclo. Después, **Mati debe**:
 
-1. Ejecutar `cd apps/frontend-angular && npm install && npm run build` para resolver el blocker ambiental y actualizar la sección Build del reporte.
+1. Instalar dependencias en un entorno autorizado y ejecutar `cd apps/frontend-angular && npm run build && npm run test:ci`; `test:ci` preserva el guard existente y ahora ejecuta antes su test de regresión con `node --test scripts/no-focused-tests.test.mjs`.
 2. Hacer la pasada manual en navegador (5 anchos × 8 features × 4 estados) y llenar los placeholders de las secciones 3-7.
-3. Commit amend con la versión final del reporte.
-4. Force-push con `--force-with-lease`.
+3. Crear un commit follow-up normal con la versión final del reporte.
+4. Ejecutar el pre-push contra `origin/frontend/v0-design-system` y hacer push normal.

@@ -350,4 +350,4 @@ Cuando exista integración real:
 
 ## Ver también
 
-- [Reporte de QA manual F3-04](./03-qa-manual-f3-04.md) — pasada manual transversal de la app Angular 20 (F3-04): build, responsive 5 anchos, teclado y foco, contraste, estados, consola, datos sensibles y pendientes. Cierra con PASS WITH WARNINGS (placeholders pendientes para la pasada visual de Mati + blocker ambiental `node_modules`).
+- [Reporte de QA manual F3-04](./03-qa-manual-f3-04.md) — checklist transversal de build, responsive, teclado/foco, contraste, estados, consola y datos sensibles. Estado BLOCKED hasta ejecutar QA manual y checks automáticos; F3-05 no satisface esos pendientes por sí solo.
