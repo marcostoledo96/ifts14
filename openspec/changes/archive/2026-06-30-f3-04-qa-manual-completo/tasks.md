@@ -6,7 +6,7 @@
 |-------|-------|
 | Estimated changed lines | ~250 (1 reporte QA ~150 + 1 verify-report ~70 + 1 apply-progress ~25 + 1 archive-report ~40 + 6 SDD artifacts ~80 avg + opcional 1 pequeño patch ~10) |
 | 400-line budget risk | Low (well under 400) |
-| Chained PRs recommended | No (single PR con `--force-with-lease` por local `ahead 76`) |
+| Chained PRs recommended | No (commit follow-up normal) |
 | Delivery strategy | single-pr |
 | Chain strategy | pending |
 
@@ -19,7 +19,7 @@ Chain strategy: pending
 
 | Unit | Goal | Likely PR |
 |------|------|-----------|
-| 1 | Reporte de QA manual + 7 artefactos SDD + patch opcional al port doc | PR 1 a `frontend/v0-design-system` (force-with-lease) |
+| 1 | Reporte de QA manual + 7 artefactos SDD + patch opcional al port doc | PR 1 a `frontend/v0-design-system` |
 
 ## Open Question
 
@@ -35,9 +35,9 @@ None — Q1-Q4 resueltas en `proposal.md` y `design.md`.
 ## Phase 2 — Ejecución de la pasada manual de QA
 
 - [x] 2.1 `cd apps/frontend-angular && npm run build`; documentar exit code, warnings, errores. Si falla, documentar bloqueo y proponer acción correctiva.
-- [x] 2.2 `cd apps/frontend-angular && npm test`; documentar resultado (los tests son evidencia base, no cobertura de QA manual).
+- [x] 2.2 `cd apps/frontend-angular && npm test`; documentar resultado (incluye el test de regresión del guard y los tests Angular; no cubre QA manual).
 - [x] 2.3 Crear `docs/frontend/03-qa-manual-f3-04.md` con 9 secciones fijas del `design.md` §a (~150-200 líneas).
-- [x] 2.4 §1 Resumen ejecutivo: 2-3 oraciones (build verde, 9 criterios PASS, pendientes por severidad).
+- [x] 2.4 §1 Resumen ejecutivo: informar BLOCKED mientras build/tests o QA manual estén pendientes.
 - [x] 2.5 §2 Build: output de `npm run build` (exit code, warnings, errores, comando exacto).
 - [x] 2.6 §3 Responsive: 5 anchos (360 px, 390 px, 430 px, tablet, desktop). Mati hace la pasada visual; OpenCode documenta.
 - [x] 2.7 §4 Teclado y foco: tab nav, focus visible, skip links.
@@ -59,12 +59,14 @@ None — Q1-Q4 resueltas en `proposal.md` y `design.md`.
 
 ## Phase 4 — Cierre
 
-- [x] 4.1 Esperar `sdd-verify` PASS antes de `sdd-archive`.
+- [ ] 4.1 Obtener `sdd-verify` PASS antes de considerar cerrado F3-04; actualmente BLOCKED.
 - [x] 4.2 Documentar en `apply-progress.md` la decisión sobre el patch opcional a `00-angular20-port-v0.md` (diferido a `sdd-archive`; el port doc ya cubre el estado hasta F4-01).
-- [x] 4.3 Proponer (NO ejecutar) `git add openspec/changes/f3-04-qa-manual-completo/ docs/frontend/03-qa-manual-f3-04.md`, `git commit -m "test(frontend): documentar qa manual completo"`, `git push origin frontend/v0-design-system --force-with-lease` (pre-push safety: comparar contra `main`, no contra remote stale).
+- [x] 4.3 Proponer (NO ejecutar) un commit follow-up normal y push sin reescribir historial. Pre-push: `git log origin/frontend/v0-design-system..frontend/v0-design-system --oneline` y `git diff origin/frontend/v0-design-system..frontend/v0-design-system --stat`.
 - [x] 4.4 Documentar en `apply-progress.md` que NO se ejecutó `git add`/`commit`/`push`; queda para Mati (diff-confirmation gate).
 
 ## Phase 5 — Sanity final
 
 - [x] 5.1 Working tree final limpio o con solo los paths esperados.
 - [x] 5.2 NO se ejecutó `git add`/`commit`/`push`/`switch`/`merge`/`rebase` ni se creó PR.
+
+**Total real**: 28/29 tareas completadas. La tarea 4.1 permanece pendiente mientras `sdd-verify` siga BLOCKED.

@@ -50,7 +50,7 @@ Ciclo F3-04 ejecutado como pasada documental y operativa sobre el frontend Angul
 
 - [x] 4.1 No se invoca `sdd-verify`; queda para el orquestador.
 - [x] 4.2 Documentar decisión sobre patch opcional a `docs/frontend/00-angular20-port-v0.md`.
-- [x] 4.3 Proponer comandos Git (no ejecutados) con `test(frontend): documentar qa manual completo` y `--force-with-lease`.
+- [x] 4.3 Proponer comandos Git (no ejecutados) con commit follow-up normal y push sin reescribir historial.
 - [x] 4.4 Documentar que no se ejecutó `git add`/`commit`/`push`.
 
 ### Phase 5 — Sanity final
@@ -58,7 +58,7 @@ Ciclo F3-04 ejecutado como pasada documental y operativa sobre el frontend Angul
 - [x] 5.1 Working tree final limpio con solo los paths esperados.
 - [x] 5.2 Confirmar que no se ejecutó `git add`/`commit`/`push`/`switch`/`merge`/`rebase`.
 
-**Total**: 29/29 tareas completadas.
+**Total real**: 28/29 tareas completadas. La tarea 4.1 queda pendiente porque `sdd-verify` está BLOCKED.
 
 ## Decisiones clave aplicadas
 
@@ -88,12 +88,12 @@ Ciclo F3-04 ejecutado como pasada documental y operativa sobre el frontend Angul
 - ✅ `git diff --stat apps/frontend-angular/` = 0 líneas
 - ✅ 4 observaciones previas en Engram (#80-83)
 - ⚠️ `npm run build` BLOCKED por `node_modules` no instalado
-- ⚠️ `npm test` BLOCKED por `node_modules` no instalado + bug de ruta en `scripts/no-focused-tests.mjs` en Windows
+- ⚠️ `npm test` BLOCKED por `node_modules` no instalado; el bug de ruta Windows de `scripts/no-focused-tests.mjs` ya fue corregido con `fileURLToPath`
 
 ## Hallazgos técnicos
 
 1. **Build/test blocked por entorno**: `apps/frontend-angular/node_modules` no existe. `npm run build` falla con `Could not find the '@angular/build:application' builder's node package`. Esto no indica un problema de código; el historial muestra builds verdes en F4-01.
-2. **Bug en `scripts/no-focused-tests.mjs`**: `new URL('../src', import.meta.url).pathname` produce `/C:/...` en Windows, que Node interpreta como `C:\C:\...`. Esto haría fallar `npm test` incluso con dependencias instaladas. Corrección sugerida (fuera de alcance de F3-04): usar `fileURLToPath(new URL('../src', import.meta.url))`.
+2. **Bug resuelto en `scripts/no-focused-tests.mjs`**: la ruta Windows que antes se obtenía con `.pathname` ahora se convierte mediante `fileURLToPath`; no queda pendiente volver a implementar este fix.
 3. **Datos sensibles**: no se detectaron DNI completos, tokens completos, claves admin ni storage en el código de producto. Los únicos matches son en specs negativos como patrones prohibidos o en mocks ficticios.
 
 ## Comandos Git PROPUESTOS al operador (NO ejecutados)
@@ -106,27 +106,22 @@ git diff --name-only
 git diff main...frontend/v0-design-system --stat
 ```
 
-Si el diff es el esperado (solo `docs/frontend/03-qa-manual-f3-04.md` y `openspec/changes/f3-04-qa-manual-completo/`):
+Si el diff es el esperado (fix y test del guard, `package.json`, documentación frontend y artefactos archivados):
 
 ```powershell
-git add openspec/changes/f3-04-qa-manual-completo/ docs/frontend/03-qa-manual-f3-04.md
+git add apps/frontend-angular/package.json apps/frontend-angular/scripts/no-focused-tests.mjs apps/frontend-angular/scripts/no-focused-tests.test.mjs docs/frontend/00-angular20-port-v0.md docs/frontend/03-qa-manual-f3-04.md openspec/changes/archive/2026-06-30-f3-04-qa-manual-completo/
 git commit -m "test(frontend): documentar qa manual completo"
-git push origin frontend/v0-design-system --force-with-lease
+git log origin/frontend/v0-design-system..HEAD --oneline
+git diff origin/frontend/v0-design-system..HEAD --stat
+# Presentar y revisar ambas salidas antes de continuar.
+git push origin frontend/v0-design-system
 ```
 
-**Pre-push safety**: el local está `ahead 76` vs el remote stale. Comparar contra `main` (no contra `origin/frontend/v0-design-system`):
-
-```powershell
-git log main..frontend/v0-design-system --oneline
-git diff main...frontend/v0-design-system --stat
-```
-
-El `--force-with-lease` protege contra sobreescribir cambios que otro cliente haya pusheado al remote.
+El pre-push safety se ejecuta después del commit y antes del push normal. Presentar y revisar ambas salidas antes de continuar; comparar solo contra `main` no reemplaza este control. No usar `--amend` ni ninguna variante de force push.
 
 ## Riesgos materializados
 
-- **Blocker ambiental**: `node_modules` no instalado impide verificar build/tests automáticamente. Mitigación: documentado con acción correctiva (`npm install` y re-verificar).
-- **Bug de path en script de guard**: `no-focused-tests.mjs` falla en Windows. Mitigación: documentado; no afecta el reporte de QA manual pero bloquearía `npm test` en Windows hasta corregir.
+- **Build/tests bloqueados**: `node_modules` no instalado impide ejecutarlos. El fix Windows del guard ya está aplicado; resta instalar dependencias y ejecutar build/tests.
 - **QA manual pendiente**: Mati debe completar las tablas de responsive, teclado/foco, contraste, estados y consola. Mitigación: placeholders estructurados listos para llenar.
 
 ## Próximo paso

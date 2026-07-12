@@ -1,19 +1,19 @@
 # QA manual completo — F3-04
 
-> Reporte de la pasada manual transversal del frontend Angular 20 antes del build de entrega (F3-05). La pasada visual en navegador la realiza Mati; OpenCode estructura el reporte y documenta la evidencia automática del build.
+> Reporte preparado para la pasada manual transversal del frontend Angular 20 antes del build de entrega (F3-05). La pasada visual en navegador todavía no fue ejecutada.
 
 ## 1. Resumen ejecutivo
 
-F3-04 es un ciclo documental puro: no modifica código de `apps/frontend-angular/`. La evidencia automática del build no pudo ejecutarse en este entorno porque faltan las dependencias de Node (`node_modules` no está instalado). Los 9 criterios de aceptación se relevaron mediante lectura de código y estructura; las verificaciones visuales manuales quedan pendientes para que Mati las complete en el navegador. No se detectaron filtraciones de datos sensibles en el código fuente.
+**Estado: BLOCKED.** Responsive, teclado/foco, contraste, estados y consola no fueron verificados manualmente. Build y tests tampoco pudieron ejecutarse por falta de dependencias. La revisión estática es evidencia parcial y no reemplaza QA en navegador.
 
 ## 2. Build
 
 | Comando | Resultado | Detalle |
 |---|---|---|
 | `cd apps/frontend-angular && npm run build` | **BLOCKED** | Exit code distinto de 0. Error: `Could not find the '@angular/build:application' builder's node package`. Causa: `apps/frontend-angular/node_modules` no existe en este workspace. |
-| `cd apps/frontend-angular && npm test -- --watch=false --browsers=ChromeHeadless` | **BLOCKED** | El script `scripts/no-focused-tests.mjs` falla antes de lanzar Angular: `ENOENT: no such file or directory, scandir 'C:\C:\Users\...\src'`. La causa es que `new URL('../src', import.meta.url).pathname` produce una ruta con barra inicial en Windows (`/C:/...`), que Node interpreta como `C:\C:\...`. Además, faltan las dependencias de Node. |
+| `cd apps/frontend-angular && npm test -- --watch=false --browsers=ChromeHeadless` | **BLOCKED** | Faltan las dependencias de Node. El fallo de ruta Windows detectado en `scripts/no-focused-tests.mjs` ya fue corregido en este mismo cambio mediante `fileURLToPath`. |
 
-**Acción correctiva propuesta**: en el entorno local de Mati o en la máquina de build, ejecutar `cd apps/frontend-angular && npm install` y volver a correr `npm run build` y `npm run test:ci`. El historial del repo muestra builds verdes en F4-01 (initial 313.84 kB raw / 90.36 kB transfer) y tests 420/420 SUCCESS, por lo que el blocker es puramente ambiental.
+**Acción requerida**: instalar dependencias y volver a correr `npm run build` y `npm run test:ci`; después, completar la QA manual. No queda pendiente volver a implementar el fix Windows de `no-focused-tests.mjs`. Los resultados históricos no prueban este checkout.
 
 ## 3. Responsive
 
