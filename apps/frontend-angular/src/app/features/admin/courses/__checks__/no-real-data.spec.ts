@@ -55,4 +55,13 @@ describe('no-real-data en seed de cursos', () => {
       /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
     );
   });
+
+  it('usa solo cuatrimestres demo aprobados y sin identificadores personales', async () => {
+    const list = await listarNombresYCodigos();
+    const allowed = ['1.er cuatrimestre 2026', '2.º cuatrimestre 2025', 'Sin programar'];
+    for (const c of list) {
+      expect(allowed).toContain(c.cuatrimestre ?? '');
+      expect(`${c.codigo} ${c.nombre}`).not.toMatch(/\b\d{7,8}\b/);
+    }
+  });
 });

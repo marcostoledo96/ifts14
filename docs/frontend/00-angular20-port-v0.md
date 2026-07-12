@@ -304,6 +304,44 @@ Handoff a F5-04/F6-03/F6-01: la UI ya está lista para que esos ciclos conecten 
 
 Detalle en `docs/frontend/F4-02-vista-previa-pdf.md` y archive `openspec/changes/archive/2026-07-12-f4-02-certificate-pdf-preview/`.
 
+### Estado F4-03 — Listado de cursos con paridad v0
+
+Ciclo `f4-03-courses-list` sobre la base F2-04. Evoluciona `CoursesListPage` in-place para que `/admin/cursos` alcance paridad funcional y visual con `muestra_pagina/components/admin/lista-cursos.tsx`, sin nuevas rutas, dependencias, backend, HTTP ni storage. Tabla accesible en desktop (`<caption>`, `<th scope="col">`, métricas con `—` y texto accesible "Dato disponible con integración real"), tarjetas mobile con las mismas métricas, filtro de búsqueda, selector de estado, chips `aria-pressed` con/sin fechas, `Limpiar filtros` condicional y diferenciación de loading, error con reintento, vacío total y sin coincidencias. Métricas `alumnosPresentes`/`certificaciones` quedan `null`/`—` con explicación accesible; el listado no consulta features de asistencias ni certificaciones.
+
+Archivos en `apps/frontend-angular/src/app/features/admin/courses/`:
+
+- `courses.models.ts` — `cuatrimestre: string`, `cantidadFechas: number`, `alumnosPresentes: number | null`, `certificaciones: number | null`; `CursosFiltros.conFechas?: boolean`.
+- `in-memory-courses.service.ts` — derivación de cuatrimestre y `cantidadFechas` desde el seed; métricas en `null`; alta crea `cuatrimestre: 'Sin programar'`, `cantidadFechas: 0`.
+- `courses-list-page.ts` — signals `q`/`estado`/`conFechas`; `recargar()` consume `CursosFiltros` completo; handlers `onConFechas`, `onLimpiarFiltros`, `onReintentar`; distinción `vacioTotal` vs `sinCoincidencias`; guard local de generación anti-race.
+- `courses-list-page.html` — `<table>` accesible desktop, `<ul class="cards-mobile">` mobile, métricas con `—` + texto accesible, banners con `aria-busy`/`role="alert"`, `<p aria-live="polite">` para resumen, links `Ver detalle`/`Editar` con nombre accesible.
+- `courses-list-page.css` — responsive con tokens existentes; tabla oculta `<md`, cards ocultas `≥md`; chips con `aria-pressed=true` diferenciado.
+- `courses.service.spec.ts` (24 specs) y `courses-list-page.spec.ts` (13 specs) — derivación, filtros, placeholders, semántica, acciones y links.
+- `__checks__/no-secrets.spec.ts` y `__checks__/no-real-data.spec.ts` — `CoursesListPage.prototype.recargar` y `onLimpiarFiltros` añadidos a `sources()`; cuatrimestres y datos ficticios institucionalmente seguros.
+
+Límites explícitos (F4-03): sin backend real, HTTP, `X-Admin-Key`, storage/cookies/IndexedDB, sesión real, DNI completo administrativo, token completo, email, legajo, matrícula, UUID, dependencias nuevas, Tailwind, copia literal React/Next ni datos reales. Las acciones reales (alta persistida, eliminar curso, acoplar con `Asistencia`/`Certificacion`) quedan como handoff a F4-04 y ciclos posteriores.
+
+Verificación (`sdd-verify`, lineage `review-fc99c946d72cec8e`):
+
+- `rtk npm run test:ci` **485/485 SUCCESS** (13 page + 24 service + 448 resto).
+- `rtk npm run build` exit 0 con **2 warnings de budget CSS preexistentes** (`certification-pdf-preview-page.css` 12,41 kB y `certification-preview-page.css` 14,31 kB, ambos < 16 kB error) — carry-forward de F4-01/F4-02, trade-off de paridad visual. F4-03 **no** introduce warnings nuevos.
+- Focused page 13/13, focused service 24/24, suite completa, `git diff --check` exit 0.
+- Runtime real con `ng serve`: desktop 1280×800 mostró tabla con 6 filas y cards ocultas; mobile 390×844 mostró 6 cards y tabla oculta; filtro sin coincidencias mostró mensaje diferenciado y `Limpiar filtros`; privacidad confirmada (sin DNI/email/token/UUID).
+- Capturas en `openspec/changes/archive/2026-07-12-f4-03-courses-list/evidence/` (desktop 1280×800, mobile 390×844, loading, error, empty-total, no-results + `parity-notes.md`).
+
+Fallo histórico y corrección (no ocultada):
+
+- La primera corrida de `sdd-verify` terminó en **FAIL** porque dos `listar()` superpuestos podían resolverse en orden inverso y mostrar cursos stale, error o loading de una generación vieja.
+- La corrección se aplicó con guard local de generación dentro de `CoursesListPage.recargar()` (contador que invalida respuestas previas en `try`, `catch` y `finally`), sin RxJS, sin cancelación ni abstracciones nuevas. R1–R3 verdes; suite 485/485, build exit 0, focused y `git diff --check` pasan.
+
+Warnings carry-forward (no bloqueantes):
+
+- Dos warnings de budget CSS preexistentes en preview/PDF de certificaciones, ajenos a `courses-list`.
+- `requestAnimationFrame` heredado de F4-02 sin cancelación de handle al destruir el componente; follow-up previamente aprobado, sin falla runtime observada.
+
+Handoff a F4-04: `Ver detalle` y `Editar` solo reusan rutas existentes. La evolución del detalle, los cambios persistentes en fechas y la integración con `Asistencia`/`Certificacion` llegan en F4-04 y ciclos posteriores. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
+
+Detalle en `docs/frontend/F4-03-listado-cursos-paridad-v0.md` y archive `openspec/changes/archive/2026-07-12-f4-03-courses-list/`.
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:
