@@ -401,3 +401,4 @@ Cuando exista integración real:
 ## Ver también
 
 - [Verificación de build para /certificados/ — F3-05](04-build-validacion-f3-05.md) — reporte del build de producción con `base-href /certificados/`.
+- [Handoff a Marcos — F3-06](05-handoff-marcos-f3-06.md) — reporte de handoff final de Fase 3 a Marcos con 7 PRs, F3-04/F3-05 y roadmap F4-F6.
