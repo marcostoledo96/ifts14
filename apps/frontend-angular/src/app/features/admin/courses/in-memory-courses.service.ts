@@ -24,6 +24,7 @@ interface MutableCurso {
   estado: EstadoCurso;
   createdAt: string;
   updatedAt: string;
+  cuatrimestre: string;
   fechas: CursoFecha[];
 }
 type CursoRecord = MutableCurso;
@@ -40,6 +41,7 @@ function seed(): CursoRecord[] {
       estado: 'activo',
       createdAt: now,
       updatedAt: now,
+      cuatrimestre: '1.er cuatrimestre 2026',
       fechas: [
         { id: 11, cursoId: 1, fecha: '2026-03-02', descripcion: 'Clase inaugural', orden: 1, estado: 'programada' },
         { id: 12, cursoId: 1, fecha: '2026-03-09', descripcion: null, orden: 2, estado: 'programada' },
@@ -53,6 +55,7 @@ function seed(): CursoRecord[] {
       estado: 'activo',
       createdAt: now,
       updatedAt: now,
+      cuatrimestre: '1.er cuatrimestre 2026',
       fechas: [
         { id: 21, cursoId: 2, fecha: '2026-04-05', descripcion: null, orden: 1, estado: 'programada' },
         { id: 22, cursoId: 2, fecha: '2026-04-12', descripcion: null, orden: 2, estado: 'programada' },
@@ -65,6 +68,7 @@ function seed(): CursoRecord[] {
       estado: 'borrador',
       createdAt: now,
       updatedAt: now,
+      cuatrimestre: '1.er cuatrimestre 2026',
       fechas: [{ id: 31, cursoId: 3, fecha: '2026-05-04', descripcion: null, orden: 1, estado: 'programada' }],
     },
     {
@@ -74,6 +78,7 @@ function seed(): CursoRecord[] {
       estado: 'cerrado',
       createdAt: now,
       updatedAt: now,
+      cuatrimestre: '2.º cuatrimestre 2025',
       fechas: [
         { id: 41, cursoId: 4, fecha: '2025-09-01', descripcion: null, orden: 1, estado: 'realizada' },
         { id: 42, cursoId: 4, fecha: '2025-09-08', descripcion: null, orden: 2, estado: 'realizada' },
@@ -86,6 +91,7 @@ function seed(): CursoRecord[] {
       estado: 'archivado',
       createdAt: now,
       updatedAt: now,
+      cuatrimestre: 'Sin programar',
       fechas: [{ id: 51, cursoId: 5, fecha: '2025-06-10', descripcion: null, orden: 1, estado: 'cancelada' }],
     },
     {
@@ -95,6 +101,7 @@ function seed(): CursoRecord[] {
       estado: 'activo',
       createdAt: now,
       updatedAt: now,
+      cuatrimestre: 'Sin programar',
       fechas: [
         { id: 61, cursoId: 6, fecha: '2026-06-01', descripcion: null, orden: 1, estado: 'programada' },
         { id: 62, cursoId: 6, fecha: '2026-06-08', descripcion: null, orden: 2, estado: 'programada' },
@@ -117,7 +124,7 @@ export class InMemoryCoursesService implements CoursesService {
   private cursos: CursoRecord[] = clone(seed());
 
   listar(filtros?: CursosFiltros): Promise<readonly Curso[]> {
-    let list: Curso[] = this.cursos.map(({ fechas: _fechas, ...c }) => c);
+    let list = this.cursos.map((curso) => this.toCurso(curso));
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
     }
@@ -129,6 +136,9 @@ export class InMemoryCoursesService implements CoursesService {
         );
       }
     }
+    if (filtros?.conFechas !== undefined) {
+      list = list.filter((c) => ((c.cantidadFechas ?? 0) > 0) === filtros.conFechas);
+    }
     return Promise.resolve(list);
   }
 
@@ -137,8 +147,7 @@ export class InMemoryCoursesService implements CoursesService {
     if (!found) {
       return Promise.reject(new Error(`Curso no encontrado: ${id}`));
     }
-    const { fechas, ...curso } = found;
-    return Promise.resolve({ ...clone(curso), fechas: clone(fechas) });
+    return Promise.resolve({ ...this.toCurso(found), fechas: clone(found.fechas) });
   }
 
   crear(dto: CursoDraft): Promise<CursoDetalle> {
@@ -154,10 +163,11 @@ export class InMemoryCoursesService implements CoursesService {
       estado: dto.estado,
       createdAt: now,
       updatedAt: now,
+      cuatrimestre: 'Sin programar',
       fechas: [],
     };
     this.cursos.push(nuevo);
-    return Promise.resolve({ ...nuevo, fechas: [] });
+    return Promise.resolve({ ...this.toCurso(nuevo), fechas: [] });
   }
 
   actualizarEstado(id: number, estado: EstadoCurso): Promise<CursoDetalle> {
@@ -167,8 +177,7 @@ export class InMemoryCoursesService implements CoursesService {
     }
     found.estado = estado;
     found.updatedAt = new Date().toISOString();
-    const { fechas, ...curso } = found;
-    return Promise.resolve({ ...clone(curso), fechas: clone(fechas) });
+    return Promise.resolve({ ...this.toCurso(found), fechas: clone(found.fechas) });
   }
 
   listarFechas(cursoId: number): Promise<readonly CursoFecha[]> {
@@ -258,5 +267,14 @@ export class InMemoryCoursesService implements CoursesService {
     found.fechas = clone(resultado);
     found.updatedAt = new Date().toISOString();
     return Promise.resolve(clone(resultado));
+  }
+
+  private toCurso({ fechas, ...curso }: CursoRecord): Curso {
+    return {
+      ...clone(curso),
+      cantidadFechas: fechas.length,
+      alumnosPresentes: null,
+      certificaciones: null,
+    };
   }
 }

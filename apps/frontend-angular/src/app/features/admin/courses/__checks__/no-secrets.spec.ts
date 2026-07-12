@@ -32,6 +32,8 @@ function sources(): string[] {
     InMemoryCoursesService.prototype.listarFechas.toString(),
     InMemoryCoursesService.prototype.guardarFecha.toString(),
     CoursesListPage.prototype.constructor.toString(),
+    CoursesListPage.prototype.recargar.toString(),
+    CoursesListPage.prototype.onLimpiarFiltros.toString(),
     CourseDetailPage.prototype.constructor.toString(),
     CourseEditorPage.prototype.constructor.toString(),
   ];
