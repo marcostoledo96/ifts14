@@ -10,7 +10,14 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
-import { CertificacionDetalle } from '../../certifications.models';
+import { CertificacionDetalle, EstadoCertificado } from '../../certifications.models';
+
+type EstadoPresentacion = {
+  clave: Exclude<EstadoCertificado, 'vigente'>;
+  marca: string;
+  titulo: string;
+  detalle: string;
+};
 
 // Vista previa imprimible mock-only. window.print() es la única API de
 // impresión; el QR/token son permanentes (D0).
@@ -46,18 +53,6 @@ export class CertificationPdfPreviewPage {
     return `IFTS14-CERT-${String(id).padStart(4, '0')}`;
   });
 
-  // parseISO evita el drift UTC de new Date('YYYY-MM-DD') en zonas negativas.
-  readonly periodo = computed(() => {
-    const d = this.detalle();
-    if (!d || d.attendedDates.length === 0) return '';
-    const fmt = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' });
-    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-    const desde = fmt.format(parseISO(d.attendedDates[0]));
-    if (d.attendedDates.length === 1) return cap(desde);
-    const hasta = fmt.format(parseISO(d.attendedDates[d.attendedDates.length - 1]));
-    return `${cap(desde)} a ${cap(hasta)}`;
-  });
-
   readonly emisionLarga = computed(() => {
     const d = this.detalle();
     if (!d?.emitidoEn) return '';
@@ -65,7 +60,37 @@ export class CertificationPdfPreviewPage {
     return fmt.format(parseISO(d.emitidoEn));
   });
 
-  readonly estadoRevocado = computed<boolean>(() => this.detalle()?.estado === 'revocado');
+  readonly estadoPresentacion = computed<EstadoPresentacion | null>(() => {
+    switch (this.detalle()?.estado) {
+      case 'borrador':
+        return {
+          clave: 'borrador',
+          marca: 'BORRADOR',
+          titulo: 'Certificado borrador.',
+          detalle: 'Este documento aún no tiene validez legal ni académica.',
+        };
+      case 'vencido':
+        return {
+          clave: 'vencido',
+          marca: 'VENCIDO',
+          titulo: 'Certificado vencido.',
+          detalle: 'La vigencia del documento finalizó.',
+        };
+      case 'revocado':
+        return {
+          clave: 'revocado',
+          marca: 'REVOCADO',
+          titulo: 'Certificación revocada.',
+          detalle: 'El documento carece de validez legal y académica.',
+        };
+      default:
+        return null;
+    }
+  });
+
+  formatearFechaAsistida(fecha: string): string {
+    return fecha;
+  }
 
   // QR decorativo: 64 celdas (8x8) sin datos personales (design.md decisión 3).
   readonly qrCells: readonly number[] = [

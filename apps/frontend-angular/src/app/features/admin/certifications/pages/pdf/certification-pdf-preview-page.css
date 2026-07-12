@@ -275,14 +275,13 @@
   }
 }
 
-/* ---------- Revocado ---------- */
-.cert-revocado-marca {
+/* ---------- Estados no vigentes ---------- */
+.cert-estado-marca {
   position: absolute;
   top: var(--space-3);
   right: var(--space-3);
   z-index: 2;
-  background: var(--color-destructive);
-  color: var(--color-destructive-foreground);
+  color: var(--color-ink-foreground);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 700;
@@ -291,17 +290,37 @@
   border-radius: var(--radius-sm);
 }
 
-.cert-revocado-banda {
-  background: var(--color-destructive-soft);
-  border: 1px solid color-mix(in srgb, var(--color-destructive) 30%, transparent);
+.cert-estado-marca--borrador {
+  background: var(--color-warning);
+  color: var(--color-ink);
+}
+
+.cert-estado-marca--vencido,
+.cert-estado-marca--revocado {
+  background: var(--color-destructive);
+}
+
+.cert-estado-banda {
   border-radius: var(--radius-sm);
   padding: var(--space-3) var(--space-4);
-  color: var(--color-destructive);
   font-size: 0.875rem;
 }
 
-.cert-revocado-banda p {
+.cert-estado-banda p {
   margin: 0;
+}
+
+.cert-estado-banda--borrador {
+  background: var(--color-warning-soft);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+  color: var(--color-ink);
+}
+
+.cert-estado-banda--vencido,
+.cert-estado-banda--revocado {
+  background: var(--color-destructive-soft);
+  border: 1px solid color-mix(in srgb, var(--color-destructive) 30%, transparent);
+  color: var(--color-destructive);
 }
 
 /* ---------- Encabezado: logos ---------- */
@@ -499,6 +518,26 @@
 
 .cert-curso-nombre {
   color: var(--color-tech-blue);
+}
+
+.cert-fechas-asistidas {
+  margin-top: var(--space-2);
+  font-size: 0.8125rem;
+  color: var(--color-foreground);
+}
+
+.cert-fechas-asistidas p,
+.cert-fechas-asistidas ol {
+  margin: 0;
+}
+
+.cert-fechas-asistidas ol {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 var(--space-3);
+  padding: 0;
+  list-style-position: inside;
 }
 
 .cert-cierre {
@@ -910,10 +949,15 @@
     gap: var(--space-1) !important;
   }
 
-  /* Banda de revocación compacta. */
-  .cert-revocado-banda {
+  /* Bandas de estado compactas. */
+  .cert-estado-banda {
     padding: var(--space-1) var(--space-2) !important;
     font-size: 0.75rem !important;
+  }
+
+  .cert-fechas-asistidas {
+    margin-top: var(--space-1) !important;
+    font-size: 0.625rem !important;
   }
 
   /* Encabezado compacto. */

@@ -162,29 +162,21 @@ describe('no-real-data en seed de certificaciones', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('DOM del PDF preview no expone DNI completo (7-8 dígitos contiguos)', async () => {
-    const el = await renderPdfPreview('1');
-    expect(el.textContent).not.toMatch(/\b\d{7,8}\b/);
-  });
-
-  it('DOM del PDF preview no expone token completo (UUID)', async () => {
-    const el = await renderPdfPreview('1');
-    expect(el.textContent).not.toMatch(
-      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
-    );
-  });
-
-  it('DOM del PDF preview no expone email', async () => {
-    const el = await renderPdfPreview('1');
-    expect(el.textContent).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
-  });
-
-  it('DOM del PDF preview no expone legajo ni matrícula como literales', async () => {
-    const el = await renderPdfPreview('1');
-    const text = el.textContent || '';
-    expect(text).not.toMatch(/legajo/i);
-    expect(text).not.toMatch(/matr[íi]cula/i);
-  });
+  for (const id of ['1', '3', '4', '5']) {
+    it(`DOM del PDF preview ${id} conserva la frontera de privacidad`, async () => {
+      const el = await renderPdfPreview(id);
+      const text = el.textContent || '';
+      expect(text).not.toMatch(/\b\d{7,8}\b/);
+      expect(text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+      expect(text).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
+      expect(text).not.toMatch(/legajo/i);
+      expect(text).not.toMatch(/matr[íi]cula/i);
+      expect(el.querySelector('.cert-doc')?.textContent).toMatch(/Documento\s+\d{2}\*{4}\d{2}/);
+      expect((el.querySelector('.cert-val-url')?.textContent?.trim().length || 0)).toBeLessThanOrEqual(
+        URL_PUBLICA_MAX,
+      );
+    });
+  }
 
   it('DOM del PDF preview no llama fetch ni storage', async () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();

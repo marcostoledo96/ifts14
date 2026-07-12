@@ -39,7 +39,7 @@ Vista previa imprimible mock-only de un certificado. Sin PDF real, backend, HTTP
 
 ## Frontera de datos
 
-- Visible: `nombreAlumno`, `documentMasked` (XX****XX), `cursoNombre`, periodo derivado, `emitidoEn` formateado, `numeroExpediente` derivado, `publicValidationUrl` truncada (60 chars), estado.
+- Visible: `nombreAlumno`, `documentMasked` (XX****XX), `cursoNombre`, cada fecha ISO asistida, `emitidoEn` formateado, `numeroExpediente` derivado, `publicValidationUrl` truncada (60 chars), estado.
 - No visible: `tokenPrefix` como campo admin, DNI completo, token completo, email, legajo, matrícula, UUID.
 - Autoridades: `Autoridad Demo Uno` (Rector/a) y `Autoridad Demo Dos` (Asesor/a Pedagógica) — placeholders neutros.
 - QR: decorativo 8×8, sin datos personales, permanente (D0: no rota).
@@ -64,13 +64,29 @@ Vista previa imprimible mock-only de un certificado. Sin PDF real, backend, HTTP
 }
 ```
 
+## Corrección Codex F4-02
+
+- El folio lista cada `attendedDates` en formato ISO; no usa el resumen "dictado entre".
+- `vigente` no agrega señal visual. `borrador`, `vencido` y `revocado` incluyen marca y banda textual, sin deshabilitar la impresión nativa.
+- El checker activo `openspec/changes/f4-02-codex-feedback/evidence/print-app-check.mjs` recorre ids `1`, `3`, `4` y `5` contra `ng serve`; exige una A4, fechas exactas, marca/banda cuando corresponde, ausencia de chrome administrativo y frontera de privacidad.
+- Los hashes SHA-256 de cada PDF generado se guardan en `openspec/changes/f4-02-codex-feedback/evidence/print-hashes.txt`:
+  - `vigente.pdf` → `f94385f86314429eb8f6689b4964ba84d15ae16d50bc3f5e486542045c906d40`
+  - `borrador.pdf` → `42eb273456458c62ecea3f2282b2e3ff4d9082e05890c062ed12a667ab52e506`
+  - `vencido.pdf` → `15210722c78e71c6abf4095396aa6981fca2678fdf1cf6bc5092cd2d4367df92`
+  - `revocado.pdf` → `67e1457bc2d894ca5d670d45f4188a9ec36c2160e2f77c021be1d88a60e728ec`
+- El test de regresión `evidence/print-app-check.identity.spec.mjs` cubre la falsa aprobación por folio anterior: prueba que la identidad de un caso no satisface al siguiente.
+- Verificación detallada: `openspec/changes/archive/2026-07-12-f4-02-codex-feedback/verify-report.md`.
+
 ## Verificación
 
-- `npm run test:ci`: 473/473 SUCCESS.
-- `npm run build`: exit 0 (2 warnings CSS budget, ambos < 16kB error).
-- `package.json`/lockfiles: sin cambios.
-- Capturas: `evidence/pdf-desktop.png` (1280×800), `evidence/pdf-mobile.png` (390×844), `evidence/pdf-print.png` (media print).
-- Paridad: `evidence/parity-notes.md`.
+- `npm run test:ci -- --include='**/certifications/**/*.spec.ts'`: 128/128 SUCCESS.
+- `npm run test:ci` (suite completa): 478/478 SUCCESS.
+- `node --test openspec/changes/f4-02-codex-feedback/evidence/print-app-check.identity.spec.mjs`: 1/1 PASS.
+- `node openspec/changes/f4-02-codex-feedback/evidence/print-app-check.mjs openspec/changes/f4-02-codex-feedback/evidence/app-pdf`: 4/4 PASS.
+- `npm run build`: exit 0 (warnings CSS: PDF preview 13,70 kB y certification preview 14,31 kB, ambos < 16kB error).
+- `git diff --check`: PASS.
+- Capturas (12): `evidence/{vigente,borrador,vencido,revocado}-{desktop,mobile,print}.png` (desktop 1280×800, mobile 390×844, media print).
+- PDFs autoritativos: `evidence/app-pdf/{vigente,borrador,vencido,revocado}.pdf` (1 A4 apaisado cada uno).
 
 ## Corrección post-verify FAIL (lineage nuevo, no oculta)
 
