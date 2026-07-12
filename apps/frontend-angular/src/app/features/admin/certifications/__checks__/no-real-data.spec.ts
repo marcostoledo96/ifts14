@@ -1,10 +1,13 @@
 // Verifica que el seed ficticio de certificaciones no contiene datos
 // plausibles reales: documentMasked enmascarado, sin emails, sin DNI
 // completo, sin nombres propios, sin tokens tipo UUID, sin URL con token
-// completo.
+// completo. Además valida que el DOM renderizado por el expediente no
+// expone DNI completo, token completo, email, legajo ni matrícula.
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../certifications.service';
 import { InMemoryCertificationsService, URL_PUBLICA_MAX } from '../in-memory-certifications.service';
+import { CertificationPreviewPage } from '../pages/preview/certification-preview-page';
 
 describe('no-real-data en seed de certificaciones', () => {
   async function setup() {
@@ -86,5 +89,55 @@ describe('no-real-data en seed de certificaciones', () => {
         expect(ev.detalle).not.toMatch(/\b\d{7,8}\b/); // no DNI numérico
       }
     }
+  });
+
+  // --- Frontera de datos en el DOM renderizado (F4-01) ---
+  // El expediente admin no DEBE exponer DNI completo, token completo,
+  // email, legajo ni matrícula en el HTML renderizado.
+
+  async function renderExpediente(id: string) {
+    await TestBed.configureTestingModule({
+      imports: [CertificationPreviewPage],
+      providers: [
+        provideRouter([]),
+        { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CertificationPreviewPage);
+    fixture.componentRef.setInput('id', id);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('DOM del expediente no expone DNI completo (7-8 dígitos contiguos)', async () => {
+    const el = await renderExpediente('1');
+    expect(el.textContent).not.toMatch(/\b\d{7,8}\b/);
+  });
+
+  it('DOM del expediente no expone token completo (UUID)', async () => {
+    const el = await renderExpediente('1');
+    expect(el.textContent).not.toMatch(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    );
+  });
+
+  it('DOM del expediente no expone email', async () => {
+    const el = await renderExpediente('1');
+    expect(el.textContent).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
+  });
+
+  it('DOM del expediente no expone legajo ni matrícula como literales', async () => {
+    const el = await renderExpediente('1');
+    const text = el.textContent || '';
+    expect(text).not.toMatch(/legajo/i);
+    expect(text).not.toMatch(/matr[íi]cula/i);
+  });
+
+  it('DOM del expediente no llama fetch ni storage', async () => {
+    const fetchSpy = spyOn(window, 'fetch').and.callThrough();
+    await renderExpediente('1');
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

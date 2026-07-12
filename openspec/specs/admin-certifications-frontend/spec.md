@@ -41,33 +41,57 @@ El sistema DEBE mostrar un listado navegable de certificaciones ficticias, filtr
 
 ### Requirement: Previsualización segura y handoff explícito
 
-El sistema DEBE permitir previsualizar una certificación mock con `documentMasked`, `tokenPrefix`, URL pública truncada, fechas asistidas y auditoría mínima. Las acciones de emisión, PDF, entrega manual, revocación y listado real DEBEN permanecer deshabilitadas o marcadas como handoff.
+El sistema DEBE reemplazar la previsualización mínima de `/admin/certificaciones/:id` por un expediente administrativo mock-only con estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo y zona de riesgo. DEBE usar solo `documentMasked`, `tokenPrefix` y URL truncada; NO DEBE usar backend real, HTTP, `X-Admin-Key`, storage, cookies, IndexedDB, sesión real, DNI completo, token completo, email ni datos reales. Las acciones PDF, link, entrega, regeneración y revocación DEBEN permanecer deshabilitadas con handoff explícito.
 
-#### Scenario: Previsualización de una certificación mock
+#### Scenario: Expediente de una certificación mock
 
 - **Given** Bedelía abre `/admin/certificaciones/:id` con un id mock válido
-- **When** la pantalla carga la certificación
-- **Then** DEBE mostrar datos seguros y una URL pública truncada.
+- **When** la pantalla carga el expediente
+- **Then** DEBE mostrar datos seguros, secciones administrativas y URL pública truncada.
 - **And** DEBE permitir volver al listado.
 
-#### Scenario: Acción fuera de alcance
+#### Scenario: Acciones fuera de alcance
 
-- **Given** Bedelía visualiza una certificación mock
-- **When** revisa acciones de emitir, descargar PDF, entrega manual o revocar
-- **Then** DEBEN estar deshabilitadas o señaladas como handoff de F4-F6.
+- **Given** Bedelía visualiza un expediente mock
+- **When** revisa PDF, copiar link, entrega manual, regenerar o revocar
+- **Then** cada acción DEBE estar deshabilitada y declarar su handoff: F4-02, F5-04, F6-03 o F6-01.
 
-#### Scenario: Id inexistente o inválido
+#### Scenario: Id inexistente, inválido o ausente
 
-- **Given** la ruta contiene un id inexistente o inválido
-- **When** se carga la previsualización
-- **Then** DEBE mostrar un estado de no encontrado sin romper la navegación admin.
+- **Given** la ruta contiene un id inexistente, inválido o ausente
+- **When** se carga el expediente
+- **Then** DEBE mostrar un estado seguro de no encontrado sin romper la navegación admin.
+
+#### Scenario: Frontera de datos administrativa
+
+- **Given** el expediente se renderiza en la UI admin
+- **When** se inspecciona la información visible
+- **Then** NO DEBE exponer DNI completo, token completo, email, legajo, matrícula ni datos reales.
+
+### Requirement: Paridad visual y evidencia de verificación
+
+El sistema DEBE mantener paridad visual igual o mejor que `muestra_pagina/app/admin/certificaciones/[id]` y `muestra_pagina/components/admin/expediente-certificacion.tsx`, sin portar React/Next literalmente. La verificación DEBE dejar evidencia de tests/checks y comparación de captura contra la referencia.
+
+#### Scenario: Paridad visual del expediente
+
+- **Given** existe un expediente mock válido
+- **When** se compara la pantalla Angular con la referencia v0
+- **Then** DEBE conservar o mejorar jerarquía, layout, secciones, estados y acciones visibles.
+
+#### Scenario: Evidencia de checks en verify
+
+- **Given** se ejecuta `sdd-verify`
+- **When** se reportan resultados
+- **Then** DEBE incluir tests/checks de privacidad, handoffs, id inválido y comparación de captura.
 
 ### Requirement: Documentación y archivo del ciclo
 
-El sistema DEBE dejar documentado durante `sdd-archive` que F2-06 es una base frontend mock-only y que quedan fuera emisión real, PDF/QR, entrega manual, revocación, integración HTTP, storage, auth real, datos reales y exposición de DNI/token completos.
+El sistema DEBE dejar documentado durante `sdd-archive` que F4-01 es la base frontend mock-only del expediente administrativo y que quedan fuera emisión real, PDF/QR, entrega manual, revocación, integración HTTP, storage, auth real, datos reales y exposición de DNI/token completos. F2-06 queda como antecedente de la previsualización mínima reemplazada por F4-01.
 
 #### Scenario: Cierre documental
 
-- **Given** se archiva F2-06
+- **Given** se archiva F4-01
 - **When** se actualizan los specs y la documentación frontend
 - **Then** DEBE constar el alcance mock-only, los archivos afectados y el handoff hacia F4-F6.
+
+> **F4-02 diferido**: la réplica documental visible en F4-01 cubre el expediente; una ruta/vista PDF imprimible (F4-02) queda fuera de este cambio.
