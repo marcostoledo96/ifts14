@@ -12,6 +12,10 @@ export interface Curso {
   readonly estado: EstadoCurso;
   readonly createdAt: string; // ISO date
   readonly updatedAt: string; // ISO date
+  readonly cuatrimestre?: string;
+  readonly cantidadFechas?: number;
+  readonly alumnosPresentes?: number | null;
+  readonly certificaciones?: number | null;
 }
 
 export interface CursoFecha {
@@ -44,4 +48,5 @@ export interface CursoFechaDraft {
 export interface CursosFiltros {
   readonly estado?: EstadoCurso;
   readonly q?: string; // texto libre sobre codigo/nombre
+  readonly conFechas?: boolean;
 }
