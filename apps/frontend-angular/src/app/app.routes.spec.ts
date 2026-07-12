@@ -748,6 +748,33 @@ describe('app.routes', () => {
     expect(text).toContain('Curso de introducción a la gestión');
   });
 
+  it("runtime: /admin/certificaciones/1 renderiza el expediente con secciones de paridad v0", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/certificaciones/1');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-certification-preview-page');
+    expect(cmp).not.toBeNull();
+    const el = cmp as HTMLElement;
+    // Expediente con secciones v0: breadcrumb, ficha, acciones, validación,
+    // riesgo, documento réplica y auditoría.
+    expect(el.querySelector('nav[aria-label="Migas de pan"]')).not.toBeNull();
+    expect(el.querySelector('.ficha-expediente')).not.toBeNull();
+    expect(el.querySelector('.acciones-panel')).not.toBeNull();
+    expect(el.querySelector('.validacion-panel')).not.toBeNull();
+    expect(el.querySelector('.riesgo-panel')).not.toBeNull();
+    expect(el.querySelector('.documento-replica')).not.toBeNull();
+    expect(el.querySelector('.auditoria-timeline')).not.toBeNull();
+    // Acciones deshabilitadas con handoffs F4-02, F5-04, F6-03, F6-01.
+    const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
+    expect(disabledBtns.length).toBeGreaterThanOrEqual(5);
+    expect(el.textContent).toContain('F4-02');
+    expect(el.textContent).toContain('F5-04');
+    expect(el.textContent).toContain('F6-03');
+    expect(el.textContent).toContain('F6-01');
+  });
+
   it("runtime: /admin/certificaciones/abc (id inválido) NO revienta y muestra estado de no encontrado", async () => {
     await setupHarnessWithSession();
     const harness = await RouterTestingHarness.create('/admin/certificaciones/abc');

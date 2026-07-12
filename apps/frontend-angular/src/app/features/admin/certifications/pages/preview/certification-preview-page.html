@@ -1,86 +1,325 @@
-<section aria-labelledby="cert-title">
-  <p class="volver">
-    <a routerLink="/admin/certificaciones">← Volver al listado</a>
-  </p>
-
+<section class="expediente" aria-labelledby="cert-title">
   @if (cargando()) {
     <p class="estado-linea">Cargando certificación…</p>
   }
   @if (error()) {
     <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    <p class="volver">
+      <a routerLink="/admin/certificaciones">← Volver al listado</a>
+    </p>
   }
 
   @if (detalle(); as d) {
-    <header class="cert-header">
-      <p class="kicker">Certificación · {{ d.tokenPrefix }}</p>
-      <h1 id="cert-title" class="title">{{ d.cursoNombre }}</h1>
-      <p class="banda-estado estado-{{ d.estado }}" aria-live="polite">
-        Estado: {{ d.estado }}
-      </p>
+    <nav aria-label="Migas de pan" class="breadcrumb">
+      <a routerLink="/admin/certificaciones" class="breadcrumb-link">
+        ← Certificaciones
+      </a>
+      <span class="breadcrumb-sep" aria-hidden="true">/</span>
+      <span class="breadcrumb-current">{{ numeroExpediente() }}</span>
+    </nav>
+
+    <header class="expediente-header">
+      <div class="header-main">
+        <p class="kicker">Expediente de certificación</p>
+        <h1 id="cert-title" class="title">{{ d.nombreAlumno }}</h1>
+        <p class="subtitle">{{ d.cursoNombre }}</p>
+      </div>
+      <span class="estado-badge estado-{{ d.estado }}" aria-live="polite">
+        {{ estadoLabel() }}
+      </span>
     </header>
 
-    <dl class="detalle-meta">
-      <dt>Alumno</dt>
-      <dd>{{ d.nombreAlumno }}</dd>
-      <dt>Documento (mascarado)</dt>
-      <dd>{{ d.documentMasked }}</dd>
-      <dt>Token (prefijo)</dt>
-      <dd>{{ d.tokenPrefix }}</dd>
-      @if (d.emitidoEn) {
-        <dt>Emitido</dt>
-        <dd>{{ d.emitidoEn }}</dd>
-      }
-      @if (d.venceEn) {
-        <dt>Vence</dt>
-        <dd>{{ d.venceEn }}</dd>
-      }
-      <dt>URL pública (truncada)</dt>
-      <dd class="public-url">{{ d.publicValidationUrl }}</dd>
-    </dl>
+    <div class="expediente-grid">
+      <aside class="control-col" aria-label="Panel de control del expediente">
+        <section class="panel ficha-expediente" aria-labelledby="ficha-title">
+          <header class="panel-header">
+            <h2 id="ficha-title" class="panel-title">Ficha del expediente</h2>
+          </header>
+          <div class="panel-body">
+            <p class="group-kicker">Alumno</p>
+            <dl class="fila-lista">
+              <div class="fila-dato">
+                <dt>Nombre y apellido</dt>
+                <dd>{{ d.nombreAlumno }}</dd>
+              </div>
+              <div class="fila-dato">
+                <dt>Documento (mascarado)</dt>
+                <dd class="mono">{{ d.documentMasked }}</dd>
+              </div>
+            </dl>
 
-    <section aria-labelledby="attended-title" class="attended">
-      <h2 id="attended-title" class="subtitle">Fechas asistidas</h2>
-      <ul class="attended-dates">
-        @for (f of d.attendedDates; track f) {
-          <li>{{ f }}</li>
-        }
-      </ul>
-    </section>
+            <p class="group-kicker">Curso · {{ d.attendedDates.length }} jornadas</p>
+            <ul class="asistencia-lista">
+              @for (f of d.attendedDates; track f; let i = $index) {
+                <li>
+                  <span class="seq">{{ seq2(i) }}</span>
+                  <span class="fecha">{{ f }}</span>
+                  <span class="check" aria-hidden="true">✓</span>
+                </li>
+              }
+            </ul>
 
-    <section aria-labelledby="audit-title" class="audit">
-      <h2 id="audit-title" class="subtitle">Auditoría mínima</h2>
-      <ul class="audit-events">
-        @for (ev of d.auditEvents; track ev.at) {
-          <li>
-            <span class="audit-at">{{ ev.at }}</span>
-            <span class="audit-accion">{{ ev.accion }}</span>
-            <span class="audit-detalle">{{ ev.detalle }}</span>
-          </li>
-        }
-      </ul>
-    </section>
+            <p class="group-kicker">Trazabilidad administrativa</p>
+            <dl class="fila-lista">
+              <div class="fila-dato">
+                <dt>N.° de certificado</dt>
+                <dd class="mono">{{ numeroExpediente() }}</dd>
+              </div>
+              @if (d.emitidoEn) {
+                <div class="fila-dato">
+                  <dt>Fecha de emisión</dt>
+                  <dd class="mono">{{ d.emitidoEn }}</dd>
+                </div>
+              }
+              <div class="fila-dato">
+                <dt>Token (parcial)</dt>
+                <dd class="mono">{{ d.tokenPrefix }}</dd>
+              </div>
+              @if (d.venceEn) {
+                <div class="fila-dato">
+                  <dt>Vence</dt>
+                  <dd class="mono">{{ d.venceEn }}</dd>
+                </div>
+              }
+            </dl>
+          </div>
+        </section>
 
-    <div class="acciones">
-      <button type="button" class="btn-disabled" disabled aria-disabled="true">
-        Emitir (F4-01)
-      </button>
-      <button type="button" class="btn-disabled" disabled aria-disabled="true">
-        Descargar PDF (F4-02)
-      </button>
-      <button type="button" class="btn-disabled" disabled aria-disabled="true">
-        Entrega manual (F5-04)
-      </button>
-      <button type="button" class="btn-disabled" disabled aria-disabled="true">
-        Revocar (F5-04)
-      </button>
-      <button type="button" class="btn-disabled" disabled aria-disabled="true">
-        Listado real (F6-01)
-      </button>
-      <a class="btn-secondary" routerLink="/admin/certificaciones">Volver al listado</a>
+        <section class="panel acciones-panel" aria-labelledby="acciones-title">
+          <header class="panel-header">
+            <h2 id="acciones-title" class="panel-title">Acciones</h2>
+          </header>
+          <div class="panel-body">
+            <div class="acciones-lista">
+              <button type="button" class="btn-disabled" disabled aria-disabled="true">
+                Descargar PDF <span class="handoff">{{ handoffs.pdf }}</span>
+              </button>
+              <button type="button" class="btn-disabled" disabled aria-disabled="true">
+                Copiar link <span class="handoff">{{ handoffs.link }}</span>
+              </button>
+              <button type="button" class="btn-disabled" disabled aria-disabled="true">
+                Entrega manual <span class="handoff">{{ handoffs.entrega }}</span>
+              </button>
+              <button type="button" class="btn-disabled" disabled aria-disabled="true">
+                Regenerar PDF <span class="handoff">{{ handoffs.pdf }}</span>
+              </button>
+            </div>
+            <p class="acciones-note">
+              Acciones deshabilitadas. PDF, copiar link, entrega manual y
+              regeneración son handoff a {{ handoffs.pdf }}, {{ handoffs.link }} y
+              {{ handoffs.entrega }}.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel validacion-panel" aria-labelledby="val-title">
+          <header class="panel-header">
+            <h2 id="val-title" class="panel-title">Enlace de validación</h2>
+          </header>
+          <div class="panel-body">
+            <div class="qr-layout">
+              <div class="qr-decorativo" aria-hidden="true">
+                <div class="qr-grid">
+                  @for (c of qrCells; track $index) {
+                    <span class="qr-cell {{ c ? 'qr-on' : 'qr-off' }}"></span>
+                  }
+                </div>
+              </div>
+              <div class="qr-info">
+                <p class="group-kicker">Verificación pública</p>
+                <p class="public-url mono">{{ d.publicValidationUrl }}</p>
+                <button
+                  type="button"
+                  class="btn-disabled"
+                  disabled
+                  aria-disabled="true"
+                >
+                  Copiar link <span class="handoff">{{ handoffs.link }}</span>
+                </button>
+              </div>
+            </div>
+            <p class="panel-note">
+              El QR no contiene datos personales; solo dirige a la validación
+              oficial del certificado. Copiar link es handoff a {{ handoffs.link }}.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel riesgo-panel" aria-labelledby="riesgo-title">
+          <header class="panel-header panel-header-danger">
+            <h2 id="riesgo-title" class="panel-title panel-title-danger">Zona de riesgo</h2>
+          </header>
+          <div class="panel-body">
+            <p class="riesgo-texto">
+              Revocar este certificado invalidaría su verificación criptográfica
+              para siempre.
+            </p>
+            <button
+              type="button"
+              class="btn-revocar"
+              disabled
+              aria-disabled="true"
+            >
+              Revocar certificación <span class="handoff">{{ handoffs.revocacion }}</span>
+            </button>
+          </div>
+        </section>
+      </aside>
+
+      <div class="documento-col" aria-label="Documento réplica del certificado">
+        <div class="doc-toolbar">
+          <p class="group-kicker">Vista previa oficial</p>
+          <p class="doc-toolbar-der">Documento electrónico · IFTS 14</p>
+        </div>
+
+        <article class="documento-replica">
+          <div class="doc-header">
+            @if (estadoRevocado()) {
+              <span class="doc-revocado-marca" aria-hidden="true">REVOCADO</span>
+            }
+            <div class="doc-header-content">
+              <div class="doc-logo">
+                <svg viewBox="0 0 20 20" fill="none" class="doc-monograma" aria-hidden="true">
+                  <rect x="2" y="2" width="6" height="6" fill="currentColor" />
+                  <rect x="12" y="2" width="6" height="6" fill="var(--color-circuit)" />
+                  <rect x="2" y="12" width="6" height="6" fill="var(--color-circuit)" />
+                  <rect x="12" y="12" width="6" height="6" fill="currentColor" />
+                </svg>
+              </div>
+              <div class="doc-institution">
+                <p class="doc-inst-kicker">CERTIFICADO COMPLEMENTARIO</p>
+                <h2 class="doc-inst-name">Instituto de Formación Técnica Superior N.° 14</h2>
+                <p class="doc-inst-sub">Gobierno de la Ciudad Autónoma de Buenos Aires</p>
+              </div>
+              <div class="doc-id-box">
+                <p class="doc-id-label">ID</p>
+                <p class="doc-id-value mono">{{ numeroExpediente() }}</p>
+                <p class="doc-id-estado estado-{{ d.estado }}">
+                  <span class="dot" aria-hidden="true"></span>
+                  {{ estadoLabel() }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          @if (estadoRevocado()) {
+            <div class="doc-revocado-banda">
+              <p><strong>Certificación revocada.</strong> El documento carece de validez legal y académica.</p>
+            </div>
+          }
+
+          <div class="doc-declaracion">
+            <p class="doc-decl-kicker">Certifica que</p>
+            <p class="doc-protagonista">{{ d.nombreAlumno }}</p>
+            <p class="doc-doc mono">Documento {{ d.documentMasked }}</p>
+            <p class="doc-cuerpo">
+              cumplió con la asistencia registrada y auditada en el curso
+              <strong>{{ d.cursoNombre }}</strong>.
+            </p>
+          </div>
+
+          <div class="doc-asistencia">
+            <div class="doc-asistencia-header">
+              <p class="doc-section-kicker">I. REGISTRO DE ASISTENCIA AUDITADO</p>
+              <p class="doc-asistencia-meta">{{ d.attendedDates.length }} jornadas</p>
+            </div>
+            <div class="doc-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>SEQ</th>
+                    <th>FECHA</th>
+                    <th>ASISTENCIA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (f of d.attendedDates; track f; let i = $index) {
+                    <tr>
+                      <td class="mono">{{ seq3(i) }}</td>
+                      <td class="mono">{{ f }}</td>
+                      <td><span class="check-presente">✓ Presente</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="doc-autoridades">
+            <div class="doc-autoridades-header">
+              <p class="doc-section-kicker">II. AUTORIDADES FIRMANTES</p>
+              <span class="doc-autoridades-note">Firmas y autoridades desde Configuración institucional (placeholders demo)</span>
+            </div>
+            <div class="doc-firmas">
+              <div class="doc-firma">
+                <div class="doc-firma-sello">
+                  <span class="doc-firma-icon" aria-hidden="true">🛡</span>
+                  <span class="doc-firma-italic">Firma digital verificada</span>
+                </div>
+                <p class="doc-firma-nombre">Autoridad Demo Uno</p>
+                <p class="doc-firma-cargo">Rectora — IFTS N.° 14</p>
+              </div>
+              <div class="doc-firma">
+                <div class="doc-firma-sello">
+                  <span class="doc-firma-icon" aria-hidden="true">🛡</span>
+                  <span class="doc-firma-italic">Firma digital verificada</span>
+                </div>
+                <p class="doc-firma-nombre">Autoridad Demo Dos</p>
+                <p class="doc-firma-cargo">Asesor Pedagógico — IFTS N.° 14</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="doc-trazabilidad">
+            <div class="qr-decorativo qr-trazabilidad" aria-hidden="true">
+              <div class="qr-grid">
+                @for (c of qrCells; track $index) {
+                  <span class="qr-cell {{ c ? 'qr-on' : 'qr-off' }}"></span>
+                }
+              </div>
+            </div>
+            <div class="doc-traz-info">
+              <dl class="doc-traz-dl">
+                <div>
+                  <dt>N.° de certificado</dt>
+                  <dd class="mono">{{ numeroExpediente() }}</dd>
+                </div>
+                <div>
+                  <dt>Verificación</dt>
+                  <dd class="public-url mono">{{ d.publicValidationUrl }}</dd>
+                </div>
+              </dl>
+              <p class="doc-traz-note">
+                El QR permanente dirige a la validación oficial y no contiene datos personales.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <section class="panel auditoria-panel" aria-labelledby="audit-title">
+          <header class="panel-header">
+            <h2 id="audit-title" class="panel-title">Registro de auditoría</h2>
+          </header>
+          <div class="panel-body">
+            <ol class="auditoria-timeline">
+              @for (ev of d.auditEvents; track ev.at) {
+                <li class="audit-item">
+                  <span class="audit-dot" aria-hidden="true">●</span>
+                  <div class="audit-content">
+                    <p class="audit-at">{{ ev.at }}</p>
+                    <p class="audit-accion">{{ ev.accion }}</p>
+                    <p class="audit-detalle">{{ ev.detalle }}</p>
+                  </div>
+                </li>
+              }
+            </ol>
+          </div>
+        </section>
+      </div>
     </div>
 
-    <p class="handoff-banner" role="status">
-      Disponible en F4/F5/F6 — Emisión, PDF, entrega, revocación y listado real son handoff.
+    <p class="volver footer-volver">
+      <a routerLink="/admin/certificaciones">← Volver al listado</a>
     </p>
   }
 </section>
