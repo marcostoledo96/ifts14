@@ -347,3 +347,7 @@ Cuando exista integración real:
 - la UI pública no debe pedir DNI como input de búsqueda pública;
 - QR/token permanente: pantallas de entrega manual indican "mismo QR", no rotación;
 - los modelos TypeScript futuros deben respetar `docs/backend/01-contrato-api-certificados.md`.
+
+## Ver también
+
+- [Reporte de QA manual F3-04](./03-qa-manual-f3-04.md) — pasada manual transversal de la app Angular 20 (F3-04): build, responsive 5 anchos, teclado y foco, contraste, estados, consola, datos sensibles y pendientes. Cierra con PASS WITH WARNINGS (placeholders pendientes para la pasada visual de Mati + blocker ambiental `node_modules`).
