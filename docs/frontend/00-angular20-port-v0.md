@@ -230,6 +230,30 @@ Corrective fixes pre-commit aplicados sobre la rama y consolidados en el re-veri
 
 Handoff a F4-01/F4-02/F5-04/F6-01: `Certificacion`, `CertificacionDetalle`, `CertificationsService` y `CERTIFICATIONS_SOURCE` quedan listos para reuso. Los CTAs de emisión, PDF, entrega manual, revocación y listado real están deshabilitados en la UI con handoff explícito. `attendedDates` ya está modelado en el detalle para consumo futuro desde `CursoFecha`/`Asistencia`. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
 
+### Estado F4-01 — Detalle de certificación (expediente administrativo)
+
+Ciclo `f4-01-certificate-detail` sobre la base de F2-06. Reemplaza la previsualización mínima de `/admin/certificaciones/:id` por un expediente administrativo mock-only: estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo y zona de riesgo. Mantiene paridad visual con `muestra_pagina/app/admin/certificaciones/[id]` y `muestra_pagina/components/admin/expediente-certificacion.tsx`, portada a Angular 20 con CSS local y tokens globales (`--color-ink`, `--color-circuit`, `--color-valid`, `--color-destructive`). Sin Tailwind ni dependencias nuevas.
+
+Archivos modificados en `apps/frontend-angular/src/app/features/admin/certifications/`:
+
+- `pages/preview/certification-preview-page.ts` — helpers de presentación (número visual `IFTS14-CERT-NNNN`, fechas formateadas, labels de estado y handoff); señal derivada de handoffs; carga sin cambios (sigue usando `CERTIFICATIONS_SOURCE.obtener(id)`).
+- `pages/preview/certification-preview-page.html` — breadcrumb, encabezado (kicker/h1/subtítulo/badge), columna de control, ficha, acciones `disabled` con `aria-disabled="true"`, QR decorativo CSS, zona de riesgo, documento réplica (`<article>` institucional) y auditoría (`<ol class="auditoria-timeline">`).
+- `pages/preview/certification-preview-page.css` — grilla responsive (`grid-template-columns: 21rem minmax(0,1fr)` a partir de `64rem`), paneles, documento institucional, badges, botones disabled y QR decorativo 8×8 con tokens existentes.
+- `pages/preview/certification-preview-page.spec.ts` — ampliado: secciones del expediente, acciones con `aria-disabled`, handoffs F4-02/F5-04/F6-03/F6-01, id inválido (`abc`, `0x1`, `1e0`, `999`) y route reuse.
+- `__checks__/no-secrets.spec.ts` — endurecido: prohibe `localStorage`, `sessionStorage`, `IndexedDB`, `fetch`, `HttpClient` y `X-Admin-Key` en el feature.
+- `__checks__/no-real-data.spec.ts` — endurecido: valida DOM, seed y `documentMasked` sin DNI completo, token, email, legajo, matrícula ni UUID.
+
+Archivos modificados fuera del feature:
+
+- `apps/frontend-angular/src/app/app.routes.spec.ts` — expectativa runtime de `/admin/certificaciones/1` ajustada al expediente; se preserva la ruta `certificaciones/:id`.
+- `apps/frontend-angular/angular.json` — budget `anyComponentStyle` ajustado a `8kB warning / 16kB error` para admitir el CSS del expediente (CSS del componente pesa 13.78 kB; ver warning registrado en `verify-report.md`).
+
+Límites explícitos (F4-01): sin backend real, HTTP, `X-Admin-Key`, storage/cookies/IndexedDB, sesión real, DNI completo administrativo, token completo, email, legajo, matrícula ni datos reales en la UI admin. QR decorativo sin token embebido. Las acciones PDF, copiar link, entrega manual, regenerar PDF y revocar certificación quedan `disabled` con handoff explícito a F4-02, F5-04, F6-03 y F6-01. F4-02 (ruta/vista PDF imprimible) queda diferido: la réplica documental visible cubre el expediente sin ruta nueva.
+
+Verificación (`sdd-verify`): `npm run test:ci` **420/420 SUCCESS**; `npm run build` exit 0 con **warning de budget CSS** (`certification-preview-page.css` 13.78 kB > 8 kB warning, dentro de 16 kB error) aceptado como trade-off de paridad visual; 6/6 escenarios compliant, 0 CRITICAL. Evidencia visual en `openspec/changes/archive/2026-07-12-f4-01-certificate-detail/evidence/` (capturas desktop 1280×800 y mobile 390×844 + `parity-notes.md` con tabla comparativa v0 vs Angular). Diff inspeccionado: 1588 líneas cambiadas, dentro del budget de 4000. Detalle en `docs/frontend/F4-01-expediente-certificacion.md` y en el archive report del ciclo.
+
+Handoff a F4-02/F5-04/F6-03/F6-01: la UI ya está lista para que esos ciclos conecten las acciones reales manteniendo la frontera de datos. F4-02 (ruta/vista PDF imprimible) sigue diferido; F5-04 (entrega manual real), F6-03 (link público) y F6-01 (revocación real) llegan en sus propios ciclos. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:

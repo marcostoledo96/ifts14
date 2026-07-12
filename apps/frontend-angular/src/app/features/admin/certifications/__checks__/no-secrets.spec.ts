@@ -19,8 +19,11 @@ import { CertificationPreviewPage } from '../pages/preview/certification-preview
 
 const forbidden = [
   'X-Admin-Key',
+  'X-Admin-Token',
   'localStorage',
   'sessionStorage',
+  'IndexedDB',
+  'indexedDB',
   'document.cookie',
   'HttpClient',
   'fetch(',
@@ -28,7 +31,9 @@ const forbidden = [
   // DNI/token como literales sospechosos en código fuente.
   'documentNumber',
   'dniCompleto',
-  'X-Admin-Token',
+  'emailReal',
+  'legajo',
+  'matricula',
 ];
 
 // Inspecciona cada método enumerable de la clase en vez de una lista hardcodeada.
