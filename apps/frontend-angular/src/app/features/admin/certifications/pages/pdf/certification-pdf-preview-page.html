@@ -1,0 +1,227 @@
+<section class="pdf-vista" aria-labelledby="pdf-title">
+  @if (cargando()) {
+    <p class="estado-linea">Cargando certificación…</p>
+  }
+
+  @if (error()) {
+    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    <p class="volver no-print">
+      <a routerLink="/admin/certificaciones">← Volver al listado</a>
+    </p>
+  }
+
+  @if (detalle(); as d) {
+    <!-- Barra de acciones (no se imprime) -->
+    <nav aria-label="Migas de pan" class="breadcrumb no-print">
+      <a routerLink="/admin/certificaciones" class="breadcrumb-link">
+        ← Certificaciones
+      </a>
+      <span class="breadcrumb-sep" aria-hidden="true">/</span>
+      <a routerLink="/admin/certificaciones/{{ id() }}" class="breadcrumb-link">
+        {{ numeroExpediente() }}
+      </a>
+      <span class="breadcrumb-sep" aria-hidden="true">/</span>
+      <span class="breadcrumb-current">Vista imprimible</span>
+    </nav>
+
+    <div class="acciones-barra no-print">
+      <div class="acciones-titulo">
+        <p class="kicker">Vista previa del certificado</p>
+        <h1 id="pdf-title" class="title">Certificado oficial · {{ numeroExpediente() }}</h1>
+      </div>
+      <div class="acciones-botones">
+        <button
+          type="button"
+          class="btn-imprimir"
+          (click)="imprimir()"
+          aria-label="Imprimir certificado"
+        >
+          🖨 Imprimir
+        </button>
+        <a
+          routerLink="/admin/certificaciones/{{ id() }}"
+          class="btn-volver-exp"
+        >
+          ← Volver al expediente
+        </a>
+      </div>
+    </div>
+
+    <!-- Live region accesible para feedback de impresión (no se imprime) -->
+    <p
+      class="print-feedback no-print"
+      role="status"
+      aria-live="polite"
+    >
+      {{ printFeedback() }}
+    </p>
+
+    <!-- Folio del certificado (se imprime) -->
+    <article class="certificado-folio" aria-label="Certificado imprimible">
+      @if (estadoPresentacion(); as estado) {
+        <span class="cert-estado-marca cert-estado-marca--{{ estado.clave }}" aria-hidden="true">
+          {{ estado.marca }}
+        </span>
+      }
+
+      <!-- Decoraciones de marca (no informativas) -->
+      <svg class="trama-puntos" viewBox="0 0 100 78" aria-hidden="true"></svg>
+      <svg class="lineas-circuito lineas-izq" viewBox="0 0 120 240" aria-hidden="true"></svg>
+      <svg class="lineas-circuito lineas-der" viewBox="0 0 120 240" aria-hidden="true"></svg>
+
+      <div class="folio-contenido">
+        <!-- Encabezado: logos institucionales -->
+        <header class="folio-header">
+          <div class="escudo-circular" title="Escudo institucional (logo oficial)">
+            <span class="escudo-icon" aria-hidden="true">⚙</span>
+            <span class="sr-only">Escudo institucional</span>
+          </div>
+          <div class="marca-programa">
+            <p class="marca-programa-titulo">
+              Buenos Aires <span class="marca-italic">aprende</span>
+            </p>
+            <p class="marca-programa-sub">
+              Agencia de Habilidades para el Futuro
+            </p>
+          </div>
+          <div class="marca-ifts" title="IFTS N.° 14 (logo oficial)">
+            <span class="marca-ifts-bracket" aria-hidden="true">[</span>
+            IFTS
+            <span class="marca-ifts-bracket" aria-hidden="true">]</span>
+            <sup class="marca-ifts-sup">14</sup>
+          </div>
+        </header>
+
+        @if (estadoPresentacion(); as estado) {
+          <div class="cert-estado-banda cert-estado-banda--{{ estado.clave }}">
+            <p>
+              <strong>{{ estado.titulo }}</strong>
+              {{ estado.detalle }}
+            </p>
+          </div>
+        }
+
+        <!-- Título -->
+        <div class="cert-titulo-wrap">
+          <h2 class="cert-titulo">CERTIFICADO</h2>
+        </div>
+
+        <!-- Cuerpo -->
+        <div class="cert-cuerpo">
+          <p class="cert-intro">
+            El Instituto de Formación Técnica Superior N.° 14 (IFTS 14), que
+            integra la Dirección de Educación Técnica Superior — Agencia de
+            Habilidades para el Futuro, certifica que:
+          </p>
+
+          <p class="cert-protagonista">{{ d.nombreAlumno }}</p>
+          <div class="cert-divider" aria-hidden="true"></div>
+          <p class="cert-doc mono">Documento {{ d.documentMasked }}</p>
+
+          <p class="cert-texto">
+            ha aprobado el curso de formación profesional
+            <strong class="cert-curso-nombre">{{ d.cursoNombre }}</strong>,
+            conforme al registro de asistencia auditado.
+          </p>
+          @if (d.attendedDates.length) {
+            <section class="cert-fechas-asistidas" aria-label="Fechas asistidas">
+              <p>Fechas asistidas:</p>
+              <ol>
+                @for (fecha of d.attendedDates; track fecha) {
+                  <li class="cert-fecha-asistida mono">{{ formatearFechaAsistida(fecha) }}</li>
+                }
+              </ol>
+            </section>
+          }
+          <p class="cert-cierre">
+            Se extiende el presente certificado a solicitud del/la
+            interesado/a, para constancia de su aprobación.
+            @if (emisionLarga()) {
+              Ciudad Autónoma de Buenos Aires, {{ emisionLarga() }}.
+            } @else {
+              Ciudad Autónoma de Buenos Aires.
+            }
+          </p>
+        </div>
+
+        <!-- Firmas + validación (QR) -->
+        <div class="cert-pie-firmas">
+          <div class="cert-firma">
+            <div class="cert-firma-sello">
+              <span class="cert-firma-icon" aria-hidden="true">🛡</span>
+              <span class="cert-firma-italic">Firma digital verificada</span>
+            </div>
+            <div class="cert-firma-linea">
+              <p class="cert-firma-nombre">Autoridad Demo Uno</p>
+              <p class="cert-firma-cargo">Rector/a — IFTS N.° 14</p>
+            </div>
+          </div>
+
+          <div class="cert-validacion">
+            <div class="cert-val-inner">
+              <div class="qr-decorativo" aria-hidden="true">
+                <div class="qr-grid">
+                  @for (c of qrCells; track $index) {
+                    <span class="qr-cell {{ c ? 'qr-on' : 'qr-off' }}"></span>
+                  }
+                </div>
+              </div>
+              <div class="cert-val-info">
+                <p class="cert-val-kicker">Validación digital</p>
+                <p class="cert-val-desc">Escanee el código QR o visite:</p>
+                <p class="cert-val-url mono">{{ d.publicValidationUrl }}</p>
+              </div>
+            </div>
+            <dl class="cert-val-datos">
+              <div>
+                <dt>Emisión</dt>
+                <dd class="mono">{{ d.emitidoEn ?? '—' }}</dd>
+              </div>
+              <div class="cert-val-exp">
+                <dt>N.° certificado</dt>
+                <dd class="mono">{{ numeroExpediente() }}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="cert-firma">
+            <div class="cert-firma-sello">
+              <span class="cert-firma-icon" aria-hidden="true">🛡</span>
+              <span class="cert-firma-italic">Firma digital verificada</span>
+            </div>
+            <div class="cert-firma-linea">
+              <p class="cert-firma-nombre">Autoridad Demo Dos</p>
+              <p class="cert-firma-cargo">Asesor/a Pedagógica — IFTS N.° 14</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pie: marca ciudad + nota de configuración -->
+        <div class="cert-footer-pie">
+          <div class="marca-ciudad" title="Buenos Aires Ciudad (logo oficial)">
+            <span class="marca-ciudad-ba" aria-hidden="true">BA</span>
+            <span class="marca-ciudad-text">
+              Buenos Aires
+              <br />
+              Ciudad
+            </span>
+          </div>
+          <p class="cert-config-note">
+            🔒 Datos institucionales desde Configuración (pendiente)
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- Nota fuera del documento (no se imprime) -->
+    <p class="cert-nota-qr no-print">
+      🔗 Este documento puede validarse escaneando el código QR. El QR es
+      permanente y no contiene datos personales: solo dirige a la verificación
+      oficial del certificado.
+    </p>
+
+    <p class="volver no-print footer-volver">
+      <a routerLink="/admin/certificaciones">← Volver al listado</a>
+    </p>
+  }
+</section>

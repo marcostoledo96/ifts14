@@ -1,0 +1,988 @@
+:host {
+  display: block;
+}
+
+.pdf-vista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 100%;
+}
+
+/* ---------- Accesibilidad ---------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Breadcrumb ---------- */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  color: var(--color-muted-foreground);
+  flex-wrap: wrap;
+}
+
+.breadcrumb-link {
+  color: var(--color-muted-foreground);
+  text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+  text-decoration: underline;
+  color: var(--color-foreground);
+}
+
+.breadcrumb-sep {
+  color: var(--color-muted-foreground);
+}
+
+.breadcrumb-current {
+  color: var(--color-foreground);
+  font-weight: 500;
+}
+
+/* ---------- Barra de acciones (no imprime) ---------- */
+.acciones-barra {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (min-width: 640px) {
+  .acciones-barra {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.acciones-titulo {
+  min-width: 0;
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-circuit);
+  margin: 0;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-foreground);
+  margin-top: var(--space-1);
+}
+
+@media (min-width: 640px) {
+  .title {
+    font-size: 1.5rem;
+  }
+}
+
+.acciones-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.btn-imprimir,
+.btn-volver-exp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 2.5rem;
+  padding: 0 var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps-tight);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-decoration: none;
+}
+
+.btn-imprimir {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-foreground);
+}
+
+.btn-imprimir:hover {
+  background: var(--color-muted);
+}
+
+.btn-imprimir:focus-visible,
+.btn-volver-exp:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.btn-volver-exp {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-foreground);
+}
+
+.btn-volver-exp:hover {
+  background: var(--color-muted);
+}
+
+/* ---------- Live region feedback ---------- */
+.print-feedback {
+  min-height: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted-foreground);
+  margin: 0;
+}
+
+/* ---------- Estado línea (carga/error) ---------- */
+.estado-linea {
+  color: var(--color-muted-foreground);
+  margin: 0;
+}
+
+.estado-error {
+  color: var(--color-destructive);
+  font-weight: 500;
+}
+
+.volver a {
+  color: var(--color-tech-blue);
+  text-decoration: none;
+}
+
+.volver a:hover {
+  text-decoration: underline;
+}
+
+.footer-volver {
+  margin-top: var(--space-4);
+}
+
+/* ---------- Folio del certificado ---------- */
+.certificado-folio {
+  position: relative;
+  isolation: isolate;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 64rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-tech-blue) 15%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-muted) 60%, var(--color-card));
+  box-shadow: 0 24px 60px -32px color-mix(in srgb, var(--color-ink) 45%, transparent);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@media (min-width: 640px) {
+  .certificado-folio {
+    border-radius: var(--space-5);
+  }
+}
+
+/* Decoraciones de marca */
+.trama-puntos {
+  position: absolute;
+  left: -0.5rem;
+  top: -0.5rem;
+  width: 7rem;
+  height: 6rem;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (min-width: 640px) {
+  .trama-puntos {
+    width: 9rem;
+    height: 8rem;
+  }
+}
+
+.lineas-circuito {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lineas-izq {
+  bottom: 0;
+  left: 0;
+  width: 4rem;
+  height: 66%;
+  opacity: 0.9;
+}
+
+@media (min-width: 640px) {
+  .lineas-izq {
+    width: 6rem;
+  }
+}
+
+.lineas-der {
+  bottom: 0;
+  right: 0;
+  width: 10rem;
+  height: 10rem;
+  opacity: 0.8;
+  transform: scaleX(-1);
+}
+
+@media (min-width: 640px) {
+  .lineas-der {
+    width: 13rem;
+    height: 13rem;
+  }
+}
+
+.folio-contenido {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-5) var(--space-6);
+}
+
+@media (min-width: 640px) {
+  .folio-contenido {
+    gap: var(--space-6);
+    padding: var(--space-6) var(--space-8);
+  }
+}
+
+@media (min-width: 1024px) {
+  .folio-contenido {
+    padding: var(--space-6) var(--space-12);
+  }
+}
+
+/* ---------- Estados no vigentes ---------- */
+.cert-estado-marca {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 2;
+  color: var(--color-ink-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps-tight);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.cert-estado-marca--borrador {
+  background: var(--color-warning);
+  color: var(--color-ink);
+}
+
+.cert-estado-marca--vencido,
+.cert-estado-marca--revocado {
+  background: var(--color-destructive);
+}
+
+.cert-estado-banda {
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.875rem;
+}
+
+.cert-estado-banda p {
+  margin: 0;
+}
+
+.cert-estado-banda--borrador {
+  background: var(--color-warning-soft);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+  color: var(--color-ink);
+}
+
+.cert-estado-banda--vencido,
+.cert-estado-banda--revocado {
+  background: var(--color-destructive-soft);
+  border: 1px solid color-mix(in srgb, var(--color-destructive) 30%, transparent);
+  color: var(--color-destructive);
+}
+
+/* ---------- Encabezado: logos ---------- */
+.folio-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+@media (min-width: 640px) {
+  .folio-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+}
+
+.escudo-circular {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--color-ink) 70%, transparent);
+  background: var(--color-card);
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .escudo-circular {
+    width: 4rem;
+    height: 4rem;
+  }
+}
+
+.escudo-icon {
+  font-size: 1.5rem;
+  color: color-mix(in srgb, var(--color-ink) 80%, transparent);
+}
+
+.marca-programa {
+  text-align: center;
+  line-height: 1.2;
+  order: 2;
+}
+
+@media (min-width: 640px) {
+  .marca-programa {
+    order: 0;
+    padding-top: var(--space-1);
+  }
+}
+
+.marca-programa-titulo {
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.marca-italic {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--color-tech-blue);
+}
+
+.marca-programa-sub {
+  margin-top: 0.125rem;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps-tight);
+  color: var(--color-muted-foreground);
+}
+
+.marca-ifts {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-ink);
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .marca-ifts {
+    padding-top: var(--space-1);
+  }
+}
+
+.marca-ifts-bracket {
+  color: var(--color-tech-blue);
+}
+
+.marca-ifts-sup {
+  font-size: 0.625rem;
+  color: var(--color-circuit);
+}
+
+/* ---------- Título ---------- */
+.cert-titulo-wrap {
+  text-align: center;
+}
+
+.cert-titulo {
+  font-family: serif;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+/* ---------- Cuerpo ---------- */
+.cert-cuerpo {
+  margin: 0 auto;
+  max-width: 48rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.cert-intro {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-foreground);
+  margin: 0;
+}
+
+@media (min-width: 640px) {
+  .cert-intro {
+    font-size: 1rem;
+  }
+}
+
+.cert-protagonista {
+  margin-top: var(--space-5);
+  font-family: serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+@media (min-width: 640px) {
+  .cert-protagonista {
+    font-size: 2.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cert-protagonista {
+    font-size: 3rem;
+  }
+}
+
+.cert-divider {
+  margin-top: var(--space-2);
+  width: 100%;
+  max-width: 32rem;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-ink) 35%, transparent);
+}
+
+.cert-doc {
+  margin-top: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+@media (min-width: 640px) {
+  .cert-doc {
+    font-size: 0.875rem;
+  }
+}
+
+.cert-texto {
+  margin-top: var(--space-5);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-foreground);
+}
+
+@media (min-width: 640px) {
+  .cert-texto {
+    font-size: 1rem;
+  }
+}
+
+.cert-curso-nombre {
+  color: var(--color-tech-blue);
+}
+
+.cert-fechas-asistidas {
+  margin-top: var(--space-2);
+  font-size: 0.8125rem;
+  color: var(--color-foreground);
+}
+
+.cert-fechas-asistidas p,
+.cert-fechas-asistidas ol {
+  margin: 0;
+}
+
+.cert-fechas-asistidas ol {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 var(--space-3);
+  padding: 0;
+  list-style-position: inside;
+}
+
+.cert-cierre {
+  margin-top: var(--space-3);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-foreground);
+}
+
+@media (min-width: 640px) {
+  .cert-cierre {
+    font-size: 1rem;
+  }
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ---------- Firmas + validación ---------- */
+.cert-pie-firmas {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 640px) {
+  .cert-pie-firmas {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+}
+
+@media (min-width: 1024px) {
+  .cert-pie-firmas {
+    grid-template-columns: 1fr minmax(0, 17rem) 1fr;
+    align-items: end;
+    gap: var(--space-5);
+  }
+}
+
+.cert-firma {
+  text-align: center;
+}
+
+.cert-firma-sello {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.375rem;
+  max-width: 15rem;
+  margin: 0 auto;
+  padding-bottom: var(--space-1);
+  height: 2.5rem;
+}
+
+.cert-firma-icon {
+  color: color-mix(in srgb, var(--color-tech-blue) 60%, transparent);
+}
+
+.cert-firma-italic {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-style: italic;
+  color: var(--color-muted-foreground);
+}
+
+.cert-firma-linea {
+  max-width: 16rem;
+  margin: 0 auto;
+  border-top: 1px solid color-mix(in srgb, var(--color-ink) 45%, transparent);
+  padding-top: var(--space-2);
+}
+
+.cert-firma-nombre {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.cert-firma-cargo {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-muted-foreground);
+  margin: 0;
+}
+
+/* Bloque de validación con QR */
+.cert-validacion {
+  order: -1;
+  border: 1px solid color-mix(in srgb, var(--color-tech-blue) 25%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-card) 80%, transparent);
+  padding: var(--space-3);
+}
+
+@media (min-width: 640px) {
+  .cert-validacion {
+    order: 0;
+    margin: 0 auto;
+    max-width: 24rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cert-validacion {
+    margin: 0;
+    max-width: none;
+  }
+}
+
+.cert-val-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.qr-decorativo {
+  flex-shrink: 0;
+  width: 4.5rem;
+  height: 4.5rem;
+  background: var(--color-ink);
+  padding: 0.375rem;
+  border-radius: var(--radius-sm);
+}
+
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+}
+
+.qr-cell {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.qr-on {
+  background: var(--color-ink-foreground);
+}
+
+.qr-off {
+  background: var(--color-ink);
+}
+
+.cert-val-info {
+  min-width: 0;
+}
+
+.cert-val-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-tech-blue);
+  margin: 0;
+}
+
+.cert-val-desc {
+  margin-top: var(--space-1);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--color-muted-foreground);
+}
+
+.cert-val-url {
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--color-tech-blue);
+  word-break: break-all;
+}
+
+.cert-val-datos {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.cert-val-datos dt {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-muted-foreground);
+}
+
+.cert-val-datos dd {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cert-val-exp {
+  grid-column: span 2;
+}
+
+/* ---------- Pie del folio ---------- */
+.cert-footer-pie {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  border-top: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent);
+  padding-top: var(--space-5);
+}
+
+@media (min-width: 640px) {
+  .cert-footer-pie {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.marca-ciudad {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-warning);
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--radius-sm);
+}
+
+.marca-ciudad-ba {
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-ink);
+}
+
+.marca-ciudad-text {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  color: var(--color-ink);
+}
+
+.cert-config-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-muted-foreground);
+}
+
+/* ---------- Nota QR fuera del documento ---------- */
+.cert-nota-qr {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-muted-foreground);
+  margin: 0;
+}
+
+/* ---------- Print styles ---------- */
+.no-print {
+  /* Visible en pantalla; oculto en @media print. */
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  /* Ocultar controles no imprimibles. */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset del host para impresión limpia. */
+  :host {
+    display: block !important;
+  }
+
+  .pdf-vista {
+    gap: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Sin height:100vh ni overflow:hidden: el contenido fluye naturalmente.
+     Si excede A4, print-app-check falla (no se recorta). Fix R4-001. */
+  .certificado-folio {
+    max-width: none !important;
+    width: 100% !important;
+    overflow: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Compactar padding/gaps para que el folio entre en una sola A4.
+     A4 landscape ~ 297mm × 210mm; con margin: 0 el folio dispone de
+     ~210mm de alto. Padding vertical mínimo + gap reducido + escala
+     leve del contenido para evitar overflow sin recortar (fix R4-001). */
+  .folio-contenido {
+    gap: var(--space-2) !important;
+    padding: var(--space-2) var(--space-4) !important;
+  }
+
+  /* Tipografía compacta en impresión para preservar paridad visual
+      dentro del A4 landscape sin overflow. */
+  .cert-titulo {
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem) !important;
+    letter-spacing: 0.06em !important;
+  }
+
+  .cert-protagonista {
+    font-size: 1.5rem !important;
+    margin-top: var(--space-1) !important;
+  }
+
+  .cert-intro,
+  .cert-texto,
+  .cert-cierre {
+    font-size: 0.75rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .cert-doc {
+    font-size: 0.625rem !important;
+  }
+
+  .cert-texto {
+    margin-top: var(--space-2) !important;
+  }
+
+  .cert-cierre {
+    margin-top: var(--space-1) !important;
+  }
+
+  .cert-divider {
+    margin-top: var(--space-1) !important;
+  }
+
+  /* Firmas y validación: grid compacto, sin break. */
+  .cert-pie-firmas {
+    gap: var(--space-2) !important;
+  }
+
+  .cert-firma-sello {
+    height: 1.5rem !important;
+  }
+
+  .cert-firma-nombre {
+    font-size: 0.75rem !important;
+  }
+
+  .cert-firma-cargo {
+    font-size: 0.5rem !important;
+  }
+
+  .qr-decorativo {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+
+  .cert-validacion {
+    padding: var(--space-1) !important;
+  }
+
+  .cert-val-datos {
+    margin-top: var(--space-1) !important;
+    padding-top: var(--space-1) !important;
+    gap: var(--space-1) !important;
+  }
+
+  .cert-val-kicker,
+  .cert-val-desc,
+  .cert-val-url {
+    font-size: 0.5rem !important;
+  }
+
+  .cert-val-datos dt,
+  .cert-val-datos dd {
+    font-size: 0.5rem !important;
+  }
+
+  .cert-footer-pie {
+    padding-top: var(--space-2) !important;
+    gap: var(--space-1) !important;
+  }
+
+  /* Bandas de estado compactas. */
+  .cert-estado-banda {
+    padding: var(--space-1) var(--space-2) !important;
+    font-size: 0.75rem !important;
+  }
+
+  .cert-fechas-asistidas {
+    margin-top: var(--space-1) !important;
+    font-size: 0.625rem !important;
+  }
+
+  /* Encabezado compacto. */
+  .folio-header {
+    gap: var(--space-2) !important;
+  }
+
+  .escudo-circular {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+
+  .escudo-icon {
+    font-size: 1rem !important;
+  }
+
+  /* Evitar cortes: el folio completo es una unidad atómica. */
+  .certificado-folio,
+  .folio-contenido {
+    break-inside: avoid;
+  }
+
+  /* Conservar colores de fondo. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
