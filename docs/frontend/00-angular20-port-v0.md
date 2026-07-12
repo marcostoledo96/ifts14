@@ -397,3 +397,7 @@ Cuando exista integración real:
 - la UI pública no debe pedir DNI como input de búsqueda pública;
 - QR/token permanente: pantallas de entrega manual indican "mismo QR", no rotación;
 - los modelos TypeScript futuros deben respetar `docs/backend/01-contrato-api-certificados.md`.
+
+## Ver también
+
+- [Verificación de build para /certificados/ — F3-05](04-build-validacion-f3-05.md) — reporte del build de producción con `base-href /certificados/`.
