@@ -16,6 +16,7 @@ import {
 } from '../in-memory-certifications.service';
 import { CertificationsListPage } from '../pages/list/certifications-list-page';
 import { CertificationPreviewPage } from '../pages/preview/certification-preview-page';
+import { CertificationPdfPreviewPage } from '../pages/pdf/certification-pdf-preview-page';
 
 const forbidden = [
   'X-Admin-Key',
@@ -75,6 +76,7 @@ function sources(): string[] {
     ...classSources(InMemoryCertificationsService.prototype),
     ...classSources(CertificationsListPage.prototype),
     ...classSources(CertificationPreviewPage.prototype),
+    ...classSources(CertificationPdfPreviewPage.prototype),
   ];
 }
 

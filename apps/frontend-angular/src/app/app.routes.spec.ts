@@ -766,10 +766,10 @@ describe('app.routes', () => {
     expect(el.querySelector('.riesgo-panel')).not.toBeNull();
     expect(el.querySelector('.documento-replica')).not.toBeNull();
     expect(el.querySelector('.auditoria-timeline')).not.toBeNull();
-    // Acciones deshabilitadas con handoffs F4-02, F5-04, F6-03, F6-01.
+    // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink (no
+    // disabled). Los tres restantes siguen disabled → >= 3 botones disabled.
     const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
-    expect(disabledBtns.length).toBeGreaterThanOrEqual(5);
-    expect(el.textContent).toContain('F4-02');
+    expect(disabledBtns.length).toBeGreaterThanOrEqual(3);
     expect(el.textContent).toContain('F5-04');
     expect(el.textContent).toContain('F6-03');
     expect(el.textContent).toContain('F6-01');
@@ -815,6 +815,82 @@ describe('app.routes', () => {
   });
 
   it("rutas públicas intactas tras agregar admin/certificaciones", async () => {
+    await setupRouter('/');
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
+    expect(router.url).toBe('/');
+    await router.navigateByUrl('/validar/demo-valido');
+    expect(router.url).toContain('/validar/');
+  });
+
+  // --- Rutas admin/certificaciones/:id/pdf F4-02 ---
+  // La ruta PDF debe declararse ANTES que certificaciones/:id para que
+  // :id no capture el sufijo /pdf (Angular matching first-wins).
+
+  it("admin children define certificaciones/:id/pdf", () => {
+    const children = adminChildren();
+    const paths = children.map((c) => c.path);
+    expect(paths).toContain('certificaciones/:id/pdf');
+  });
+
+  it("orden seguro: certificaciones/:id/pdf ANTES que certificaciones/:id (no cae en :id=1/pdf)", () => {
+    const children = adminChildren();
+    const idxPdf = children.findIndex((c) => c.path === 'certificaciones/:id/pdf');
+    const idxId = children.findIndex((c) => c.path === 'certificaciones/:id');
+    expect(idxPdf).toBeGreaterThanOrEqual(0);
+    expect(idxId).toBeGreaterThanOrEqual(0);
+    expect(idxPdf).toBeLessThan(idxId);
+  });
+
+  it("navegación real /admin/certificaciones/1/pdf con sesión carga CertificationPdfPreviewPage", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes, withComponentInputBinding()),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/certificaciones/1/pdf');
+    expect(router.url).toBe('/admin/certificaciones/1/pdf');
+  });
+
+  it("navegación real /admin/certificaciones/1/pdf NO cae en certificaciones/:id (URL preserva /pdf)", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes, withComponentInputBinding()),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/certificaciones/1/pdf');
+    // Si :id capturara /pdf, la URL final no terminaría en /pdf.
+    expect(router.url).toMatch(/\/pdf$/);
+  });
+
+  it("runtime: /admin/certificaciones/1/pdf instancia CertificationPdfPreviewPage via route injector", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/certificaciones/1/pdf');
+    const cmp = harness.routeNativeElement?.querySelector('app-certification-pdf-preview-page');
+    expect(cmp).not.toBeNull();
+  });
+
+  it("runtime: /admin/certificaciones/abc/pdf (id inválido) NO revienta y muestra estado seguro", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/certificaciones/abc/pdf');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-certification-pdf-preview-page');
+    expect(cmp).not.toBeNull();
+    const text = cmp?.textContent || '';
+    expect(text).toContain('no encontrada');
+  });
+
+  it("rutas públicas intactas tras agregar admin/certificaciones/:id/pdf", async () => {
     await setupRouter('/');
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');

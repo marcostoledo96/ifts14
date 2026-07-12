@@ -109,6 +109,16 @@ export const routes: Routes = [
           import('./features/admin/courses/courses-list-page').then((m) => m.CoursesListPage),
       },
       {
+        // F4-02: ruta PDF ANTES de certificaciones/:id para que :id no
+        // capture el sufijo /pdf. Orden seguro first-wins.
+        path: 'certificaciones/:id/pdf',
+        title: 'Admin · Certificación PDF (mock) — IFTS 14',
+        loadComponent: () =>
+          import(
+            './features/admin/certifications/pages/pdf/certification-pdf-preview-page'
+          ).then((m) => m.CertificationPdfPreviewPage),
+      },
+      {
         path: 'certificaciones/:id',
         title: 'Admin · Certificación (mock) — IFTS 14',
         loadComponent: () =>

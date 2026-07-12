@@ -180,3 +180,39 @@ footer {
   border-right: 1px solid var(--color-border);
   overflow-y: auto;
 }
+
+/* --- Print: ocultar chrome admin para impresión limpia del contenido.
+     Estable vía CSS (no depende de click/DOM workaround). Cualquier
+     impresión (window.print, emulateMedia('print'), page.pdf) aplica. --- */
+@media print {
+  :host {
+    min-height: auto !important;
+    background: transparent !important;
+  }
+
+  .skip-link,
+  .sidebar-desktop,
+  .topbar,
+  footer,
+  .drawer-overlay,
+  .drawer-mobile,
+  .menu-btn {
+    display: none !important;
+  }
+
+  /* El contenido ocupa toda la página sin layout flex. */
+  .layout {
+    display: block !important;
+    min-height: auto !important;
+  }
+
+  .content {
+    display: block !important;
+  }
+
+  main#contenido {
+    padding: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+}

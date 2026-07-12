@@ -72,18 +72,81 @@ describe('CertificationPreviewPage', () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
-    expect(disabledBtns.length).toBeGreaterThanOrEqual(5);
+    // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink (no
+    // disabled). Los tres restantes (Copiar link, Entrega manual, Revocar)
+    // siguen disabled. Esperamos >= 3 (puede haber más botones disabled).
+    expect(disabledBtns.length).toBeGreaterThanOrEqual(3);
   });
 
   it('CTAs deshabilitados mencionan handoff a F4-02, F5-04, F6-03 y F6-01', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const text = el.textContent || '';
-    // F4-02 PDF, F5-04 entrega, F6-03 link/delivery, F6-01 revocación.
-    expect(text).toContain('F4-02');
+    // F4-02 PDF (aún visible en handoffs de acciones restantes),
+    // F5-04 entrega, F6-03 link/delivery, F6-01 revocación.
     expect(text).toContain('F5-04');
     expect(text).toContain('F6-03');
     expect(text).toContain('F6-01');
+  });
+
+  // --- F4-02 delta: enlaces PDF habilitados ---
+
+  it('F4-02: "Descargar PDF" es un enlace (routerLink) a :id/pdf, no disabled', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const acciones = el.querySelector('.acciones-panel');
+    // Buscar el enlace de Descargar PDF: debe ser un <a> con href hacia /pdf.
+    const links = acciones?.querySelectorAll('a') || [];
+    const descargarLink = Array.from(links).find((a) =>
+      a.textContent?.includes('Descargar PDF'),
+    );
+    expect(descargarLink).toBeTruthy();
+    expect(descargarLink?.getAttribute('disabled')).toBeNull();
+  });
+
+  it('F4-02: "Regenerar PDF" es un enlace (routerLink) a :id/pdf, no disabled', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const acciones = el.querySelector('.acciones-panel');
+    const links = acciones?.querySelectorAll('a') || [];
+    const regenerarLink = Array.from(links).find((a) =>
+      a.textContent?.includes('Regenerar PDF'),
+    );
+    expect(regenerarLink).toBeTruthy();
+    expect(regenerarLink?.getAttribute('disabled')).toBeNull();
+  });
+
+  it('F4-02: "Copiar link" sigue disabled con handoff F6-03', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const text = el.textContent || '';
+    expect(text).toContain('F6-03');
+    // El botón de copiar link en acciones sigue disabled.
+    const acciones = el.querySelector('.acciones-panel');
+    const copiarBtns = Array.from(acciones?.querySelectorAll('button[disabled]') || []).filter(
+      (b) => b.textContent?.includes('Copiar link'),
+    );
+    expect(copiarBtns.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('F4-02: "Entrega manual" sigue disabled con handoff F5-04', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const acciones = el.querySelector('.acciones-panel');
+    const entregaBtns = Array.from(acciones?.querySelectorAll('button[disabled]') || []).filter(
+      (b) => b.textContent?.includes('Entrega manual'),
+    );
+    expect(entregaBtns.length).toBeGreaterThanOrEqual(1);
+    expect(entregaBtns[0]?.textContent).toContain('F5-04');
+  });
+
+  it('F4-02: "Revocar certificación" sigue disabled con handoff F6-01', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const riesgo = el.querySelector('.riesgo-panel');
+    const revocarBtn = riesgo?.querySelector('button[disabled]');
+    expect(revocarBtn).not.toBeNull();
+    expect(revocarBtn?.textContent).toContain('F6-01');
   });
 
   it('acciones deshabilitadas tienen aria-disabled="true" y cursor not-allowed', async () => {
@@ -395,11 +458,16 @@ describe('CertificationPreviewPage', () => {
 
   // --- Handoffs explícitos por acción ---
 
-  it('handoff de PDF menciona F4-02 explícitamente', async () => {
+  it('handoff de PDF F4-02 ejecutado: CTAs PDF son enlaces (sin handoff visible)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const acciones = el.querySelector('.acciones-panel');
-    expect(acciones?.textContent).toContain('F4-02');
+    // F4-02 ya no aparece como handoff en acciones porque los CTAs PDF
+    // pasaron a routerLink. Los enlaces PDF están presentes.
+    const pdfLinks = Array.from(acciones?.querySelectorAll('a') || []).filter(
+      (a) => a.textContent?.includes('PDF'),
+    );
+    expect(pdfLinks.length).toBe(2);
   });
 
   it('handoff de entrega menciona F5-04 explícitamente', async () => {
