@@ -58,8 +58,10 @@
 
     <!-- Folio del certificado (se imprime) -->
     <article class="certificado-folio" aria-label="Certificado imprimible">
-      @if (estadoRevocado()) {
-        <span class="cert-revocado-marca" aria-hidden="true">REVOCADO</span>
+      @if (estadoPresentacion(); as estado) {
+        <span class="cert-estado-marca cert-estado-marca--{{ estado.clave }}" aria-hidden="true">
+          {{ estado.marca }}
+        </span>
       }
 
       <!-- Decoraciones de marca (no informativas) -->
@@ -90,11 +92,11 @@
           </div>
         </header>
 
-        @if (estadoRevocado()) {
-          <div class="cert-revocado-banda">
+        @if (estadoPresentacion(); as estado) {
+          <div class="cert-estado-banda cert-estado-banda--{{ estado.clave }}">
             <p>
-              <strong>Certificación revocada.</strong>
-              El documento carece de validez legal y académica.
+              <strong>{{ estado.titulo }}</strong>
+              {{ estado.detalle }}
             </p>
           </div>
         }
@@ -119,11 +121,18 @@
           <p class="cert-texto">
             ha aprobado el curso de formación profesional
             <strong class="cert-curso-nombre">{{ d.cursoNombre }}</strong>,
-            @if (periodo()) {
-              dictado entre {{ periodo() }},
-            }
             conforme al registro de asistencia auditado.
           </p>
+          @if (d.attendedDates.length) {
+            <section class="cert-fechas-asistidas" aria-label="Fechas asistidas">
+              <p>Fechas asistidas:</p>
+              <ol>
+                @for (fecha of d.attendedDates; track fecha) {
+                  <li class="cert-fecha-asistida mono">{{ formatearFechaAsistida(fecha) }}</li>
+                }
+              </ol>
+            </section>
+          }
           <p class="cert-cierre">
             Se extiende el presente certificado a solicitud del/la
             interesado/a, para constancia de su aprobación.

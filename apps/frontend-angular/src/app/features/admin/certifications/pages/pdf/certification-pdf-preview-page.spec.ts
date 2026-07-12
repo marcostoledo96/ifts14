@@ -50,12 +50,17 @@ describe('CertificationPdfPreviewPage', () => {
     expect(el.textContent).toContain('Curso de introducción a la gestión');
   });
 
-  it('muestra el periodo derivado de attendedDates (rango inicio–fin)', async () => {
+  it('muestra cada fecha asistida ISO exacta, sin resumirla como período', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    const periodo = el.querySelector('.cert-texto');
-    // attendedDates de cert 1: 2026-03-02 a 2026-03-16 → "marzo a marzo" en es-AR.
-    expect(periodo?.textContent).toMatch(/marzo/i);
+    const fechas = [...el.querySelectorAll('.cert-fecha-asistida')].map((date) => date.textContent?.trim());
+    expect(fechas).toEqual(['2026-03-02', '2026-03-09', '2026-03-16']);
+    expect(el.textContent).not.toContain('dictado entre');
+  });
+
+  it('conserva el valor ISO de una fecha asistida sin transformarlo', async () => {
+    const f = await render('1');
+    expect(f.componentInstance.formatearFechaAsistida('2026-03-02')).toBe('2026-03-02');
   });
 
   it('muestra la fecha de emisión formateada en lenguaje natural', async () => {
@@ -273,19 +278,27 @@ describe('CertificationPdfPreviewPage', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  // --- Estado revocado ---
+  // --- Estados del documento ---
 
-  it('cert revocado (id 5) muestra banda de revocación', async () => {
-    const f = await render('5');
-    const el = f.nativeElement as HTMLElement;
-    expect(el.querySelector('.cert-revocado-banda')).not.toBeNull();
-    expect(el.textContent).toContain('revocada');
-  });
+  for (const [id, marca, texto] of [
+    ['3', 'BORRADOR', 'borrador'],
+    ['4', 'VENCIDO', 'vencido'],
+    ['5', 'REVOCADO', 'revocada'],
+  ] as const) {
+    it(`certificado ${id} muestra marca y banda ${marca}`, async () => {
+      const f = await render(id);
+      const el = f.nativeElement as HTMLElement;
+      expect(el.querySelector('.cert-estado-marca')?.textContent?.trim()).toBe(marca);
+      expect(el.querySelector('.cert-estado-banda')?.textContent?.toLowerCase()).toContain(texto);
+      expect((el.querySelector('.btn-imprimir') as HTMLButtonElement).disabled).toBeFalse();
+    });
+  }
 
-  it('cert revocado muestra marca "REVOCADO" en esquina', async () => {
-    const f = await render('5');
+  it('certificado vigente (id 1) permanece limpio, sin marca ni banda', async () => {
+    const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    expect(el.querySelector('.cert-revocado-marca')).not.toBeNull();
+    expect(el.querySelector('.cert-estado-marca')).toBeNull();
+    expect(el.querySelector('.cert-estado-banda')).toBeNull();
   });
 
   // --- Impresión nativa (Phase 3) ---

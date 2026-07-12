@@ -104,4 +104,11 @@ describe('no-secrets en features/admin/certifications/**', () => {
     expect(all).not.toContain('document.cookie');
     expect(all).not.toContain('indexeddb');
   });
+
+  it('el helper de fechas del folio es local y no incorpora red, storage ni claves', () => {
+    const source = CertificationPdfPreviewPage.prototype.formatearFechaAsistida.toString().toLowerCase();
+    for (const needle of ['fetch(', 'httpclient', 'localstorage', 'sessionstorage', 'indexeddb', 'cookie', 'x-admin-key']) {
+      expect(source).not.toContain(needle);
+    }
+  });
 });
