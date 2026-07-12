@@ -12,8 +12,8 @@ export interface Curso {
   readonly estado: EstadoCurso;
   readonly createdAt: string; // ISO date
   readonly updatedAt: string; // ISO date
-  readonly cuatrimestre?: string;
-  readonly cantidadFechas?: number;
+  readonly cuatrimestre: string;
+  readonly cantidadFechas: number;
   readonly alumnosPresentes?: number | null;
   readonly certificaciones?: number | null;
 }
