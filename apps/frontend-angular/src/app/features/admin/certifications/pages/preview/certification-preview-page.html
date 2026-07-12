@@ -91,22 +91,28 @@
           </header>
           <div class="panel-body">
             <div class="acciones-lista">
-              <button type="button" class="btn-disabled" disabled aria-disabled="true">
-                Descargar PDF <span class="handoff">{{ handoffs.pdf }}</span>
-              </button>
+              <a
+                class="btn-pdf"
+                routerLink="/admin/certificaciones/{{ id() }}/pdf"
+              >
+                Descargar PDF
+              </a>
               <button type="button" class="btn-disabled" disabled aria-disabled="true">
                 Copiar link <span class="handoff">{{ handoffs.link }}</span>
               </button>
               <button type="button" class="btn-disabled" disabled aria-disabled="true">
                 Entrega manual <span class="handoff">{{ handoffs.entrega }}</span>
               </button>
-              <button type="button" class="btn-disabled" disabled aria-disabled="true">
-                Regenerar PDF <span class="handoff">{{ handoffs.pdf }}</span>
-              </button>
+              <a
+                class="btn-pdf"
+                routerLink="/admin/certificaciones/{{ id() }}/pdf"
+              >
+                Regenerar PDF
+              </a>
             </div>
             <p class="acciones-note">
-              Acciones deshabilitadas. PDF, copiar link, entrega manual y
-              regeneración son handoff a {{ handoffs.pdf }}, {{ handoffs.link }} y
+              Descargar y regenerar abren la vista imprimible. Copiar link y
+              entrega manual son handoff a {{ handoffs.link }} y
               {{ handoffs.entrega }}.
             </p>
           </div>

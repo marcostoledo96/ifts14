@@ -1,14 +1,11 @@
-# Especificación — admin-certifications-frontend
+# Delta — admin-certifications-frontend
 
-## Propósito
-
-Definir la UI administrativa Angular 20 para listar y previsualizar certificaciones ficticias, navegable, mock-only, contract-ready y testeable. Habilita la base de integración con emisión, PDF, entrega manual, revocación y listado real (F4-01/F4-02/F5-01/F5-04/F6-01) sin exponer DNI completo administrativo, tokens completos, datos reales, red, storage ni auth real.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Rutas protegidas de certificaciones
 
 El sistema DEBE exponer `/admin/certificaciones`, `/admin/certificaciones/:id` y `/admin/certificaciones/:id/pdf` como rutas administrativas protegidas por la sesión mock vigente, sin alterar rutas públicas ni el resto del panel.
+(Antes: solo se exponían el listado y el expediente.)
 
 #### Scenario: Acceso con sesión mock
 
@@ -28,26 +25,10 @@ El sistema DEBE exponer `/admin/certificaciones`, `/admin/certificaciones/:id` y
 - **When** se carga `/admin/certificaciones/:id/pdf`
 - **Then** DEBE mostrarse un estado seguro sin excepciones, red ni ruptura de navegación.
 
-### Requirement: Listado mock-only con datos seguros
-
-El sistema DEBE mostrar un listado navegable de certificaciones ficticias, filtrable por estado, usando únicamente datos seguros de demostración. NO DEBE usar HTTP, storage, cookies, IndexedDB, claves admin, datos reales, DNI completo, token completo ni correo electrónico.
-
-#### Scenario: Listado filtrado por estado
-
-- **Given** existe un conjunto mock de certificaciones
-- **When** Bedelía filtra por `borrador`, `vigente`, `revocado` o `vencido`
-- **Then** DEBE ver solo coincidencias ficticias y un mensaje claro si no hay resultados.
-
-#### Scenario: Frontera de datos segura
-
-- **Given** una certificación aparece en el listado
-- **When** se revisan sus datos visibles
-- **Then** DEBE mostrar `documentMasked` y datos ficticios.
-- **And** NO DEBE mostrar DNI completo, token completo, email, matrícula, legajo ni datos reales.
-
 ### Requirement: Previsualización segura y handoff explícito
 
 El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente mock-only con estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Copiar link`, `Entrega manual` y `Revocar certificación` DEBEN permanecer deshabilitadas con handoff F6-03, F5-04 y F6-01. El QR/token DEBE permanecer permanente. NO DEBE usar backend, HTTP, storage, sesión real, `X-Admin-Key`, PDF/QR real, dependencias nuevas, datos reales, DNI/token completos, email, legajo ni matrícula.
+(Antes: todas las acciones, incluidas las PDF, estaban deshabilitadas con handoff.)
 
 #### Scenario: Expediente de una certificación mock
 
@@ -74,9 +55,10 @@ El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente mock-only 
 - **When** se inspecciona la información visible
 - **Then** NO DEBE exponer datos prohibidos ni realizar solicitudes de red.
 
-### Requirement: Paridad visual, folio imprimible y evidencia de verificación
+### Requirement: Paridad visual y evidencia de verificación
 
-El sistema DEBE mantener paridad visual igual o mejor que la referencia v0 del expediente y `vista-previa-pdf.tsx`, sin portar React/Next literalmente. La vista DEBE usar impresión nativa en A4 apaisado; sus controles no imprimibles DEBEN excluirse de la salida y conservarse los colores. En el folio DEBE listar cada fecha ISO de `attendedDates` sin resumirla como período. Un certificado `vigente` DEBE permanecer limpio; uno `borrador`, `vencido` o `revocado` DEBE exhibir su marca y banda textual correspondiente, sin impedir la impresión. La verificación DEBE dejar evidencia de tests/checks, build Angular y capturas desktop, mobile y print.
+El sistema DEBE mantener paridad visual igual o mejor que la referencia v0 del expediente y `vista-previa-pdf.tsx`, sin portar React/Next literalmente. La vista DEBE usar impresión nativa en A4 apaisado; sus controles no imprimibles DEBEN excluirse de la salida y conservarse los colores. La verificación DEBE dejar evidencia de tests/checks, build Angular y capturas desktop, mobile y print.
+(Antes: la paridad y evidencia solo cubrían el expediente F4-01.)
 
 #### Scenario: Paridad visual de la vista imprimible
 
@@ -84,32 +66,12 @@ El sistema DEBE mantener paridad visual igual o mejor que la referencia v0 del e
 - **When** se compara la vista Angular con v0 en desktop y mobile
 - **Then** DEBE conservar o mejorar jerarquía, layout, estados y acciones.
 
-#### Scenario: Fechas asistidas exactas en el folio
-
-- **Given** una certificación mock contiene una o más fechas en `attendedDates`
-- **When** se carga su folio imprimible
-- **Then** DEBE mostrar cada fecha ISO exacta y NO DEBE mostrar un resumen "dictado entre".
-
-#### Scenario: Identificación de estados no vigentes
-
-- **Given** se carga un folio `vigente`, `borrador`, `vencido` o `revocado`
-- **When** se renderiza el estado del documento
-- **Then** solo el folio `vigente` DEBE quedar limpio.
-- **And** cada estado no vigente DEBE mostrar su marca y banda textual correcta sin bloquear la impresión.
-
 #### Scenario: Impresión nativa segura
 
 - **Given** la vista imprimible está cargada
 - **When** Bedelía ejecuta la impresión nativa
 - **Then** DEBE aplicarse A4 apaisado y excluir los controles no imprimibles.
 - **And** NO DEBE generarse ni descargarse un PDF real.
-
-#### Scenario: Checker de aplicación real por estado
-
-- **Given** el checker se ejecuta contra la aplicación Angular real para los ids `1`, `3`, `4` y `5`
-- **When** inspecciona cada folio y su salida de impresión
-- **Then** DEBE comprobar fechas, estado, privacidad y una única página A4 completa, sin clipping ni chrome administrativo.
-- **And** NO DEBE encontrar DNI completo, token completo, email, matrícula ni legajo.
 
 #### Scenario: Evidencia de checks en verify
 
@@ -120,6 +82,7 @@ El sistema DEBE mantener paridad visual igual o mejor que la referencia v0 del e
 ### Requirement: Documentación y archivo del ciclo
 
 El sistema DEBE documentar durante `sdd-archive` que F4-02 agrega una vista imprimible mock-only y habilita sus enlaces desde F4-01. DEBE mantener fuera de alcance PDF/QR reales, backend, entrega, revocación, HTTP, storage, auth real y exposición de DNI/token completos.
+(Antes: F4-02 figuraba como diferido.)
 
 #### Scenario: Cierre documental
 

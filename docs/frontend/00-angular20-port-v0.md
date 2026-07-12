@@ -254,6 +254,56 @@ Verificación (`sdd-verify`): `npm run test:ci` **420/420 SUCCESS**; `npm run bu
 
 Handoff a F4-02/F5-04/F6-03/F6-01: la UI ya está lista para que esos ciclos conecten las acciones reales manteniendo la frontera de datos. F4-02 (ruta/vista PDF imprimible) sigue diferido; F5-04 (entrega manual real), F6-03 (link público) y F6-01 (revocación real) llegan en sus propios ciclos. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
 
+### Estado F4-02 — Vista previa imprimible de certificado
+
+Ciclo `f4-02-certificate-pdf-preview` sobre la base F4-01. Agrega la ruta `/admin/certificaciones/:id/pdf` como página standalone Angular 20, lazy, mock-only y con impresión nativa (A4 apaisado). Activa los CTAs `Descargar PDF` y `Regenerar PDF` del expediente F4-01 como `routerLink`; mantiene `Copiar link` (F6-03), `Entrega manual` (F5-04) y `Revocar certificación` (F6-01) deshabilitados con `aria-disabled="true"`. Reutiliza `CERTIFICATIONS_SOURCE`, `CertificacionDetalle` y los modelos de F2-06. Portado desde `muestra_pagina/components/admin/vista-previa-pdf.tsx` sin React/Next ni Tailwind; paridad v0 con CSS local y tokens globales (`--color-ink`, `--color-tech-blue`, `--color-circuit`, `--color-valid`). Sin dependencias nuevas, sin backend, sin HTTP, sin storage, sin PDF/QR real. El QR/token permanece permanente (D0: no rota).
+
+Archivos creados en `apps/frontend-angular/src/app/features/admin/certifications/pages/pdf/`:
+
+- `certification-pdf-preview-page.ts` — componente standalone con signals (`id`, `certificacion`, `estado`), validación decimal positiva, `effect` anti-race, `imprimir()` con guard (`typeof window.print === 'function'`), live region `role="status" aria-live="polite"` y diferido vía `requestAnimationFrame` antes de invocar el diálogo nativo.
+- `certification-pdf-preview-page.html` — folio seguro (encabezado, cuerpo, firmas, bloque de validación QR, pie), breadcrumb, barra de acciones `.no-print`, nota QR `.no-print` y live region `.no-print`.
+- `certification-pdf-preview-page.css` — layout responsive + `@page { size: A4 landscape; margin: 0; }`, `.no-print`, `print-color-adjust: exact` y compactación print para 1 A4 (padding/gap/escala/tipografía/break).
+- `certification-pdf-preview-page.spec.ts` — 35 specs: ids robustos (`abc`, `0`, `0x1`, `1e0`, `999`, vacío, route reuse), privacidad (sin `tokenPrefix`/DNI/email/UUID/legajo/matrícula), QR 8×8, autoridades neutras, `imprimir()` con rAF + guard, no manipulación DOM del shell.
+
+Archivos modificados:
+
+- `apps/frontend-angular/src/app/app.routes.ts` — `certificaciones/:id/pdf` registrada **antes** de `certificaciones/:id` para que `:id` no capture el sufijo `/pdf`.
+- `apps/frontend-angular/src/app/app.routes.spec.ts` — 7 specs nuevos de orden, resolución de ruta PDF y entradas adversariales.
+- `apps/frontend-angular/src/app/features/admin/certifications/pages/preview/certification-preview-page.html` — `Descargar PDF` y `Regenerar PDF` pasan de `<button disabled>` a `<a [routerLink]="['/admin/certificaciones', id, 'pdf']">`; los otros tres CTAs intactos.
+- `apps/frontend-angular/src/app/features/admin/certifications/pages/preview/certification-preview-page.css` — estilo `.btn-pdf` para los enlaces habilitados.
+- `apps/frontend-angular/src/app/features/admin/certifications/pages/preview/certification-preview-page.spec.ts` — ampliado con delta F4-02: dos enlaces PDF a `/admin/certificaciones/:id/pdf` y tres handoffs deshabilitados exactos (F5-04, F6-03, F6-01).
+- `apps/frontend-angular/src/app/features/admin/certifications/__checks__/no-secrets.spec.ts` — `CertificationPdfPreviewPage` añadida al array `sources()`.
+- `apps/frontend-angular/src/app/features/admin/certifications/__checks__/no-real-data.spec.ts` — 7 specs nuevos de DOM del PDF preview (sin DNI/token/email/legajo/matrícula/UUID).
+- `apps/frontend-angular/src/app/features/admin/admin-shell.css` — `@media print` estable que oculta skip-link, sidebar-desktop, topbar, footer, drawer-overlay, drawer-mobile y menu-btn; resetea `.layout`/`.content`/`main#contenido` a block sin padding ni max-width (sustituye el workaround DOM que probó FAIL en la primera pasada de verify).
+
+Límites explícitos (F4-02): sin PDF/QR real, sin backend, sin HTTP, sin `X-Admin-Key`, sin storage/cookies/IndexedDB, sin sesión real, sin datos reales, sin DNI/token completos administrativos, sin email, legajo, matrícula, sin UUID, sin dependencias nuevas, sin Tailwind, sin copia literal React/Next. Autoridades: `Autoridad Demo Uno` (Rector/a) y `Autoridad Demo Dos` (Asesor/a Pedagógica) — placeholders neutros. La carga horaria y el folio no se exponen porque no están modelados en `CertificacionDetalle`; queda nota de scope en `parity-notes.md`.
+
+Verificación (`sdd-verify`, lineage `review-c74662c658bf5781`):
+
+- `npm run test:ci` **474/474 SUCCESS** (35 PDF preview + 79 routes + 24 checks + 336 resto).
+- `npm run build` exit 0 con **2 warnings de budget CSS**: `certification-pdf-preview-page.css` 12,41 kB y `certification-preview-page.css` 14,31 kB; ambos < 16 kB error, trade-off de paridad visual.
+- `bash openspec/changes/f4-02-certificate-pdf-preview/evidence/print-app-check.sh` exit 0: arranca `ng serve`, espera la app, completa el formulario de login mock renderizado y navega por la SPA (autoritativo, no usa fixture HTML). Genera dos PDFs Chromium con CDP `Page.printToPDF`:
+  - `id=1` normal: `841.92 × 594.96 pt`, 1 página, hash `d5204c6f7524c74b3606c49c6e2b21b0f241827a77b4d8c3fc2a023fdab6b82c`.
+  - `id=5` revocado: `841.92 × 594.96 pt`, 1 página, hash `0e81b5bb7fc5a8a9ac161c5c426f62151fb9b4d2f4885fd68a316ccff2d7f37d`.
+  - `pdftotext` confirmó títulos, alumnos, cursos, autoridades, números de certificado, estado revocado y texto institucional; ausentes: shell admin, controles no imprimibles, DNI/token completos, email, UUID, legajo y matrícula; URL visible truncada.
+- `git diff --check`: limpio. `package.json`, lockfiles, `angular.json` y `.atl`: sin cambios tracked ni untracked.
+- Líneas authored: 328 tracked + 3253 untracked textuales = 3581; por debajo del presupuesto 4000.
+
+Fallo histórico y corrección (no ocultada):
+
+- La primera corrida de `sdd-verify` (lineage previo `review-7ad4da8e`) terminó en **FAIL** porque el folio ~921 CSS px no entraba en ~794 px disponibles de A4 landscape, el `admin-shell` externo solo se ocultaba vía workaround DOM (click) en `emulateMedia('print')`/`page.pdf()`, y la captura `pdf-print.png` anterior era screenshot de pantalla (inválida como prueba paginada).
+- La corrección se aplicó con lineage **nuevo** `review-c74662c658bf5781` (sin reutilizar el lineage fallido), compactando `@media print` de `certification-pdf-preview-page.css` a 1 A4 landscape, agregando `@media print` estable en `admin-shell.css`, eliminando el workaround DOM del TS (`SHELL_SELECTORS`, `hidden`/`for`/`finally`) y regenerando evidencia real (PDF Chromium + `pdf-print.png` desde el PDF normal). Las 7 tareas `C1`–`C7` quedaron verdes; ver `apply-evidence.md` para el detalle.
+
+Warnings carry-forward (no bloqueantes):
+
+- `requestAnimationFrame` no conserva/cancela su handle al destruir el componente; follow-up previamente aprobado y sin falla runtime observada.
+- Dos warnings de budget CSS (`certification-pdf-preview-page.css` 12,41 kB; `certification-preview-page.css` 14,31 kB), ambos debajo del límite de error de 16 kB; trade-off de paridad visual.
+- Escenario documental 11 (cierre) diferido por diseño a `sdd-archive`; no es defecto del producto verificado.
+
+Handoff a F5-04/F6-03/F6-01: la UI ya está lista para que esos ciclos conecten las acciones reales manteniendo la frontera de datos. F5-04 (entrega manual real), F6-03 (link público) y F6-01 (revocación real) llegan en sus propios ciclos. La configuración institucional de autoridades y pie queda pendiente hasta un ciclo que conecte `HttpInstitutionalConfigService`. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
+
+Detalle en `docs/frontend/F4-02-vista-previa-pdf.md` y archive `openspec/changes/archive/2026-07-12-f4-02-certificate-pdf-preview/`.
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:
