@@ -16,9 +16,9 @@ build_output_hash: sha256:9d3fe216386ab4ad441dbea5ef3cc7d9b662488ef3890fb3c45d3a
 
 ## Verification Report
 
-**Change**: `f4-03-courses-list`  
-**Version**: N/A  
-**Mode**: Standard (`strict_tdd: false`)  
+**Change**: `f4-03-courses-list`
+**Version**: N/A
+**Mode**: Standard (`strict_tdd: false`)
 **Review authority**: `review-fc99c946d72cec8e`, receipt v2 físico con `terminal_state: approved` y `evidence_hash: sha256:a7049ee17ba6ff89f1ec724a07978e98fc03084dcd843ca2128af99719ccd129`.
 
 ### Completeness
@@ -40,7 +40,7 @@ build_output_hash: sha256:9d3fe216386ab4ad441dbea5ef3cc7d9b662488ef3890fb3c45d3a
 | Focused service | `npm test -- --watch=false --browsers=ChromeHeadless --include='**/courses.service.spec.ts'` | ✅ 24/24, exit 0 | `sha256:b7f9bf14b5977e0dc81571f939f8adecfaadae9aea33a7657a82e0b5d206dc8b` |
 | Full suite | `rtk npm run test:ci` | ✅ 485/485, exit 0 | `sha256:dc7fad83a200e2099b50f75f114ddfe36e4d83ed0708aabe5c07d0f677e080d0` |
 | Build | `rtk npm run build` | ✅ exit 0 | `sha256:9d3fe216386ab4ad441dbea5ef3cc7d9b662488ef3890fb3c45d3a35e81b8664` |
-| Diff hygiene | `rtk git diff --check` | ✅ exit 0 | `sha256:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b` |
+| Diff hygiene | `git diff --check --ws-error-highlight=all origin/main...HEAD` | ✅ exit 0 | `sha256:01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b` |
 
 **Coverage**: ➖ No hay comando ni umbral de cobertura configurado para este cambio.
 
@@ -111,8 +111,8 @@ Preimage SHA-256: `sha256:eb6e643dd3daacf4163a7faea2a4057909a138fef57f5b2dc96fba
 
 ### Issues Found
 
-**CRITICAL**: None.  
-**WARNING**: Dos warnings de presupuesto CSS preexistentes y ajenos a courses-list; el validador de review informa scope cambiado por la corrección post-FAIL, no autoridad ausente.  
+**CRITICAL**: None.
+**WARNING**: Dos warnings de presupuesto CSS preexistentes y ajenos a courses-list; el validador de review informa scope cambiado por la corrección post-FAIL, no autoridad ausente.
 **SUGGESTION**: None para este gate.
 
 ### Verdict

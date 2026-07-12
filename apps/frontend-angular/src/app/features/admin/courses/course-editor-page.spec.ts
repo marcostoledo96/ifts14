@@ -238,7 +238,7 @@ describe('CourseEditorPage', () => {
     expect(pending.has(2)).toBe(true);
     // Resolver curso 2 PRIMERO (orden correcto de llegada).
     pending.get(2)!(
-      { id: 2, codigo: 'CUR-002', nombre: 'Curso de herramientas', estado: 'activo', createdAt: '', updatedAt: '', fechas: [] },
+      { id: 2, codigo: 'CUR-002', nombre: 'Curso de herramientas', estado: 'activo', createdAt: '', updatedAt: '', cuatrimestre: '1.er cuatrimestre 2026', cantidadFechas: 0, fechas: [] },
     );
     fixture.detectChanges();
     await fixture.whenStable();
@@ -247,7 +247,7 @@ describe('CourseEditorPage', () => {
     expect(fixture.componentInstance.nombre()).toBe('Curso de herramientas');
     // Ahora resolver curso 1 TARDE (carga stale). loadGen debe descartarla.
     pending.get(1)!(
-      { id: 1, codigo: 'CUR-001', nombre: 'Curso de introducción', estado: 'activo', createdAt: '', updatedAt: '', fechas: [{ id: 11, cursoId: 1, fecha: '2026-03-02', descripcion: null, orden: 1, estado: 'programada' }] },
+      { id: 1, codigo: 'CUR-001', nombre: 'Curso de introducción', estado: 'activo', createdAt: '', updatedAt: '', cuatrimestre: '1.er cuatrimestre 2026', cantidadFechas: 1, fechas: [{ id: 11, cursoId: 1, fecha: '2026-03-02', descripcion: null, orden: 1, estado: 'programada' }] },
     );
     fixture.detectChanges();
     await fixture.whenStable();
