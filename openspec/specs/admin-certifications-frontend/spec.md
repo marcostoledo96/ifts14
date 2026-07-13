@@ -71,13 +71,19 @@ El sistema DEBE mostrar un listado navegable de certificaciones ficticias, filtr
 
 ### Requirement: Harness y evidencia verificable del listado
 
-El sistema DEBE ofrecer un harness QA explícito y no persistente para forzar los estados del listado. DEBE permitir verificar paridad desktop/mobile, accesibilidad, conteos, filtros, paginación y la frontera de privacidad, sin requests de datos o API ni mutación de datos.
+En desarrollo y tests, el sistema DEBE ofrecer un harness QA explícito y no persistente para forzar los estados del listado. El harness NO DEBE renderizarse ni permitir mutaciones en builds de producción o staging. DEBE permitir verificar paridad desktop/mobile, accesibilidad, conteos, filtros, paginación y la frontera de privacidad, sin requests de datos o API ni mutación de datos.
 
 #### Scenario: QA de estados y responsive
 
 - **Given** el harness QA está habilitado para verificación local
 - **When** se fuerzan carga, error, vacío total y sin resultados en desktop y mobile
 - **Then** DEBE mostrar el estado esperado sin romper tabla, tarjetas ni controles accesibles.
+
+#### Scenario: Harness ausente fuera de QA
+
+- **Given** la aplicación se ejecuta en modo producción o staging
+- **When** se renderiza el listado o se intenta invocar el cambio de vista QA
+- **Then** NO DEBE mostrar controles QA ni permitir estados falsos de carga, error o vacío.
 
 #### Scenario: QA de privacidad mock-only
 

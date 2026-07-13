@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, InjectionToken, isDevMode, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import {
@@ -10,6 +10,10 @@ import {
 
 type VistaQa = 'datos' | 'cargando' | 'error' | 'vacio-total';
 
+export const CERTIFICATIONS_QA_ENABLED = new InjectionToken<boolean>('CERTIFICATIONS_QA_ENABLED', {
+  factory: isDevMode,
+});
+
 @Component({
   selector: 'app-certifications-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -19,6 +23,7 @@ type VistaQa = 'datos' | 'cargando' | 'error' | 'vacio-total';
 })
 export class CertificationsListPage {
   private readonly certs = inject(CERTIFICATIONS_SOURCE);
+  readonly qaEnabled = inject(CERTIFICATIONS_QA_ENABLED);
   // ponytail: descarta respuestas de filtros que ya no son la generación activa.
   private loadGeneration = 0;
 
@@ -87,7 +92,7 @@ export class CertificationsListPage {
   onCurso(event: Event): void { this.curso.set((event.target as HTMLSelectElement).value); this.pagina.set(1); }
   onLimpiarFiltros(): void { this.q.set(''); this.estado.set('todos'); this.envio.set('todos'); this.curso.set('todos'); this.pagina.set(1); }
   onPagina(page: number): void { this.pagina.set(Math.min(Math.max(1, page), this.totalPaginas())); }
-  onVistaQA(value: VistaQa): void { this.vistaQA.set(value); this.pagina.set(1); if (value === 'datos') void this.recargar(); }
-  onReintentar(): void { this.onVistaQA('datos'); }
+  onVistaQA(value: VistaQa): void { if (!this.qaEnabled) return; this.vistaQA.set(value); this.pagina.set(1); if (value === 'datos') void this.recargar(); }
+  onReintentar(): void { if (this.qaEnabled && this.vistaQA() !== 'datos') { this.vistaQA.set('datos'); this.pagina.set(1); } void this.recargar(); }
   etiquetaEnvio(value: TipoEnvio): string { return value === 'entregado' ? 'Entregado' : value === 'pendiente-entrega' ? 'Pendiente de entrega' : 'Requiere nueva entrega'; }
 }

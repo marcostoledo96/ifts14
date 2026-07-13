@@ -1,18 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { CertificationsListPage } from './certifications-list-page';
+import { CERTIFICATIONS_QA_ENABLED, CertificationsListPage } from './certifications-list-page';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
 import { Certificacion, CertificacionesFiltros } from '../../certifications.models';
 import { CertificationsService } from '../../certifications.service';
 
 describe('CertificationsListPage', () => {
-  async function render() {
+  async function render(qaEnabled?: boolean) {
     await TestBed.configureTestingModule({
       imports: [CertificationsListPage],
       providers: [
         provideRouter([]),
         { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+        ...(qaEnabled === undefined ? [] : [{ provide: CERTIFICATIONS_QA_ENABLED, useValue: qaEnabled }]),
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(CertificationsListPage);
@@ -171,6 +172,86 @@ describe('CertificationsListPage', () => {
     buttons.find((button) => button.textContent?.includes('Sin registros'))?.click();
     f.detectChanges();
     expect(el.querySelector('[data-state="empty-total"]')).not.toBeNull();
+  });
+
+  it('no renderiza el harness cuando QA está deshabilitado', async () => {
+    const f = await render(false);
+    expect((f.nativeElement as HTMLElement).querySelector('.vista-qa')).toBeNull();
+  });
+
+  it('ignora onVistaQA cuando QA está deshabilitado', async () => {
+    const f = await render(false);
+    const page = f.componentInstance;
+
+    page.onVistaQA('cargando');
+    f.detectChanges();
+
+    expect(page.vistaQA()).toBe('datos');
+    expect(page.cargando()).toBeFalse();
+    expect(page.error()).toBe('');
+    expect(page.vacioTotal()).toBeFalse();
+    expect((f.nativeElement as HTMLElement).querySelector('table')).not.toBeNull();
+  });
+
+  it('mantiene el harness disponible en desarrollo y tests', async () => {
+    const f = await render(true);
+    expect((f.nativeElement as HTMLElement).querySelector('.vista-qa')).not.toBeNull();
+  });
+
+  it('reintenta desde el error QA, vuelve a datos y recupera la lista', async () => {
+    const f = await render(true);
+    const page = f.componentInstance;
+    const listar = spyOn(TestBed.inject(CERTIFICATIONS_SOURCE), 'listar').and.callThrough();
+    const el = f.nativeElement as HTMLElement;
+
+    page.onVistaQA('error');
+    f.detectChanges();
+    (el.querySelector('[role="alert"] button') as HTMLButtonElement).click();
+    await f.whenStable();
+    f.detectChanges();
+
+    expect(page.vistaQA()).toBe('datos');
+    expect(listar).toHaveBeenCalledTimes(1);
+    expect(page.certificados().length).toBeGreaterThan(0);
+    expect(el.querySelector('table')).not.toBeNull();
+  });
+
+  it('reintenta errores reales en producción sin habilitar controles QA', async () => {
+    const recovered = [{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', envio: 'entregado', documentMasked: '12****34', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }] satisfies readonly Certificacion[];
+    const listar = jasmine.createSpy('listar').and.returnValues(
+      Promise.reject(new Error('fallo real')),
+      Promise.resolve(recovered),
+    );
+    const service: CertificationsService = {
+      listar,
+      obtener: () => Promise.reject(new Error('N/A')),
+      contar: () => Promise.resolve(0),
+    };
+    await TestBed.configureTestingModule({
+      imports: [CertificationsListPage],
+      providers: [
+        provideRouter([]),
+        { provide: CERTIFICATIONS_SOURCE, useValue: service },
+        { provide: CERTIFICATIONS_QA_ENABLED, useValue: false },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CertificationsListPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.vista-qa')).toBeNull();
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+
+    (el.querySelector('[role="alert"] button') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(listar).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.error()).toBe('');
+    expect(fixture.componentInstance.certificados()).toEqual(recovered);
+    expect(el.querySelector('.vista-qa')).toBeNull();
   });
 
   it('descarta una respuesta stale al recargar dos veces', async () => {
