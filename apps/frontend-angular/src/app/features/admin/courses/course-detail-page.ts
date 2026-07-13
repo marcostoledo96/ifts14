@@ -88,8 +88,15 @@ export class CourseDetailPage {
             const result = settled[index];
             if (!this.attendance) return [f.id, { status: 'unavailable', reason: 'missing-seam' }];
             if (result.status === 'rejected') return [f.id, { status: 'unavailable', reason: 'failed' }];
-            return result.value.length > 0
-              ? [f.id, { status: 'known', present: result.value.length }]
+            const present = result.value.filter(
+              (attendance) =>
+                attendance != null &&
+                typeof attendance === 'object' &&
+                attendance.cursoId === cid &&
+                attendance.cursoFechaId === f.id,
+            ).length;
+            return present > 0
+              ? [f.id, { status: 'known', present }]
               : [f.id, { status: 'unavailable', reason: 'empty' }];
           }),
         ),

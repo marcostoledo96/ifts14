@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ATTENDANCE_SOURCE } from '../attendances/data/attendance.token';
-import { AttendanceService } from '../attendances/models/attendance.types';
+import { Asistencia, AttendanceService } from '../attendances/models/attendance.types';
 import { CourseDetailPage } from './course-detail-page';
 import { CursoDetalle } from './courses.models';
 import { COURSES_SOURCE, CoursesService } from './courses.service';
@@ -75,7 +75,7 @@ describe('CourseDetailPage', () => {
       courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12), fecha(13)]))),
       '1',
       attendance((_, fechaId) => {
-        if (fechaId === 11) return Promise.resolve([{ id: 1 }] as never);
+        if (fechaId === 11) return Promise.resolve([{ cursoId: 1, cursoFechaId: 11 }] as never);
         if (fechaId === 12) return Promise.reject(new Error('seam failure'));
         return Promise.resolve([]);
       }),
@@ -93,7 +93,7 @@ describe('CourseDetailPage', () => {
       '1',
       attendance((_, fechaId) => {
         if (fechaId === 11) throw new Error('sync seam failure');
-        return Promise.resolve([{ id: 1 }] as never);
+        return Promise.resolve([{ cursoId: 1, cursoFechaId: 12 }] as never);
       }),
     );
     const el = f.nativeElement as HTMLElement;
@@ -145,7 +145,14 @@ describe('CourseDetailPage', () => {
       courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12, 'realizada'), fecha(13, 'cancelada')]))),
       '1',
       attendance((_, fechaId) =>
-        Promise.resolve(fechaId === 12 ? ([{ id: 1 }, { id: 2 }] as never) : []),
+        Promise.resolve(
+          fechaId === 12
+            ? ([
+                { cursoId: 1, cursoFechaId: 12 },
+                { cursoId: 1, cursoFechaId: 12 },
+              ] as never)
+            : [],
+        ),
       ),
     );
     const el = f.nativeElement as HTMLElement;
@@ -153,6 +160,35 @@ describe('CourseDetailPage', () => {
     expect(el.textContent).toContain('2 presentes');
     expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]').length).toBe(2);
     expect(el.querySelectorAll('a[href*="/fechas/13/asistencias"]').length).toBe(0);
+  });
+
+  it('ignora asistencias ajenas o malformadas antes de contar y decidir la acción', async () => {
+    const mixed = [
+      { id: 1, cursoId: 1, cursoFechaId: 11 },
+      { id: 2, cursoId: 2, cursoFechaId: 11 },
+      { id: 3, cursoId: 1, cursoFechaId: 12 },
+      { id: 4 },
+      null,
+      undefined,
+    ] as unknown as readonly Asistencia[];
+    const f = await render(
+      courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12)]))),
+      '1',
+      attendance((_, fechaId) =>
+        Promise.resolve(
+          fechaId === 11
+            ? mixed
+            : ([{ id: 5, cursoId: 2, cursoFechaId: 12 }, { id: 6 }] as unknown as readonly Asistencia[]),
+        ),
+      ),
+    );
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('1 presente');
+    expect(el.textContent).toContain('Pendiente');
+    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]').length).toBe(2);
+    expect(el.querySelectorAll('a[href*="/fechas/12/asistencias"]').length).toBe(2);
+    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]')[0]?.textContent).toContain('Ver');
+    expect(el.querySelectorAll('a[href*="/fechas/12/asistencias"]')[0]?.textContent).toContain('Cargar');
   });
 
   it('expone carga, error, vacío y un único anuncio live con rol implícito status', async () => {
