@@ -22,6 +22,14 @@
       </a>
     </li>
     <li class="card card--action">
+      <h2 class="card-title">Alumnos</h2>
+      <p class="card-desc">Registro académico minimizado — disponible.</p>
+      <a class="card-link" routerLink="/admin/alumnos">
+        <span>Abrir Alumnos</span>
+        <span class="card-count" aria-label="Cantidad de alumnos en demo">{{ alumnosCount() }}</span>
+      </a>
+    </li>
+    <li class="card card--action">
       <h2 class="card-title">Certificaciones</h2>
       <p class="card-desc">Emisión y revocación de certificados — base mock-only.</p>
       <a class="card-link" routerLink="/admin/certificaciones">

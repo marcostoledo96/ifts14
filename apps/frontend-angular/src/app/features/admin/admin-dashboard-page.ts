@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from './certifications/certifications.service';
+import { STUDENTS_SOURCE } from './students/students.service';
 
 // Dashboard placeholder: sin datos reales ni llamadas a API. F2-04 habilita
 // la tarjeta Cursos, F2-05 la tarjeta Asistencias y F2-06 la tarjeta
@@ -20,9 +21,11 @@ export class AdminDashboardPage {
   // Conteo derivado del seam CERTIFICATIONS_SOURCE.contar() (seed mock).
   // Arranca en 0 y se hidrata vía microtask; sin HTTP/fetch/storage.
   readonly certificacionesCount = signal(0);
+  readonly alumnosCount = signal(0);
 
   constructor() {
     const certs = inject(CERTIFICATIONS_SOURCE, { optional: true });
+    const students = inject(STUDENTS_SOURCE, { optional: true });
     // ponytail: optional:true protege render fuera del árbol admin; en
     // runtime el provider siempre está colgado en la ruta admin.
     if (certs) {
@@ -33,5 +36,6 @@ export class AdminDashboardPage {
         () => this.certificacionesCount.set(0),
       );
     }
+    if (students) students.contar().then((n) => this.alumnosCount.set(n), () => this.alumnosCount.set(0));
   }
 }
