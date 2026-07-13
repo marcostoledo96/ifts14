@@ -73,20 +73,19 @@ describe('CertificationPreviewPage', () => {
     const el = f.nativeElement as HTMLElement;
     const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
     // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink (no
-    // disabled). Los tres restantes (Copiar link, Entrega manual, Revocar)
-    // siguen disabled. Esperamos >= 3 (puede haber más botones disabled).
-    expect(disabledBtns.length).toBeGreaterThanOrEqual(3);
+    // disabled). F6-01 delta: Revocar pasa a routerLink.
+    // Los dos restantes (Copiar link, Entrega manual) siguen disabled.
+    expect(disabledBtns.length).toBeGreaterThanOrEqual(2);
   });
 
   it('CTAs deshabilitados mencionan handoff a F4-02, F5-04, F6-03 y F6-01', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const text = el.textContent || '';
-    // F4-02 PDF (aún visible en handoffs de acciones restantes),
-    // F5-04 entrega, F6-03 link/delivery, F6-01 revocación.
+    // F4-02 PDF y F6-01 Revocación ya no son handoffs visibles en los botones.
+    // Quedan F5-04 entrega, F6-03 link/delivery.
     expect(text).toContain('F5-04');
     expect(text).toContain('F6-03');
-    expect(text).toContain('F6-01');
   });
 
   // --- F4-02 delta: enlaces PDF habilitados ---
@@ -140,13 +139,13 @@ describe('CertificationPreviewPage', () => {
     expect(entregaBtns[0]?.textContent).toContain('F5-04');
   });
 
-  it('F4-02: "Revocar certificación" sigue disabled con handoff F6-01', async () => {
+  it('F6-01: "Revocar certificación" es un enlace (routerLink) a :id/revocar, no disabled', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const riesgo = el.querySelector('.riesgo-panel');
-    const revocarBtn = riesgo?.querySelector('button[disabled]');
-    expect(revocarBtn).not.toBeNull();
-    expect(revocarBtn?.textContent).toContain('F6-01');
+    const revocarLink = riesgo?.querySelector('a.btn-revocar');
+    expect(revocarLink).not.toBeNull();
+    expect(revocarLink?.getAttribute('disabled')).toBeNull();
   });
 
   it('acciones deshabilitadas tienen aria-disabled="true" y cursor not-allowed', async () => {
@@ -232,12 +231,12 @@ describe('CertificationPreviewPage', () => {
     expect(qr?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('zona de riesgo visible con handoff a F6-01 (revocación)', async () => {
+  it('zona de riesgo visible con enlace activo de revocación', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const riesgo = el.querySelector('.riesgo-panel');
     expect(riesgo).not.toBeNull();
-    expect(riesgo?.textContent).toContain('F6-01');
+    expect(riesgo?.querySelector('a.btn-revocar')).not.toBeNull();
   });
 
   // --- Id inválido / inexistente ---
@@ -377,6 +376,7 @@ describe('CertificationPreviewPage', () => {
     const fakeCerts: CertificationsService = {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
       obtener: (id: number) =>
         new Promise<CertificacionDetalle>((resolve) => {
           pending.set(id, { resolve: resolve as (v: unknown) => void });
@@ -484,10 +484,13 @@ describe('CertificationPreviewPage', () => {
     expect(validacion?.textContent).toContain('F6-03');
   });
 
-  it('handoff de revocación menciona F6-01 explícitamente', async () => {
+  it('handoff de revocación F6-01 ejecutado: CTA es enlace a /revocar', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const riesgo = el.querySelector('.riesgo-panel');
-    expect(riesgo?.textContent).toContain('F6-01');
+    const revocarLink = riesgo?.querySelector('a.btn-revocar');
+    expect(revocarLink).not.toBeNull();
+    // Ya no muestra el handoff de F6-01.
+    expect(riesgo?.textContent).not.toContain('F6-01');
   });
 });

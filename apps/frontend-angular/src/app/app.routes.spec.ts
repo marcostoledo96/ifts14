@@ -826,13 +826,13 @@ describe('app.routes', () => {
     expect(el.querySelector('.riesgo-panel')).not.toBeNull();
     expect(el.querySelector('.documento-replica')).not.toBeNull();
     expect(el.querySelector('.auditoria-timeline')).not.toBeNull();
-    // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink (no
-    // disabled). Los tres restantes siguen disabled → >= 3 botones disabled.
+    // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink.
+    // F6-01 delta: Revocar pasa a routerLink.
+    // Quedan 2 botones disabled: Copiar link, Entrega manual.
     const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
-    expect(disabledBtns.length).toBeGreaterThanOrEqual(3);
+    expect(disabledBtns.length).toBeGreaterThanOrEqual(2);
     expect(el.textContent).toContain('F5-04');
     expect(el.textContent).toContain('F6-03');
-    expect(el.textContent).toContain('F6-01');
   });
 
   it("runtime: /admin/certificaciones/abc (id inválido) NO revienta y muestra estado de no encontrado", async () => {
@@ -957,5 +957,42 @@ describe('app.routes', () => {
     expect(router.url).toBe('/');
     await router.navigateByUrl('/validar/demo-valido');
     expect(router.url).toContain('/validar/');
+  });
+  // --- Rutas admin/certificaciones/:id/revocar F6-01 ---
+  
+  it("admin children define certificaciones/:id/revocar", () => {
+    const children = adminChildren();
+    const paths = children.map((c) => c.path);
+    expect(paths).toContain('certificaciones/:id/revocar');
+  });
+
+  it("orden seguro: certificaciones/:id/revocar ANTES que certificaciones/:id", () => {
+    const children = adminChildren();
+    const idxRev = children.findIndex((c) => c.path === 'certificaciones/:id/revocar');
+    const idxId = children.findIndex((c) => c.path === 'certificaciones/:id');
+    expect(idxRev).toBeGreaterThanOrEqual(0);
+    expect(idxId).toBeGreaterThanOrEqual(0);
+    expect(idxRev).toBeLessThan(idxId);
+  });
+
+  it("navegación real /admin/certificaciones/1/revocar con sesión carga CertificationRevokePage", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes, withComponentInputBinding()),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    const session = TestBed.inject(MOCK_SESSION);
+    session.signIn();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/certificaciones/1/revocar');
+    expect(router.url).toBe('/admin/certificaciones/1/revocar');
+  });
+
+  it("runtime: /admin/certificaciones/1/revocar instancia CertificationRevokePage via route injector", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/certificaciones/1/revocar');
+    const cmp = harness.routeNativeElement?.querySelector('app-certification-revoke-page');
+    expect(cmp).not.toBeNull();
   });
 });

@@ -185,4 +185,38 @@ export class InMemoryCertificationsService implements CertificationsService {
   contar(): Promise<number> {
     return Promise.resolve(this.certificados.length);
   }
+
+  revocar(id: number, motivo: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Simular latencia de red/operación costosa (900ms para mock, según v0)
+      setTimeout(() => {
+        const index = this.certificados.findIndex((c) => c.id === id);
+        if (index === -1) {
+          return reject(new Error(`Certificación no encontrada: ${id}`));
+        }
+        if (this.certificados[index].estado === 'revocado') {
+          return reject(new Error('La certificación ya se encuentra revocada.'));
+        }
+        const found = clone(this.certificados[index]) as any;
+        found.estado = 'revocado';
+        
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        found.auditEvents = [
+          {
+            at: `${year}-${month}-${day}`, // As in mock seed
+            accion: 'revocacion',
+            detalle: motivo
+          },
+          ...found.auditEvents
+        ];
+        
+        this.certificados[index] = found;
+        resolve();
+      }, 900);
+    });
+  }
 }

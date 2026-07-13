@@ -218,14 +218,15 @@ describe('CertificationsListPage', () => {
 
   it('reintenta errores reales en producción sin habilitar controles QA', async () => {
     const recovered = [{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', envio: 'entregado', documentMasked: '12****34', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }] satisfies readonly Certificacion[];
-    const listar = jasmine.createSpy('listar').and.returnValues(
+    const listarSpy = jasmine.createSpy('listar').and.returnValues(
       Promise.reject(new Error('fallo real')),
       Promise.resolve(recovered),
     );
     const service: CertificationsService = {
-      listar,
-      obtener: () => Promise.reject(new Error('N/A')),
+      listar: listarSpy,
+      obtener: () => Promise.resolve({} as any),
       contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
     };
     await TestBed.configureTestingModule({
       imports: [CertificationsListPage],
@@ -248,7 +249,7 @@ describe('CertificationsListPage', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(listar).toHaveBeenCalledTimes(2);
+    expect(listarSpy).toHaveBeenCalledTimes(2);
     expect(fixture.componentInstance.error()).toBe('');
     expect(fixture.componentInstance.certificados()).toEqual(recovered);
     expect(el.querySelector('.vista-qa')).toBeNull();
@@ -267,6 +268,7 @@ describe('CertificationsListPage', () => {
         }),
       obtener: () => Promise.reject(new Error('N/A')),
       contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
     };
     await TestBed.configureTestingModule({
       imports: [CertificationsListPage],
