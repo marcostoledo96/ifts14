@@ -125,6 +125,13 @@ export class CertificationDeliveryPage {
     this.descargando.set(true);
     // Simula demora
     await new Promise((r) => setTimeout(r, 700));
+
+    // Abrir el PDF (F4-02) en una pestaña nueva
+    const url = this.router.serializeUrl(
+      this.router.createUrlTree(['/admin/certificaciones', this.id(), 'pdf'])
+    );
+    window.open(url, '_blank');
+
     this.descargando.set(false);
     this.descargado.set(true);
   }
