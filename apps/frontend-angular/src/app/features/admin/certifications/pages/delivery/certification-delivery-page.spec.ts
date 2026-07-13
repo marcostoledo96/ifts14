@@ -49,6 +49,7 @@ describe('CertificationDeliveryPage', () => {
   });
 
   it('should simulate PDF download', fakeAsync(() => {
+    const openSpy = spyOn(window, 'open');
     void component.descargarPdf();
     flushMicrotasks(); // resolve the initial synchronous parts if any
     expect(component.descargando()).toBeTrue();
@@ -58,6 +59,7 @@ describe('CertificationDeliveryPage', () => {
 
     expect(component.descargando()).toBeFalse();
     expect(component.descargado()).toBeTrue();
+    expect(openSpy).toHaveBeenCalledWith(jasmine.stringMatching(/pdf/), '_blank');
   }));
 
   it('should simulate clipboard copy and clear after timeout', fakeAsync(() => {
