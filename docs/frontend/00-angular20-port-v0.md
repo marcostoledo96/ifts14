@@ -370,6 +370,10 @@ Handoff a F4-F6: `Certificacion`/`EnvioCertificacion`/`numero` quedan listos par
 
 Detalle en archive `openspec/changes/archive/2026-07-13-f5-01-certifications-list/` y archive report del ciclo.
 
+### Estado F5-02 — Listado de alumnos con privacidad minimizada
+
+Implementación aplicada en `frontend/students-list`; cerrado y archivado en `openspec/changes/archive/2026-07-13-f5-02-students-list/` (verify PASS 6/6, 14/14, suite 521/521, build exit 0). `/admin/alumnos` usa un seed local independiente con documento enmascarado y `tieneEmail` booleano, sin direcciones, legajo, documento completo, red ni storage. Incluye búsqueda segura, filtros combinables, paginación de cinco, tabla desktop, tarjetas mobile, estados accesibles, guard anti-race y QA limitado a desarrollo/tests. Sidebar y dashboard enlazan la ruta; el detalle permanece deshabilitado y sin `:id` hasta F5-03. Ver `docs/frontend/F5-02-listado-alumnos-paridad-v0.md`.
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:

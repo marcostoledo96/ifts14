@@ -6,6 +6,8 @@ import { ATTENDANCE_SOURCE } from './features/admin/attendances/data/attendance.
 import { AttendanceMockService } from './features/admin/attendances/data/attendance-mock.service';
 import { CERTIFICATIONS_SOURCE } from './features/admin/certifications/certifications.service';
 import { InMemoryCertificationsService } from './features/admin/certifications/in-memory-certifications.service';
+import { STUDENTS_SOURCE } from './features/admin/students/students.service';
+import { InMemoryStudentsService } from './features/admin/students/in-memory-students.service';
 
 export const routes: Routes = [
   // La raíz carga una página de inicio no validante: no llama a la API ni usa
@@ -58,6 +60,7 @@ export const routes: Routes = [
       // HTTP/storage/secretos. Si se saca, /admin/certificaciones* falla con
       // NullInjectorError en runtime (no en specs, que lo proveen a mano).
       { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+      { provide: STUDENTS_SOURCE, useClass: InMemoryStudentsService },
     ],
     loadComponent: () =>
       import('./features/admin/admin-shell').then((m) => m.AdminShell),
@@ -67,6 +70,12 @@ export const routes: Routes = [
         title: 'Admin · Dashboard (mock) — IFTS 14',
         loadComponent: () =>
           import('./features/admin/admin-dashboard-page').then((m) => m.AdminDashboardPage),
+      },
+      {
+        path: 'alumnos',
+        title: 'Admin · Alumnos (mock) — IFTS 14',
+        loadComponent: () =>
+          import('./features/admin/students/pages/list/students-list-page').then((m) => m.StudentsListPage),
       },
       {
         path: 'asistencias',
