@@ -134,6 +134,15 @@ export const routes: Routes = [
           ).then((m) => m.CertificationPdfPreviewPage),
       },
       {
+        // F5-04: ruta entrega ANTES de certificaciones/:id
+        path: 'certificaciones/:id/entrega',
+        title: 'Admin · Entrega manual (mock) — IFTS 14',
+        loadComponent: () =>
+          import(
+            './features/admin/certifications/pages/delivery/certification-delivery-page'
+          ).then((m) => m.CertificationDeliveryPage),
+      },
+      {
         path: 'certificaciones/:id',
         title: 'Admin · Certificación (mock) — IFTS 14',
         loadComponent: () =>
