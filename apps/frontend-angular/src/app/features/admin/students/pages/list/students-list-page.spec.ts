@@ -1,13 +1,21 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { STUDENTS_SOURCE, StudentsService } from '../../students.service';
 import { StudentsListPage, STUDENTS_QA_ENABLED } from './students-list-page';
 
 const alumnos = Array.from({ length: 7 }, (_, i) => ({ id: i + 1, apellido: 'Ficticia', nombre: `Persona ${i + 1}`, dniMostrar: `${String(i + 11).padStart(2, '0')}****${String(i + 21).padStart(2, '0')}`, tieneEmail: i % 2 === 0, cursosConAsistencia: i, certificacionesValidas: i % 3 }));
 
 describe('StudentsListPage', () => {
-  async function render(source: StudentsService = { listar: () => Promise.resolve(alumnos), contar: () => Promise.resolve(alumnos.length) }, qa = true) {
+  async function render(source: StudentsService = { listar: () => Promise.resolve(alumnos), contar: () => Promise.resolve(alumnos.length), obtener: () => Promise.resolve(null) }, qa = true) {
     TestBed.resetTestingModule();
-    await TestBed.configureTestingModule({ imports: [StudentsListPage], providers: [{ provide: STUDENTS_SOURCE, useValue: source }, { provide: STUDENTS_QA_ENABLED, useValue: qa }] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [StudentsListPage],
+      providers: [
+        provideRouter([]),
+        { provide: STUDENTS_SOURCE, useValue: source },
+        { provide: STUDENTS_QA_ENABLED, useValue: qa }
+      ]
+    }).compileComponents();
     const fixture = TestBed.createComponent(StudentsListPage); fixture.detectChanges(); await Promise.resolve(); fixture.detectChanges(); return fixture;
   }
   it('busca solo por nombre o documento enmascarado, filtra contacto y pagina de a cinco', async () => {
@@ -66,7 +74,7 @@ describe('StudentsListPage', () => {
   });
   it('presenta carga, error con retry, vacío y sin resultados como estados distintos', async () => {
     let resolve!: (value: readonly typeof alumnos[number][]) => void;
-    const pending: StudentsService = { listar: () => new Promise((done) => { resolve = done; }), contar: () => Promise.resolve(0) };
+    const pending: StudentsService = { listar: () => new Promise((done) => { resolve = done; }), contar: () => Promise.resolve(0), obtener: () => Promise.resolve(null) };
     const loading = await render(pending); const loadingRoot = loading.nativeElement as HTMLElement;
     expect(loadingRoot.querySelector('[aria-busy="true"]')?.textContent).toContain('Cargando');
     expect(loadingRoot.querySelector('[role="alert"]')).toBeNull();
@@ -76,7 +84,7 @@ describe('StudentsListPage', () => {
     expect(loadingRoot.querySelectorAll('[role="status"], output[aria-live]').length).toBe(1);
 
     let calls = 0;
-    const retrying: StudentsService = { listar: () => ++calls === 1 ? Promise.reject(new Error('fallo')) : Promise.resolve(alumnos), contar: () => Promise.resolve(0) };
+    const retrying: StudentsService = { listar: () => ++calls === 1 ? Promise.reject(new Error('fallo')) : Promise.resolve(alumnos), contar: () => Promise.resolve(0), obtener: () => Promise.resolve(null) };
     const error = await render(retrying); await error.whenStable(); error.detectChanges();
     const errorRoot = error.nativeElement as HTMLElement;
     expect(errorRoot.querySelector('[role="alert"]')?.textContent).toContain('Reintentar');
@@ -93,7 +101,10 @@ describe('StudentsListPage', () => {
   });
   it('renderiza tabla desktop, tarjetas mobile y un único resumen live', async () => {
     const f = await render(); const root = f.nativeElement as HTMLElement;
-    expect(root.querySelector('table caption')?.textContent).toBe('Alumnos');
+    const heading = root.querySelector('h1#students-title');
+    expect(heading).not.toBeNull();
+    expect(heading?.textContent?.trim()).toBe('Alumnos');
+    expect(root.querySelector('table caption')?.textContent?.trim()).toBe('Alumnos');
     expect(root.querySelectorAll('table th[scope="col"]').length).toBe(6);
     expect(root.querySelectorAll('tbody tr').length).toBe(5);
     expect(root.querySelectorAll('ul.alumnos-cards > li').length).toBe(5);
@@ -109,7 +120,7 @@ describe('StudentsListPage', () => {
       value: card.querySelector('dt + dd')?.textContent?.trim(),
     }))).toEqual(alumnos.slice(0, 5).map((alumno) => ({ label: 'Documento', value: alumno.dniMostrar })));
   });
-  it('no modifica QA fuera de desarrollo y mantiene el detalle deshabilitado', async () => {
+  it('no modifica QA fuera de desarrollo y expone los enlaces de detalle habilitados', async () => {
     const f = await render(undefined, false); f.componentInstance.onForzarEstado('error'); f.detectChanges();
     expect(f.componentInstance.vistaQA()).toBe('datos');
     const root = f.nativeElement as HTMLElement;
@@ -119,17 +130,12 @@ describe('StudentsListPage', () => {
       [...root.querySelectorAll<HTMLElement>('ul.alumnos-cards .detalle-accion')],
     ]) {
       expect(actions.length).toBe(5);
-      expect(actions.map((action) => action.querySelector('.detalle-motivo')?.textContent?.trim()))
-        .toEqual(Array(5).fill('Detalle disponible en F5-03'));
-      const details = actions.map((action) => action.querySelector<HTMLButtonElement>('button'));
-      expect(details.map((button) => button?.getAttribute('aria-label'))).toEqual(
+      const details = actions.map((action) => action.querySelector<HTMLAnchorElement>('a'));
+      expect(details.map((a) => a?.getAttribute('aria-label'))).toEqual(
         alumnos.slice(0, 5).map((alumno) => `Ver detalle de ${alumno.apellido}, ${alumno.nombre}`),
       );
-      expect(details.every((button) => button?.disabled && button.getAttribute('aria-disabled') === 'true')).toBeTrue();
-      expect(actions.every((action, index) =>
-        details[index]?.getAttribute('aria-describedby') === action.querySelector('.detalle-motivo')?.id,
-      )).toBeTrue();
-      expect(details.every((button) => !button?.hasAttribute('title'))).toBeTrue();
+      expect(details.every((a) => a?.getAttribute('href') !== null)).toBeTrue();
+      expect(details.every((a, index) => a?.getAttribute('href')?.includes(`/admin/alumnos/${alumnos[index].id}`))).toBeTrue();
     }
   });
   it('descarta una respuesta de carga anterior', async () => {
@@ -137,6 +143,7 @@ describe('StudentsListPage', () => {
     const source: StudentsService = {
       listar: () => new Promise((resolve) => resolvers.push(resolve)),
       contar: () => Promise.resolve(0),
+      obtener: () => Promise.resolve(null),
     };
     const nuevos = [{ ...alumnos[0], nombre: 'Carga nueva' }];
     const viejos = [{ ...alumnos[0], nombre: 'Carga vieja' }];
