@@ -2,6 +2,10 @@
 // Importa el servicio y obtiene la lista en memoria para inspeccionar el
 // contenido real (no el código fuente).
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { ATTENDANCE_SOURCE } from '../../attendances/data/attendance.token';
+import { AttendanceService } from '../../attendances/models/attendance.types';
+import { CourseDetailPage } from '../course-detail-page';
 import { COURSES_SOURCE } from '../courses.service';
 import { InMemoryCoursesService } from '../in-memory-courses.service';
 
@@ -63,5 +67,34 @@ describe('no-real-data en seed de cursos', () => {
       expect(allowed).toContain(c.cuatrimestre ?? '');
       expect(`${c.codigo} ${c.nombre}`).not.toMatch(/\b\d{7,8}\b/);
     }
+  });
+
+  it('el detalle muestra solo el conteo y la acción, sin datos privados de asistencias', async () => {
+    const attendance: AttendanceService = {
+      listarAsistencias: (cursoId, fechaId) =>
+        Promise.resolve([
+          { cursoId, cursoFechaId: fechaId, dni: '12345678', email: 'persona@example.test', token: 'secret-token', uuid: '00000000-0000-0000-0000-000000000000' },
+        ] as never),
+      listarAlumnos: () => Promise.resolve([]),
+      marcar: () => Promise.resolve([]),
+      anular: () => Promise.resolve(),
+    };
+    await TestBed.configureTestingModule({
+      imports: [CourseDetailPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        { provide: ATTENDANCE_SOURCE, useValue: attendance },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CourseDetailPage);
+    fixture.componentRef.setInput('id', '4');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent ?? '';
+    expect(text).toContain('1 presente');
+    expect(text).toContain('Ver');
+    expect(text).not.toMatch(/12345678|persona@example\.test|secret-token|00000000-0000-0000-0000-000000000000/i);
   });
 });
