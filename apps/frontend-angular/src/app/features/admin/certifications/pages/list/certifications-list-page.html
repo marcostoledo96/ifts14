@@ -1,77 +1,19 @@
 <section aria-labelledby="cert-title">
-  <div class="header-row">
-    <div>
-      <p class="kicker">Admin · Certificaciones</p>
-      <h1 id="cert-title" class="title">Certificaciones</h1>
-    </div>
-  </div>
-
-  <p class="demo-banner" role="status">
-    Datos de demostración — No persiste al recargar.
-  </p>
-
-  <div class="filtros">
-    <label class="filtro-search">
-      <span class="filtro-label">Buscar</span>
-      <input
-        type="search"
-        [value]="q()"
-        (input)="onSearch($event)"
-        placeholder="Alumno o curso…"
-        aria-label="Buscar certificación por alumno o curso"
-      />
-    </label>
-    <label class="filtro-estado">
-      <span class="filtro-label">Estado</span>
-      <select [value]="estado()" (change)="onEstado($event)" aria-label="Filtrar por estado">
-        <option value="todos">Todos</option>
-        @for (e of estados; track e) {
-          <option [value]="e">{{ e }}</option>
-        }
-      </select>
-    </label>
-  </div>
-
-  @if (cargando()) {
-    <p class="estado-linea">Cargando certificaciones…</p>
-  }
-  @if (error()) {
-    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
-  }
-
-  @if (!cargando() && certificados().length === 0) {
-    <output class="estado-linea" aria-live="polite">
-      No hay certificaciones que coincidan con los filtros.
-    </output>
-  }
-
-  @if (!cargando() && certificados().length > 0) {
-    <ul class="lista-certs">
-      @for (c of certificados(); track c.id) {
-        <li>
-          <article class="card-cert">
-            <header class="card-cert-header">
-              <h2 class="card-cert-title">{{ c.cursoNombre }}</h2>
-              <span class="estado-chip estado-{{ c.estado }}">{{ c.estado }}</span>
-            </header>
-            <dl class="card-cert-meta">
-              <dt>Alumno</dt>
-              <dd>{{ c.nombreAlumno }}</dd>
-              <dt>Documento</dt>
-              <dd>{{ c.documentMasked }}</dd>
-              <dt>Token</dt>
-              <dd>{{ c.tokenPrefix }}</dd>
-              @if (c.emitidoEn) {
-                <dt>Emitido</dt>
-                <dd>{{ c.emitidoEn }}</dd>
-              }
-            </dl>
-            <a class="card-cert-link" [routerLink]="['/admin/certificaciones', c.id]">
-              Ver detalle
-            </a>
-          </article>
-        </li>
-      }
-    </ul>
-  }
+  <div class="header-row"><div><p class="kicker">Archivo documental</p><h1 id="cert-title" class="title">Certificaciones</h1><p class="subtitle">Emisión, validez y entrega de credenciales académicas.</p></div></div>
+  <p class="demo-banner" role="status">Datos de demostración — No persiste al recargar.</p>
+  <section class="filtros" aria-label="Buscar y filtrar certificaciones">
+    <label class="filtro-search"><span class="filtro-label">Buscar registro</span><input type="search" [value]="q()" (input)="onSearch($event)" placeholder="Alumno, documento, curso o N.º…" aria-label="Buscar certificación" /></label>
+    <label class="filtro-search"><span class="filtro-label">Curso</span><select [value]="curso()" (change)="onCurso($event)" aria-label="Filtrar por curso"><option value="todos">Todos los cursos</option>@for (cursoNombre of cursos(); track cursoNombre) { <option [value]="cursoNombre">{{ cursoNombre }}</option> }</select></label>
+    <div class="filter-group"><span class="filtro-label">Estado de validez</span><div class="filter-chips">@for (e of estados; track e) { <button type="button" class="estado-chip" [attr.aria-pressed]="estado() === e" (click)="onEstado(e)">{{ e }}</button> }</div></div>
+    <div class="filter-group"><span class="filtro-label">Estado de entrega</span><div class="filter-chips">@for (e of envios; track e) { <button type="button" class="envio-chip" [attr.aria-pressed]="envio() === e" (click)="onEnvio(e)">{{ etiquetaEnvio(e) }}</button> }</div></div>
+    <div class="results-summary"><p aria-live="polite">Total: {{ certificados().length }} · Coincidencias: {{ resultadosFiltrados().length }} · Visibles: {{ itemsVisibles().length }}</p>@if (hayFiltrosActivos()) { <button type="button" class="clear-filters" (click)="onLimpiarFiltros()">Limpiar filtros</button> }</div>
+  </section>
+  <div class="vista-qa" aria-label="Vista de revisión QA"><span class="filtro-label">Vista de revisión (QA)</span>@for (view of ['datos', 'cargando', 'error', 'vacio-total']; track view) { <button type="button" [attr.aria-pressed]="vistaQA() === view" (click)="onVistaQA($any(view))">{{ view === 'datos' ? 'Con datos' : view === 'cargando' ? 'Cargando' : view === 'error' ? 'Error' : 'Sin registros' }}</button> }</div>
+  @if (vistaQA() === 'cargando' || cargando()) { <output class="loading" aria-busy="true"><span>Cargando certificaciones…</span><ul>@for (s of [1,2,3,4,5]; track s) { <li class="skeleton"></li> }</ul></output> }
+  @else if (vistaQA() === 'error' || error()) { <div class="estado-error" role="alert"><p>{{ error() || 'No se pudo cargar el listado de certificaciones.' }}</p><button type="button" (click)="onReintentar()">Reintentar</button></div> }
+  @else if (vacioTotal()) { <output data-state="empty-total" class="empty" aria-live="polite">No hay certificaciones registradas.</output> }
+  @else if (sinCoincidencias()) { <output data-state="no-results" class="empty" aria-live="polite">No hay certificaciones que coincidan con los filtros. <button type="button" (click)="onLimpiarFiltros()">Limpiar filtros</button></output> }
+  @else { <div class="certifications-table-wrap"><table><caption>Listado de certificaciones emitidas por el Instituto</caption><thead><tr><th scope="col">N.º certificado</th><th scope="col">Alumno / documento</th><th scope="col">Curso</th><th scope="col">Emisión</th><th scope="col">Validez</th><th scope="col">Entrega</th><th scope="col">Acción</th></tr></thead><tbody>@for (c of itemsVisibles(); track c.id) { <tr><td>{{ c.numero }}</td><td>{{ c.nombreAlumno }}<small>{{ c.documentMasked }}</small></td><td>{{ c.cursoNombre }}</td><td>{{ c.emitidoEn || '—' }}</td><td><span class="estado-chip">{{ c.estado }}</span></td><td>{{ etiquetaEnvio(c.envio) }}</td><td><a [routerLink]="['/admin/certificaciones', c.id]">Ver detalle</a> <a [routerLink]="['/admin/certificaciones', c.id, 'pdf']">PDF</a></td></tr> }</tbody></table></div>
+    <ul class="cards-mobile">@for (c of itemsVisibles(); track c.id) { <li><article><header><strong>{{ c.numero }}</strong><span class="estado-chip">{{ c.estado }}</span></header><p>{{ c.nombreAlumno }}</p><p>{{ c.cursoNombre }}</p><dl><dt>Documento</dt><dd>{{ c.documentMasked }}</dd><dt>Emisión</dt><dd>{{ c.emitidoEn || '—' }}</dd><dt>Entrega</dt><dd>{{ etiquetaEnvio(c.envio) }}</dd></dl><a [routerLink]="['/admin/certificaciones', c.id]">Ver detalle</a> <a [routerLink]="['/admin/certificaciones', c.id, 'pdf']">PDF</a></article></li> }</ul>
+    <nav class="paginacion" aria-label="Paginación"><button type="button" aria-label="Página anterior" [disabled]="paginaSegura() === 1" (click)="onPagina(paginaSegura() - 1)">«</button>@for (page of [1, 2]; track page) { @if (page <= totalPaginas()) { <button type="button" [attr.aria-current]="paginaSegura() === page ? 'page' : null" (click)="onPagina(page)">{{ page }}</button> } }<button type="button" aria-label="Página siguiente" [disabled]="paginaSegura() === totalPaginas()" (click)="onPagina(paginaSegura() + 1)">»</button></nav> }
 </section>

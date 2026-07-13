@@ -9,6 +9,7 @@ import { CERTIFICATIONS_SOURCE } from '../certifications.service';
 import { InMemoryCertificationsService, URL_PUBLICA_MAX } from '../in-memory-certifications.service';
 import { CertificationPreviewPage } from '../pages/preview/certification-preview-page';
 import { CertificationPdfPreviewPage } from '../pages/pdf/certification-pdf-preview-page';
+import { CertificationsListPage } from '../pages/list/certifications-list-page';
 
 describe('no-real-data en seed de certificaciones', () => {
   async function setup() {
@@ -67,6 +68,14 @@ describe('no-real-data en seed de certificaciones', () => {
     const { list } = await setup();
     expect(list.length).toBeGreaterThanOrEqual(3);
     expect(list.length).toBeLessThanOrEqual(6);
+  });
+
+  it('número y envío del seed respetan el contrato mock-only', async () => {
+    const { list } = await setup();
+    for (const c of list) {
+      expect(c.numero).toMatch(/^IFTS14-CERT-\d{4}$/);
+      expect(c.envio).toMatch(/^(entregado|pendiente-entrega|requiere-nueva-entrega)$/);
+    }
   });
 
   it(`publicValidationUrl truncada a ${URL_PUBLICA_MAX} chars y sin token completo`, async () => {
@@ -139,6 +148,24 @@ describe('no-real-data en seed de certificaciones', () => {
   it('DOM del expediente no llama fetch ni storage', async () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();
     await renderExpediente('1');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('DOM del listado no expone DNI, token, email ni UUID y no llama fetch', async () => {
+    const fetchSpy = spyOn(window, 'fetch').and.callThrough();
+    await TestBed.configureTestingModule({
+      imports: [CertificationsListPage],
+      providers: [provideRouter([]), { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CertificationsListPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent || '';
+    expect(text).not.toMatch(/\b\d{7,8}\b/);
+    expect(text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    expect(text).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
+    expect(text).not.toMatch(/prefijo_demo_/i);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

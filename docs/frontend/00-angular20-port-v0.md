@@ -342,6 +342,34 @@ Handoff a F4-04: `Ver detalle` y `Editar` solo reusan rutas existentes. La evolu
 
 Detalle en `docs/frontend/F4-03-listado-cursos-paridad-v0.md` y archive `openspec/changes/archive/2026-07-12-f4-03-courses-list/`.
 
+### Estado F5-01 — Listado de certificaciones con paridad v0 (filtros, paginación, harness QA)
+
+Ciclo `f5-01-certifications-list` sobre la base F2-06 (modelo y servicio en memoria) y F4-01/F4-02 (detalle y vista PDF imprimible mock-only). Evoluciona `CertificationsListPage` in-place para que `/admin/certificaciones` alcance paridad funcional y visual con `muestra_pagina/components/admin/lista-certificaciones.tsx`, sin nuevas rutas, dependencias, backend, HTTP, storage, cookies, IndexedDB ni `X-Admin-Key`. Mantiene `CERTIFICATIONS_SOURCE`/`InMemoryCertificationsService` y el seam `InMemory*` ya aprobado en F2-06; los handoffs F4-01/F4-02 (detalle y PDF imprimible) y F5-04/F6-01/F6-03 siguen deshabilitados con `aria-disabled="true"` salvo los CTAs de navegación ya habilitados.
+
+Archivos modificados en `apps/frontend-angular/src/app/features/admin/certifications/`:
+
+- `certifications.models.ts` — agrega `EnvioCertificacion` (`entregado`/`pendiente-entrega`/`requiere-nueva-entrega`), `numero` ficticio y `envio` en el modelo `Certificacion`. `documentMasked` sigue siendo el único documento visible; sin DNI completo, token completo, email, legajo, matrícula ni UUID.
+- `in-memory-certifications.service.ts` — completa los 6 registros ficticios con `numero` y `envio`; sin red, sin storage, sin claves admin, sin datos reales.
+- `pages/list/certifications-list-page.{ts,html,css,spec.ts}` — `signal`s de filtros (`validez`, `entrega`, `curso`, `busqueda`), `computed()` de resultados/conteos y `slice()` de 5; `onLimpiarFiltros` resetea y reinicia página; `onPagina()` acota con `paginaSegura()`; harness QA local no persistente (`datos|cargando|error|vacio-total`); tabla desktop con `<caption>`, `<th scope="col">` y resumen `aria-live="polite"`; cards mobile con `<dl>`; skeleton de carga, alerta de error con reintento, vacío total y sin coincidencias diferenciados; links a detalle y PDF existentes conservados.
+- `certifications.service.spec.ts` y `certifications-list-page.spec.ts` — cubren `numero`/`envio`, filtros combinables, búsqueda segura, paginación y clamp, los cuatro estados del harness, semántica de tabla/cards, links a detalle/PDF, race guard anti-stale y reset.
+- `__checks__/no-secrets.spec.ts` y `__checks__/no-real-data.spec.ts` — endurecidos para incluir nuevos campos, métodos y DOM del listado en los checks negativos de seguridad y datos.
+
+Límites explícitos (F5-01): sin backend real, HTTP, `X-Admin-Key`, storage/cookies/IndexedDB, sesión real, DNI completo administrativo, token completo, email, legajo, matrícula, UUID, dependencias nuevas, Tailwind, copia literal React/Next ni datos reales. No se modifican `app.routes.ts`, detalle, PDF, servicio, backend, configuración ni dependencias. Las acciones reales (emisión, entrega manual, revocación, listado real) y la persistencia de filtros/página siguen como handoff a F4-F6; el harness QA no persiste estado entre recargas ni expone la app a URL/storage.
+
+Verificación (`sdd-verify`, receipt `review-ec94f4e582546bed`):
+
+- `rtk npm run test:ci` **498/498 SUCCESS** (160/160 focused: `certifications.service.spec.ts` + `certifications-list-page.spec.ts` + `app.routes.spec.ts` + `no-real-data.spec.ts` + `no-secrets.spec.ts`).
+- `rtk npm run build` exit 0 con **2 warnings de budget CSS preexistentes** (`certification-pdf-preview-page.css` 12,41 kB y `certification-preview-page.css` 14,31 kB) — carry-forward de F4-01/F4-02, ajenos a F5-01.
+- Compliance: 2/2 requisitos (Listado mock-only con datos seguros; Harness y evidencia verificable del listado); 8/8 escenarios compliant; 0 CRITICAL, 0 blockers. **PASS**.
+- Runtime real con `ng serve` + Playwright sobre `http://127.0.0.1:4200/certificados/admin/certificaciones`, sesión mock y viewports 1280×800 / 390×844: estado inicial `Total: 6 · Coincidencias: 6 · Visibles: 5` con tabla desktop; página 2 con una fila y botón siguiente deshabilitado; combinación `curso + vigente + Entregado + búsqueda Uno` → 1/1/1 con id 1 y reset a página 1; `Limpiar filtros` restaura 6/6/5 y página 1; harness QA fuerza carga con 5 skeletons, error con reintento, vacío total y sin coincidencias 6/0/0; mobile 390×844 muestra 5 cards con `<dl>`; navegación real desde cards a `/admin/certificaciones/1` y `/admin/certificaciones/1/pdf`; consola 0 errores / 0 warnings.
+- Privacidad: sin DNI completo, email, UUID, prefijo de token visible ni solicitudes no estáticas/fetch/XHR.
+- Capturas en `openspec/changes/archive/2026-07-13-f5-01-certifications-list/evidence/` (desktop 1280×800, mobile 390×844, loading, error, empty-total, no-results + `parity-notes.md`).
+- `git diff --check`: limpio. `package.json`, lockfiles, `angular.json` y `.atl`: sin cambios tracked ni untracked.
+
+Handoff a F4-F6: `Certificacion`/`EnvioCertificacion`/`numero` quedan listos para reuso; la integración con emisión, entrega, revocación y listado real llega en F5-04/F6-01/F6-03 y F5-04. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior. El spec main `admin-certifications-frontend/spec.md` queda sincronizado con el delta de F5-01 (requisito `Listado mock-only con datos seguros` extendido a 6 escenarios y `Harness y evidencia verificable del listado` agregado).
+
+Detalle en archive `openspec/changes/archive/2026-07-13-f5-01-certifications-list/` y archive report del ciclo.
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:
