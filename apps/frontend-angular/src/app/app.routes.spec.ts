@@ -17,6 +17,8 @@ import { ATTENDANCE_SOURCE } from './features/admin/attendances/data/attendance.
 import { AttendanceMockService } from './features/admin/attendances/data/attendance-mock.service';
 import { CERTIFICATIONS_SOURCE } from './features/admin/certifications/certifications.service';
 import { InMemoryCertificationsService } from './features/admin/certifications/in-memory-certifications.service';
+import { StudentsListPage } from './features/admin/students/pages/list/students-list-page';
+import { STUDENTS_SOURCE } from './features/admin/students/students.service';
 
 // Verifica que ninguna ruta apunte a un token de demo salvo la validación
 // explícita en validar/:tokenCertificacion, evitando que una URL inválida
@@ -256,6 +258,48 @@ describe('app.routes', () => {
     const adminRoute = routes.find((x) => x.path === 'admin' && x.children !== undefined);
     return adminRoute?.children || [];
   }
+
+  it('admin/alumnos registra el listado sin ruta de detalle', async () => {
+    const children = adminChildren();
+    const alumnos = children.find((route) => route.path === 'alumnos');
+    expect(alumnos?.loadComponent).toBeDefined();
+    expect(await (alumnos!.loadComponent as () => Promise<unknown>)()).toBe(StudentsListPage);
+    expect(children.some((route) => route.path === 'alumnos/:id')).toBeFalse();
+  });
+
+  it('runtime: /admin/alumnos usa STUDENTS_SOURCE del route injector', async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/alumnos');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-students-list-page');
+    expect(cmp).not.toBeNull();
+    expect(cmp?.textContent).toContain('Persona Uno');
+  });
+
+  it('regresión: sin STUDENTS_SOURCE, /admin/alumnos falla en runtime', async () => {
+    const adminRoute = routes.find(
+      (route) => route.path === 'admin' && route.children !== undefined,
+    )!;
+    const stripped: Routes = [
+      ...routes.filter((route) => route !== adminRoute),
+      {
+        ...adminRoute,
+        providers: adminRoute.providers?.filter(
+          (provider) => !('provide' in provider) || provider.provide !== STUDENTS_SOURCE,
+        ),
+      },
+    ];
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(stripped),
+        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+      ],
+    }).compileComponents();
+    TestBed.inject(MOCK_SESSION).signIn();
+    await expectAsync(RouterTestingHarness.create('/admin/alumnos')).toBeRejected();
+  });
 
   it("admin children define dashboard, cursos, cursos/nuevo, cursos/:id, cursos/:id/editar", () => {
     const children = adminChildren();
