@@ -35,6 +35,8 @@ function sources(): string[] {
     CoursesListPage.prototype.recargar.toString(),
     CoursesListPage.prototype.onLimpiarFiltros.toString(),
     CourseDetailPage.prototype.constructor.toString(),
+    CourseDetailPage.prototype.cargar.toString(),
+    CourseDetailPage.prototype.presentesPorFecha.toString(),
     CourseEditorPage.prototype.constructor.toString(),
   ];
 }

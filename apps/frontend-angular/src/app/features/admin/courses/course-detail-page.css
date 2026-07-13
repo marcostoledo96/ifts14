@@ -30,6 +30,14 @@
   color: var(--color-muted-foreground);
 }
 
+.resumen { display: block; min-height: 1.25rem; margin-bottom: var(--space-3); color: var(--color-muted-foreground); font-size: .875rem; }
+.curso-ficha { display: flex; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card); }
+.acento { width: var(--space-1); flex: 0 0 var(--space-1); background: var(--color-valid); }
+.curso-contenido { min-width: 0; flex: 1; padding: var(--space-5); }
+.curso-header { display: flex; justify-content: space-between; gap: var(--space-3); align-items: flex-start; }
+.codigo, .fecha { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.codigo { display: inline-block; margin: 0; padding: var(--space-1) var(--space-2); background: var(--color-muted); border-radius: var(--radius-sm); font-size: .75rem; }
+
 .title {
   margin: 0 0 var(--space-2);
   font-size: 1.5rem;
@@ -74,11 +82,7 @@
   display: grid;
   grid-template-columns: auto 1fr;
   gap: var(--space-1) var(--space-4);
-  margin: 0 0 var(--space-4);
-  padding: var(--space-4);
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  margin: var(--space-4) 0;
 }
 
 .curso-meta dt {
@@ -142,36 +146,13 @@
   margin-top: var(--space-4);
 }
 
-.fechas-lista {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.fecha-row {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0 var(--space-4);
-  padding: var(--space-3);
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-}
-
-.fecha-row dt {
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-}
-
-.fecha-row dd {
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-  font-size: 0.8125rem;
-}
+.fechas-tabla { width: 100%; border-collapse: collapse; text-align: left; }
+.fechas-tabla caption { padding-bottom: var(--space-2); text-align: left; color: var(--color-muted-foreground); }
+.fechas-tabla th, .fechas-tabla td { padding: var(--space-3); border-bottom: 1px solid var(--color-border); }
+.fechas-tabla tbody tr:hover { background: var(--color-muted); }
+.fechas-cards { display: none; padding: 0; margin: 0; list-style: none; }
+.fechas-cards li { display: grid; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-card); }
+.vacio { padding: var(--space-5); border: 1px dashed var(--color-border); border-radius: var(--radius-sm); }
 
 .fecha-estado {
   padding: var(--space-1) var(--space-2);
@@ -208,6 +189,12 @@
   outline: none;
 }
 
+.fecha-asistencia-no-disponible,
+.fecha-asistencia-cancelada {
+  color: var(--color-muted-foreground);
+  font-size: 0.8125rem;
+}
+
 .estado-linea {
   margin: var(--space-3) 0;
   color: var(--color-muted-foreground);
@@ -216,4 +203,15 @@
 
 .estado-error {
   color: var(--color-destructive);
+}
+
+@media (max-width: 39.99rem) {
+  .curso-contenido { padding: var(--space-4); }
+  .curso-header { flex-direction: column; }
+  .fechas-tabla { display: none; }
+  .fechas-cards { display: grid; gap: var(--space-3); }
+}
+
+@media (min-width: 40rem) {
+  .fechas-cards { display: none; }
 }
