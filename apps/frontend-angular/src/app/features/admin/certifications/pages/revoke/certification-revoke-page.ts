@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, ElementRef, viewChild } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle } from '../../certifications.models';
@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './certification-revoke-page.html',
   styleUrl: './certification-revoke-page.css',
 })
-export class CertificationRevokePage implements AfterViewInit {
+export class CertificationRevokePage {
   readonly id = input<string>('');
 
   private readonly certs = inject(CERTIFICATIONS_SOURCE);
@@ -26,8 +26,8 @@ export class CertificationRevokePage implements AfterViewInit {
   readonly intentado = signal(false);
   readonly enviando = signal(false);
 
-  @ViewChild('dialog') dialogRef!: ElementRef<HTMLDivElement>;
-  @ViewChild('motivoInput') motivoRef!: ElementRef<HTMLTextAreaElement>;
+  readonly dialogRef = viewChild<ElementRef<HTMLDivElement>>('dialog');
+  readonly motivoRef = viewChild<ElementRef<HTMLTextAreaElement>>('motivoInput');
 
   readonly MOTIVO_MIN = 12;
   readonly MOTIVO_MAX = 400;
@@ -79,12 +79,14 @@ export class CertificationRevokePage implements AfterViewInit {
       this.id();
       untracked(() => void this.cargar());
     });
-  }
-
-  ngAfterViewInit(): void {
-    if (this.dialogRef?.nativeElement) {
-      this.dialogRef.nativeElement.focus();
-    }
+    effect(() => {
+      if (this.detalle()) {
+        const dialog = this.dialogRef();
+        if (dialog?.nativeElement) {
+          dialog.nativeElement.focus();
+        }
+      }
+    });
   }
 
   async cargar(): Promise<void> {
@@ -93,6 +95,9 @@ export class CertificationRevokePage implements AfterViewInit {
     this.detalle.set(null);
     this.error.set('');
     this.cargando.set(true);
+    this.motivo.set('');
+    this.confirmado.set(false);
+    this.intentado.set(false);
     if (cid === null) {
       if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
       this.cargando.set(false);
@@ -113,8 +118,9 @@ export class CertificationRevokePage implements AfterViewInit {
     this.intentado.set(true);
     
     if (!this.motivoValido()) {
-      if (this.motivoRef?.nativeElement) {
-        this.motivoRef.nativeElement.focus();
+      const ref = this.motivoRef();
+      if (ref?.nativeElement) {
+        ref.nativeElement.focus();
       }
       return;
     }
@@ -125,7 +131,12 @@ export class CertificationRevokePage implements AfterViewInit {
 
     this.enviando.set(true);
     try {
-      await this.certs.revocar(cid, this.motivo().trim());
+      const sanitizedMotivo = this.motivo().trim()
+        .replace(/\b\d{7,8}\b/g, '[DNI]')
+        .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '[TOKEN]')
+        .replace(/\b[\w.-]+@[\w.-]+\.\w+\b/g, '[EMAIL]');
+
+      await this.certs.revocar(cid, sanitizedMotivo);
       await this.router.navigate(this.volverLink(), { queryParams: { revocada: 1 }});
     } catch (e) {
       this.error.set((e as Error).message);

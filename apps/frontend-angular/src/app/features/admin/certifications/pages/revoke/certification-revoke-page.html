@@ -5,7 +5,7 @@
 }
 
 @if (error()) {
-  <div class="fixed-overlay" aria-live="assertive">
+  <div class="fixed-overlay" aria-live="assertive" style="z-index: 60;">
     <div class="error-panel">
       <p class="estado-linea estado-error">{{ error() }}</p>
       <a [routerLink]="volverLink()" class="btn-volver">Volver al expediente</a>
