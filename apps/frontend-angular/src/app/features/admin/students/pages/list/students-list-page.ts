@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, InjectionToken, isDevMode, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { Alumno, STUDENTS_PAGE_SIZE } from '../../students.models';
 import { STUDENTS_SOURCE } from '../../students.service';
 
@@ -10,6 +12,8 @@ export const STUDENTS_QA_ENABLED = new InjectionToken<boolean>('STUDENTS_QA_ENAB
 
 @Component({
   selector: 'app-students-list-page',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './students-list-page.html',
   styleUrl: './students-list-page.css',
