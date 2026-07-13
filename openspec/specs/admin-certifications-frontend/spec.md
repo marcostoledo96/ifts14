@@ -94,7 +94,7 @@ En desarrollo y tests, el sistema DEBE ofrecer un harness QA explícito y no per
 
 ### Requirement: Previsualización segura y handoff explícito
 
-El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente mock-only con estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Copiar link`, `Entrega manual` y `Revocar certificación` DEBEN permanecer deshabilitadas con handoff F6-03, F5-04 y F6-01. El QR/token DEBE permanecer permanente. NO DEBE usar backend, HTTP, storage, sesión real, `X-Admin-Key`, PDF/QR real, dependencias nuevas, datos reales, DNI/token completos, email, legajo ni matrícula.
+El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente mock-only con estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Revocar certificación` DEBE navegar a `/admin/certificaciones/:id/revocar`; `Copiar link` y `Entrega manual` DEBEN permanecer deshabilitadas con handoff F6-03 y F5-04. El QR/token DEBE permanecer permanente. NO DEBE usar backend, HTTP, storage, sesión real, `X-Admin-Key`, PDF/QR real, dependencias nuevas, datos reales, DNI/token completos, email, legajo ni matrícula.
 
 #### Scenario: Expediente de una certificación mock
 
@@ -102,11 +102,12 @@ El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente mock-only 
 - **When** la pantalla carga
 - **Then** DEBE mostrar datos seguros, URL truncada y permitir volver al listado.
 
-#### Scenario: Handoff F4-02 habilitado y restantes diferidos
+#### Scenario: Handoff F4-02 y F6-01 habilitados, restantes diferidos
 
 - **Given** Bedelía visualiza un expediente mock
-- **When** selecciona una acción PDF o revisa los demás controles
+- **When** selecciona una acción PDF, de revocación, o revisa los demás controles
 - **Then** las acciones PDF DEBEN abrir la vista imprimible sin rotar QR/token.
+- **And** la acción de revocación DEBE navegar a `/admin/certificaciones/:id/revocar`.
 - **And** los otros controles DEBEN continuar deshabilitados con su handoff explícito.
 
 #### Scenario: Id inexistente, inválido o ausente

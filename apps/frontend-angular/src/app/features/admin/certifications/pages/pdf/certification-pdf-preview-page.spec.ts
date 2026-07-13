@@ -382,6 +382,7 @@ describe('CertificationPdfPreviewPage', () => {
     const fakeCerts: CertificationsService = {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
       obtener: (id: number) =>
         new Promise<CertificacionDetalle>((resolve) => {
           pending.set(id, { resolve: resolve as (v: unknown) => void });

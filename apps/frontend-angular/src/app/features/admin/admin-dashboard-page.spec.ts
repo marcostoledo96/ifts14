@@ -88,9 +88,10 @@ describe('AdminDashboardPage', () => {
 
   it('si CERTIFICATIONS_SOURCE.contar() rechaza, el conteo queda en 0 sin romper el dashboard', async () => {
     const rejecting: CertificationsService = {
-      listar: () => Promise.resolve([]),
-      obtener: () => Promise.reject(new Error('no')),
-      contar: () => Promise.reject(new Error('boom')),
+      listar: () => Promise.reject(new Error('Network error')),
+      obtener: () => Promise.reject(new Error('Network error')),
+      contar: () => Promise.reject(new Error('Network error')),
+      revocar: () => Promise.reject(new Error('Network error')),
     };
     await TestBed.configureTestingModule({
       imports: [AdminDashboardPage],

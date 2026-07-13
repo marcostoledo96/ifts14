@@ -10,6 +10,7 @@ import { InMemoryCertificationsService, URL_PUBLICA_MAX } from '../in-memory-cer
 import { CertificationPreviewPage } from '../pages/preview/certification-preview-page';
 import { CertificationPdfPreviewPage } from '../pages/pdf/certification-pdf-preview-page';
 import { CertificationsListPage } from '../pages/list/certifications-list-page';
+import { CertificationRevokePage } from '../pages/revoke/certification-revoke-page';
 
 describe('no-real-data en seed de certificaciones', () => {
   async function setup() {
@@ -226,4 +227,36 @@ describe('no-real-data en seed de certificaciones', () => {
       /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
     );
   });
+
+  // --- Frontera de datos en el DOM de revocación (F6-01) ---
+
+  async function renderRevokePage(id: string) {
+    await TestBed.configureTestingModule({
+      imports: [CertificationRevokePage],
+      providers: [
+        provideRouter([]),
+        { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CertificationRevokePage);
+    fixture.componentRef.setInput('id', id);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('DOM de revocación no expone DNI completo, token completo, email ni llama a fetch', async () => {
+    const fetchSpy = spyOn(window, 'fetch').and.callThrough();
+    const el = await renderRevokePage('1');
+    const text = el.textContent || '';
+    
+    expect(text).not.toMatch(/\b\d{7,8}\b/);
+    expect(text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    expect(text).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
+    expect(text).not.toMatch(/legajo/i);
+    expect(text).not.toMatch(/matr[íi]cula/i);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });
+
