@@ -12,6 +12,7 @@ export interface CertificationsService {
   listar(filtros?: CertificacionesFiltros): Promise<readonly Certificacion[]>;
   obtener(id: number): Promise<CertificacionDetalle>;
   contar(): Promise<number>;
+  revocar(id: number, motivo: string): Promise<void>;
 }
 
 // ponytail: token único para inyectar la implementación en memoria.

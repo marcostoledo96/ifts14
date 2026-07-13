@@ -143,6 +143,15 @@ export const routes: Routes = [
           ).then((m) => m.CertificationDeliveryPage),
       },
       {
+        // F6-01: ruta revocación ANTES de certificaciones/:id
+        path: 'certificaciones/:id/revocar',
+        title: 'Admin · Revocar certificación (mock) — IFTS 14',
+        loadComponent: () =>
+          import(
+            './features/admin/certifications/pages/revoke/certification-revoke-page'
+          ).then((m) => m.CertificationRevokePage),
+      },
+      {
         path: 'certificaciones/:id',
         title: 'Admin · Certificación (mock) — IFTS 14',
         loadComponent: () =>
