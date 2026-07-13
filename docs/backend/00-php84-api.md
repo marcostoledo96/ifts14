@@ -109,7 +109,7 @@ La implementación de `backend-validacion-publica-certificados` quedó validada 
 | `GET /health` con config de ejemplo | `PASS` — `200` con `data.status: ok`, `data.service: certificados-api`. |
 | `GET .../verificacion` con token de formato inválido (`bad`) | `PASS` — `400 VALIDATION_ERROR` sin DB lookup. |
 | `POST .../consulta` con `{"token":"bad"}` | `PASS` — `400 VALIDATION_ERROR` sin DB lookup. |
-| DB-backed `GET .../verificacion` con token demo válido | `PASS` — `200` con DTO público (`data.valid: true`, `requestId`). Evidencia histórica del ciclo `backend-validacion-publica-certificados`. **El DTO actual todavía usa `documentMasked` sin `attendedDates`; el DTO vigente post-D0 (`documentNumber` + `attendedDates`) es contrato pendiente (M4-01A/M4-01B), no estado desplegado.** |
+| DB-backed `GET .../verificacion` con token demo válido | `PASS` — `200` con DTO público (`data.valid: true`, `requestId`). Evidencia histórica del ciclo `backend-validacion-publica-certificados`. **El DTO actual implementado todavía usa `documentMasked` sin `attendedDates`; el DTO vigente post-D0 (`documentNumber` + `attendedDates`) ya tiene su contrato documental cerrado (M4-01A) y su implementación está pendiente (M4-01B).** |
 | DB-backed `POST .../consulta` con token demo válido | `PASS` — `200` con el mismo DTO que GET. |
 | DB-backed `GET .../verificacion` con token no verificable | `PASS` — `404 CERTIFICATE_NOT_FOUND` unificado. |
 
