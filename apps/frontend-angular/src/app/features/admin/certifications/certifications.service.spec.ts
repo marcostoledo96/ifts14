@@ -19,7 +19,15 @@ describe('InMemoryCertificationsService', () => {
     const svc = setup();
     const list = await svc.listar();
     expect(list.length).toBeGreaterThanOrEqual(3);
-    expect(list.length).toBeLessThanOrEqual(6);
+    expect(list.length).toBe(6);
+  });
+
+  it('expone número ficticio y estado de entrega seguro en cada registro', async () => {
+    const list = await setup().listar();
+    for (const c of list) {
+      expect(c.numero).toMatch(/^IFTS14-CERT-\d{4}$/);
+      expect(c.envio).toMatch(/^(entregado|pendiente-entrega|requiere-nueva-entrega)$/);
+    }
   });
 
   it('listar filtra por estado vigente', async () => {
@@ -62,6 +70,27 @@ describe('InMemoryCertificationsService', () => {
     const svc = setup();
     const res = await svc.listar({ estado: 'vigente', q: 'Curso' });
     res.forEach((c) => expect(c.estado).toBe('vigente'));
+  });
+
+  it('listar combina envío y búsqueda por número o documento enmascarado', async () => {
+    const svc = setup();
+    const byNumber = await svc.listar({ envio: 'entregado', q: '0001' });
+    expect(byNumber.map((c) => c.numero)).toEqual(['IFTS14-CERT-0001']);
+
+    const byDocument = await svc.listar({ q: '34****56' });
+    expect(byDocument.map((c) => c.id)).toEqual([2]);
+  });
+
+  it('listar filtra un curso independiente y lo combina con validez, entrega y búsqueda', async () => {
+    const svc = setup();
+    const results = await svc.listar({
+      curso: 'Curso de introducción a la gestión',
+      estado: 'vigente',
+      envio: 'entregado',
+      q: 'Uno',
+    });
+
+    expect(results.map((c) => c.id)).toEqual([1]);
   });
 
   it('listar con q sin matches devuelve []', async () => {
