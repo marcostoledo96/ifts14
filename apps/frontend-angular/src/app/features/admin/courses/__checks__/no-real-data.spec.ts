@@ -71,9 +71,9 @@ describe('no-real-data en seed de cursos', () => {
 
   it('el detalle muestra solo el conteo y la acción, sin datos privados de asistencias', async () => {
     const attendance: AttendanceService = {
-      listarAsistencias: () =>
+      listarAsistencias: (cursoId, fechaId) =>
         Promise.resolve([
-          { dni: '12345678', email: 'persona@example.test', token: 'secret-token', uuid: '00000000-0000-0000-0000-000000000000' },
+          { cursoId, cursoFechaId: fechaId, dni: '12345678', email: 'persona@example.test', token: 'secret-token', uuid: '00000000-0000-0000-0000-000000000000' },
         ] as never),
       listarAlumnos: () => Promise.resolve([]),
       marcar: () => Promise.resolve([]),
