@@ -18,7 +18,9 @@ import { AttendanceMockService } from './features/admin/attendances/data/attenda
 import { CERTIFICATIONS_SOURCE } from './features/admin/certifications/certifications.service';
 import { InMemoryCertificationsService } from './features/admin/certifications/in-memory-certifications.service';
 import { StudentsListPage } from './features/admin/students/pages/list/students-list-page';
+import { StudentDetailPage } from './features/admin/students/pages/detail/student-detail-page';
 import { STUDENTS_SOURCE } from './features/admin/students/students.service';
+
 
 // Verifica que ninguna ruta apunte a un token de demo salvo la validación
 // explícita en validar/:tokenCertificacion, evitando que una URL inválida
@@ -259,12 +261,15 @@ describe('app.routes', () => {
     return adminRoute?.children || [];
   }
 
-  it('admin/alumnos registra el listado sin ruta de detalle', async () => {
+  it('admin/alumnos registra el listado y la ruta de detalle', async () => {
     const children = adminChildren();
     const alumnos = children.find((route) => route.path === 'alumnos');
     expect(alumnos?.loadComponent).toBeDefined();
     expect(await (alumnos!.loadComponent as () => Promise<unknown>)()).toBe(StudentsListPage);
-    expect(children.some((route) => route.path === 'alumnos/:id')).toBeFalse();
+
+    const detalle = children.find((route) => route.path === 'alumnos/:id');
+    expect(detalle?.loadComponent).toBeDefined();
+    expect(await (detalle!.loadComponent as () => Promise<unknown>)()).toBe(StudentDetailPage);
   });
 
   it('runtime: /admin/alumnos usa STUDENTS_SOURCE del route injector', async () => {
@@ -274,6 +279,17 @@ describe('app.routes', () => {
     await harness.fixture.whenStable();
     await harness.detectChanges();
     const cmp = harness.routeNativeElement?.querySelector('app-students-list-page');
+    expect(cmp).not.toBeNull();
+    expect(cmp?.textContent).toContain('Persona Uno');
+  });
+
+  it('runtime: /admin/alumnos/:id instancia StudentDetailPage via route injector sin NullInjectorError', async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/alumnos/1');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-student-detail-page');
     expect(cmp).not.toBeNull();
     expect(cmp?.textContent).toContain('Persona Uno');
   });

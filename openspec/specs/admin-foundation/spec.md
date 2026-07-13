@@ -8,12 +8,12 @@ Definir la base navegable del panel administrativo Angular 20 para F2-04..F2-06:
 
 ### Requirement: Rutas administrativas aisladas
 
-El sistema DEBE exponer `/admin/login`, `/admin`, `/admin/dashboard`, `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` y `/admin/alumnos` sin romper rutas públicas.
-(Previously: no exponía `/admin/alumnos` como ruta administrativa activa.)
+El sistema DEBE exponer `/admin/login`, `/admin`, `/admin/dashboard`, `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` y `/admin/alumnos*` sin romper rutas públicas.
+(Previously: no exponía `/admin/alumnos/:id` como ruta administrativa activa.)
 
 #### Scenario: Navegación admin básica
 
-- **Given** una persona abre `/admin/login`, `/admin/dashboard`, `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` o `/admin/alumnos`
+- **Given** una persona abre `/admin/login`, `/admin/dashboard`, `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` o `/admin/alumnos*`
 - **When** Angular resuelve la ruta
 - **Then** DEBE cargar la pantalla administrativa correspondiente.
 - **And** `/admin` DEBE resolver hacia login o dashboard según la sesión mock.
@@ -21,7 +21,7 @@ El sistema DEBE exponer `/admin/login`, `/admin`, `/admin/dashboard`, `/admin/cu
 #### Scenario: Rutas públicas preservadas
 
 - **Given** existen las rutas públicas `''`, `validar/:tokenCertificacion` y `**`
-- **When** se agrega `/admin/alumnos`
+- **When** se agrega `/admin/alumnos*`
 - **Then** las rutas públicas DEBEN conservar su comportamiento previo.
 - **And** `/admin/*` NO DEBE caer en el wildcard público por error.
 

@@ -9,4 +9,22 @@ describe('InMemoryStudentsService', () => {
     expect(alumnos.every((a) => typeof a.tieneEmail === 'boolean')).toBeTrue();
     expect(JSON.stringify(alumnos).toLowerCase()).not.toContain('legajo');
   });
+
+  it('permite obtener el detalle del alumno de forma segura y consistente', async () => {
+    const service = new InMemoryStudentsService();
+    const result = await service.obtener(1);
+    expect(result).not.toBeNull();
+    if (result) {
+      expect(result.nombre).toBe('Persona Uno');
+      expect(result.ingreso).toBe('2021');
+      expect(result.dniMostrar).toBe('00****01');
+      expect(result.cursos.length).toBe(4);
+      expect(JSON.stringify(result).toLowerCase()).not.toContain('legajo');
+      expect(JSON.stringify(result).toLowerCase()).not.toContain('email@');
+    }
+
+    const resultInvalido = await service.obtener(999);
+    expect(resultInvalido).toBeNull();
+  });
 });
+

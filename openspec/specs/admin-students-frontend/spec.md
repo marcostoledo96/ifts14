@@ -54,9 +54,9 @@ El sistema DEBE buscar exclusivamente por nombre y `dniMostrar` enmascarado. NO 
 - THEN DEBE usar tabla con encabezados o tarjetas equivalentes.
 - AND DEBE anunciar el resumen de resultados mediante una región accesible.
 
-### Requirement: Estados y QA
+### Requirement: Estados, detalle y QA
 
-El sistema DEBE diferenciar carga/error/vacío/sin coincidencias. QA solo DEBE operar en desarrollo/tests e invisible e inmutable en producción/staging. El detalle DEBE quedar deshabilitado para F5-03; NO DEBE registrar `/admin/alumnos/:id`. La UI DEBE igualar o mejorar v0.
+El sistema DEBE diferenciar carga/error/vacío/sin coincidencias. QA solo DEBE operar en desarrollo/tests e invisible e inmutable en producción/staging. El detalle DEBE implementarse bajo `/admin/alumnos/:id` protegido por sesión mock. La UI DEBE igualar o mejorar v0 en paridad visual, responsive y accesibilidad.
 
 #### Scenario: Estados distinguibles
 
@@ -64,9 +64,35 @@ El sistema DEBE diferenciar carga/error/vacío/sin coincidencias. QA solo DEBE o
 - WHEN se presenta el estado
 - THEN DEBE distinguirlos accesiblemente.
 
-#### Scenario: QA y detalle diferido
+#### Scenario: QA y acceso al detalle
 
 - GIVEN desarrollo/tests o producción/staging
-- WHEN se intenta activar QA o detalle
-- THEN QA DEBE operar solo en desarrollo/tests y el detalle seguir deshabilitado con “Disponible en F5-03”.
-- AND la navegación no DEBE resolver una ruta de detalle.
+- WHEN se intenta activar QA o navegar al detalle
+- THEN QA DEBE operar solo en desarrollo/tests.
+- AND la navegación a `/admin/alumnos/:id` DEBE resolver el componente de detalle correspondiente si la sesión mock está activa.
+
+### Requirement: Detalle administrativo privado y consistente
+
+El detalle de alumno DEBE mostrar Apellido y Nombre, DNI enmascarado `NN****NN` y el año de ingreso. NO DEBE mostrar legajo, matrícula, UUID, token completo ni dirección de email real/literal. DEBE usar el indicador booleano `tieneEmail` para mostrar "Contacto disponible" o "Sin contacto registrado". DEBE listar cursos con asistencia presentes de forma consistente con las claves existentes de cursos y certificaciones, detallando nombre del curso, código, fechas de asistencia en formato abreviado, y estado de la certificación (Emitida con link al expediente, Pendiente con link a emitir, o En curso).
+
+#### Scenario: Ficha de alumno segura
+
+- GIVEN la pantalla del detalle `/admin/alumnos/:id` para un alumno del seed
+- WHEN renderiza la ficha
+- THEN DEBE mostrar nombre, ingreso y DNI enmascarado `NN****NN`.
+- AND NO DEBE mostrar legajo, email literal, matrícula ni UUID.
+
+#### Scenario: Cursos y certificaciones consistentes
+
+- GIVEN el alumno tiene cursos asociados
+- WHEN se renderiza la lista de cursos en el detalle (desktop o mobile)
+- THEN DEBE mostrar una tabla semántica o tarjetas equivalentes.
+- AND DEBE listar las fechas de presentes con formato abreviado.
+- AND DEBE mostrar el estado de la certificación y los enlaces correspondientes ("Ver certificación" o "Emitir certificación") sin inventar datos inconsistentes.
+
+#### Scenario: ID inexistente o inválido
+
+- GIVEN se navega a `/admin/alumnos/999` o un ID inválido
+- WHEN carga la página
+- THEN DEBE mostrar un estado no encontrado seguro, permitiendo volver al listado, sin romper la shell admin.
+
