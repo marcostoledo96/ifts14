@@ -82,15 +82,17 @@
           <!-- Acciones -->
           <div class="ficha-acciones">
             <!-- Habilitadas -->
-            <a
-              [routerLink]="['/admin/alumnos', a.id, 'certificaciones', 'nueva']"
+            <button
               class="btn btn-primary"
+              disabled
+              aria-disabled="true"
+              title="Disponible en fase posterior"
             >
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               Nueva certificación
-            </a>
+            </button>
 
             <!-- Deshabilitadas (Placeholders de handoff con explicaciones claras) -->
             <div class="action-wrapper">
@@ -276,13 +278,14 @@
                         Ver certificación
                       </a>
                     } @else if (curso.estadoCert === 'pendiente') {
-                      <a
-                        [routerLink]="['/admin/alumnos', a.id, 'certificaciones', 'nueva']"
-                        [queryParams]="{ curso: curso.id }"
-                        class="btn-text text-tech-blue font-medium"
+                      <button
+                        class="btn-text text-tech-blue font-medium opacity-50 cursor-not-allowed"
+                        disabled
+                        aria-disabled="true"
+                        title="Disponible en fase posterior"
                       >
                         Emitir certificación
-                      </a>
+                      </button>
                     } @else {
                       <span class="text-muted text-xs">Disponible al finalizar</span>
                     }
@@ -331,13 +334,14 @@
                     Ver certificación
                   </a>
                 } @else if (curso.estadoCert === 'pendiente') {
-                  <a
-                    [routerLink]="['/admin/alumnos', a.id, 'certificaciones', 'nueva']"
-                    [queryParams]="{ curso: curso.id }"
-                    class="btn btn-primary w-full text-center"
+                  <button
+                    class="btn btn-primary w-full text-center opacity-50 cursor-not-allowed"
+                    disabled
+                    aria-disabled="true"
+                    title="Disponible en fase posterior"
                   >
                     Emitir certificación
-                  </a>
+                  </button>
                 } @else {
                   <span class="disabled-placeholder">Disponible al finalizar</span>
                 }

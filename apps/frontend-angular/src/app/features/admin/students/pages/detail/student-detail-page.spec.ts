@@ -49,7 +49,7 @@ describe('StudentDetailPage', () => {
     expect(textContent).toContain('2/3'); // presentes: ['2026-03-02', '2026-03-09', '2026-03-16']
   });
 
-  it('debe mostrar los enlaces adecuados según el estado de la certificación', async () => {
+  it('debe mostrar los controles deshabilitados para emisión de certificación', async () => {
     const harness = await RouterTestingHarness.create('/admin/alumnos/1');
     await harness.detectChanges();
     await harness.fixture.whenStable();
@@ -57,13 +57,15 @@ describe('StudentDetailPage', () => {
 
     const rootElement = harness.fixture.nativeElement as HTMLElement;
 
-    // Para el curso 1 (emitida), debe existir un link a la certificación
-    const verCertLink = rootElement.querySelector('a[href*="/admin/certificaciones/1"]');
-    expect(verCertLink).not.toBeNull();
-
-    // Para el curso 3 (pendiente), debe existir un link para emitir
-    const emitirCertLink = rootElement.querySelector('a[href*="/admin/alumnos/1/certificaciones/nueva?curso=3"]');
-    expect(emitirCertLink).not.toBeNull();
+    // Para el curso 3 (pendiente), debe existir un botón deshabilitado para emitir
+    const emitirCertBtn = Array.from(rootElement.querySelectorAll('button')).find(el => el.textContent?.includes('Emitir certificación'));
+    expect(emitirCertBtn).toBeDefined();
+    expect(emitirCertBtn?.hasAttribute('disabled')).toBeTrue();
+    
+    // El CTA de Nueva certificación también debe estar deshabilitado
+    const nuevaCertBtn = Array.from(rootElement.querySelectorAll('button')).find(el => el.textContent?.includes('Nueva certificación'));
+    expect(nuevaCertBtn).toBeDefined();
+    expect(nuevaCertBtn?.hasAttribute('disabled')).toBeTrue();
   });
 
   it('debe manejar adecuadamente un ID no encontrado', async () => {
