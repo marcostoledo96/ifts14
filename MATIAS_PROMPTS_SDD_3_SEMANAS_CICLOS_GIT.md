@@ -13,37 +13,37 @@ Estado actualizado al 2026-06-28. Convención: ✅ hecho, ⏳ pendiente, 🚫 bl
 | F0 | F0-01 | Verificar entorno Windows | ✅ | docs/matias-onboarding-windows | `d7b523e` (merged en PR #6) |
 | F0 | F0-02 | Verificar OpenCode/Gentle-AI | ✅ | docs/matias-onboarding-f0-02-f0-03 | archive cerrado; commit del PR sin fijar HEAD transitorio |
 | F0 | F0-03 | Leer documentación mínima y entender misión | ✅ | docs/matias-onboarding-f0-03 | Archive cerrado en PR #12; onboarding frontend registrado. |
-| F1 | F1-01 | Auditar `muestra_pagina/` | ⏳ | frontend/v0-design-system | Matías. |
-| F1 | F1-02 | Extraer sistema visual desde v0 | ⏳ | frontend/v0-design-system | Matías. |
-| F1 | F1-03 | Crear app Angular 20 | ⏳ | frontend/angular-shell | Marcos si hace falta destrabar backend. |
-| F1 | F1-04 | Configurar Tailwind | ⏳ | frontend/angular-shell | Marcos si hace falta; coordinar sistema visual. |
-| F1 | F1-05 | Crear layout base público/admin | ⏳ | frontend/angular-shell | Marcos estructura; Matías diseño final. |
-| F2 | F2-01 | Pantalla pública de validación válida | ⏳ | frontend/public-validation-flow | Marcos si hace falta; Matías no tocar sin coordinación. |
-| F2 | F2-02 | Estados revocada/no encontrada/error | ⏳ | frontend/public-validation-flow | Marcos si hace falta; Matías no tocar sin coordinación. |
-| F2 | F2-03 | Login/admin shell | ⏳ | frontend/admin-foundation | Matías. |
-| F2 | F2-04 | Cursos y fechas | ⏳ | frontend/admin-foundation | Matías. |
-| F2 | F2-05 | Asistencias presentes | ⏳ | frontend/admin-foundation | Matías. |
-| F2 | F2-06 | Certificaciones | ⏳ | frontend/admin-certifications | Matías. |
-| F3 | F3-01 | Servicios mock y contratos frontend | ⏳ | frontend/api-readiness | Marcos si hace falta; Matías no tocar sin coordinación. |
-| F3 | F3-02 | Preparar conexión futura con API PHP | ⏳ | frontend/api-readiness | Marcos si hace falta; Matías no tocar sin coordinación. |
-| F3 | F3-03 | Tests automáticos básicos | ⏳ | qa/frontend-release-readiness | Matías. |
-| F3 | F3-04 | QA manual completo | ⏳ | qa/frontend-release-readiness | Matías. |
-| F3 | F3-05 | Build para `/certificados/` | ⏳ | frontend/api-readiness | Marcos si hace falta. |
-| F3 | F3-06 | Handoff a Marcos | ⏳ | qa/frontend-release-readiness | Matías. |
-| F4 | F4-01 | Detalle de certificación administrativo | ⏳ | frontend/certificate-detail-pdf | Matías. Bloqueo: spec previa si incluye historial, QR o revocación real. |
-| F4 | F4-02 | Vista previa PDF complementario | ⏳ | frontend/certificate-detail-pdf | Matías. Bloqueo: spec previa de PDF, layout y datos permitidos. |
-| F4 | F4-03 | Listado de cursos | ⏳ | frontend/admin-courses | Matías. Bloqueo: contrato o mocks explícitos para cursos, fechas y estados. |
-| F4 | F4-04 | Detalle de curso | ⏳ | frontend/admin-courses | Matías. Bloqueo: contrato de curso, fechas, asistencias y certificaciones asociadas. |
-| F5 | F5-01 | Listado de certificaciones | ⏳ | frontend/admin-certifications | Matías. Bloqueo: contrato de filtros, paginación y estados. |
-| F5 | F5-02 | Listado de alumnos | ⏳ | frontend/admin-students | Matías. Bloqueo: definir datos visibles; DNI completo solo si la spec lo exige en contexto privado/administrativo. |
-| F5 | F5-03 | Detalle administrativo de alumno | ⏳ | frontend/admin-students | Matías. Bloqueo: spec previa de datos personales permitidos. |
+| F1 | F1-01 | Auditar `muestra_pagina/` | ✅ | frontend/v0-design-system | Matías. |
+| F1 | F1-02 | Extraer sistema visual desde v0 | ✅ | frontend/v0-design-system | Matías. |
+| F1 | F1-03 | Crear app Angular 20 | ✅ | frontend/angular-shell | Marcos si hace falta destrabar backend. |
+| F1 | F1-04 | Configurar Tailwind | ✅ | frontend/angular-shell | Marcos si hace falta; coordinar sistema visual. |
+| F1 | F1-05 | Crear layout base público/admin | ✅ | frontend/angular-shell | Marcos estructura; Matías diseño final. |
+| F2 | F2-01 | Pantalla pública de validación válida | ✅ | frontend/public-validation-flow | Marcos si hace falta; Matías no tocar sin coordinación. |
+| F2 | F2-02 | Estados revocada/no encontrada/error | ✅ | frontend/public-validation-flow | Marcos si hace falta; Matías no tocar sin coordinación. |
+| F2 | F2-03 | Login/admin shell | ✅ | frontend/admin-foundation | Matías. |
+| F2 | F2-04 | Cursos y fechas | ✅ | frontend/admin-foundation | Matías. |
+| F2 | F2-05 | Asistencias presentes | ✅ | frontend/admin-foundation | Matías. |
+| F2 | F2-06 | Certificaciones | ✅ | frontend/admin-certifications | Matías. |
+| F3 | F3-01 | Servicios mock y contratos frontend | ✅ | frontend/api-readiness | Marcos si hace falta; Matías no tocar sin coordinación. |
+| F3 | F3-02 | Preparar conexión futura con API PHP | ✅ | frontend/api-readiness | Marcos si hace falta; Matías no tocar sin coordinación. |
+| F3 | F3-03 | Tests automáticos básicos | ✅ | qa/frontend-release-readiness | Matías. |
+| F3 | F3-04 | QA manual completo | ✅ | qa/frontend-release-readiness | Matías. |
+| F3 | F3-05 | Build para `/certificados/` | ✅ | frontend/api-readiness | Marcos si hace falta. |
+| F3 | F3-06 | Handoff a Marcos | ✅ | qa/frontend-release-readiness | Matías. |
+| F4 | F4-01 | Detalle de certificación administrativo | ✅ | frontend/certificate-detail-pdf | Matías. Bloqueo: spec previa si incluye historial, QR o revocación real. |
+| F4 | F4-02 | Vista previa PDF complementario | ✅ | frontend/certificate-detail-pdf | Matías. Bloqueo: spec previa de PDF, layout y datos permitidos. |
+| F4 | F4-03 | Listado de cursos | ✅ | frontend/admin-courses | Matías. Bloqueo: contrato o mocks explícitos para cursos, fechas y estados. |
+| F4 | F4-04 | Detalle de curso | ✅ | frontend/admin-courses | Matías. Bloqueo: contrato de curso, fechas, asistencias y certificaciones asociadas. |
+| F5 | F5-01 | Listado de certificaciones | ✅ | frontend/admin-certifications | Matías. Bloqueo: contrato de filtros, paginación y estados. |
+| F5 | F5-02 | Listado de alumnos | ✅ | frontend/admin-students | Matías. Bloqueo: definir datos visibles; DNI completo solo si la spec lo exige en contexto privado/administrativo. |
+| F5 | F5-03 | Detalle administrativo de alumno | ✅ | frontend/admin-students | Matías. Bloqueo: spec previa de datos personales permitidos. |
 | F5 | F5-04 | Entrega manual de certificación | ⏳ | frontend/admin-certifications | Matías. Bloqueo: contrato de entrega manual y copy aprobado; sin "reenviar" ni "enviar email". |
-| F6 | F6-01 | Revocar certificación | ⏳ | frontend/admin-certifications | Matías. Bloqueo: spec de permisos, confirmación y efecto irreversible. |
+| F6 | F6-01 | Revocar certificación | ✅ | frontend/admin-certifications | Matías. Bloqueo: spec de permisos, confirmación y efecto irreversible. |
 | F6 | F6-02 | Placeholder de carga masiva | ⏳ | frontend/admin-bulk-config | Matías. Bloqueo: alcance placeholder; no importar archivos reales. |
 | F6 | F6-03 | Auditoría básica | ⏳ | frontend/admin-certifications | Matías. Bloqueo: contrato de eventos auditables y permisos. |
 | F6 | F6-04 | Configuración institucional | ⏳ | frontend/admin-bulk-config | Matías. Bloqueo: definir secciones, permisos y datos no sensibles. |
 
-**Resumen**: 3 de 28 hechos. 25 pendientes. F0 queda cerrado con F0-03 registrado en PR #12. Cambios ad-hoc de governance también commiteados en PR #6: regla de commit con aprobación explícita (`d4589a1`), regla de push a ramas con aprobación explícita (`79a72ca`), fix de bugs de Codex (`e890c3c`). F4-F6 están habilitados para ejecutarse cuando el ciclo correspondiente tenga spec/contrato aprobado; ya no requieren apertura de una guía separada.
+**Resumen**: 24 de 28 hechos. 4 pendientes. F0 a F4 están completos. F5 casi completo (solo falta entrega manual). F6 tiene revocación completada. Cambios ad-hoc de governance también commiteados en PR #6: regla de commit con aprobación explícita (`d4589a1`), regla de push a ramas con aprobación explícita (`79a72ca`), fix de bugs de Codex (`e890c3c`).
 
 ### División operativa frontend
 
