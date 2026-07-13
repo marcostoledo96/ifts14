@@ -37,11 +37,11 @@ export class StudentDetailPage {
     this.route.paramMap.subscribe((params) => {
       const idStr = params.get('id');
       if (idStr) {
-        const id = parseInt(idStr, 10);
-        if (isNaN(id)) {
+        if (!/^\d+$/.test(idStr)) {
           this.cargando.set(false);
           this.error.set('Identificador de alumno inválido.');
         } else {
+          const id = parseInt(idStr, 10);
           void this.cargar(id);
         }
       } else {

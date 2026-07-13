@@ -101,7 +101,10 @@ describe('StudentsListPage', () => {
   });
   it('renderiza tabla desktop, tarjetas mobile y un único resumen live', async () => {
     const f = await render(); const root = f.nativeElement as HTMLElement;
-    expect(root.querySelector('table caption')?.textContent).toBe('Alumnos');
+    const heading = root.querySelector('h1#students-title');
+    expect(heading).not.toBeNull();
+    expect(heading?.textContent?.trim()).toBe('Alumnos');
+    expect(root.querySelector('table caption')?.textContent?.trim()).toBe('Alumnos');
     expect(root.querySelectorAll('table th[scope="col"]').length).toBe(6);
     expect(root.querySelectorAll('tbody tr').length).toBe(5);
     expect(root.querySelectorAll('ul.alumnos-cards > li').length).toBe(5);
