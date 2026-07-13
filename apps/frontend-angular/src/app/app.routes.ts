@@ -72,6 +72,12 @@ export const routes: Routes = [
           import('./features/admin/admin-dashboard-page').then((m) => m.AdminDashboardPage),
       },
       {
+        path: 'alumnos/:id',
+        title: 'Admin · Detalle de Alumno (mock) — IFTS 14',
+        loadComponent: () =>
+          import('./features/admin/students/pages/detail/student-detail-page').then((m) => m.StudentDetailPage),
+      },
+      {
         path: 'alumnos',
         title: 'Admin · Alumnos (mock) — IFTS 14',
         loadComponent: () =>
