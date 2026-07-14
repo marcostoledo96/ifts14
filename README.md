@@ -33,11 +33,11 @@ Decisiones confirmadas por Marcos, fuente de verdad del proyecto hasta nueva ord
 | Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |
 | Staging | `/certificados_staging/` separado de producción `/certificados/`. |
 
-## Objetivo inicial
+## Estado del desarrollo
 
-Ordenar el material descargado del servidor, proteger datos sensibles, documentar la arquitectura actual y preparar el trabajo con OpenCode/Gentle-AI usando Spec-Driven Development y TDD.
+La etapa de aseguramiento inicial (`P0`, `P1`, `P2`) ya concluyó: el material del servidor está ordenado, los datos sensibles protegidos y la arquitectura documentada.
 
-El desarrollo del producto comienza después de que el repositorio quede seguro, documentado y con estructura mínima.
+Actualmente, el desarrollo del producto (Frontend y Backend) está en curso bajo Spec-Driven Development y TDD.
 
 ## Responsables
 
@@ -93,5 +93,5 @@ No subir al repositorio:
 2. Leer `AGENTS.md`.
 3. Leer `docs/00-indice-general.md`.
 4. Ejecutar un ciclo chico desde el prompt raíz correspondiente: `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` o `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`.
-5. No implementar Angular/PHP hasta cerrar la etapa de ordenamiento seguro.
+5. Implementar Angular/PHP siguiendo las directivas del tablero de planificación.
 6. Cerrar cada ciclo con `sdd-archive` antes de proponer commit.
