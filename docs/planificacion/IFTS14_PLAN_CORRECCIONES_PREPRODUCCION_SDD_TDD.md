@@ -6,8 +6,8 @@ repositorio: "marcostoledo96/ifts14"
 commit_auditado: "9bc0dbdd92f90da3cb96dd271cfd93c8bca53987"
 rama_fuente: "main"
 estado_general: "EN_CURSO"
-fase_actual: "P1"
-ultimo_ciclo_cerrado: "P0-01"
+fase_actual: "P2"
+ultimo_ciclo_cerrado: "P1-01"
 responsable_coordinacion: "Marcos"
 metodologia: "Gentle AI + OpenSpec + SDD + TDD"
 ---
@@ -258,7 +258,7 @@ Actualizar esta tabla al inicio y al cierre de cada ciclo.
 | Fase | Objetivo | Prioridad | Estado | Responsable | Última evidencia | PR/commit |
 |---|---|---:|---|---|---|---|
 | P0 | Baseline y congelamiento seguro | P0 | ARCHIVADO | Marcos | Tests OK, Error Docker | 9bc0dbd |
-| P1 | Reconciliar migraciones/esquema | P0 | PENDIENTE | Marcos | — | — |
+| P1 | Reconciliar migraciones/esquema | P0 | ARCHIVADO | Marcos | Test DB Schema OK | — |
 | P2 | Sincronizar docs y OpenSpec | P0 | PENDIENTE | Marcos | — | — |
 | P3 | Hardening backend y privacidad | P1 | PENDIENTE | Marcos | — | — |
 | P4 | Asistencias mutables con mismo QR | P1 | PENDIENTE | Marcos | — | — |
@@ -275,6 +275,7 @@ Al cerrar cada ciclo, agregar una fila:
 | Fecha | Ciclo | Estado final | Tests RED | Tests GREEN/regresión | Alto manual | Archivos | Commit/PR | Pendiente |
 |---|---|---|---|---|---|---|---|---|
 | 2026-07-14 | P0-01 | ARCHIVADO | N/A | Front: 543 OK / Back: No Docker | UI Demo Validada | Reporte | 9bc0dbd | P1 |
+| 2026-07-14 | P1-01 | ARCHIVADO | `test-database-schema-contract.sh` | Tests 006+007 OK | Script RED/GREEN | 006, 007 | — | P2 |
 
 ## 4.4 Regla para la IA
 
