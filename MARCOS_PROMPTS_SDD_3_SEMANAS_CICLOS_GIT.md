@@ -1,5 +1,7 @@
 # Marcos — guía operativa SDD para backend, datos y deploy
 
+> **Estado global**: Todos los bloques planificados (M1 al M4) han sido completados con éxito y documentados. El backend, bases de datos y configuración de deploy del MVP están al 100%.
+
 Esta guía es el punto de entrada para que Marcos trabaje ciclos chicos del módulo `/certificados/` con Spec-Driven Development. Marcos ya conoce el proyecto: este documento prioriza ruta rápida, puntos de parada para QA manual y handoff revisable.
 
 > Regla base: un ciclo por vez. Cerrar siempre con `sdd-archive` antes de proponer commit.
