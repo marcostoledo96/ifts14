@@ -26,6 +26,10 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/002_token_cifrado_en
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/003_cursos_alumnos_asistencias.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/004_certificados_alumno_curso.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/005_prevenir_certificados_duplicados.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/006_reconciliar_esquema_m4_02.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/007_schema_migrations.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_revision_contenido.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
 
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-consulta-http-' . bin2hex(random_bytes(4));
@@ -129,20 +133,61 @@ try {
         throw new RuntimeException('emisión consulta sin id.');
     }
 
+    $course2 = postJson($port, '/admin/cursos', $adminKey, ['codigo' => 'CUR-CNS-02', 'nombre' => 'Curso Consulta 2']);
+    assertStatus($course2, 201, 'crear curso consulta 2');
+    $curso2Id = (int) (assertJson($course2, 'crear curso consulta 2')['data']['id'] ?? 0);
+
+    $fecha2 = postJson($port, '/admin/cursos/' . $curso2Id . '/fechas', $adminKey, [
+        'fecha' => '2026-06-01',
+        'descripcion' => 'Clase consulta 2',
+        'orden' => 1,
+        'estado' => 'realizada',
+    ]);
+    assertStatus($fecha2, 201, 'crear fecha consulta 2');
+    $fecha2Id = (int) (assertJson($fecha2, 'crear fecha consulta 2')['data']['id'] ?? 0);
+
+    assertStatus(postJson($port, '/admin/asistencias', $adminKey, [
+        'alumnoId' => $alumnoId,
+        'cursoId' => $curso2Id,
+        'cursoFechaId' => $fecha2Id,
+    ]), 201, 'crear asistencia consulta 2');
+
+    $emissionExpired = postJson($port, '/admin/certificados', $adminKey, [
+        'alumnoId' => $alumnoId,
+        'cursoId' => $curso2Id,
+        'issuedAt' => '2026-07-02',
+    ]);
+    assertStatus($emissionExpired, 201, 'emitir segundo certificado');
+    $expiredCertificateId = (int) (assertJson($emissionExpired, 'emitir segundo certificado')['data']['id'] ?? 0);
+    $pdo->prepare("UPDATE cert_certificados SET vence_en = '2020-01-01' WHERE id = ?")->execute([$expiredCertificateId]);
+
     $list = request($port, 'GET', '/admin/certificados', ['X-Admin-Key: ' . $adminKey]);
     assertStatus($list, 200, 'listado certificados');
     $listBody = assertJson($list, 'listado certificados');
     $items = $listBody['data']['items'] ?? null;
-    if (!is_array($items) || count($items) < 1) {
-        throw new RuntimeException('listado certificados vacío.');
+    if (!is_array($items) || count($items) < 2) {
+        throw new RuntimeException('listado certificados no tiene al menos 2.');
     }
     assertNoSensitiveAdminCertificateData($list['body']);
 
     $filtered = request($port, 'GET', '/admin/certificados?estado=vigente&cursoId=' . $cursoId . '&alumnoId=' . $alumnoId, ['X-Admin-Key: ' . $adminKey]);
-    assertStatus($filtered, 200, 'listado filtrado');
-    $filteredItems = assertJson($filtered, 'listado filtrado')['data']['items'] ?? [];
+    assertStatus($filtered, 200, 'listado filtrado vigente');
+    $filteredItems = assertJson($filtered, 'listado filtrado vigente')['data']['items'] ?? [];
     if (!is_array($filteredItems) || count($filteredItems) !== 1 || (int) ($filteredItems[0]['id'] ?? 0) !== $certificateId) {
-        throw new RuntimeException('listado filtrado no devolvió el certificado esperado.');
+        throw new RuntimeException('listado filtrado vigente no devolvió el certificado esperado o incluyó el vencido.');
+    }
+
+    $expiredAsVigente = request($port, 'GET', '/admin/certificados?estado=vigente&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, ['X-Admin-Key: ' . $adminKey]);
+    $items = assertJson($expiredAsVigente, 'vencido excluido del filtro vigente')['data']['items'] ?? [];
+    if ($items !== []) {
+        throw new RuntimeException('El filtro vigente incluyó un certificado vencido.');
+    }
+
+    $filteredVencido = request($port, 'GET', '/admin/certificados?estado=vencido&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, ['X-Admin-Key: ' . $adminKey]);
+    assertStatus($filteredVencido, 200, 'listado filtrado vencido');
+    $filteredVencidoItems = assertJson($filteredVencido, 'listado filtrado vencido')['data']['items'] ?? [];
+    if (!is_array($filteredVencidoItems) || count($filteredVencidoItems) !== 1 || (int) ($filteredVencidoItems[0]['id'] ?? 0) !== $expiredCertificateId) {
+        throw new RuntimeException('listado filtrado vencido no devolvió el certificado esperado o incluyó el vigente.');
     }
 
     assertError(request($port, 'GET', '/admin/certificados?estado=invalido', ['X-Admin-Key: ' . $adminKey]), 400, 'VALIDATION_ERROR', 'filtro estado inválido');

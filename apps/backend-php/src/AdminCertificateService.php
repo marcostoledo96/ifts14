@@ -60,7 +60,7 @@ final class AdminCertificateService
             $tokenHash = hash('sha256', $token . $this->tokenPepper, true);
             $tokenPrefix = substr($token, 0, 12);
             $tokenCipher = $this->encryptToken($token);
-            $code = 'CERT-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(4)));
+            $code = 'CERT-' . date('Y', strtotime($data['issuedAt'])) . '-' . strtoupper(bin2hex(random_bytes(4)));
 
             $this->pdo->beginTransaction();
             $this->assertNoActiveCertificateForPair($data['alumnoId'], $data['cursoId']);
@@ -113,6 +113,14 @@ final class AdminCertificateService
                 // ponytail: DTO en array, no value object nuevo.
                 'institutionalConfig' => $institutionalConfig,
             ], $token);
+
+            $statement = $this->pdo->prepare(
+                "UPDATE cert_certificados
+                 SET pdf_estado = 'vigente',
+                     pdf_generado_revision = contenido_revision
+                 WHERE id = ?"
+            );
+            $statement->execute([$id]);
 
             $this->pdo->commit();
         } catch (AdminCertificateException $exception) {
@@ -262,13 +270,37 @@ final class AdminCertificateService
     public function entregaManual(int|string $id): array
     {
         $data = $this->loadManualDeliveryData($this->validatedCertificateId($id));
-        $this->ensurePdfExists($data['certificateCode']);
+        
+        $internalPdfStatus = $data['pdfStatus'];
+        $pdfStatus = match ($internalPdfStatus) {
+            'desactualizado' => 'outdated',
+            'vigente' => 'valid',
+            default => 'missing',
+        };
+        $pdfAvailable = false;
+
+        if ($internalPdfStatus === 'desactualizado') {
+            $pdfAvailable = false;
+        } else {
+            try {
+                $this->ensurePdfExists($data['certificateCode']);
+                $pdfAvailable = true;
+            } catch (AdminCertificateException $e) {
+                if ($e->errorCode === 'PDF_NOT_FOUND') {
+                    $pdfAvailable = false;
+                } else {
+                    throw $e;
+                }
+            }
+        }
 
         return [
             'certificadoId' => $data['certificateId'],
             'publicValidationUrl' => $data['publicValidationUrl'],
             'pdfDownloadUrl' => $this->buildPdfDownloadUrl($data['certificateId']),
             'tokenPrefix' => $data['tokenPrefix'],
+            'pdfAvailable' => $pdfAvailable,
+            'pdfStatus' => $pdfStatus,
         ];
     }
 
@@ -301,7 +333,7 @@ final class AdminCertificateService
         $statement = $this->pdo->prepare(<<<'SQL'
             SELECT c.id, c.estado, c.revocado_en AS cert_revocado_en, c.vence_en,
                    (c.vence_en IS NULL OR c.vence_en >= CURRENT_DATE) AS vence_en_vigente,
-                   c.codigo_certificado,
+                   c.codigo_certificado, c.pdf_estado,
                    t.token_prefijo, t.token_cifrado
             FROM cert_certificados c
             LEFT JOIN cert_tokens_verificacion t
@@ -341,11 +373,14 @@ final class AdminCertificateService
             throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
         }
 
+        $pdfStatus = is_string($row['pdf_estado'] ?? null) ? $row['pdf_estado'] : 'no_generado';
+
         return [
             'certificateId' => $certificateId,
             'certificateCode' => $certificateCode,
             'publicValidationUrl' => $this->buildPublicValidationUrl($token),
             'tokenPrefix' => $tokenPrefix,
+            'pdfStatus' => $pdfStatus,
         ];
     }
 
@@ -565,7 +600,7 @@ final class AdminCertificateService
             WHERE a.alumno_id = ?
               AND cf.curso_id = ?
               AND a.eliminado_en IS NULL
-              AND cf.estado IN ('programada', 'realizada')
+              AND cf.estado = 'realizada'
             ORDER BY cf.orden, cf.fecha
             SQL);
         $statement->execute([$studentId, $courseId]);
@@ -659,6 +694,10 @@ final class AdminCertificateService
 
         $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
 
+        if ($issuedAt > $today) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
         if ($expiresAt !== null && ($expiresAt < $issuedAt || $expiresAt < $today)) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
@@ -710,8 +749,22 @@ final class AdminCertificateService
         $params = [];
 
         if (isset($filters['estado']) && is_string($filters['estado']) && $filters['estado'] !== '') {
-            $where[] = 'c.estado = ?';
-            $params[] = $this->enumCertificadoEstado($filters['estado']);
+            $reqEstado = $this->enumCertificadoEstado($filters['estado']);
+            $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+
+            if ($reqEstado === 'vigente') {
+                $where[] = '(c.estado = ? AND (c.vence_en IS NULL OR c.vence_en >= ?))';
+                $params[] = 'vigente';
+                $params[] = $today;
+            } elseif ($reqEstado === 'vencido') {
+                $where[] = '(c.estado = ? OR (c.estado = ? AND c.vence_en < ?))';
+                $params[] = 'vencido';
+                $params[] = 'vigente';
+                $params[] = $today;
+            } else {
+                $where[] = 'c.estado = ?';
+                $params[] = $reqEstado;
+            }
         }
         if (isset($filters['cursoId']) && $filters['cursoId'] !== null) {
             $where[] = 'c.curso_id = ?';
@@ -788,10 +841,18 @@ final class AdminCertificateService
     /** @param array<string, mixed> $row @return array<string, mixed> */
     private function certificateListDto(array $row): array
     {
+        $status = (string) $row['estado'];
+        if ($status === 'vigente' && is_string($row['vence_en'])) {
+            $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+            if ($row['vence_en'] < $today) {
+                $status = 'vencido';
+            }
+        }
+
         return [
             'id' => (int) $row['id'],
             'certificateCode' => (string) $row['codigo_certificado'],
-            'status' => (string) $row['estado'],
+            'status' => $status,
             'student' => [
                 'displayName' => (string) $row['alumno_nombre_mostrar'],
                 'documentMasked' => (string) $row['documento_enmascarado'],

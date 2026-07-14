@@ -43,6 +43,24 @@ try {
     // Esperado: no se emiten certificados ya vencidos.
 }
 
+$tomorrow = (new DateTimeImmutable('tomorrow', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+
+try {
+    $validate->invoke($service, [
+        'alumnoId' => 1,
+        'cursoId' => 2,
+        'issuedAt' => $tomorrow,
+        'expiresAt' => null,
+    ]);
+    throw new RuntimeException('La emisión futura fue aceptada.');
+} catch (ReflectionException $exception) {
+    throw $exception;
+} catch (AdminCertificateException $e) {
+    if ($e->status !== 400) {
+        throw new RuntimeException('Esperado 400 para emisión futura.');
+    }
+}
+
 // Armado de pdfDownloadUrl: el helper solo arma la URL con publicBaseUrl; no
 // toca el token completo ni persiste nada.
 $buildPdfUrl = new ReflectionMethod(AdminCertificateService::class, 'buildPdfDownloadUrl');
