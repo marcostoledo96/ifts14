@@ -17,7 +17,7 @@ El sistema MUST definir tablas nuevas con prefijo `cert_` para certificados, tok
 - **Then** MUST crear `cert_certificados`, `cert_tokens_verificacion` y `cert_eventos_auditoria`.
 - **And** MUST ser compatible con MariaDB 10.6.
 
-### Requirement: Token QR sin texto plano y recuperable para reenvío
+### Requirement: Token QR sin texto plano y recuperable para entrega manual
 
 El sistema DEBE almacenar tokens públicos como `token_hash` no reversible con pepper externo a Git y DEBE mantener un artefacto recuperable cifrado (`token_cifrado` o equivalente reversible) con clave externa a Git para reconstruir el link permanente en emisión, entrega manual y regeneración de PDF. El token completo NO DEBE guardarse en texto plano ni aparecer en logs, auditoría, errores o respuestas administrativas. `token_prefijo` DEBE usarse solo como ayuda operativa segura.
 
@@ -51,7 +51,7 @@ El modelo MUST sostener el DTO público del contrato de API con DNI completo vis
 - DADO las migraciones `001` y `003`
 - CUANDO se inspecciona el modelo
 - ENTONCES `001` MUST conservar el certificado base con `documento_hash` + `documento_enmascarado`.
-- Y `003` MUST aportar alumnos/cursos/asistencias/snapshot sin cambiar el comportamiento PHP existente.
+- Y `003` y `006` MUST aportar alumnos/cursos/asistencias/snapshot homologado sin cambiar el comportamiento PHP existente.
 
 #### Scenario: Tablas de cursos y asistencias migrables
 
@@ -107,8 +107,8 @@ El endpoint de entrega manual DEBE reutilizar `cert_tokens_verificacion` para le
 
 ### Requirement: Auditoría sin datos sensibles
 
-El sistema MUST registrar eventos de emisión, verificación, revocación, reenvío o error sin DNI completo, token completo, SQL ni credenciales. El evento de reenvío MUST guardar `certificado_id`, tipo, resultado y `request_id`, y MAY guardar el `destinatario_enmascarado` sin exponer el email completo.
-(Previously: la auditoría cubría emisión, verificación, revocación y error; no mencionaba explícitamente el reenvío ni el destinatario enmascarado.)
+El sistema MUST registrar eventos de emisión, verificación, revocación o error sin DNI completo, token completo, SQL ni credenciales.
+(Previously: la auditoría cubría emisión, verificación, revocación, reenvío y error; se retira explícitamente el reenvío/email por decisión técnica y la entrega manual no se audita por ser solo lectura).
 
 #### Scenario: Verificación fallida
 
@@ -117,12 +117,11 @@ El sistema MUST registrar eventos de emisión, verificación, revocación, reenv
 - **Then** MUST guardar tipo, resultado, `request_id` y huellas truncadas no reversibles si aplican.
 - **And** MUST NOT guardar valores sensibles completos.
 
-#### Scenario: Reenvío auditable
+#### Scenario: (Removido) Reenvío/Entrega auditable
 
-- **Given** un reenvío ejecutado
-- **When** se registra auditoría
-- **Then** MUST guardar tipo `reenvio`, resultado, `request_id` y `destinatario_enmascarado`.
-- **And** MUST NOT guardar token completo, DNI completo ni credenciales SMTP.
+- **Given** el MVP actual
+- **When** se ejecuta entrega manual
+- **Then** MUST NOT registrar auditoría operativa (es un endpoint GET puro sin escritura).
 
 ### Requirement: Fixtures ficticios solamente
 

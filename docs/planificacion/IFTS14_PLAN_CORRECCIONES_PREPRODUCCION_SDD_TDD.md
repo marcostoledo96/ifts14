@@ -680,6 +680,8 @@ fix(database): reconciliar esquema de cursos y certificados
 
 # P2 — Sincronización de documentación y OpenSpec
 
+[x] **P2-01:** Sincronización de documentación y OpenSpec (Fuente de verdad).
+
 ## Objetivo
 
 Eliminar contradicciones que hacen que una IA económica implemente reglas viejas.
