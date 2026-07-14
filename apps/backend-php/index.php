@@ -738,12 +738,20 @@ function normalizePath(string $path): string
 /** @param array<string, mixed> $config */
 function streamPdf(array $config, int $certificateId, string $requestId): void
 {
-    $statement = Database::pdo($config)->prepare('SELECT codigo_certificado FROM cert_certificados WHERE id = ? LIMIT 1');
+    $statement = Database::pdo($config)->prepare('SELECT codigo_certificado, pdf_estado FROM cert_certificados WHERE id = ? LIMIT 1');
     $statement->execute([$certificateId]);
-    $code = $statement->fetchColumn();
+    $row = $statement->fetch(PDO::FETCH_ASSOC);
 
-    if (!is_string($code) || $code === '') {
+    if ($row === false || !is_string($row['codigo_certificado']) || $row['codigo_certificado'] === '') {
         Response::error(404, 'PDF_NOT_FOUND', 'PDF no encontrado.', $requestId);
+        return;
+    }
+
+    $code = $row['codigo_certificado'];
+    $pdfEstado = $row['pdf_estado'] ?? 'no_generado';
+
+    if ($pdfEstado === 'desactualizado') {
+        Response::error(409, 'PDF_OUTDATED', 'El PDF está desactualizado y debe ser regenerado.', $requestId);
         return;
     }
 

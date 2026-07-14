@@ -60,7 +60,7 @@ final class AdminCertificateService
             $tokenHash = hash('sha256', $token . $this->tokenPepper, true);
             $tokenPrefix = substr($token, 0, 12);
             $tokenCipher = $this->encryptToken($token);
-            $code = 'CERT-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(4)));
+            $code = 'CERT-' . date('Y', strtotime($data['issuedAt'])) . '-' . strtoupper(bin2hex(random_bytes(4)));
 
             $this->pdo->beginTransaction();
             $this->assertNoActiveCertificateForPair($data['alumnoId'], $data['cursoId']);
@@ -565,7 +565,7 @@ final class AdminCertificateService
             WHERE a.alumno_id = ?
               AND cf.curso_id = ?
               AND a.eliminado_en IS NULL
-              AND cf.estado IN ('programada', 'realizada')
+              AND cf.estado = 'realizada'
             ORDER BY cf.orden, cf.fecha
             SQL);
         $statement->execute([$studentId, $courseId]);
@@ -658,6 +658,10 @@ final class AdminCertificateService
         $expiresAt = isset($payload['expiresAt']) && $payload['expiresAt'] !== '' ? $this->dateString($payload['expiresAt']) : null;
 
         $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+
+        if ($issuedAt > $today) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
 
         if ($expiresAt !== null && ($expiresAt < $issuedAt || $expiresAt < $today)) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
@@ -788,10 +792,18 @@ final class AdminCertificateService
     /** @param array<string, mixed> $row @return array<string, mixed> */
     private function certificateListDto(array $row): array
     {
+        $status = (string) $row['estado'];
+        if ($status === 'vigente' && is_string($row['vence_en'])) {
+            $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+            if ($row['vence_en'] < $today) {
+                $status = 'vencido';
+            }
+        }
+
         return [
             'id' => (int) $row['id'],
             'certificateCode' => (string) $row['codigo_certificado'],
-            'status' => (string) $row['estado'],
+            'status' => $status,
             'student' => [
                 'displayName' => (string) $row['alumno_nombre_mostrar'],
                 'documentMasked' => (string) $row['documento_enmascarado'],

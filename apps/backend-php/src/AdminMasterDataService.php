@@ -180,12 +180,20 @@ final class AdminMasterDataService
         $order = array_key_exists('orden', $body) ? $this->courseDateOrder($body['orden']) : (int) $current['orden'];
         $state = array_key_exists('estado', $body) ? $this->enum($body['estado'], self::DATE_STATES) : $current['estado'];
 
+        $this->pdo->beginTransaction();
         try {
             $statement = $this->pdo->prepare('UPDATE cert_curso_fechas SET fecha = ?, descripcion = ?, orden = ?, estado = ? WHERE id = ? AND curso_id = ?');
             $statement->execute([$date, $description, $order, $state, $dateId, $courseId]);
+
+            $this->syncAllCourseCertificatesSnapshots($courseId, 'Se modificó una fecha del curso.');
+            $this->pdo->commit();
         } catch (PDOException $exception) {
+            $this->pdo->rollBack();
             $this->throwConflictForUnique($exception, 'uq_cert_curso_fechas_curso_fecha', 'uq_cert_curso_fechas_curso_orden');
             throw $exception;
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
         }
 
         return $this->getCourseDate($courseId, $dateId);
@@ -201,15 +209,24 @@ final class AdminMasterDataService
         $this->ensureActiveCourse($courseId);
         $this->ensureEligibleCourseDate($courseId, $dateId);
 
+        $this->pdo->beginTransaction();
         try {
             $statement = $this->pdo->prepare('INSERT INTO cert_asistencias (alumno_id, curso_fecha_id, eliminado_en) VALUES (?, ?, NULL)');
             $statement->execute([$studentId, $dateId]);
+            $attendanceId = (int) $this->pdo->lastInsertId();
+
+            $this->syncCertificateSnapshot($studentId, $courseId, 'Se agregó/restauró una asistencia.');
+            $this->pdo->commit();
         } catch (PDOException $exception) {
+            $this->pdo->rollBack();
             $this->throwConflictForUnique($exception, 'uq_cert_asistencias_activa');
             throw $exception;
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
         }
 
-        return $this->attendanceDtoById((int) $this->pdo->lastInsertId());
+        return $this->attendanceDtoById($attendanceId);
     }
 
     /** @return array<string, mixed> */
@@ -236,11 +253,23 @@ final class AdminMasterDataService
     public function voidAttendance(int $id): array
     {
         $id = $this->positiveId($id);
-        $statement = $this->pdo->prepare('UPDATE cert_asistencias SET eliminado_en = CURRENT_TIMESTAMP WHERE id = ? AND eliminado_en IS NULL');
-        $statement->execute([$id]);
+        $attendance = $this->attendanceDtoById($id);
 
-        if ($statement->rowCount() !== 1) {
-            throw new AdminCertificateException(404, 'ATTENDANCE_NOT_FOUND', 'Asistencia no encontrada.');
+        $this->pdo->beginTransaction();
+        try {
+            $statement = $this->pdo->prepare('UPDATE cert_asistencias SET eliminado_en = CURRENT_TIMESTAMP WHERE id = ? AND eliminado_en IS NULL');
+            $statement->execute([$id]);
+
+            if ($statement->rowCount() !== 1) {
+                $this->pdo->rollBack();
+                throw new AdminCertificateException(404, 'ATTENDANCE_NOT_FOUND', 'Asistencia no encontrada.');
+            }
+
+            $this->syncCertificateSnapshot($attendance['alumnoId'], $attendance['cursoId'], 'Se anuló una asistencia viva.');
+            $this->pdo->commit();
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
         }
 
         return ['id' => $id, 'voided' => true];
@@ -258,6 +287,53 @@ final class AdminMasterDataService
         }
 
         return $this->courseDateDto($row);
+    }
+
+    private function syncAllCourseCertificatesSnapshots(int $courseId, string $auditReason): void
+    {
+        $statement = $this->pdo->prepare('SELECT alumno_id FROM cert_certificados WHERE curso_id = ? AND estado = \'vigente\' AND revocado_en IS NULL');
+        $statement->execute([$courseId]);
+        $studentIds = $statement->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($studentIds as $studentId) {
+            $this->syncCertificateSnapshot((int) $studentId, $courseId, $auditReason);
+        }
+    }
+
+    private function syncCertificateSnapshot(int $studentId, int $courseId, string $auditReason): void
+    {
+        $statement = $this->pdo->prepare('SELECT id FROM cert_certificados WHERE alumno_id = ? AND curso_id = ? AND estado = \'vigente\' AND revocado_en IS NULL LIMIT 1');
+        $statement->execute([$studentId, $courseId]);
+        $certificateId = $statement->fetchColumn();
+
+        if ($certificateId === false) {
+            return;
+        }
+        $certificateId = (int) $certificateId;
+
+        $this->pdo->prepare('DELETE FROM cert_certificado_fechas WHERE certificado_id = ?')->execute([$certificateId]);
+
+        $this->pdo->prepare(<<<'SQL'
+            INSERT INTO cert_certificado_fechas (certificado_id, curso_fecha_id, fecha, descripcion, orden)
+            SELECT ?, cf.id, cf.fecha, cf.descripcion, cf.orden
+            FROM cert_asistencias a
+            JOIN cert_curso_fechas cf ON cf.id = a.curso_fecha_id
+            WHERE a.alumno_id = ? AND cf.curso_id = ? AND a.eliminado_en IS NULL AND cf.estado = 'realizada'
+            ORDER BY cf.orden, cf.fecha
+            SQL)->execute([$certificateId, $studentId, $courseId]);
+
+        $this->pdo->prepare(<<<'SQL'
+            UPDATE cert_certificados
+            SET contenido_revision = contenido_revision + 1,
+                contenido_actualizado_en = CURRENT_TIMESTAMP,
+                pdf_estado = 'desactualizado'
+            WHERE id = ?
+            SQL)->execute([$certificateId]);
+
+        $this->pdo->prepare(<<<'SQL'
+            INSERT INTO cert_eventos_auditoria (certificado_id, tipo_evento, request_id, resultado, detalle_seguro)
+            VALUES (?, 'sync_snapshot', ?, 'ok', ?)
+            SQL)->execute([$certificateId, $this->requestId, substr('Exitoso. ' . $auditReason, 0, 255)]);
     }
 
     /** @return array<string, mixed> */

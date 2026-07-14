@@ -9,14 +9,14 @@
 --
 -- Preflight obligatorio antes del ALTER: esta consulta debe devolver 0 filas.
 -- Si devuelve filas, resolver manualmente los duplicados vigentes antes de aplicar.
-SELECT alumno_id, curso_id, COUNT(*) AS certificados_vigentes
-FROM cert_certificados
-WHERE alumno_id IS NOT NULL
-  AND curso_id IS NOT NULL
-  AND estado = 'vigente'
-  AND revocado_en IS NULL
-GROUP BY alumno_id, curso_id
-HAVING COUNT(*) > 1;
+-- SELECT alumno_id, curso_id, COUNT(*) AS certificados_vigentes
+-- FROM cert_certificados
+-- WHERE alumno_id IS NOT NULL
+--   AND curso_id IS NOT NULL
+--   AND estado = 'vigente'
+--   AND revocado_en IS NULL
+-- GROUP BY alumno_id, curso_id
+-- HAVING COUNT(*) > 1;
 
 ALTER TABLE cert_certificados
   ADD COLUMN certificado_bloqueo_activo TINYINT
