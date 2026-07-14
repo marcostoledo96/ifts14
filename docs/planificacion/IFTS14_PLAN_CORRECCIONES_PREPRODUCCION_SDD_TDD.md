@@ -7,7 +7,7 @@ commit_auditado: "9bc0dbdd92f90da3cb96dd271cfd93c8bca53987"
 rama_fuente: "main"
 estado_general: "EN_CURSO"
 fase_actual: "P2"
-ultimo_ciclo_cerrado: "P1-01"
+ultimo_ciclo_cerrado: "P1-03"
 responsable_coordinacion: "Marcos"
 metodologia: "Gentle AI + OpenSpec + SDD + TDD"
 ---
@@ -276,6 +276,7 @@ Al cerrar cada ciclo, agregar una fila:
 |---|---|---|---|---|---|---|---|---|
 | 2026-07-14 | P0-01 | ARCHIVADO | N/A | Front: 543 OK / Back: No Docker | UI Demo Validada | Reporte | 9bc0dbd | P1 |
 | 2026-07-14 | P1-01 | ARCHIVADO | `test-database-schema-contract.sh` | Tests 006+007 OK | Script RED/GREEN | 006, 007 | — | P2 |
+| 2026-07-14 | P1-03 | ARCHIVADO | Upgrade Test RED | Upgrade Test GREEN | Script convergencia | 006 | — | P2 |
 
 ## 4.4 Regla para la IA
 
