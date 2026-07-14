@@ -7,4 +7,7 @@ ADD COLUMN contenido_revision INT UNSIGNED NOT NULL DEFAULT 1,
 ADD COLUMN contenido_actualizado_en DATETIME NULL,
 ADD COLUMN pdf_estado ENUM('vigente','desactualizado','no_generado') NOT NULL DEFAULT 'no_generado',
 ADD COLUMN pdf_generado_revision INT UNSIGNED NULL;
+
+UPDATE cert_certificados SET pdf_estado = 'vigente', pdf_generado_revision = 1;
+
 INSERT IGNORE INTO cert_schema_migrations (version) VALUES ('008');

@@ -114,6 +114,14 @@ final class AdminCertificateService
                 'institutionalConfig' => $institutionalConfig,
             ], $token);
 
+            $statement = $this->pdo->prepare(
+                "UPDATE cert_certificados
+                 SET pdf_estado = 'vigente',
+                     pdf_generado_revision = contenido_revision
+                 WHERE id = ?"
+            );
+            $statement->execute([$id]);
+
             $this->pdo->commit();
         } catch (AdminCertificateException $exception) {
             if ($this->pdo->inTransaction()) {
@@ -736,8 +744,22 @@ final class AdminCertificateService
         $params = [];
 
         if (isset($filters['estado']) && is_string($filters['estado']) && $filters['estado'] !== '') {
-            $where[] = 'c.estado = ?';
-            $params[] = $this->enumCertificadoEstado($filters['estado']);
+            $reqEstado = $this->enumCertificadoEstado($filters['estado']);
+            $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+
+            if ($reqEstado === 'vigente') {
+                $where[] = '(c.estado = ? AND (c.vence_en IS NULL OR c.vence_en >= ?))';
+                $params[] = 'vigente';
+                $params[] = $today;
+            } elseif ($reqEstado === 'vencido') {
+                $where[] = '(c.estado = ? OR (c.estado = ? AND c.vence_en < ?))';
+                $params[] = 'vencido';
+                $params[] = 'vigente';
+                $params[] = $today;
+            } else {
+                $where[] = 'c.estado = ?';
+                $params[] = $reqEstado;
+            }
         }
         if (isset($filters['cursoId']) && $filters['cursoId'] !== null) {
             $where[] = 'c.curso_id = ?';

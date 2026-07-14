@@ -185,7 +185,11 @@ final class AdminMasterDataService
             $statement = $this->pdo->prepare('UPDATE cert_curso_fechas SET fecha = ?, descripcion = ?, orden = ?, estado = ? WHERE id = ? AND curso_id = ?');
             $statement->execute([$date, $description, $order, $state, $dateId, $courseId]);
 
-            $this->syncAllCourseCertificatesSnapshots($courseId, $dateId, 'Se modificó una fecha del curso.');
+            if ($state === 'realizada' || $current['estado'] === 'realizada') {
+                if ($date !== $current['fecha'] || $description !== $current['descripcion'] || $order !== (int) $current['orden'] || $state !== $current['estado']) {
+                    $this->syncAllCourseCertificatesSnapshots($courseId, $dateId, 'Se modificó una fecha del curso.');
+                }
+            }
             $this->pdo->commit();
         } catch (PDOException $exception) {
             $this->pdo->rollBack();
@@ -267,7 +271,9 @@ final class AdminMasterDataService
                 throw new AdminCertificateException(404, 'ATTENDANCE_NOT_FOUND', 'Asistencia no encontrada.');
             }
 
-            $this->syncCertificateSnapshot($attendance['alumnoId'], $attendance['cursoId'], 'Se anuló una asistencia viva.');
+            if ($attendance['fechaEstado'] === 'realizada') {
+                $this->syncCertificateSnapshot($attendance['alumnoId'], $attendance['cursoId'], 'Se anuló una asistencia viva.');
+            }
             $this->pdo->commit();
         } catch (Throwable $e) {
             $this->pdo->rollBack();
