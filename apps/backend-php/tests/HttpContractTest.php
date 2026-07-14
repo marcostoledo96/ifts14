@@ -69,6 +69,11 @@ try {
     assertError($publicBadJson, 400, 'VALIDATION_ERROR', 'consulta JSON malformado');
     assertNoRateLimitFile($ratePath, 'consulta JSON malformado');
 
+    $largeJsonBody = '{"token":"' . str_repeat('a', 66000) . '"}';
+    $publicLargeJson = request($port, 'POST', '/certificados/consulta', ['Content-Type: application/json'], $largeJsonBody);
+    assertError($publicLargeJson, 413, 'PAYLOAD_TOO_LARGE', 'consulta JSON demasiado grande');
+    assertNoRateLimitFile($ratePath, 'consulta JSON demasiado grande');
+
     $adminNoContentType = request($port, 'POST', '/admin/certificados');
     assertError($adminNoContentType, 415, 'UNSUPPORTED_MEDIA_TYPE', 'admin sin Content-Type');
 
@@ -274,6 +279,18 @@ function assertSecurityHeaders(array $response, string $label): void
 
     if (($response['headers']['x-frame-options'] ?? '') !== 'SAMEORIGIN') {
         throw new RuntimeException("{$label}: falta X-Frame-Options.");
+    }
+
+    if (($response['headers']['referrer-policy'] ?? '') !== 'no-referrer') {
+        throw new RuntimeException("{$label}: falta Referrer-Policy.");
+    }
+
+    if (($response['headers']['x-robots-tag'] ?? '') !== 'noindex, nofollow, noarchive') {
+        throw new RuntimeException("{$label}: falta X-Robots-Tag.");
+    }
+
+    if (!isset($response['headers']['content-security-policy'])) {
+        throw new RuntimeException("{$label}: falta Content-Security-Policy.");
     }
 }
 
