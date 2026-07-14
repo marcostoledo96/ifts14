@@ -60,6 +60,15 @@ ALTER TABLE cert_certificado_fechas
 ALTER TABLE cert_certificado_fechas
   DROP INDEX IF EXISTS uq_cert_certificado_fechas_cert_fecha,
   DROP INDEX IF EXISTS uq_cert_certificado_fechas_cert_orden;
+
+-- Preflight: limpiar duplicados históricos antes de forzar UNIQUE
+DELETE t1 FROM cert_certificado_fechas t1
+INNER JOIN cert_certificado_fechas t2 
+WHERE 
+    t1.id > t2.id AND 
+    t1.certificado_id = t2.certificado_id AND 
+    t1.curso_fecha_id = t2.curso_fecha_id;
+
 ALTER TABLE cert_certificado_fechas
   ADD UNIQUE INDEX uq_cert_certificado_fechas_cert_fecha (certificado_id, curso_fecha_id),
   ADD UNIQUE INDEX uq_cert_certificado_fechas_cert_orden (certificado_id, orden);
