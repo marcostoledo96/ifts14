@@ -112,4 +112,19 @@ if ($descCount !== 1) {
     throw new RuntimeException('La descripción actualizada no se sincronizó al snapshot');
 }
 
+// 6. Test no-op PATCH
+$masterData->updateCourseDate($course['id'], $date1['id'], ['descripcion' => 'Clase 1 Modificada']);
+$statement = $pdo->query("SELECT contenido_revision FROM cert_certificados WHERE id = $certificateId");
+if ((int)$statement->fetchColumn() !== 3) {
+    throw new RuntimeException('Un PATCH sin cambios incrementó la revisión');
+}
+
+// 7. Test non-realized transitions
+$date3 = $masterData->createCourseDate($course['id'], ['fecha' => '2026-06-20', 'descripcion' => 'Clase 3', 'estado' => 'programada']);
+$masterData->updateCourseDate($course['id'], $date3['id'], ['estado' => 'cancelada']);
+$statement = $pdo->query("SELECT contenido_revision FROM cert_certificados WHERE id = $certificateId");
+if ((int)$statement->fetchColumn() !== 3) {
+    throw new RuntimeException('Una transición entre estados no realizados incrementó la revisión');
+}
+
 echo "OK CourseDateRevisionTest\n";

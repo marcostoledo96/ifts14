@@ -612,7 +612,7 @@ function readJsonBody(string $requestId): ?array
 {
     $contentLength = $_SERVER['CONTENT_LENGTH'] ?? null;
     if ($contentLength !== null) {
-        if (!is_numeric($contentLength) || (int) $contentLength > 65536) {
+        if (!is_string($contentLength) || preg_match('/\A\d+\z/', $contentLength) !== 1 || (int) $contentLength > 65536) {
             Response::error(413, 'PAYLOAD_TOO_LARGE', 'consulta JSON demasiado grande.', $requestId);
             return null;
         }

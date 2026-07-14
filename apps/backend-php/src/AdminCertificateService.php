@@ -271,10 +271,15 @@ final class AdminCertificateService
     {
         $data = $this->loadManualDeliveryData($this->validatedCertificateId($id));
         
-        $pdfStatus = $data['pdfStatus'];
+        $internalPdfStatus = $data['pdfStatus'];
+        $pdfStatus = match ($internalPdfStatus) {
+            'desactualizado' => 'outdated',
+            'vigente' => 'valid',
+            default => 'missing',
+        };
         $pdfAvailable = false;
-        
-        if ($pdfStatus === 'desactualizado') {
+
+        if ($internalPdfStatus === 'desactualizado') {
             $pdfAvailable = false;
         } else {
             try {

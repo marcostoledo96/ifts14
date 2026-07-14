@@ -211,6 +211,12 @@ try {
     if (($manualBody['data']['publicValidationUrl'] ?? '') !== $validationUrl || ($manualBody['data']['tokenPrefix'] ?? '') !== $tokenPrefix) {
         throw new RuntimeException('entrega manual HTTP: rotó o cambió el token.');
     }
+    if (($manualBody['data']['pdfAvailable'] ?? null) !== false) {
+        throw new RuntimeException('entrega manual HTTP: pdfAvailable no es false para certificado desactualizado.');
+    }
+    if (($manualBody['data']['pdfStatus'] ?? '') !== 'outdated') {
+        throw new RuntimeException('entrega manual HTTP: pdfStatus no es outdated.');
+    }
 
     $resend = request($port, 'POST', '/admin/certificados/' . $certificateId . '/reenviar', [
         'Content-Type: application/json',
