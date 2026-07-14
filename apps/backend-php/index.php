@@ -610,6 +610,14 @@ function requireJsonContentType(string $requestId): bool
 /** @return array<string, mixed>|null */
 function readJsonBody(string $requestId): ?array
 {
+    $contentLength = $_SERVER['CONTENT_LENGTH'] ?? null;
+    if ($contentLength !== null) {
+        if (!is_numeric($contentLength) || (int) $contentLength > 65536) {
+            Response::error(413, 'PAYLOAD_TOO_LARGE', 'consulta JSON demasiado grande.', $requestId);
+            return null;
+        }
+    }
+
     $bodyContent = file_get_contents('php://input', false, null, 0, 65537) ?: '';
     
     if (strlen($bodyContent) > 65536) {
@@ -745,7 +753,7 @@ function normalizePath(string $path): string
 /** @param array<string, mixed> $config */
 function streamPdf(array $config, int $certificateId, string $requestId): void
 {
-    $statement = Database::pdo($config)->prepare('SELECT codigo_certificado, pdf_estado FROM cert_certificados WHERE id = ? LIMIT 1');
+    $statement = Database::pdo($config)->prepare('SELECT codigo_certificado, pdf_estado, pdf_generado_revision, contenido_revision FROM cert_certificados WHERE id = ? LIMIT 1');
     $statement->execute([$certificateId]);
     $row = $statement->fetch(PDO::FETCH_ASSOC);
 
@@ -756,8 +764,10 @@ function streamPdf(array $config, int $certificateId, string $requestId): void
 
     $code = $row['codigo_certificado'];
     $pdfEstado = $row['pdf_estado'] ?? 'no_generado';
+    $pdfGeneradoRevision = $row['pdf_generado_revision'] !== null ? (int) $row['pdf_generado_revision'] : null;
+    $contenidoRevision = (int) ($row['contenido_revision'] ?? 1);
 
-    if ($pdfEstado === 'desactualizado') {
+    if ($pdfEstado !== 'vigente' || $pdfGeneradoRevision !== $contenidoRevision) {
         Response::error(409, 'PDF_OUTDATED', 'El PDF está desactualizado y debe ser regenerado.', $requestId);
         return;
     }
