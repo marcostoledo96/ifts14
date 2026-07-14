@@ -262,13 +262,32 @@ final class AdminCertificateService
     public function entregaManual(int|string $id): array
     {
         $data = $this->loadManualDeliveryData($this->validatedCertificateId($id));
-        $this->ensurePdfExists($data['certificateCode']);
+        
+        $pdfStatus = $data['pdfStatus'];
+        $pdfAvailable = false;
+        
+        if ($pdfStatus === 'desactualizado') {
+            $pdfAvailable = false;
+        } else {
+            try {
+                $this->ensurePdfExists($data['certificateCode']);
+                $pdfAvailable = true;
+            } catch (AdminCertificateException $e) {
+                if ($e->errorCode === 'PDF_NOT_FOUND') {
+                    $pdfAvailable = false;
+                } else {
+                    throw $e;
+                }
+            }
+        }
 
         return [
             'certificadoId' => $data['certificateId'],
             'publicValidationUrl' => $data['publicValidationUrl'],
             'pdfDownloadUrl' => $this->buildPdfDownloadUrl($data['certificateId']),
             'tokenPrefix' => $data['tokenPrefix'],
+            'pdfAvailable' => $pdfAvailable,
+            'pdfStatus' => $pdfStatus,
         ];
     }
 
@@ -301,7 +320,7 @@ final class AdminCertificateService
         $statement = $this->pdo->prepare(<<<'SQL'
             SELECT c.id, c.estado, c.revocado_en AS cert_revocado_en, c.vence_en,
                    (c.vence_en IS NULL OR c.vence_en >= CURRENT_DATE) AS vence_en_vigente,
-                   c.codigo_certificado,
+                   c.codigo_certificado, c.pdf_estado,
                    t.token_prefijo, t.token_cifrado
             FROM cert_certificados c
             LEFT JOIN cert_tokens_verificacion t
@@ -341,11 +360,14 @@ final class AdminCertificateService
             throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
         }
 
+        $pdfStatus = is_string($row['pdf_estado'] ?? null) ? $row['pdf_estado'] : 'no_generado';
+
         return [
             'certificateId' => $certificateId,
             'certificateCode' => $certificateCode,
             'publicValidationUrl' => $this->buildPublicValidationUrl($token),
             'tokenPrefix' => $tokenPrefix,
+            'pdfStatus' => $pdfStatus,
         ];
     }
 

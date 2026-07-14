@@ -83,11 +83,13 @@ check('PDO/MariaDB', function() use ($config) {
 check('Migraciones', function() use ($config) {
     $pdo = Database::pdo($config);
     try {
-        $pdo->query('SELECT 1 FROM cert_schema_migrations LIMIT 1');
-        return true;
+        $stmt = $pdo->query("SELECT 1 FROM cert_schema_migrations WHERE version = '009' LIMIT 1");
+        if ($stmt->fetchColumn() !== false) {
+            return true;
+        }
+        return false;
     } catch (PDOException $e) {
-        $pdo->query('SELECT 1 FROM cert_cursos LIMIT 1');
-        return true;
+        return false;
     }
 });
 
