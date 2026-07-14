@@ -185,7 +185,7 @@ final class AdminMasterDataService
             $statement = $this->pdo->prepare('UPDATE cert_curso_fechas SET fecha = ?, descripcion = ?, orden = ?, estado = ? WHERE id = ? AND curso_id = ?');
             $statement->execute([$date, $description, $order, $state, $dateId, $courseId]);
 
-            $this->syncAllCourseCertificatesSnapshots($courseId, 'Se modificó una fecha del curso.');
+            $this->syncAllCourseCertificatesSnapshots($courseId, $dateId, 'Se modificó una fecha del curso.');
             $this->pdo->commit();
         } catch (PDOException $exception) {
             $this->pdo->rollBack();
@@ -215,7 +215,10 @@ final class AdminMasterDataService
             $statement->execute([$studentId, $dateId]);
             $attendanceId = (int) $this->pdo->lastInsertId();
 
-            $this->syncCertificateSnapshot($studentId, $courseId, 'Se agregó/restauró una asistencia.');
+            $courseDate = $this->getCourseDate($courseId, $dateId);
+            if ($courseDate['estado'] === 'realizada') {
+                $this->syncCertificateSnapshot($studentId, $courseId, 'Se agregó/restauró una asistencia.');
+            }
             $this->pdo->commit();
         } catch (PDOException $exception) {
             $this->pdo->rollBack();
@@ -261,7 +264,6 @@ final class AdminMasterDataService
             $statement->execute([$id]);
 
             if ($statement->rowCount() !== 1) {
-                $this->pdo->rollBack();
                 throw new AdminCertificateException(404, 'ATTENDANCE_NOT_FOUND', 'Asistencia no encontrada.');
             }
 
@@ -289,10 +291,10 @@ final class AdminMasterDataService
         return $this->courseDateDto($row);
     }
 
-    private function syncAllCourseCertificatesSnapshots(int $courseId, string $auditReason): void
+    private function syncAllCourseCertificatesSnapshots(int $courseId, int $dateId, string $auditReason): void
     {
-        $statement = $this->pdo->prepare('SELECT alumno_id FROM cert_certificados WHERE curso_id = ? AND estado = \'vigente\' AND revocado_en IS NULL');
-        $statement->execute([$courseId]);
+        $statement = $this->pdo->prepare('SELECT c.alumno_id FROM cert_certificados c JOIN cert_asistencias a ON a.alumno_id = c.alumno_id WHERE c.curso_id = ? AND a.curso_fecha_id = ? AND c.estado = \'vigente\' AND c.revocado_en IS NULL AND a.eliminado_en IS NULL');
+        $statement->execute([$courseId, $dateId]);
         $studentIds = $statement->fetchAll(PDO::FETCH_COLUMN);
 
         foreach ($studentIds as $studentId) {

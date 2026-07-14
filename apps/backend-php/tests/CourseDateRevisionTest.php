@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../src/AdminMasterDataService.php';
 require_once __DIR__ . '/../src/AdminCertificateService.php';
+require_once __DIR__ . '/../src/CertificatePdfService.php';
 require_once __DIR__ . '/../src/CertificateValidator.php';
 
 $dsn = getenv('IFTS14_TEST_DB_DSN');
@@ -39,7 +40,16 @@ foreach (glob(__DIR__ . '/../../../database/migrations/*.sql') ?: [] as $path) {
 $pepper = 'test_pepper';
 $dniKey = '12345678901234561234567890123456';
 $masterData = new AdminMasterDataService($pdo, 'req_test', $dniKey);
-$certificateService = new AdminCertificateService($pdo, 'req_test', $pepper, $dniKey, 'http://localhost');
+$certificateService = new AdminCertificateService(
+    pdo: $pdo,
+    tokenPepper: $pepper,
+    requestId: 'req_test',
+    pdfService: new CertificatePdfService(sys_get_temp_dir()),
+    publicBaseUrl: 'http://localhost',
+    tokenCipherKey: $dniKey,
+    pdfStoragePath: sys_get_temp_dir(),
+    dniCipherKey: $dniKey
+);
 
 $student = $masterData->createStudent(['dni' => '11222333', 'apellidoNombre' => 'Alumno Test']);
 $course = $masterData->createCourse(['codigo' => 'TEST01', 'nombre' => 'Curso Test']);
@@ -56,7 +66,7 @@ $cert = $certificateService->emitir([
     'expiresAt' => null
 ]);
 
-$certificateId = $cert['certificateId'];
+$certificateId = (int) $cert['id'];
 $initialToken = basename((string) parse_url($cert['publicValidationUrl'], PHP_URL_PATH));
 
 // Cambiar la descripción de la fecha 1
@@ -73,11 +83,13 @@ if ((int)$row['contenido_revision'] !== 3) { // 1 inicial + 1 modif + 1 modif
 }
 
 $validator = new CertificateValidator([
-    'db_host' => '', 'db_name' => '', 'db_user' => '', 'db_pass' => '', 'token_pepper' => $pepper
+    'db_host' => '', 'db_name' => '', 'db_user' => '', 'db_pass' => '', 'token_pepper' => $pepper, 'token_encryption_key' => $dniKey
 ], $dniKey);
-$validatorPdoRef = new ReflectionProperty(CertificateValidator::class, 'pdo');
-$validatorPdoRef->setAccessible(true);
-$validatorPdoRef->setValue($validator, $pdo);
+
+$dbPdoRef = new ReflectionProperty(Database::class, 'pdo');
+$dbPdoRef->setAccessible(true);
+$dbPdoRef->setValue(null, $pdo);
+
 
 $verified = $validator->verify($initialToken, 'req_verify');
 if (($verified['status'] ?? 0) !== 200) {

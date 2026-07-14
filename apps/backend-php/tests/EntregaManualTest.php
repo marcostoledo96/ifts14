@@ -531,14 +531,13 @@ if (!@mkdir($emptyPdfDir, 0700, true) && !is_dir($emptyPdfDir)) {
     throw new RuntimeException('No se pudo crear storage vacío.');
 }
 $service9f = buildManualService($pdo9f, $validKey, $emptyPdfDir);
-$got404Pdf = false;
-try {
-    $service9f->entregaManual(95);
-} catch (AdminCertificateException $e) {
-    $got404Pdf = $e->status === 404 && $e->errorCode === 'PDF_NOT_FOUND';
+$dto9f = $service9f->entregaManual(95);
+
+if (($dto9f['pdfAvailable'] ?? true) !== false) {
+    throw new RuntimeException('PDF inexistente no devolvió pdfAvailable = false.');
 }
-if (!$got404Pdf) {
-    throw new RuntimeException('PDF inexistente no respondió 404 PDF_NOT_FOUND.');
+if (($dto9f['pdfStatus'] ?? '') !== 'no_generado') {
+    throw new RuntimeException('PDF inexistente no devolvió pdfStatus = no_generado.');
 }
 @rmdir($emptyPdfDir);
 

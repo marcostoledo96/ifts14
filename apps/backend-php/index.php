@@ -610,7 +610,14 @@ function requireJsonContentType(string $requestId): bool
 /** @return array<string, mixed>|null */
 function readJsonBody(string $requestId): ?array
 {
-    $body = json_decode(file_get_contents('php://input') ?: '', true);
+    $bodyContent = file_get_contents('php://input', false, null, 0, 65537) ?: '';
+    
+    if (strlen($bodyContent) > 65536) {
+        Response::error(413, 'PAYLOAD_TOO_LARGE', 'consulta JSON demasiado grande.', $requestId);
+        return null;
+    }
+
+    $body = json_decode($bodyContent, true);
 
     if (json_last_error() === JSON_ERROR_NONE && is_array($body)) {
         return $body;
