@@ -260,8 +260,8 @@ Actualizar esta tabla al inicio y al cierre de cada ciclo.
 | P0 | Baseline y congelamiento seguro | P0 | ARCHIVADO | Marcos | Tests OK, Error Docker | 9bc0dbd |
 | P1 | Reconciliar migraciones/esquema | P0 | ARCHIVADO | Marcos | Test DB Schema OK | — |
 | P2 | Sincronizar docs y OpenSpec | P0 | ARCHIVADO | Marcos | Docs actualizadas | — |
-| P3 | Hardening backend y privacidad | P1 | PENDIENTE | Marcos | — | — |
-| P4 | Asistencias mutables con mismo QR | P1 | PENDIENTE | Marcos | — | — |
+| P3 | Hardening backend y privacidad | P1 | ARCHIVADO | Marcos | Tests PHP OK | — |
+| P4 | Asistencias mutables con mismo QR | P1 | ARCHIVADO | Marcos | E2E PDF_OUTDATED OK | — |
 | P5 | Auth simple e integración admin real | P1 | PENDIENTE | Marcos + Matías | — | — |
 | P6 | Correcciones frontend y UI pública | P1 | PENDIENTE | Matías + Marcos | — | — |
 | P7 | CI y gates automáticos | P1 | PENDIENTE | Marcos | — | — |
@@ -279,6 +279,15 @@ Al cerrar cada ciclo, agregar una fila:
 | 2026-07-14 | P1-03 | ARCHIVADO | Upgrade Test RED | Upgrade Test GREEN | Script convergencia | 006 | — | P2 |
 | 2026-07-14 | P2-01 | ARCHIVADO | N/A | N/A | — | specs | 6003884 | P2 |
 | 2026-07-14 | P2-02 | ARCHIVADO | N/A | N/A | — | README | — | P3 |
+| 2026-07-14 | P3-01 | ARCHIVADO | `HttpContractTest.php` | Tests PHP OK | N/A | `index.php`, `HttpContractTest.php` | — | P3-02 |
+| 2026-07-14 | P3-02 | ARCHIVADO | `test-privacy-headers.sh` | Tests Headers OK | N/A | `index.html`, `Response.php`, `.htaccess` | — | P3-03 |
+| 2026-07-14 | P3-03 | ARCHIVADO | `ReadinessTest.php` | Tests PHP OK | N/A | `readiness.php`, `ReadinessTest.php` | — | P3-04 |
+| 2026-07-14 | P3-04 | ARCHIVADO | `AdminCertificateServiceTest.php`, `SnapshotEmissionTest.php` | Tests PHP OK | N/A | `AdminCertificateService.php`, Tests | — | P4-01 |
+| 2026-07-14 | P4-01 | ARCHIVADO | `CertificateRevisionMigrationTest.php` | Test PHP OK | N/A | `008`, Tests | — | P4-02 |
+| 2026-07-14 | P4-02 | ARCHIVADO | `AttendanceRevisionTest.php` | Test PHP OK | N/A | `AdminMasterDataService.php`, Tests | — | P4-03 |
+| 2026-07-14 | P4-03 | ARCHIVADO | `AttendanceRevisionTest.php` | Test PHP OK | N/A | `AdminMasterDataService.php`, Tests | — | P4-04 |
+| 2026-07-14 | P4-04 | ARCHIVADO | `CourseDateRevisionTest.php` | Test PHP OK | Confirmación de cancelación | `AdminMasterDataService.php`, Tests | — | P4-05 |
+| 2026-07-14 | P4-05 | ARCHIVADO | `HttpEmissionE2eTest.php` | E2E + Regresión OK | ALTO-C OK | `index.php`, Tests | — | P5-01 |
 
 ## 4.4 Regla para la IA
 
@@ -938,6 +947,8 @@ No regenerar automáticamente en este ciclo.
 
 ### P4-01 — Spec y migración de revisión
 
+**ARCHIVADO**
+
 **RED**
 
 Test DB que falle porque las columnas no existen.
@@ -947,6 +958,8 @@ Test DB que falle porque las columnas no existen.
 Crear migración y tests.
 
 ### P4-02 — Anular asistencia
+
+**ARCHIVADO**
 
 **RED detallado**
 
@@ -972,6 +985,8 @@ Escenario:
 
 ### P4-03 — Agregar/restaurar asistencia
 
+**ARCHIVADO**
+
 Repetir el patrón:
 
 - agregar una presencia a certificado vigente;
@@ -979,6 +994,8 @@ Repetir el patrón:
 - URL/QR no cambian.
 
 ### P4-04 — Editar/cancelar fecha
+
+**ARCHIVADO**
 
 Definir:
 
@@ -992,6 +1009,8 @@ Definir:
 Antes de implementar cancelación, el agente pide aprobación del comportamiento exacto.
 
 ### P4-05 — PDF desactualizado
+
+**ARCHIVADO**
 
 Tests:
 
