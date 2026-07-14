@@ -360,6 +360,7 @@ Errores:
 | 401 | `UNAUTHORIZED` | Falta `X-Admin-Key` o valor inválido. |
 | 404 | `PDF_NOT_FOUND` | Certificado inexistente o PDF no persistido. |
 | 405 | `METHOD_NOT_ALLOWED` | Método distinto de `GET` (con `Allow: GET`). |
+| 409 | `PDF_OUTDATED` | El certificado cambió y su PDF debe ser regenerado. |
 
 La descarga no expone el token completo ni rutas internas en la respuesta.
 
@@ -398,7 +399,9 @@ Respuesta `200`:
     "certificadoId": 10,
     "publicValidationUrl": "https://demo.example.edu.ar/certificados/validar/{token}",
     "pdfDownloadUrl": "https://demo.example.edu.ar/certificados/api/admin/certificados/10/pdf",
-    "tokenPrefix": "prefijo_demo"
+    "tokenPrefix": "prefijo_demo",
+    "pdfAvailable": true,
+    "pdfStatus": "valid"
   },
   "meta": {
     "requestId": "req_admin_no_sensible"

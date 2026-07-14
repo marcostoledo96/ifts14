@@ -134,4 +134,19 @@ if (($verifiedAfterRestore['status'] ?? 0) !== 200 || ($verifiedAfterRestore['da
     throw new RuntimeException('La validación pública no refleja la asistencia agregada');
 }
 
+// 7. Fechas programadas (no deberían afectar revisiones)
+$date3 = $masterData->createCourseDate($course['id'], ['fecha' => '2026-06-15', 'estado' => 'programada']);
+$attendance3 = $masterData->recordAttendance(['alumnoId' => $student['id'], 'cursoId' => $course['id'], 'cursoFechaId' => $date3['id']]);
+
+$statement = $pdo->query("SELECT contenido_revision FROM cert_certificados WHERE id = $certificateId");
+if ((int)$statement->fetchColumn() !== 3) {
+    throw new RuntimeException('Agregar una asistencia programada no debe incrementar revisión');
+}
+
+$masterData->voidAttendance($attendance3['id']);
+$statement = $pdo->query("SELECT contenido_revision FROM cert_certificados WHERE id = $certificateId");
+if ((int)$statement->fetchColumn() !== 3) {
+    throw new RuntimeException('Anular una asistencia programada no debe incrementar revisión');
+}
+
 echo "OK AttendanceRevisionTest\n";

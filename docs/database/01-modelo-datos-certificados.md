@@ -32,9 +32,13 @@ Registra el certificado emitido y los datos mínimos necesarios para la respuest
 | `vence_en` | `DATE NULL` | Vencimiento opcional |
 | `revocado_en` | `DATETIME NULL` | Revocación opcional |
 | `motivo_revocacion` | `VARCHAR(180) NULL` | Motivo interno breve, sin datos sensibles |
+| `contenido_revision` | `INT UNSIGNED` | Versión del contenido lógico del certificado (arranca en 1) |
+| `contenido_actualizado_en` | `DATETIME NULL` | Cuándo cambió por última vez la revisión de contenido |
+| `pdf_estado` | `ENUM` | `vigente`, `desactualizado`, `no_generado`. Estado de frescura del PDF |
+| `pdf_generado_revision` | `INT UNSIGNED NULL` | Qué revisión de contenido contiene el PDF actual |
 | `created_at`, `updated_at` | `DATETIME` | Timestamps técnicos |
 
-Desde la migración `004_certificados_alumno_curso.sql`, los certificados nuevos pueden guardar también `alumno_id` y `curso_id` nullable con FKs a `cert_alumnos` y `cert_cursos`. Los certificados legacy conservan esos campos en `NULL` y se validan con los datos denormalizados disponibles.
+Desde la migración `004_certificados_alumno_curso.sql`, los certificados nuevos pueden guardar también `alumno_id` y `curso_id` nullable con FKs a `cert_alumnos` y `cert_cursos`. Los certificados legacy conservan esos campos en `NULL` y se validan con los datos denormalizados disponibles. La migración `008_certificados_revision_contenido.sql` incorpora control de versiones para rastrear cuándo el contenido lógico de un certificado (fechas, asistencias, datos) cambia después de emitido, de modo que se invalida la frescura del PDF y requiere regeneración antes de descargarlo o entregarlo. La migración `010_backfill_pdf_revision.sql` asegura que los certificados legacy se traten como PDFs vigentes (revisión 1).
 
 La migración `005_prevenir_certificados_duplicados.sql` agrega `certificado_bloqueo_activo` como columna generada `STORED` y el índice único `uq_cert_certificados_alumno_curso_activo (alumno_id, curso_id, certificado_bloqueo_activo)`. La columna vale `1` solo para certificados con `estado='vigente'` y `revocado_en IS NULL`; en los demás casos vale `NULL`. Los legacy sin `alumno_id` o `curso_id` no bloquean porque esos campos nullable son parte del índice único. Por eso revocar o materializar `estado='vencido'` libera el slot, pero una fecha `vence_en` pasada no lo libera mientras el estado siga `vigente`.
 
@@ -112,7 +116,7 @@ Registra eventos operativos sin exponer datos personales completos.
 |---|---|---|
 | `id` | `BIGINT UNSIGNED` | PK autoincremental |
 | `certificado_id` | `BIGINT UNSIGNED NULL` | FK opcional |
-| `tipo_evento` | `ENUM` | `emision`, `verificacion`, `revocacion`, `reenvio`, `error`. El valor `reenvio` quedó obsoleto: la entrega manual no inserta auditoría operativa (endpoint de solo lectura). |
+| `tipo_evento` | `ENUM` | `emision`, `verificacion`, `revocacion`, `reenvio`, `error`, `sync_snapshot`. El valor `reenvio` quedó obsoleto: la entrega manual no inserta auditoría operativa (endpoint de solo lectura). El valor `sync_snapshot` registra cuándo un PDF queda desactualizado por cambios en el curso/alumno (migración `009`). |
 | `resultado` | `ENUM` | `ok`, `rechazado`, `error` |
 | `request_id` | `VARCHAR(80) NULL` | Correlación segura |
 | `token_hash_prefijo` | `VARCHAR(16) NULL` | Huella truncada no reversible |

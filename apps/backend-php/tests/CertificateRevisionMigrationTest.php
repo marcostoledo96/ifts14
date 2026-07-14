@@ -23,9 +23,39 @@ foreach (['cert_configuracion_institucional', 'cert_certificado_fechas', 'cert_a
 }
 $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
 
-foreach (glob(__DIR__ . '/../../../database/migrations/*.sql') ?: [] as $path) {
-    // RED: if we haven't applied 008, the test should fail when querying the new columns.
-    // GREEN: once 008 is created, the glob will include it, and the columns will exist.
+$migrations = glob(__DIR__ . '/../../../database/migrations/*.sql') ?: [];
+sort($migrations);
+
+// Apply up to 007
+foreach ($migrations as $path) {
+    if (basename($path) > '007_schema_migrations.sql') continue;
+
+    $sql = file_get_contents($path);
+    if (!is_string($sql)) continue;
+
+    $sql = implode("\n", array_filter(
+        explode("\n", $sql),
+        static fn (string $line): bool => !str_starts_with(trim($line), '--')
+    ));
+
+    foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
+        if (str_starts_with(strtoupper($statement), 'SELECT ') || str_starts_with(strtoupper($statement), 'DELIMITER ')) {
+            continue;
+        }
+        $pdo->exec($statement);
+    }
+}
+
+// Insert a legacy certificate before 008
+$pdo->exec("INSERT INTO cert_alumnos (id, dni_hash, dni_cifrado, dni_mostrar, apellido_nombre) VALUES (1, 0x1234, 0x1234, '1234', 'Juan')");
+$pdo->exec("INSERT INTO cert_cursos (id, codigo, nombre, estado) VALUES (1, 'C1', 'Curso 1', 'activo')");
+$pdo->exec("INSERT INTO cert_certificados (alumno_id, curso_id, codigo_certificado, alumno_nombre_mostrar, documento_enmascarado, curso_nombre, emitido_en, estado) 
+            VALUES (1, 1, 'LEGACY', 'Juan', '123', 'Curso', '2026-01-01', 'vigente')");
+
+// Apply 008 and onwards
+foreach ($migrations as $path) {
+    if (basename($path) <= '007_schema_migrations.sql') continue;
+
     $sql = file_get_contents($path);
     if (!is_string($sql)) continue;
 
@@ -61,6 +91,9 @@ if ($missing !== []) {
     throw new RuntimeException('Faltan columnas de revisión en cert_certificados: ' . implode(', ', $missing));
 }
 
-$pdo->query('SELECT contenido_revision, contenido_actualizado_en, pdf_estado, pdf_generado_revision FROM cert_certificados LIMIT 1');
+$legacy = $pdo->query("SELECT pdf_estado, pdf_generado_revision FROM cert_certificados WHERE codigo_certificado = 'LEGACY'")->fetch();
+if ($legacy['pdf_estado'] !== 'vigente' || (int)$legacy['pdf_generado_revision'] !== 1) {
+    throw new RuntimeException('La migración de backfill no actualizó correctamente el PDF legacy');
+}
 
 echo "OK CertificateRevisionMigrationTest\n";
