@@ -96,4 +96,16 @@ if ($legacy['pdf_estado'] !== 'vigente' || (int)$legacy['pdf_generado_revision']
     throw new RuntimeException('La migración de backfill no actualizó correctamente el PDF legacy');
 }
 
+$version010 = (int) $pdo->query(
+    "SELECT COUNT(*)
+     FROM cert_schema_migrations
+     WHERE version = '010'"
+)->fetchColumn();
+
+if ($version010 !== 1) {
+    throw new RuntimeException(
+        'La migración 010 no quedó registrada.'
+    );
+}
+
 echo "OK CertificateRevisionMigrationTest\n";
