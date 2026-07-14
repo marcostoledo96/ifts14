@@ -177,6 +177,12 @@ try {
         throw new RuntimeException('listado filtrado vigente no devolvió el certificado esperado o incluyó el vencido.');
     }
 
+    $expiredAsVigente = request($port, 'GET', '/admin/certificados?estado=vigente&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, ['X-Admin-Key: ' . $adminKey]);
+    $items = assertJson($expiredAsVigente, 'vencido excluido del filtro vigente')['data']['items'] ?? [];
+    if ($items !== []) {
+        throw new RuntimeException('El filtro vigente incluyó un certificado vencido.');
+    }
+
     $filteredVencido = request($port, 'GET', '/admin/certificados?estado=vencido&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, ['X-Admin-Key: ' . $adminKey]);
     assertStatus($filteredVencido, 200, 'listado filtrado vencido');
     $filteredVencidoItems = assertJson($filteredVencido, 'listado filtrado vencido')['data']['items'] ?? [];

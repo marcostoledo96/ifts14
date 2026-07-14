@@ -83,11 +83,17 @@ check('PDO/MariaDB', function() use ($config) {
 check('Migraciones', function() use ($config) {
     $pdo = Database::pdo($config);
     try {
-        $stmt = $pdo->query("SELECT 1 FROM cert_schema_migrations WHERE version = '009' LIMIT 1");
-        if ($stmt->fetchColumn() !== false) {
-            return true;
+        $stmt = $pdo->query(
+            "SELECT COUNT(DISTINCT version)
+             FROM cert_schema_migrations
+             WHERE version IN ('008', '009', '010')"
+        );
+        if (((int) $stmt->fetchColumn()) !== 3) {
+            return false;
         }
-        return false;
+
+        $pdo->query("SELECT contenido_revision, pdf_estado, pdf_generado_revision FROM cert_certificados LIMIT 1");
+        return true;
     } catch (PDOException $e) {
         return false;
     }

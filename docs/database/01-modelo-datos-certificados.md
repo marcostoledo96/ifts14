@@ -93,7 +93,7 @@ La migración `database/migrations/003_cursos_alumnos_asistencias.sql` agrega el
 #### Reglas de integridad relevantes
 
 - `cert_asistencias` usa `asistencia_activa TINYINT AS (CASE WHEN eliminado_en IS NULL THEN 1 ELSE NULL END) STORED` y `UNIQUE(alumno_id, curso_fecha_id, asistencia_activa)`; MariaDB permite múltiples `NULL`, por eso se conserva historial eliminado y se impide una sola asistencia activa duplicada.
-- `cert_certificado_fechas` no recalcula desde fechas vivas: si una fecha del curso cambia después de emitir, el certificado conserva la copia materializada.
+- `cert_certificado_fechas` es una copia materializada. Las modificaciones realizadas mediante los servicios administrativos reconstruyen el snapshot dentro de la misma transacción e invalidan el PDF. Los cambios directos en base de datos, fuera del servicio, no disparan sincronización automática.
 - `cert_configuracion_institucional` es single-row para evitar una tabla KV innecesaria en el MVP.
 
 ### M4-04 — Vínculo certificado-alumno-curso

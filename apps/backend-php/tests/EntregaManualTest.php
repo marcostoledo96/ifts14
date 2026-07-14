@@ -64,7 +64,7 @@ final class FakePdoForManual extends PDO
         return new FakeStmtForManual($query, $this);
     }
 
-    public function seedCert(int $id, string $estado, ?string $venceEn = '2027-12-31', ?string $revocadoEn = null, string $codigo = 'CERT-2026-DEMO'): void
+    public function seedCert(int $id, string $estado, ?string $venceEn = '2027-12-31', ?string $revocadoEn = null, string $codigo = 'CERT-2026-DEMO', string $pdfEstado = 'vigente'): void
     {
         $this->certs[] = [
             'id' => $id,
@@ -72,6 +72,7 @@ final class FakePdoForManual extends PDO
             'vence_en' => $venceEn,
             'revocado_en' => $revocadoEn,
             'codigo_certificado' => $codigo,
+            'pdf_estado' => $pdfEstado,
         ];
     }
 
@@ -137,6 +138,7 @@ final class FakePdoForManual extends PDO
                     'codigo_certificado' => $cert['codigo_certificado'],
                     'token_prefijo' => $tokenPrefix,
                     'token_cifrado' => $tokenCipher,
+                    'pdf_estado' => $cert['pdf_estado'],
                 ];
             }
         }
@@ -263,6 +265,12 @@ if (!str_ends_with($dto['publicValidationUrl'], $demoToken)) {
 }
 if (!isset($dto['pdfDownloadUrl']) || !str_contains($dto['pdfDownloadUrl'], '/api/admin/certificados/10/pdf')) {
     throw new RuntimeException('DTO pdfDownloadUrl inválido: ' . ($dto['pdfDownloadUrl'] ?? 'null'));
+}
+if (($dto['pdfAvailable'] ?? null) !== true) {
+    throw new RuntimeException('DTO pdfAvailable debe ser true.');
+}
+if (($dto['pdfStatus'] ?? '') !== 'valid') {
+    throw new RuntimeException('DTO pdfStatus debe ser valid.');
 }
 
 // Privacidad: el token completo NO aparece como campo separado, solo dentro de la URL.
@@ -518,12 +526,12 @@ if (!$got404StateRevoked) {
 }
 
 // =====================================================
-// Escenario 9f: 404 PDF_NOT_FOUND — token válido pero PDF inexistente
-//     Certificado vigente + token válido + storage sin el PDF debe fallar
-//     seguro con 404 PDF_NOT_FOUND (mismo código que descarga), no 200.
+// Escenario 9f: PDF inexistente
+//     Certificado vigente + token válido + storage sin el PDF debe devolver
+//     200 con pdfAvailable: false y pdfStatus: missing.
 // =====================================================
 $pdo9f = new FakePdoForManual();
-$pdo9f->seedCert(95, 'vigente', '2027-12-31', null, 'CERT-2026-MISSING-PDF');
+$pdo9f->seedCert(95, 'vigente', '2027-12-31', null, 'CERT-2026-MISSING-PDF', 'no_generado');
 $pdo9f->seedToken(95, 'VALID_TOKEN_', $tokenCipher);
 // Storage temporal vacío (sin el PDF del código).
 $emptyPdfDir = sys_get_temp_dir() . '/ifts14-manual-nopdf-' . bin2hex(random_bytes(4));
@@ -536,10 +544,27 @@ $dto9f = $service9f->entregaManual(95);
 if (($dto9f['pdfAvailable'] ?? true) !== false) {
     throw new RuntimeException('PDF inexistente no devolvió pdfAvailable = false.');
 }
-if (($dto9f['pdfStatus'] ?? '') !== 'no_generado') {
-    throw new RuntimeException('PDF inexistente no devolvió pdfStatus = no_generado.');
+if (($dto9f['pdfStatus'] ?? '') !== 'missing') {
+    throw new RuntimeException('PDF inexistente no devolvió pdfStatus = missing.');
 }
 @rmdir($emptyPdfDir);
+
+// =====================================================
+// Escenario 9g: PDF desactualizado
+// =====================================================
+$pdo9g = new FakePdoForManual();
+$pdo9g->seedCert(96, 'vigente', '2027-12-31', null, 'CERT-2026-OUTDATED-PDF', 'desactualizado');
+$pdo9g->seedToken(96, 'OUTDATED_TOKEN_', $tokenCipher);
+$pdfDir9g = seedPdfFile('CERT-2026-OUTDATED-PDF');
+$service9g = buildManualService($pdo9g, $validKey, $pdfDir9g);
+$dto9g = $service9g->entregaManual(96);
+
+if (($dto9g['pdfAvailable'] ?? true) !== false) {
+    throw new RuntimeException('PDF desactualizado no devolvió pdfAvailable = false.');
+}
+if (($dto9g['pdfStatus'] ?? '') !== 'outdated') {
+    throw new RuntimeException('PDF desactualizado no devolvió pdfStatus = outdated.');
+}
 
 echo "OK EntregaManualTest\n";
 
