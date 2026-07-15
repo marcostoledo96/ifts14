@@ -1,8 +1,10 @@
 # Spec — contrato de API para certificados QR
 
+> **Actualización P5-01 (2026-07-15):** Las menciones históricas a `X-Admin-Key` como autorización HTTP están superseded. La autorización vigente usa sesión PHP y CSRF; el header solo conserva compatibilidad CLI/smoke server-side según `admin-auth`. Las menciones antiguas se preservan como auditoría histórica y no son normativas.
+
 ## Purpose
 
-Definir el contrato de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper, más el slice administrativo de emisión, revocación, descarga PDF y entrega manual protegido por `X-Admin-Key`. La entrega manual reemplaza al reenvío por email: Bedelía copia el link público y descarga el PDF por canal externo, sin email, SMTP, PHPMailer ni transporte `stub`. El DTO público incluye DNI completo visible por decisión institucional y las fechas asistidas del curso como datos del certificado. El QR/token es permanente durante la vida del certificado; la entrega manual es de solo lectura y nunca rota el token salvo revocación explícita.
+Definir el contrato de la API de certificados QR bajo `/certificados/api/`, consolidando el contrato público de verificación implementado en PHP 8.4 con prepared statements y lookup seguro por hash con pepper, más el slice administrativo de emisión, revocación, descarga PDF y entrega manual autorizado según `admin-auth`. La entrega manual reemplaza al reenvío por email: Bedelía copia el link público y descarga el PDF por canal externo, sin email, SMTP, PHPMailer ni transporte `stub`. El DTO público incluye DNI completo visible por decisión institucional y las fechas asistidas del curso como datos del certificado. El QR/token es permanente durante la vida del certificado; la entrega manual es de solo lectura y nunca rota el token salvo revocación explícita.
 
 ## Requirements
 
@@ -136,12 +138,12 @@ El endpoint público de verificación MUST aplicar rate limiting mínimo y respo
 
 ### Requirement: Contrato administrativo mínimo de certificados
 
-La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión desde `alumnoId` + `cursoId` con generación PDF secundario (opcional en futuras iteraciones) o QR, snapshot de asistencias activas y respuesta `201` con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; `POST /admin/certificados/{id}/revocar`; `GET /admin/certificados/{id}/pdf`; y `GET /admin/certificados/{id}/entrega-manual`. Si ya existe un certificado con `estado='vigente'` y `revocado_en IS NULL` para el mismo alumno y curso, `POST /admin/certificados` DEBE responder `409 CERTIFICATE_ALREADY_EXISTS`; revocación o `estado='vencido'` liberan el slot. Entrega manual DEBE ser de solo lectura y usar el 404 unificado si está revocado: NO DEBE rotar token, enviar email, activar SMTP/PHPMailer ni modificar estado (cualquier envío por email queda diferido a procesos externos opcionales). Las respuestas DEBEN usar envelopes existentes, DTOs seguros y errores sin DNI completo, token completo, secretos ni SQL. `X-Admin-Key` es server-to-server. `POST /admin/certificados/{id}/reenviar` queda excluido del MVP.
+La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` autorizados según `admin-auth`: `POST /admin/certificados` para emisión desde `alumnoId` + `cursoId` con generación PDF secundario (opcional en futuras iteraciones) o QR, snapshot de asistencias activas y respuesta `201` con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; `POST /admin/certificados/{id}/revocar`; `GET /admin/certificados/{id}/pdf`; y `GET /admin/certificados/{id}/entrega-manual`. Los POST autenticados por cookie DEBEN cumplir CSRF antes de side effects. Si ya existe un certificado con `estado='vigente'` y `revocado_en IS NULL` para el mismo alumno y curso, `POST /admin/certificados` DEBE responder `409 CERTIFICATE_ALREADY_EXISTS`; revocación o `estado='vencido'` liberan el slot. Entrega manual DEBE ser de solo lectura y usar el 404 unificado si está revocado: NO DEBE rotar token, enviar email, activar SMTP/PHPMailer ni modificar estado (cualquier envío por email queda diferido a procesos externos opcionales). Las respuestas DEBEN usar envelopes existentes, DTOs seguros y errores sin DNI completo, token completo, secretos ni SQL. `X-Admin-Key` solo conserva el alcance CLI/smoke de `admin-auth`. `POST /admin/certificados/{id}/reenviar` queda excluido del MVP.
 (Previously: el contrato administrativo documentaba emisión, revocación, PDF y entrega manual, pero no la obligatoriedad del 404 unificado para revocados en entrega manual ni la delegación de emails).
 
 #### Scenario: Admin sin autorización
 
-- DADO un request administrativo sin `X-Admin-Key` válido
+- DADO un request administrativo sin autorización válida según `admin-auth`
 - CUANDO la API procesa la solicitud
 - ENTONCES DEBE responder `401 UNAUTHORIZED` con sobre seguro.
 
@@ -167,7 +169,7 @@ La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` p
 
 #### Scenario: Descarga PDF sin autorización documentada
 
-- DADO un request sin `X-Admin-Key` válido al endpoint de descarga PDF
+- DADO un request sin autorización válida al endpoint de descarga PDF
 - CUANDO se invoca el endpoint
 - ENTONCES el contrato DEBE indicar `401 UNAUTHORIZED` con sobre seguro.
 
@@ -199,7 +201,7 @@ La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` p
 
 ### Requirement: Contrato administrativo de datos maestros
 
-La API DEBE exponer endpoints administrativos bajo `/certificados/api/admin/` para crear, listar, consultar y actualizar estado de cursos y alumnos; crear, listar y actualizar fechas de curso; registrar, listar y anular asistencias. Todos DEBEN requerir `X-Admin-Key`; `POST` y `PATCH` DEBEN exigir JSON. Las respuestas administrativas DEBEN usar DTOs seguros: alumnos con `dniMostrar` enmascarado, nunca DNI completo, `dni_hash`, `dni_cifrado`, token completo, SQL, secretos ni rutas internas. La creación de alumno DEBE fallar cerrado con `500 CONFIGURATION_ERROR` antes de persistir si `dni_cipher_key` falta o es inválida. No DEBE agregar frontend, SMTP, email automático ni migraciones nuevas.
+La API DEBE exponer endpoints administrativos bajo `/certificados/api/admin/` para crear, listar, consultar y actualizar estado de cursos y alumnos; crear, listar y actualizar fechas de curso; registrar, listar y anular asistencias. Todos DEBEN requerir autorización según `admin-auth`; `POST` y `PATCH` DEBEN exigir JSON y, si están autenticados por cookie, CSRF válido. Las respuestas administrativas DEBEN usar DTOs seguros: alumnos con `dniMostrar` enmascarado, nunca DNI completo, `dni_hash`, `dni_cifrado`, token completo, SQL, secretos ni rutas internas. La creación de alumno DEBE fallar cerrado con `500 CONFIGURATION_ERROR` antes de persistir si `dni_cipher_key` falta o es inválida. No DEBE agregar frontend, SMTP, email automático ni migraciones nuevas.
 
 #### Scenario: CRUD mínimo de cursos
 
@@ -370,7 +372,7 @@ La API DEBE permitir el consumo desde `ng serve` en local para el smoke de integ
 
 ### Requirement: Preservación del contrato administrativo durante PDF institucional
 
-El cambio de contenido del PDF DEBE conservar sin cambios los contratos administrativos existentes de emisión, descarga de PDF y entrega manual. La API NO DEBE agregar SMTP, email, reenvío automático, endpoint de edición de configuración institucional, rotación de token ni cambios en el DTO operativo por este ciclo.
+El cambio de contenido del PDF DEBE conservar sin cambios los contratos administrativos existentes de emisión, descarga de PDF y entrega manual, excepto la autorización que queda regida por `admin-auth`. La API NO DEBE agregar SMTP, email, reenvío automático, endpoint de edición de configuración institucional, rotación de token ni cambios en el DTO operativo por este ciclo.
 
 #### Scenario: Emisión conserva DTO administrativo
 
@@ -382,7 +384,7 @@ El cambio de contenido del PDF DEBE conservar sin cambios los contratos administ
 #### Scenario: Descarga PDF conserva contrato
 
 - DADO un certificado emitido con PDF institucional persistido
-- CUANDO se invoca `GET /certificados/api/admin/certificados/{id}/pdf` con `X-Admin-Key` válido
+- CUANDO se invoca `GET /certificados/api/admin/certificados/{id}/pdf` con autorización válida
 - ENTONCES la API DEBE responder `200` con `Content-Type: application/pdf` y `Content-Disposition: attachment`.
 - Y NO DEBE exponer rutas internas, token completo ni configuración sensible.
 
@@ -402,7 +404,7 @@ El cambio de contenido del PDF DEBE conservar sin cambios los contratos administ
 
 ### Requirement: Descarga administrativa de QR PNG
 
-La API DEBE exponer `GET /certificados/api/admin/certificados/{id}/qr.png` con `X-Admin-Key`. El `200` DEBE entregar PNG del mismo `publicValidationUrl`, con `image/png`, `attachment`, filename seguro, `Content-Length`, `nosniff`, `SAMEORIGIN`, `no-store/private`. NO DEBE rotar token, mutar base, enviar email ni exponer token completo.
+La API DEBE exponer `GET /certificados/api/admin/certificados/{id}/qr.png` con autorización según `admin-auth`. El `200` DEBE entregar PNG del mismo `publicValidationUrl`, con `image/png`, `attachment`, filename seguro, `Content-Length`, `nosniff`, `SAMEORIGIN`, `no-store/private`. NO DEBE rotar token, mutar base, enviar email ni exponer token completo.
 
 #### Scenario: Descarga QR autorizada
 
@@ -449,4 +451,4 @@ El contrato backend DEBE registrar el checklist M3-06 final como cierre document
 - **Dado** un certificado con QR/token permanente
 - **Cuando** se valida, consulta administrativamente o entrega manualmente
 - **Entonces** el contrato NO DEBE rotar token/QR ni activar reenvío por email.
-- **Y** la autenticación administrativa temporal DEBE seguir limitada a `X-Admin-Key`.
+- **Y** la autenticación administrativa DEBE seguir las reglas de sesión y compatibilidad CLI de `admin-auth`.

@@ -8,7 +8,7 @@ Definir la API administrativa mínima para cargar cursos, alumnos, fechas y asis
 
 ### Requirement: Administración de cursos
 
-La API DEBE permitir crear, listar, consultar detalle y actualizar estado de cursos mediante endpoints admin protegidos por `X-Admin-Key`.
+La API DEBE permitir crear, listar, consultar detalle y actualizar estado de cursos mediante endpoints admin autorizados según `admin-auth`.
 
 #### Scenario: Curso creado y consultable
 
@@ -96,11 +96,11 @@ La API DEBE registrar presencia por existencia de fila activa, listar asistencia
 
 ### Requirement: Seguridad, envelopes y auditoría
 
-Todos los endpoints DEBEN exigir `X-Admin-Key`; los POST/PATCH JSON DEBEN exigir `Content-Type: application/json`; errores DEBEN usar el sobre estable y auditoría/logs NO DEBEN incluir DNI completo, token completo, SQL ni secretos.
+Todos los endpoints DEBEN exigir autorización según `admin-auth`; los POST/PATCH autenticados por cookie DEBEN exigir CSRF y `Content-Type: application/json`; errores DEBEN usar el sobre estable y auditoría/logs NO DEBEN incluir DNI completo, token completo, SQL ni secretos.
 
 #### Scenario: Request admin no autorizado
 
-- DADO un request sin `X-Admin-Key` válido
+- DADO un request sin autorización válida según `admin-auth`
 - CUANDO accede a datos maestros
 - ENTONCES la API DEBE responder `401 UNAUTHORIZED` con sobre seguro.
 

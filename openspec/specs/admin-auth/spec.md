@@ -1,30 +1,69 @@
 # Spec — admin-auth
 
-## Purpose
+## Propósito
 
-Definir el gate administrativo mínimo de la API de certificados QR: autorización por header `X-Admin-Key` comparado en tiempo constante contra una clave administrativa externa a Git, con falla cerrada cuando la clave configurada falta, el header falta o el valor no coincide. Esta spec existe para que los endpoints administrativos no queden expuestos por configuración incompleta y para que la respuesta, auditoría y logs no filtren la clave ni fragmentos de la clave.
+Definir la autenticación administrativa por sesión PHP nativa, con compatibilidad CLI acotada y falla cerrada. El header `X-Admin-Key` no autoriza requests HTTP.
 
-## Requirements
+## Requisitos
 
-### Requirement: Autorización administrativa por `X-Admin-Key`
+### Requisito: Autorización administrativa por sesión o compatibilidad CLI
 
-Los endpoints administrativos MUST exigir el header `X-Admin-Key` y MUST comparar su valor contra una clave administrativa externa a Git. La autorización MUST fallar cerrada si la clave configurada falta, está vacía, tiene menos de 16 caracteres, el header falta o el valor no coincide. La comparación MUST ser de tiempo constante y las respuestas/logs MUST NOT exponer la clave ni fragmentos de la clave.
+Los endpoints administrativos DEBEN autorizar una sesión de navegador autenticada. `X-Admin-Key` SOLO PUEDE autorizar PHP CLI o smokes del lado servidor cuando la configuración externa lo habilita; NUNCA DEBE evaluarse en requests HTTP. La clave legacy, si se usa, DEBE ser externa a Git, tener al menos 16 caracteres y compararse en tiempo constante. Respuestas, auditoría y logs NO DEBEN exponer secretos ni material de sesión.
 
-#### Scenario: Header válido
+#### Escenario: CLI legacy válido
 
-- **Given** existe una clave administrativa externa con 16 caracteres o más
-- **When** un request admin incluye `X-Admin-Key` correcto
-- **Then** el request MAY continuar hacia la operación solicitada.
+- DADO una ejecución PHP CLI habilitada y una clave legacy externa válida
+- CUANDO presenta `X-Admin-Key` al adaptador CLI
+- ENTONCES la operación PUEDE continuar.
 
-#### Scenario: Falla cerrada
+#### Escenario: Falla cerrada
 
-- **Given** falta la clave configurada, es menor a 16 caracteres, falta el header o el valor no coincide
-- **When** se invoca cualquier endpoint administrativo
-- **Then** la API MUST responder `401 UNAUTHORIZED` con sobre de error seguro.
-- **And** MUST NOT abrir datos administrativos ni revelar la causa exacta.
+- DADO una sesión ausente o vencida, o compatibilidad CLI ausente, inválida o deshabilitada
+- CUANDO se invoca una operación administrativa
+- ENTONCES la API DEBE responder `401 UNAUTHORIZED` con sobre seguro.
 
-#### Scenario: Secreto no observable
+#### Escenario: Header legacy desde HTTP
 
-- **Given** una autorización exitosa o fallida
-- **When** se generan respuesta, auditoría o logs técnicos
-- **Then** MUST NOT incluir la clave administrativa completa ni parcial.
+- DADO un request HTTP sin sesión válida que incluye `X-Admin-Key`
+- CUANDO se invoca una operación administrativa
+- ENTONCES DEBE responder `401 UNAUTHORIZED` y no usar el header.
+
+### Requisito: Ciclo de sesión nativa de navegador
+
+El sistema DEBE ofrecer login, consulta de estado y logout mediante sesión PHP nativa. Login válido crea sesión autenticada; estado informa únicamente el estado actual; logout la invalida y expira su cookie. Credenciales o configuración inválidas producen el mismo `401 UNAUTHORIZED` genérico.
+
+#### Escenario: Login y estado válidos
+
+- DADO credenciales externas válidas y configuración completa
+- CUANDO el navegador inicia sesión y consulta estado
+- ENTONCES la sesión queda autenticada y el estado lo informa.
+
+#### Escenario: Falla genérica de login
+
+- DADO credenciales inválidas o configuración incompleta
+- CUANDO se intenta iniciar sesión
+- ENTONCES responde `401 UNAUTHORIZED` sin distinguir la causa.
+
+#### Escenario: Logout invalida
+
+- DADO una sesión autenticada
+- CUANDO el navegador solicita logout
+- ENTONCES deja de autorizar y una consulta posterior informa no autenticado.
+
+### Requisito: Protección y vigencia de sesión
+
+La cookie DEBE usar `HttpOnly`, `Secure`, `SameSite=Strict` y el path del entorno (`/certificados/` en producción; `/certificados_staging/` en staging). El ID DEBE regenerarse tras login. La sesión DEBE expirar por inactividad de 30 minutos o duración absoluta de 8 horas; configuración faltante o inválida implica falla cerrada.
+
+### Requisito: CSRF para mutaciones autenticadas por cookie
+
+Toda operación mutante autenticada por cookie DEBE exigir una prueba CSRF válida y vinculada a la sesión antes de side effects. Operaciones seguras no la requieren.
+
+#### Escenario: CSRF ausente o inválido
+
+- DADO una sesión autenticada y una operación mutante
+- CUANDO falta o no coincide el token CSRF
+- ENTONCES rechaza con error seguro y cero side effects.
+
+### Requisito: Retiro verificable de compatibilidad legacy
+
+La compatibilidad CLI DEBE estar deshabilitada por defecto, inventariada y tener condición de retiro. El smoke histórico basado en HTTP fue discontinuado; los smokes futuros DEBEN usar sesión o quedar explícitamente fuera de alcance.

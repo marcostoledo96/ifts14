@@ -1,5 +1,9 @@
 # API backend — emisión desde asistencias
 
+## Autenticación vigente P5-01
+
+Los endpoints administrativos usan sesión PHP nativa; las mutaciones requieren CSRF antes de cualquier efecto. `X-Admin-Key` no autoriza HTTP y solo queda para CLI/smokes server-side. Ver [`admin-auth`](../../openspec/specs/admin-auth/spec.md).
+
 Resumen operativo del ciclo `backend-emision-desde-asistencias`. El contrato completo vive en `docs/backend/01-contrato-api-certificados.md`.
 
 ## Emisión administrativa

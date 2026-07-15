@@ -1,4 +1,6 @@
-# Backend PHP 8.4.21
+# Backend PHP 8.4.22 — contrato de autenticación P5-01
+
+> PHP 8.4.22 CGI/FastCGI fue verificado únicamente en el candidato aislado de staging. Producción no está activada ni validada. Las referencias históricas a `X-Admin-Key` HTTP o `STOP DESPLIEGUE` no son normativa vigente.
 
 ## Objetivo
 
@@ -44,11 +46,11 @@ Para certificados nuevos emitidos desde alumno+curso, `CertificateValidator::ver
 
 `token_pepper` es obligatorio en la configuración externa real y debe mantenerse fuera de Git. El ejemplo versionable usa valores ficticios solo para demo local.
 
-### Gate operativo de entrega manual
+### Seguimiento separado: entrega manual con datos de negocio
 
 El endpoint `GET /certificados/api/admin/certificados/{id}/entrega-manual` requiere smoke DB-backed formal antes de cerrar el gate de deploy: un certificado recuperable debe responder `200` y un legacy sin `token_cifrado` debe responder `409 TOKEN_NOT_RECOVERABLE`. El happy path recuperable local quedó versionado en `apps/backend-php/tests/HttpEmissionE2eTest.php`: emisión `201`, validación pública `200`, entrega manual `200` sin rotación y `/reenviar` `404`.
 
-**BLOCKED / STOP DESPLIEGUE:** el smoke de staging permanece bloqueado hasta disponer de un script basado en login, cookie de sesión y CSRF que preserve secretos y redacte datos personales. `X-Admin-Key` no autoriza HTTP y no debe usarse para este gate. No inventar credenciales ni registrar contraseñas, cookies, CSRF, tokens, DNI, URLs con tokens reales o respuestas completas.
+El smoke remoto con datos de negocio queda como seguimiento explícito fuera de P5-01. El staging validado permaneció vacío; cualquier ejecución futura debe usar datos ficticios, login/cookie/CSRF y evidencia sanitizada.
 
 ## Contrato vigente
 
@@ -64,7 +66,7 @@ Los endpoints administrativos usan sesión PHP nativa: `POST /admin/auth/login`,
 
 La configuración externa requiere `admin_username`, `admin_password_hash` creado con `PASSWORD_DEFAULT` y ambos TTL exactos. No se versionan ni exponen valores. `X-Admin-Key` no autoriza HTTP; la compatibilidad CLI queda deshabilitada por defecto, requiere expiración futura y debe retirarse antes de activar login de navegador en producción.
 
-El smoke histórico `scripts/test-alto-c-interactive.sh` fue discontinuado porque dependía de `X-Admin-Key` por HTTP. El gate local habilita pruebas; el gate PHP-FPM/cPanel permanece **STOP DESPLIEGUE** y prohíbe activar la autenticación en staging o producción.
+El smoke histórico `scripts/test-alto-c-interactive.sh` fue discontinuado porque dependía de `X-Admin-Key` por HTTP. El candidato de staging aprobó el gate operativo; producción permanece sin activar ni validar.
 
 ### Inventario de compatibilidad legacy
 
