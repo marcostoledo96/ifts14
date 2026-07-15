@@ -4,17 +4,17 @@
 **Change archivado**: `f3-05-build-para-certificados`
 **Rama**: `qa/frontend-release-readiness`
 **HEAD al cierre**: `ca2f9c3` (full: `ca2f9c3e5bc2cbd90cbaa56c56b9a225b2df752a`)
-**Veredicto sdd-verify**: PASS
+**Veredicto sdd-verify**: PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE
 
 ## Decisiones del archive que difieren del prompt del orquestador
 
-1. **Fecha del directorio de archive**: el prompt del orquestador indicaba `2026-06-30-f3-05-build-para-certificados/`. Se usa `2026-07-12-f3-05-build-para-certificados/` porque coincide con (a) la fecha del `verify-report.md` PASS, (b) la fecha del `apply-progress.md`, (c) la fecha de hoy del entorno, y (d) el patrón de archives recientes del mismo día (`2026-07-12-f4-01-certificate-detail/`, `2026-07-12-f4-02-certificate-pdf-preview/`). El valor `2026-06-30-` parece ser un copy-paste del F3-04 referenciado. El `verify-report.md` (línea 116) ya autorizaba esta fecha.
+1. **Fecha del directorio de archive**: el prompt del orquestador indicaba `2026-06-30-f3-05-build-para-certificados/`. Se usa `2026-07-12-f3-05-build-para-certificados/` porque coincide con la fecha de los artefactos del ciclo y con el patrón de archives recientes del mismo día. El valor `2026-06-30-` parece ser un copy-paste del F3-04 referenciado.
 2. **Creación de la sección "## Ver también"**: el prompt del orquestador asumía que la sección existía en `docs/frontend/00-angular20-port-v0.md` (F3-04 nunca fue archivado en este árbol y la sección no existe). El `design.md` autoriza explícitamente "(o crearla si no existe)". Se creó la sección con una entrada para F3-05 (no se agregaron entradas para F3-04 porque ese ciclo no tiene artefacto en el árbol).
 3. **Estructura de archive**: el primer intento de `Move-Item` anidó el contenido (`archive/2026-07-12-f3-05-.../f3-05-.../proposal.md`) en lugar de mover los archivos al nivel superior (como sí hacen F4-01/F4-02). Se corrigió moviendo los 6 archivos al nivel superior y eliminando el subdir vacío.
 
 ## Resumen
 
-F3-05 verificó el build de producción de la app Angular 20 con `ng build --configuration production --base-href /certificados/`. El build ejecutó en 6.256 segundos con exit code 0, generando 30 artefactos en `apps/frontend-angular/dist/frontend-angular/`. La `<base href="/certificados/">` quedó confirmada en `dist/.../index.html` línea 6. Bundle inicial 314.03 kB raw / 90.41 kB transfer (gzip). Se documentaron 2 warnings de CSS budget (`certification-preview-page.css` 14.31 kB y `certification-pdf-preview-page.css` 13.70 kB) como carry-forward desde F4-01/F4-02 — no bloqueantes, dentro del threshold de error de 16 kB. Sin errores. Sin secretos. Sin modificación de `public_html/`, cPanel ni código de producto. Plan de validación 16/16 PASS, criterios de aceptación 4/4 PASS, tareas 31/31, 0 CRITICAL. El reporte detallado vive en `docs/frontend/04-build-validacion-f3-05.md` (entregable permanente, fuera del archive).
+F3-05 documentó evidencia histórica del build de producción con `ng build --configuration production --base-href /certificados/`. El output preservado muestra completion en 6.256 segundos, métricas de 314.03 kB raw / 90.41 kB transfer y 2 warnings de CSS budget; el exit code no quedó preservado y no es verificable desde este checkout. Por eso el cierre es **PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE** y no afirma PASS ni ausencia comprobada de errores. La release readiness actual requiere regenerar el build y capturar su exit code.
 
 ## Spec delta consolidado
 
@@ -37,7 +37,7 @@ Los 7 artefactos SDD del ciclo:
 | `design.md` | 9518 B | Diseño técnico (8 secciones del reporte, estrategia sin spec, patch a port-v0). |
 | `tasks.md` | 6553 B | 31 tareas en 5 fases (Preparación, Build, Validación, Cierre, Sanity). |
 | `apply-progress.md` | 5096 B | Estado de aplicación (31/31 tareas, decisiones clave, comandos Git propuestos). |
-| `verify-report.md` | 10397 B | Veredicto PASS (16/16 Plan de validación, 4/4 criterios, 0 CRITICAL). |
+| `verify-report.md` | 10397 B | Veredicto PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE por exit code no preservado. |
 | `archive-report.md` | (este archivo) | Cierre del ciclo. |
 
 **No existe `specs/` ni `spec.md`** en el change dir: la decisión de omitir el delta aditivo se documenta en el `proposal.md` (Capabilities → None) y se respeta en el archive. El ciclo es operacional, no de capacidad.
@@ -70,8 +70,8 @@ Equivalente a:
 
 - **Comando**: `cd apps/frontend-angular && npm run build -- --configuration production --base-href /certificados/`
 - **Tiempo**: 6.256 segundos
-- **Exit code**: 0 (implícito por "Application bundle generation complete" y output location generado)
-- **Output location**: `apps/frontend-angular/dist/frontend-angular/` (30 archivos)
+- **Exit code**: no preservado; no verificable desde este checkout. El output histórico muestra "Application bundle generation complete" y la ubicación generada.
+- **Output location informada**: `apps/frontend-angular/dist/frontend-angular/` (directorio no disponible en la rama; inventario completo no reproducible)
 - **Base href verificada**: `<base href="/certificados/">` en `dist/.../index.html` línea 6
 - **Bundle inicial**: 314.03 kB raw / 90.41 kB transfer (gzip estimado)
 - **Chunks principales**:
@@ -86,7 +86,7 @@ Equivalente a:
   - `certification-preview-page.css` 14.31 kB (+6.32 kB sobre budget de 8 kB)
   - `certification-pdf-preview-page.css` 13.70 kB (+5.70 kB sobre budget de 8 kB)
   - Ambos por debajo del threshold de error de 16 kB; documentados en el build report §5-6.
-- **Errores**: 0.
+- **Errores visibles en el fragmento histórico**: ninguno; no equivale a ausencia comprobada de errores sin exit code.
 - **Timestamp del build**: `2026-07-12T21:19:30.609Z`.
 
 ## Resumen de validaciones
@@ -94,9 +94,9 @@ Equivalente a:
 | Validación | Resultado | Origen |
 |---|---|---|
 | Plan de validación (Plan de validación del design) | 16/16 PASS | `verify-report.md` §"Plan de validación ejecutado" |
-| Criterios de aceptación (proposal) | 4/4 PASS | `verify-report.md` §"Mapeo de Criterios de Aceptación" |
+| Criterios de aceptación (proposal) | 3 PASS / 1 PARTIAL | `verify-report.md` §"Mapeo de Criterios de Aceptación" |
 | Tareas (tasks.md) | 31/31 completas | `apply-progress.md` + `verify-report.md` |
-| Hallazgos CRITICAL | 0 | `verify-report.md` §"Hallazgos" |
+| Hallazgos CRITICAL | 1: exit code no preservado | `verify-report.md` §"Hallazgos" |
 | Hallazgos WARNING | 3 (W1 falso positivo de secretos, W2 CSS budget, W3 errores de paths no versionados — todos aceptados) | `verify-report.md` §"Hallazgos" |
 | Working tree final | Limpio (2 untracked esperados) | `verify-report.md` §"Estado Git" |
 | HEAD al cierre | `ca2f9c3` (sin commits del agente) | `git rev-parse HEAD` |
@@ -105,18 +105,23 @@ Equivalente a:
 ## Comandos Git PROPUESTOS al operador (NO ejecutados por el agente)
 
 ```powershell
+git status --short
+git diff --name-only
+# Presentar ambos resultados y esperar confirmación explícita de que el diff es correcto antes de continuar.
 git add docs/frontend/00-angular20-port-v0.md openspec/changes/archive/2026-07-12-f3-05-build-para-certificados/ docs/frontend/04-build-validacion-f3-05.md
 git commit -m "build(frontend): validar build certificados"
 git push -u origin qa/frontend-release-readiness
 ```
 
-**Pre-push safety** (obligatorio por AGENTS.md):
-- `git log origin/main..HEAD --oneline` — debería devolver 0 commits (la rama `qa/frontend-release-readiness` está al mismo HEAD que `origin/main` al inicio de F3-05; sólo se commitea el trabajo de F3-05).
-- `git diff origin/main..HEAD --stat` — debería mostrar:
+**Pre-stage safety** (obligatorio antes de `git add`): revisar las salidas de `git status --short` y `git diff --name-only`, presentarlas a Matías o Marcos y esperar su confirmación explícita de que el diff es correcto. Solo después corresponde ejecutar el `git add` propuesto.
+
+**Pre-push safety** (obligatorio por AGENTS.md, después del commit y antes del push):
+- `git log origin/main..HEAD --oneline` — debe mostrar el commit recién creado.
+- `git diff origin/main...HEAD --stat` — debe mostrar desde el merge-base:
   - 1 archivo modificado: `docs/frontend/00-angular20-port-v0.md` (+4 líneas).
   - 1 archivo nuevo: `docs/frontend/04-build-validacion-f3-05.md`.
   - 1 archivo nuevo: `openspec/changes/archive/2026-07-12-f3-05-build-para-certificados/` (con 7 archivos adentro).
-- Como la rama es local-nueva sin tracking remoto, el primer `push` requiere `-u` (ya incluido en el comando propuesto).
+- Si ambas verificaciones coinciden con lo esperado, recién entonces ejecutar `git push -u origin qa/frontend-release-readiness`.
 
 ## Próximo ciclo recomendado
 

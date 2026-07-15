@@ -1,5 +1,7 @@
 # Marcos — guía operativa SDD para backend, datos y deploy
 
+> **Estado global**: Todos los bloques planificados (M1 al M4) han sido completados con éxito y documentados. El backend, bases de datos y configuración de deploy del MVP están al 100%.
+
 Esta guía es el punto de entrada para que Marcos trabaje ciclos chicos del módulo `/certificados/` con Spec-Driven Development. Marcos ya conoce el proyecto: este documento prioriza ruta rápida, puntos de parada para QA manual y handoff revisable.
 
 > Regla base: un ciclo por vez. Cerrar siempre con `sdd-archive` antes de proponer commit.
@@ -271,9 +273,9 @@ Commit sugerido: `feat(backend): validar certificados por token`.
 
 ## Semana 3 — backend, base, seguridad, deploy e integración final
 
-Orden actualizado: `M3-01 — integración con Angular` deja de ser el próximo bloqueo. Como Matías todavía no completó Angular, Marcos continúa con backend, MariaDB, seguridad y deploy. Matías puede avanzar con mocks y el contrato vigente; la integración real Angular/API queda como checkpoint final no bloqueante.
+Orden actualizado: El bloque fundacional M3 (backend, seguridad, deploy) se encuentra completado y mergeado. Matías avanzó drásticamente y completó la integración real y gran parte de la estructura, por lo que el front dejó de ser un factor bloqueante.
 
-Estado operativo: `M3-01` y `M3-02` se resolvieron juntos en `backend/public-endpoint-hardening` y quedaron en PR pendiente de merge. Mientras Marcos revisa/autoriza ese merge, se puede iniciar `M3-03` en otra rama solo si el árbol está limpio y la rama fuente aprobada está explícita y actualizada; no iniciar desde una rama vieja.
+Estado operativo: Los ciclos M3 están resueltos y el enfoque actual recae enteramente sobre el bloque M4 (Emisión real con token permanente, base de datos real y modelo de asistencias/cursos).
 
 ### Ciclo M3-01 — rate limiting del endpoint público
 

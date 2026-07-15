@@ -1,118 +1,240 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { ATTENDANCE_SOURCE } from '../attendances/data/attendance.token';
+import { Asistencia, AttendanceService } from '../attendances/models/attendance.types';
 import { CourseDetailPage } from './course-detail-page';
-import { COURSES_SOURCE } from './courses.service';
-import { InMemoryCoursesService } from './in-memory-courses.service';
+import { CursoDetalle } from './courses.models';
+import { COURSES_SOURCE, CoursesService } from './courses.service';
+
+const detail = (id: number, fechas: CursoDetalle['fechas'] = []): CursoDetalle => ({
+  id,
+  codigo: `CUR-00${id}`,
+  nombre: `Curso demo ${id}`,
+  estado: 'activo',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-02T00:00:00.000Z',
+  cuatrimestre: '1.er cuatrimestre 2026',
+  cantidadFechas: fechas.length,
+  fechas,
+});
+
+const fecha = (id: number, estado: 'programada' | 'realizada' | 'cancelada' = 'programada') => ({
+  id,
+  cursoId: 1,
+  fecha: '2026-03-15',
+  descripcion: null,
+  orden: id,
+  estado,
+});
+
+function courses(obtener: (id: number) => Promise<CursoDetalle>): CoursesService {
+  return {
+    obtener,
+    listar: () => Promise.resolve([]),
+    crear: () => Promise.reject(new Error('not used')),
+    actualizarEstado: () => Promise.reject(new Error('not used')),
+    listarFechas: () => Promise.resolve([]),
+    guardarFecha: () => Promise.reject(new Error('not used')),
+    reemplazarFechas: () => Promise.reject(new Error('not used')),
+  };
+}
+
+function attendance(listarAsistencias: AttendanceService['listarAsistencias']): AttendanceService {
+  return {
+    listarAsistencias,
+    listarAlumnos: () => Promise.resolve([]),
+    marcar: () => Promise.resolve([]),
+    anular: () => Promise.resolve(),
+  };
+}
 
 describe('CourseDetailPage', () => {
-  async function render(id: number) {
+  async function render(
+    source: CoursesService,
+    id = '1',
+    sourceAttendance?: AttendanceService,
+  ) {
     await TestBed.configureTestingModule({
       imports: [CourseDetailPage],
       providers: [
         provideRouter([]),
-        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        { provide: COURSES_SOURCE, useValue: source },
+        ...(sourceAttendance ? [{ provide: ATTENDANCE_SOURCE, useValue: sourceAttendance }] : []),
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(CourseDetailPage);
-    fixture.componentRef.setInput('id', String(id));
-    // detectChanges dispara ngOnInit → cargar() async; whenStable espera la
-    // promise; segundo detectChanges refleja el detalle en la vista.
+    fixture.componentRef.setInput('id', id);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture;
   }
 
-  it('muestra nombre, código y estado del curso', async () => {
-    const f = await render(1);
+  it('resuelve métricas por fecha con allSettled y aísla fallos', async () => {
+    const f = await render(
+      courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12), fecha(13)]))),
+      '1',
+      attendance((_, fechaId) => {
+        if (fechaId === 11) return Promise.resolve([{ cursoId: 1, cursoFechaId: 11 }] as never);
+        if (fechaId === 12) return Promise.reject(new Error('seam failure'));
+        return Promise.resolve([]);
+      }),
+    );
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Curso de introducción a la gestión');
-    expect(el.textContent).toContain('CUR-001');
-    expect(el.textContent).toContain('Estado: activo');
+    expect(el.textContent).toContain('1 presente');
+    expect(el.textContent).toContain('No disponible');
+    expect(el.querySelectorAll('a[href*="/fechas/12/asistencias"]').length).toBe(0);
+    expect(el.querySelector('[aria-label="Acción de asistencia no disponible"]')).not.toBeNull();
   });
 
-  it('muestra la lista de fechas como dl', async () => {
-    const f = await render(1);
+  it('aísla un throw síncrono del seam de asistencias', async () => {
+    const f = await render(
+      courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12)]))),
+      '1',
+      attendance((_, fechaId) => {
+        if (fechaId === 11) throw new Error('sync seam failure');
+        return Promise.resolve([{ cursoId: 1, cursoFechaId: 12 }] as never);
+      }),
+    );
     const el = f.nativeElement as HTMLElement;
-    const fechasDl = el.querySelector('.fechas-lista');
-    expect(fechasDl).not.toBeNull();
-    const rows = el.querySelectorAll('.fecha-row');
-    expect(rows.length).toBe(3);
+    expect(el.textContent).toContain('No disponible');
+    expect(el.textContent).toContain('1 presente');
+    expect(el.textContent).not.toContain('sync seam failure');
+    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]').length).toBe(0);
   });
 
-  it('muestra enlace a editar y al listado', async () => {
-    const f = await render(1);
+  it('sin ATTENDANCE_SOURCE deja métricas honestamente no disponibles', async () => {
+    const f = await render(courses(() => Promise.resolve(detail(1, [fecha(11)]))));
     const el = f.nativeElement as HTMLElement;
-    const editarLink = el.querySelector('a.btn-primary') as HTMLAnchorElement | null;
-    expect(editarLink).not.toBeNull();
-    expect(editarLink?.getAttribute('href')).toContain('/admin/cursos/1/editar');
-    const volver = el.querySelector('a[routerLink="/admin/cursos"]');
-    expect(volver).not.toBeNull();
+    expect(el.textContent).toContain('No disponible');
+    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]').length).toBe(0);
   });
 
-  it('muestra enlace Tomar asistencia por fecha', async () => {
-    const f = await render(1);
-    const el = f.nativeElement as HTMLElement;
-    const asistLinks = Array.from(el.querySelectorAll('.fecha-asistencia')) as HTMLAnchorElement[];
-    // Curso 1 tiene 3 fechas → 3 enlaces Tomar asistencia.
-    expect(asistLinks.length).toBe(3);
-    const first = asistLinks[0];
-    expect(first.getAttribute('href')).toContain('/admin/cursos/1/fechas/11/asistencias');
-    expect(first.getAttribute('aria-label')).toContain('Tomar asistencia');
-  });
-
-  it('oculta Tomar asistencia para fecha cancelada y muestra texto no accionable', async () => {
-    // Curso 5 tiene una fecha cancelada (id 51).
-    const f = await render(5);
-    const el = f.nativeElement as HTMLElement;
-    const links = Array.from(el.querySelectorAll('a.fecha-asistencia')) as HTMLAnchorElement[];
-    // No debe haber enlace de asistencia para la fecha cancelada.
-    expect(links.length).toBe(0);
-    const span = el.querySelector('.fecha-asistencia-cancelada');
-    expect(span).not.toBeNull();
-    expect(span?.textContent).toContain('Fecha cancelada: no se toma asistencia');
-  });
-
-  it('id inexistente muestra error', async () => {
-    const f = await render(999);
-    const el = f.nativeElement as HTMLElement;
+  it('descarta una carga previa al reutilizar la ruta y limpia un id inválido', async () => {
+    let resolveFirst!: (value: CursoDetalle) => void;
+    const first = new Promise<CursoDetalle>((resolve) => (resolveFirst = resolve));
+    const f = await render(courses((id) => (id === 1 ? first : Promise.resolve(detail(id)))), '1');
+    f.componentRef.setInput('id', '2');
+    f.detectChanges();
+    await f.whenStable();
+    resolveFirst(detail(1));
     await f.whenStable();
     f.detectChanges();
-    expect(el.textContent).toContain('Curso no encontrado');
+    expect((f.nativeElement as HTMLElement).textContent).toContain('Curso demo 2');
+    expect((f.nativeElement as HTMLElement).textContent).not.toContain('Curso demo 1');
+    f.componentRef.setInput('id', 'abc');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect((f.nativeElement as HTMLElement).textContent).toContain('Curso no encontrado');
+    expect((f.nativeElement as HTMLElement).textContent).not.toContain('Curso demo 2');
   });
 
-  it('curso sin fechas muestra mensaje de vacío', async () => {
-    // Crear un curso sin fechas y cargar el detalle para validar el
-    // mensaje "no tiene fechas programadas".
+  it('muestra la ficha con acento y una tabla y tarjetas equivalentes', async () => {
+    const f = await render(courses(() => Promise.resolve(detail(1, [fecha(11)]))));
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.curso-ficha .acento')).not.toBeNull();
+    expect(el.querySelector('h1')?.textContent).toContain('Curso demo 1');
+    expect(el.querySelector('table caption')?.textContent).toContain('Fechas de cursada');
+    expect(el.querySelectorAll('th[scope="col"]').length).toBe(4);
+    expect(el.querySelectorAll('ul.fechas-cards li').length).toBe(1);
+  });
+
+  it('distingue vacío real Pendiente/Cargar de asistencia no disponible y elimina acciones canceladas', async () => {
+    const f = await render(
+      courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12, 'realizada'), fecha(13, 'cancelada')]))),
+      '1',
+      attendance((_, fechaId) =>
+        Promise.resolve(
+          fechaId === 12
+            ? ([
+                { cursoId: 1, cursoFechaId: 12 },
+                { cursoId: 1, cursoFechaId: 12 },
+              ] as never)
+            : [],
+        ),
+      ),
+    );
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Pendiente');
+    expect(el.textContent).toContain('2 presentes');
+    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]').length).toBe(2);
+    expect(el.querySelectorAll('a[href*="/fechas/13/asistencias"]').length).toBe(0);
+  });
+
+  it('ignora asistencias ajenas o malformadas antes de contar y decidir la acción', async () => {
+    const mixed = [
+      { id: 1, cursoId: 1, cursoFechaId: 11 },
+      { id: 2, cursoId: 2, cursoFechaId: 11 },
+      { id: 3, cursoId: 1, cursoFechaId: 12 },
+      { id: 4 },
+      null,
+      undefined,
+    ] as unknown as readonly Asistencia[];
+    const f = await render(
+      courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12)]))),
+      '1',
+      attendance((_, fechaId) =>
+        Promise.resolve(
+          fechaId === 11
+            ? mixed
+            : ([{ id: 5, cursoId: 2, cursoFechaId: 12 }, { id: 6 }] as unknown as readonly Asistencia[]),
+        ),
+      ),
+    );
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('1 presente');
+    expect(el.textContent).toContain('Pendiente');
+    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]').length).toBe(2);
+    expect(el.querySelectorAll('a[href*="/fechas/12/asistencias"]').length).toBe(2);
+    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]')[0]?.textContent).toContain('Ver');
+    expect(el.querySelectorAll('a[href*="/fechas/12/asistencias"]')[0]?.textContent).toContain('Cargar');
+  });
+
+  it('expone carga, error, vacío y un único anuncio live con rol implícito status', async () => {
+    const f = await render(courses(() => Promise.resolve(detail(1))));
+    const el = f.nativeElement as HTMLElement;
+    const live = [...el.querySelectorAll('[aria-live], output')];
+    const liveRoles = live.map((node) =>
+      node instanceof HTMLOutputElement ? node.getAttribute('role') ?? 'status' : node.getAttribute('role'),
+    );
+    expect(liveRoles).toEqual(['status']);
+    expect(el.querySelectorAll('[role="alert"]').length).toBe(0);
+    expect(el.textContent).toContain('Agregar fecha');
+    expect((el.querySelector('a.btn-primary') as HTMLAnchorElement).getAttribute('href')).toContain(
+      '/admin/cursos/1/editar',
+    );
+  });
+
+  it('mantiene aria-busy durante la carga', async () => {
+    let resolve!: (value: CursoDetalle) => void;
+    const pending = new Promise<CursoDetalle>((done) => (resolve = done));
     await TestBed.configureTestingModule({
       imports: [CourseDetailPage],
-      providers: [
-        provideRouter([]),
-        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
-      ],
+      providers: [provideRouter([]), { provide: COURSES_SOURCE, useValue: courses(() => pending) }],
     }).compileComponents();
-    const svc = TestBed.inject(COURSES_SOURCE);
-    const nuevo = await svc.crear({ codigo: 'SINFECHAS', nombre: 'Curso sin fechas', estado: 'borrador' });
-    const f = TestBed.createComponent(CourseDetailPage);
-    f.componentRef.setInput('id', String(nuevo.id));
-    f.detectChanges();
-    await f.whenStable();
-    f.detectChanges();
-    const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('no tiene fechas programadas');
+    const loading = TestBed.createComponent(CourseDetailPage);
+    loading.componentRef.setInput('id', '1');
+    loading.detectChanges();
+    expect((loading.nativeElement as HTMLElement).querySelector('[aria-busy="true"]')).not.toBeNull();
+    resolve(detail(1));
+    await loading.whenStable();
+    loading.destroy();
   });
 
-  it('BandaEstado es región aria-live única', async () => {
-    const f = await render(1);
-    const el = f.nativeElement as HTMLElement;
-    const live = el.querySelectorAll('[aria-live]');
-    expect(live.length).toBe(1);
-    expect(live[0].getAttribute('aria-live')).toBe('polite');
+  it('muestra un error recuperable cuando courses.obtener rechaza', async () => {
+    const failed = await render(courses(() => Promise.reject(new Error('No se pudo cargar el curso.'))));
+    const el = failed.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('No se pudo cargar el curso.');
+    expect(el.querySelectorAll('[role="alert"]').length).toBe(0);
+    expect(el.querySelectorAll('output[aria-live="polite"]').length).toBe(1);
   });
 
-  it('no llama fetch', async () => {
+  it('no usa red ni expone identificadores privados en el DOM', async () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();
-    await render(1);
+    const f = await render(courses(() => Promise.resolve(detail(1, [fecha(11)]))));
+    const text = (f.nativeElement as HTMLElement).textContent ?? '';
     expect(fetchSpy).not.toHaveBeenCalled();
+    expect(text).not.toMatch(/dni|email|token|uuid|legajo|matr[ií]cula/i);
   });
 });

@@ -9,7 +9,7 @@
 
 ## Estado general
 
-Ciclo F3-05 ejecutado en 2 fases por el sub-agente de sdd-apply (Phase 1-2 completas; sub-agente retornó resultado vacío en su segunda mitad). El trabajo sustantivo (ejecutar `ng build`, crear el build doc) se completó correctamente. Las validaciones, el apply-progress, y el Engram se completaron inline.
+Ciclo F3-05 ejecutado en 2 fases por el sub-agente de sdd-apply (Phase 1-2 completas; sub-agente retornó resultado vacío en su segunda mitad). El reporte y las validaciones documentales se completaron inline. El resultado del build queda **PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE**: el output preservado muestra completion y métricas, pero no conserva el exit code.
 
 ## Tareas completadas
 
@@ -18,12 +18,12 @@ Ciclo F3-05 ejecutado en 2 fases por el sub-agente de sdd-apply (Phase 1-2 compl
 - [x] 1.3 HEAD en `ca2f9c3`
 - [x] 1.4 `angular.json` línea 41 confirmado: `baseHref: "/certificados/"` en production
 - [x] 2.1 `node_modules` ya estaba instalado (Mati o alguien lo hizo)
-- [x] 2.2 `npm run build -- --configuration production --base-href /certificados/` ejecutado: 6.256 segundos, exit code 0
-- [x] 2.3 Output location: `apps/frontend-angular/dist/frontend-angular/` (30 archivos)
+- [x] 2.2 `npm run build -- --configuration production --base-href /certificados/` ejecutado: el output histórico preservado muestra finalización en 6.256 segundos; el exit code no quedó preservado y no es verificable desde este checkout
+- [x] 2.3 Output location informado: `apps/frontend-angular/dist/frontend-angular/`; el inventario completo no quedó preservado en evidencia reproducible
 - [x] 2.4 `<base href="/certificados/">` confirmado en `dist/frontend-angular/index.html` línea 6
 - [x] 2.5-2.13 `docs/frontend/04-build-validacion-f3-05.md` creado con 10 secciones, ~280 líneas
 - [x] 3.1-3.8 Validaciones ejecutadas (8 secciones, 0 cambios tracked, 0 leaks)
-- [x] 4.1-4.4 Cierre documentado (patch port-v0 deferido a sdd-archive)
+- [x] 4.1-4.4 Cierre documentado (patch port-v0 aplicado durante sdd-archive)
 - [x] 5.1-5.2 Sanity final confirmado
 
 **Total**: 31/31 tareas completadas.
@@ -34,7 +34,7 @@ Ciclo F3-05 ejecutado en 2 fases por el sub-agente de sdd-apply (Phase 1-2 compl
 |---|---|---|---|
 | 1 | Doc name: `docs/frontend/04-build-validacion-f3-05.md` | proposal | Sigue la numeración `00-`/`01-`/`02-`/`03-` |
 | 2 | Build command: `ng build --configuration production --base-href /certificados/` | cycle definition | CLI redundante con `angular.json:41` pero belt-and-suspenders |
-| 3 | Dist artifacts: 30 archivos, NO versionados | MATIAS_PROMPTS | `dist/` está en `.gitignore` |
+| 3 | Dist artifacts: métricas y chunks del output parcial, NO versionados | MATIAS_PROMPTS | `dist/` está en `.gitignore`; no se infieren nombres ausentes |
 | 4 | Commit message: `build(frontend): validar build certificados` | cycle definition | Mensaje canónico para F3-05 |
 | 5 | Push command: `git push -u origin qa/frontend-release-readiness` | proposal | Rama nueva, necesita `--set-upstream` |
 | 6 | NO spec delta a `guia-matias-angular-windows` | proposal | Ciclo operacional, no de capacidad |
@@ -49,14 +49,14 @@ Ciclo F3-05 ejecutado en 2 fases por el sub-agente de sdd-apply (Phase 1-2 compl
 | `openspec/changes/f3-05-build-para-certificados/tasks.md` | Crear (DONE upstream) | 6.5 KB |
 | `openspec/changes/f3-05-build-para-certificados/apply-progress.md` | Crear (ESTE ARCHIVO) | ~80 líneas |
 | `docs/frontend/04-build-validacion-f3-05.md` | Crear (DONE inline) | 10 secciones, ~280 líneas |
-| `apps/frontend-angular/dist/frontend-angular/` | Generado (30 archivos) | 314 kB raw |
+| `apps/frontend-angular/dist/frontend-angular/` | Generado durante el ciclo; no disponible en la rama | 314.03 kB iniciales según output preservado |
 
 ## Resultados de validación
 
-- ✅ Build exitoso: `ng build --configuration production --base-href /certificados/` completó en 6.256 segundos, exit code 0.
+- ⚠️ Build **PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE**: el output preservado muestra completion en 6.256 segundos y métricas, pero el exit code no quedó preservado. La release readiness actual requiere regenerar el build y capturar su exit code.
 - ✅ Base href verificada: `<base href="/certificados/">` en `dist/.../index.html` línea 6.
-- ✅ 30 archivos en `dist/frontend-angular/`.
-- ✅ 0 errores. 2 warnings de CSS budget (carry-forward desde F4-01/F4-02).
+- ✅ Métricas y chunks nombrados preservados desde el output real; inventario completo no reproducible desde la rama.
+- ⚠️ Ningún error visible en el fragmento histórico; no se puede afirmar "0 errores" sin exit code preservado. Se observan 2 warnings de CSS budget.
 - ✅ 0 cambios tracked en el working tree.
 - ✅ 0 secretos filtrados.
 - ✅ 0 modificación a `apps/frontend-angular/` código fuente.
@@ -71,7 +71,7 @@ git commit -m "build(frontend): validar build certificados"
 git push -u origin qa/frontend-release-readiness
 ```
 
-Pre-push safety: Mati debe correr `git log origin/main..HEAD --oneline` y `git diff origin/main..HEAD --stat` antes del push. Como la rama es nueva, no hay remote tracking aún; el primer push configura el upstream.
+Después del commit y antes del primer push, Mati debe correr `git log origin/main..HEAD --oneline` y confirmar que muestra el commit recién creado; luego `git diff origin/main...HEAD --stat` para revisar el cambio desde el merge-base. Recién después corresponde `git push -u origin qa/frontend-release-readiness`.
 
 ## Riesgos materializados
 

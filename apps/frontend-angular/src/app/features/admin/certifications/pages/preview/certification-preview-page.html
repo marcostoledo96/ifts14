@@ -160,14 +160,12 @@
               Revocar este certificado invalidaría su verificación criptográfica
               para siempre.
             </p>
-            <button
-              type="button"
+            <a
+              [routerLink]="['/admin/certificaciones', id(), 'revocar']"
               class="btn-revocar"
-              disabled
-              aria-disabled="true"
             >
-              Revocar certificación <span class="handoff">{{ handoffs.revocacion }}</span>
-            </button>
+              Revocar certificación
+            </a>
           </div>
         </section>
       </aside>

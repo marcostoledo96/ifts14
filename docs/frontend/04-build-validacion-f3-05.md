@@ -2,7 +2,7 @@
 
 ## 1. Resumen ejecutivo
 
-Build de producción de la app Angular 20 (`apps/frontend-angular/`) ejecutado con `ng build --configuration production --base-href /certificados/`. **Resultado: PASS con 2 warnings de CSS budget** (carry-forward desde F4-01/F4-02). La `baseHref: "/certificados/"` está correctamente aplicada en `dist/.../index.html` (línea 6). Bundle inicial: 314.03 kB raw / 90.41 kB transfer. Build completo en 6.256 segundos. 30 archivos generados en `dist/frontend-angular/`. Sin errores. Sin secretos. Sin modificación de `public_html/`, cPanel, ni configuración real del servidor.
+Build de producción de la app Angular 20 (`apps/frontend-angular/`) ejecutado históricamente con `ng build --configuration production --base-href /certificados/`. **Resultado: PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE**. El output preservado muestra completion en 6.256 segundos, 2 warnings de CSS budget y métricas de 314.03 kB raw / 90.41 kB transfer; no preserva el exit code, por lo que no permite declarar PASS ni ausencia comprobada de errores. La `baseHref: "/certificados/"` aparece aplicada en la evidencia histórica de `dist/.../index.html` (línea 6). Sin secretos ni modificación de `public_html/`, cPanel o configuración real del servidor. Estas métricas corresponden al baseline `ca2f9c3`, no al HEAD actual de la rama. La release readiness actual requiere regenerar el build y capturar su exit code.
 
 ## 2. Comando ejecutado
 
@@ -35,57 +35,16 @@ chunk-4LAG6GL3.js | not-found-page | 478 bytes | 478 bytes
 
 Application bundle generation complete. [6.256 seconds] - 2026-07-12T21:19:30.609Z
 
-Output location: C:\Users\Mati\Desktop\seminario-clon\ifts14\apps\frontend-angular\dist\frontend-angular
+Output location: apps/frontend-angular/dist/frontend-angular
 ```
 
 **Build at: 2026-07-12T21:19:30.609Z** — confirmado por línea de output. Build completo en **6.256 segundos**.
 
 ## 4. Artefactos generados
 
-**Output location**: `apps/frontend-angular/dist/frontend-angular/`
+**Output location informada por Angular**: `apps/frontend-angular/dist/frontend-angular/`.
 
-| Tipo | Cantidad | Notas |
-|---|---:|---|
-| `index.html` | 1 | Entry point con `<base href="/certificados/">` |
-| `3rdpartylicenses.txt` | 1 | Bundle de licencias |
-| `chunk-*.js` | 27 | Lazy chunks por feature (ver tabla de output) |
-| `styles-*.css` | 1 | CSS bundleado global |
-| **Total archivos** | **30** | |
-
-**Estructura completa**:
-```
-apps/frontend-angular/dist/frontend-angular/
-├── index.html
-├── 3rdpartylicenses.txt
-├── styles-SNHQ2KJR.css (1.95 kB)
-├── chunk-2XLLX6IP.js   (courses-list-page, 8.03 kB)
-├── chunk-4LAG6GL3.js   (not-found-page, 478 bytes)
-├── chunk-5BEPONHD.js   (89 bytes)
-├── chunk-5Q3NYRCK.js   (attendance-marking-page, 12.10 kB)
-├── chunk-5V6OD65W.js   (admin-shell, 11.43 kB)
-├── chunk-7EIYO3ES.js   (114.56 kB)
-├── chunk-7MNFIBN6.js   (course-editor-page, 12.37 kB)
-├── chunk-7WXHPXOR.js  (certifications-list-page, 7.76 kB)
-├── chunk-EODBFEO6.js   (landing-page, 558 bytes)
-├── chunk-GFRANNK5.js   (89 bytes)
-├── chunk-GL77GTTJ.js   (certification-pdf-preview-page, 27.07 kB)
-├── chunk-JQPWM6M7.js   (141.49 kB)
-├── chunk-MDXGH5K6.js   (86 bytes)
-├── chunk-MIDUPVS5.js   (course-detail-page, 8.18 kB)
-├── chunk-OO76KZNS.js   (26.28 kB)
-├── chunk-PBAC6ZBF.js   (388 bytes)
-├── chunk-TF7JYS2U.js   (admin-dashboard-page, 3.83 kB)
-├── chunk-V4TNAET7.js   (675 bytes)
-├── chunk-VDJQI5JA.js   (public-validation-page, 8.99 kB)
-├── chunk-VJAOMNEI.js   (certification-preview-page, 30.29 kB)
-├── chunk-VIDD7JZJ.js   (attendances-list-page, 7.60 kB)
-├── chunk-ZZ3ONBKL.js   (login-page, 8.80 kB)
-├── chunk-7WXHPXOR.js   (certifications-list-page)
-├── main-*.js (no listado en el output parcial, pero generado por Angular)
-└── ... (otros chunks)
-```
-
-**Nota**: el listado arriba es parcial (los chunks más grandes). El output completo de Angular incluye más archivos. El total confirmado por filesystem es 30.
+La salida parcial conservada en la sección 3 permite verificar los chunks nombrados y sus tamaños, pero no constituye un inventario completo. `dist/` no está versionado y no está disponible en esta rama; además, las dependencias locales no están instaladas. Por eso el listado verbatim de todos los artefactos no es reproducible desde este checkout y no se agregan nombres inferidos ni globs como si fueran archivos concretos.
 
 ## 5. Tamaño del bundle
 
@@ -93,10 +52,7 @@ apps/frontend-angular/dist/frontend-angular/
 |---|---:|
 | **Initial total (raw)** | 314.03 kB |
 | **Initial total (transfer, gzip estimado)** | 90.41 kB |
-| **Largest chunk** | 141.49 kB (`chunk-JQPWM6M7.js`) |
-| **Second largest** | 114.56 kB (`chunk-7EIYO3ES.js`) |
-| **Third largest** | 30.29 kB (`chunk-VJAOMNEI.js` — certification-preview-page) |
-| **CSS bundleado** | 1.95 kB (`styles-SNHQ2KJR.css`) |
+| **Mayor chunk verificable en el output parcial** | 30.29 kB (`chunk-VJAOMNEI.js` — certification-preview-page) |
 
 **Warnings de CSS budget** (per Angular config `production.budgets`):
 
@@ -109,7 +65,7 @@ apps/frontend-angular/dist/frontend-angular/
 
 ## 6. Errores y warnings
 
-**Errores**: 0. El build completó con exit code 0 (implícito por "Application bundle generation complete" y el output location generado).
+**Errores visibles en el fragmento histórico preservado**: ninguno. El output muestra "Application bundle generation complete" y la ubicación generada, pero el exit code no quedó preservado y no es verificable desde este checkout; por eso no se afirma "sin errores" ni PASS.
 
 **Warnings**: 2 (CSS budget, detallados arriba).
 
@@ -139,8 +95,7 @@ apps/frontend-angular/dist/frontend-angular/index.html:6:  <base href="/certific
 | Severidad | Pendiente | Acción propuesta |
 |---|---|---|
 | medium | CSS budget warning en `certification-preview-page.css` (14.31 kB) y `certification-pdf-preview-page.css` (13.70 kB) | Code-splitting o ajuste de `budgets.css` en `angular.json` production — fuera de F3-05. |
-| low | Otros chunks grandes (`chunk-JQPWM6M7.js` 141.49 kB, `chunk-7EIYO3ES.js` 114.56 kB) sin nombre de feature (caracter `-`) | Investigar qué features cargan; documentar si es esperado o no. |
-| low | `docs/frontend/00-angular20-port-v0.md` necesita patch de 1-2 líneas con enlace al reporte F3-05 (deferido a sdd-archive) | Aplicar en el archive. |
+| low | El inventario completo de `dist/` no es reproducible desde la rama porque el directorio no está versionado ni disponible | Regenerar el build cuando estén instaladas las dependencias y capturar el listado exacto con tamaños. |
 | low | `docs/deploy/00-cpanel-certificados.md` puede requerir patch si el build revela config de servidor (e.g., `.htaccess` SPA fallback) | Verificar en el archive; aplicar solo si hay info nueva. |
 | low | Build de F3-05 no valida `.htaccess` ni config de servidor (cPanel) — fuera de scope de F3-05 | Cubrir en F3-06 (handoff a Marcos) o en ciclo dedicado. |
 
@@ -154,18 +109,18 @@ npm ci
 npm run build -- --configuration production --base-href /certificados/
 ```
 
-El output debería ser idéntico (módulo de bundle, tree-shaking, etc.).
+Para reproducir exactamente las métricas documentadas, ejecutar el comando sobre el baseline `ca2f9c3`; el HEAD actual puede producir tamaños o chunks distintos.
 
 ## 10. Validación contra la guía MATIAS_PROMPTS (líneas 1215-1258)
 
 | Criterio de la guía | Estado | Notas |
 |---|---|---|
-| `ng build --configuration production --base-href /certificados/` pasa o queda bloqueo verificable | ✅ PASS | Build completó con exit code 0. |
+| `ng build --configuration production --base-href /certificados/` pasa o queda bloqueo verificable | ⚠️ PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE | El output histórico muestra completion y métricas, pero el exit code no quedó preservado. La release readiness actual requiere regenerar el build y capturar su exit code. |
 | La salida del build se revisa sin copiarla al servidor | ✅ PASS | Output revisado localmente; `dist/` NO se copió a `public_html/`. |
-| No se modifica `public_html`, cPanel ni deploy real | ✅ PASS | `git diff --stat public_html/` = 0 líneas; `dist/` no se versiona. |
+| No se modifica `public_html`, cPanel ni deploy real | ✅ PASS | `test ! -e public_html` confirmó que el path no existe en este checkout; `dist/` no se versiona. |
 | No se versionan artefactos pesados de build si no están aprobados | ✅ PASS | `dist/` y `node_modules/` están en `.gitignore` (no se commitean). |
 | Se confirma que la base href esperada es `/certificados/` | ✅ PASS | `<base href="/certificados/">` confirmado en `dist/.../index.html` línea 6. |
 | Se documenta si las rutas internas requieren configuración adicional de servidor | ⚠️ NOTE | La app es SPA con `<base href>`. Requiere `.htaccess` con rewrite a `index.html` para deep links (cPanel). Fuera de scope F3-05; documentar en F3-06 o ciclo dedicado. |
-| Se registran errores de build con causa probable y próximo paso | ✅ N/A | 0 errores. Solo 2 warnings de CSS budget, documentados con causa probable (cambios recientes en cert preview pages). |
-| `docs/frontend/00-angular20-port-v0.md` con comando real de build | ✅ PLAN | Patch de 1-2 líneas con enlace a este reporte, deferido a sdd-archive. |
+| Se registran errores de build con causa probable y próximo paso | ⚠️ PARTIAL | No hay errores visibles en el fragmento histórico y se documentan 2 warnings de CSS budget, pero la ausencia de errores no puede probarse sin exit code preservado. |
+| `docs/frontend/00-angular20-port-v0.md` con comando real de build | ✅ PASS | La sección "Ver también" enlaza este reporte. |
 | `docs/deploy/00-cpanel-certificados.md` solo si corresponde documentar una instrucción aprobada de deploy futuro | ⚠️ NOTE | Out of scope F3-05; verificar en F3-06. |

@@ -610,7 +610,22 @@ function requireJsonContentType(string $requestId): bool
 /** @return array<string, mixed>|null */
 function readJsonBody(string $requestId): ?array
 {
-    $body = json_decode(file_get_contents('php://input') ?: '', true);
+    $contentLength = $_SERVER['CONTENT_LENGTH'] ?? null;
+    if ($contentLength !== null) {
+        if (!is_string($contentLength) || preg_match('/\A\d+\z/', $contentLength) !== 1 || (int) $contentLength > 65536) {
+            Response::error(413, 'PAYLOAD_TOO_LARGE', 'consulta JSON demasiado grande.', $requestId);
+            return null;
+        }
+    }
+
+    $bodyContent = file_get_contents('php://input', false, null, 0, 65537) ?: '';
+    
+    if (strlen($bodyContent) > 65536) {
+        Response::error(413, 'PAYLOAD_TOO_LARGE', 'consulta JSON demasiado grande.', $requestId);
+        return null;
+    }
+
+    $body = json_decode($bodyContent, true);
 
     if (json_last_error() === JSON_ERROR_NONE && is_array($body)) {
         return $body;
@@ -738,12 +753,22 @@ function normalizePath(string $path): string
 /** @param array<string, mixed> $config */
 function streamPdf(array $config, int $certificateId, string $requestId): void
 {
-    $statement = Database::pdo($config)->prepare('SELECT codigo_certificado FROM cert_certificados WHERE id = ? LIMIT 1');
+    $statement = Database::pdo($config)->prepare('SELECT codigo_certificado, pdf_estado, pdf_generado_revision, contenido_revision FROM cert_certificados WHERE id = ? LIMIT 1');
     $statement->execute([$certificateId]);
-    $code = $statement->fetchColumn();
+    $row = $statement->fetch(PDO::FETCH_ASSOC);
 
-    if (!is_string($code) || $code === '') {
+    if ($row === false || !is_string($row['codigo_certificado']) || $row['codigo_certificado'] === '') {
         Response::error(404, 'PDF_NOT_FOUND', 'PDF no encontrado.', $requestId);
+        return;
+    }
+
+    $code = $row['codigo_certificado'];
+    $pdfEstado = $row['pdf_estado'] ?? 'no_generado';
+    $pdfGeneradoRevision = $row['pdf_generado_revision'] !== null ? (int) $row['pdf_generado_revision'] : null;
+    $contenidoRevision = (int) ($row['contenido_revision'] ?? 1);
+
+    if ($pdfEstado !== 'vigente' || $pdfGeneradoRevision !== $contenidoRevision) {
+        Response::error(409, 'PDF_OUTDATED', 'El PDF está desactualizado y debe ser regenerado.', $requestId);
         return;
     }
 

@@ -1,0 +1,163 @@
+<section aria-labelledby="students-title">
+  <p class="kicker">Registro académico</p>
+  <h1 id="students-title">Alumnos</h1>
+  <p class="intro">Listado demostrativo con datos personales minimizados.</p>
+  <section class="filters" aria-label="Buscar y filtrar alumnos">
+    <label for="buscar-alumno">Buscar por nombre o documento enmascarado</label>
+    <input
+      id="buscar-alumno"
+      type="search"
+      autocomplete="off"
+      [value]="q()"
+      (input)="onSearch($event)"
+      placeholder="Nombre o XX****XX"
+    />
+    <div class="chips" aria-label="Filtros rápidos">
+      <button
+        type="button"
+        [attr.aria-pressed]="contacto() === 'con-email'"
+        (click)="onContacto('con-email')"
+      >
+        Contacto disponible
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="contacto() === 'sin-email'"
+        (click)="onContacto('sin-email')"
+      >
+        Sin email
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="certificacion() === 'con-cert'"
+        (click)="onCertificacion('con-cert')"
+      >
+        Con certificaciones
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="certificacion() === 'sin-cert'"
+        (click)="onCertificacion('sin-cert')"
+      >
+        Sin certificaciones
+      </button>
+    </div>
+    @if (hayFiltrosActivos()) {
+      <button type="button" class="clear" (click)="onLimpiar()">Limpiar filtros</button>
+    }
+  </section>
+  @if (qaEnabled) {
+    <div class="qa" aria-label="Controles QA solo desarrollo">
+      @for (vista of ['datos', 'cargando', 'error', 'vacio-total']; track vista) {
+        <button
+          type="button"
+          [attr.aria-pressed]="vistaQA() === vista"
+          (click)="onForzarEstado($any(vista))"
+        >
+          {{ vista }}
+        </button>
+      }
+    </div>
+  }
+  @if (cargando() || vistaQA() === 'cargando') {
+    <p class="state" aria-busy="true">Cargando listado de alumnos…</p>
+  } @else if (error() || vistaQA() === 'error') {
+    <div class="state error" role="alert">
+      <p>{{ error() || 'No se pudo cargar el listado de alumnos.' }}</p>
+      <button type="button" (click)="onReintentar()">Reintentar</button>
+    </div>
+  } @else if (vacioTotal()) {
+    <output class="state" aria-live="polite" aria-atomic="true"
+      >No hay alumnos cargados para mostrar.</output
+    >
+  } @else if (sinCoincidencias()) {
+    <div class="state">
+      <p role="status" aria-live="polite" aria-atomic="true">
+        Sin coincidencias: no hay alumnos para los filtros aplicados.
+      </p>
+      <button type="button" (click)="onLimpiar()">Limpiar filtros</button>
+    </div>
+  } @else {
+    <output aria-live="polite" aria-atomic="true"
+      >Mostrando {{ itemsVisibles().length }} de {{ resultadosFiltrados().length }}</output
+    >
+    <div class="table-wrap">
+      <table class="alumnos-tabla">
+        <caption>
+          Alumnos
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Apellido y nombre</th>
+            <th scope="col">Documento</th>
+            <th scope="col">Contacto</th>
+            <th scope="col">Cursos con asistencia</th>
+            <th scope="col">Certificaciones válidas</th>
+            <th scope="col">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (alumno of itemsVisibles(); track alumno.id) {
+            <tr>
+              <td>{{ alumno.apellido }}, {{ alumno.nombre }}</td>
+              <td class="mono">{{ alumno.dniMostrar }}</td>
+              <td>{{ etiquetaContacto(alumno) }}</td>
+              <td>{{ alumno.cursosConAsistencia }}</td>
+              <td>{{ alumno.certificacionesValidas }}</td>
+              <td>
+                <div class="detalle-accion">
+                  <a
+                    [routerLink]="['/admin/alumnos', alumno.id]"
+                    class="btn-detalle"
+                    [attr.aria-label]="'Ver detalle de ' + alumno.apellido + ', ' + alumno.nombre"
+                    >Ver detalle</a
+                  >
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <ul class="alumnos-cards">
+      @for (alumno of itemsVisibles(); track alumno.id) {
+        <li>
+          <h2>{{ alumno.apellido }}, {{ alumno.nombre }}</h2>
+          <dl class="documento">
+            <dt>Documento</dt>
+            <dd class="mono">{{ alumno.dniMostrar }}</dd>
+          </dl>
+          <p>{{ etiquetaContacto(alumno) }}</p>
+          <p>
+            {{ alumno.cursosConAsistencia }} cursos con asistencia ·
+            {{ alumno.certificacionesValidas }} certificaciones válidas
+          </p>
+          <div class="detalle-accion">
+            <a
+              [routerLink]="['/admin/alumnos', alumno.id]"
+              class="btn-detalle"
+              [attr.aria-label]="'Ver detalle de ' + alumno.apellido + ', ' + alumno.nombre"
+              >Ver detalle</a
+            >
+          </div>
+        </li>
+      }
+    </ul>
+    <nav aria-label="Paginación de alumnos">
+      <button
+        type="button"
+        (click)="onPagina(paginaSegura() - 1)"
+        [disabled]="paginaSegura() === 1"
+      >
+        Anterior</button
+      ><span>Página {{ paginaSegura() }} de {{ totalPaginas() }}</span
+      ><button
+        type="button"
+        (click)="onPagina(paginaSegura() + 1)"
+        [disabled]="paginaSegura() === totalPaginas()"
+      >
+        Siguiente
+      </button>
+    </nav>
+  }
+</section>

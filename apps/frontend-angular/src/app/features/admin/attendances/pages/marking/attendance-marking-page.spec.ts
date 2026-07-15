@@ -331,6 +331,8 @@ describe('AttendanceMarkingPage', () => {
           estado: 'activo' as const,
           createdAt: '',
           updatedAt: '',
+          cuatrimestre: '1.er cuatrimestre 2026',
+          cantidadFechas: 1,
           fechas: [{ id: id * 10 + 1, cursoId: id, fecha: '2026-01-01', descripcion: null, orden: 1, estado: 'programada' as const }],
         }),
       crear: () => Promise.reject(new Error('noop')),

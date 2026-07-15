@@ -9,6 +9,7 @@ import {
   CertificacionDetalle,
   CertificacionesFiltros,
   EstadoCertificado,
+  TipoEnvio,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
 
@@ -18,9 +19,11 @@ export function seed(): CertificacionDetalle[] {
   return [
     {
       id: 1,
+      numero: 'IFTS14-CERT-0001',
       nombreAlumno: 'Alumno Demo Uno',
       cursoNombre: 'Curso de introducción a la gestión',
       estado: 'vigente',
+      envio: 'entregado',
       documentMasked: '12****34',
       tokenPrefix: 'prefijo_demo_a1b',
       emitidoEn: '2026-03-01',
@@ -33,9 +36,11 @@ export function seed(): CertificacionDetalle[] {
     },
     {
       id: 2,
+      numero: 'IFTS14-CERT-0002',
       nombreAlumno: 'Alumno Demo Dos',
       cursoNombre: 'Curso de herramientas administrativas',
       estado: 'vigente',
+      envio: 'pendiente-entrega',
       documentMasked: '34****56',
       tokenPrefix: 'prefijo_demo_c2d',
       emitidoEn: '2026-04-05',
@@ -48,9 +53,11 @@ export function seed(): CertificacionDetalle[] {
     },
     {
       id: 3,
+      numero: 'IFTS14-CERT-0003',
       nombreAlumno: 'Alumno Demo Tres',
       cursoNombre: 'Curso de prácticas documentales',
       estado: 'borrador',
+      envio: 'pendiente-entrega',
       documentMasked: '56****78',
       tokenPrefix: 'prefijo_demo_e3f',
       emitidoEn: null,
@@ -63,9 +70,11 @@ export function seed(): CertificacionDetalle[] {
     },
     {
       id: 4,
+      numero: 'IFTS14-CERT-0004',
       nombreAlumno: 'Alumno Demo Cuatro',
       cursoNombre: 'Curso de procedimientos básicos',
       estado: 'vencido',
+      envio: 'requiere-nueva-entrega',
       documentMasked: '78****90',
       tokenPrefix: 'prefijo_demo_g4h',
       emitidoEn: '2025-09-01',
@@ -79,9 +88,11 @@ export function seed(): CertificacionDetalle[] {
     },
     {
       id: 5,
+      numero: 'IFTS14-CERT-0005',
       nombreAlumno: 'Alumno Demo Cinco',
       cursoNombre: 'Curso de registros y archivo',
       estado: 'revocado',
+      envio: 'entregado',
       documentMasked: '90****12',
       tokenPrefix: 'prefijo_demo_i5j',
       emitidoEn: '2025-06-10',
@@ -95,9 +106,11 @@ export function seed(): CertificacionDetalle[] {
     },
     {
       id: 6,
+      numero: 'IFTS14-CERT-0006',
       nombreAlumno: 'Alumno Demo Seis',
       cursoNombre: 'Curso de atención al público',
       estado: 'vigente',
+      envio: 'entregado',
       documentMasked: '23****45',
       tokenPrefix: 'prefijo_demo_k6l',
       emitidoEn: '2026-06-01',
@@ -135,13 +148,21 @@ export class InMemoryCertificationsService implements CertificationsService {
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
     }
+    if (filtros?.envio) {
+      list = list.filter((c) => c.envio === filtros.envio);
+    }
+    if (filtros?.curso) {
+      list = list.filter((c) => c.cursoNombre === filtros.curso);
+    }
     if (filtros?.q) {
       const q = filtros.q.trim().toLowerCase();
       if (q) {
         list = list.filter(
           (c) =>
             c.nombreAlumno.toLowerCase().includes(q) ||
-            c.cursoNombre.toLowerCase().includes(q),
+            c.cursoNombre.toLowerCase().includes(q) ||
+            c.documentMasked.toLowerCase().includes(q) ||
+            c.numero.toLowerCase().includes(q),
         );
       }
     }
@@ -163,5 +184,39 @@ export class InMemoryCertificationsService implements CertificationsService {
 
   contar(): Promise<number> {
     return Promise.resolve(this.certificados.length);
+  }
+
+  revocar(id: number, motivo: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Simular latencia de red/operación costosa (900ms para mock, según v0)
+      setTimeout(() => {
+        const index = this.certificados.findIndex((c) => c.id === id);
+        if (index === -1) {
+          return reject(new Error(`Certificación no encontrada: ${id}`));
+        }
+        if (this.certificados[index].estado === 'revocado') {
+          return reject(new Error('La certificación ya se encuentra revocada.'));
+        }
+        const found = clone(this.certificados[index]) as any;
+        found.estado = 'revocado';
+        
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        found.auditEvents = [
+          {
+            at: `${year}-${month}-${day}`, // As in mock seed
+            accion: 'revocacion',
+            detalle: motivo
+          },
+          ...found.auditEvents
+        ];
+        
+        this.certificados[index] = found;
+        resolve();
+      }, 900);
+    });
   }
 }

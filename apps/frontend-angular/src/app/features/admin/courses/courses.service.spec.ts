@@ -21,6 +21,30 @@ describe('InMemoryCoursesService', () => {
     expect(list.length).toBe(6);
   });
 
+  it('expone cuatrimestre, cantidad de fechas y métricas pendientes de integración', async () => {
+    const svc = setup();
+    const list = await svc.listar();
+
+    expect(list.map((c) => c.cuatrimestre)).toContain('1.er cuatrimestre 2026');
+    expect(list.map((c) => c.cuatrimestre)).toContain('2.º cuatrimestre 2025');
+    expect(list.map((c) => c.cuatrimestre)).toContain('Sin programar');
+    expect(list.find((c) => c.id === 1)?.cantidadFechas).toBe(3);
+    expect(list.find((c) => c.id === 1)?.alumnosPresentes).toBeNull();
+    expect(list.find((c) => c.id === 1)?.certificaciones).toBeNull();
+  });
+
+  it('filtra cursos con y sin fechas', async () => {
+    const svc = setup();
+    await svc.crear({ codigo: 'CUR-NEW', nombre: 'Curso sin fechas', estado: 'borrador' });
+    const conFechas = await svc.listar({ conFechas: true });
+    const sinFechas = await svc.listar({ conFechas: false });
+
+    expect(conFechas.length).toBeGreaterThan(0);
+    expect(conFechas.every((c) => (c.cantidadFechas ?? 0) > 0)).toBeTrue();
+    expect(sinFechas.length).toBeGreaterThan(0);
+    expect(sinFechas.every((c) => (c.cantidadFechas ?? 0) === 0)).toBeTrue();
+  });
+
   it('listar filtra por estado', async () => {
     const svc = setup();
     const activos = await svc.listar({ estado: 'activo' });
@@ -75,6 +99,10 @@ describe('InMemoryCoursesService', () => {
     const det = await svc.crear({ codigo: 'CUR-NEW', nombre: 'Curso nuevo', estado: 'borrador' });
     expect(det.codigo).toBe('CUR-NEW');
     expect(det.fechas).toEqual([]);
+    expect(det.cuatrimestre).toBe('Sin programar');
+    expect(det.cantidadFechas).toBe(0);
+    expect(det.alumnosPresentes).toBeNull();
+    expect(det.certificaciones).toBeNull();
     const list = await svc.listar();
     expect(list.length).toBe(7);
   });
