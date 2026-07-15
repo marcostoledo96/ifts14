@@ -11,16 +11,25 @@ test_command: |-
   from pathlib import Path
   import json, re, subprocess
   p=Path('docs/planificacion/IFTS14_PLAN_CORRECCIONES_PREPRODUCCION_SDD_TDD.md')
-  t=Path('openspec/changes/reconcile-audit-remediation-plan/tasks.md').read_text(encoding='utf-8')
-  s=Path('openspec/changes/reconcile-audit-remediation-plan/specs/audit-remediation-planning/spec.md').read_text(encoding='utf-8')
+  t=Path('openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/tasks.md').read_text(encoding='utf-8')
+  s=Path('openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/specs/audit-remediation-planning/spec.md').read_text(encoding='utf-8')
   x=p.read_text(encoding='utf-8')
   assert len(re.findall(r'^- \[x\] \d+\.\d+',t,re.M))==10 and not re.search(r'^- \[ \] \d+\.\d+',t,re.M)
   assert len(re.findall(r'^### Requirement:',s,re.M))==6 and len(re.findall(r'^#### Scenario:',s,re.M))==8
-  scope={'docs/planificacion/IFTS14_PLAN_CORRECCIONES_PREPRODUCCION_SDD_TDD.md','openspec/changes/reconcile-audit-remediation-plan/exploration.md','openspec/changes/reconcile-audit-remediation-plan/proposal.md','openspec/changes/reconcile-audit-remediation-plan/design.md','openspec/changes/reconcile-audit-remediation-plan/specs/audit-remediation-planning/spec.md','openspec/changes/reconcile-audit-remediation-plan/tasks.md','openspec/changes/reconcile-audit-remediation-plan/verify-report.md'}
+  scope={
+    'docs/planificacion/IFTS14_PLAN_CORRECCIONES_PREPRODUCCION_SDD_TDD.md',
+    'openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/exploration.md',
+    'openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/proposal.md',
+    'openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/design.md',
+    'openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/specs/audit-remediation-planning/spec.md',
+    'openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/tasks.md',
+    'openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/verify-report.md',
+    'openspec/specs/audit-remediation-planning/spec.md'
+  }
   changed={line[3:] for line in subprocess.check_output(['git','status','--porcelain=v1','--untracked-files=all'],text=True).splitlines() if line}
-  assert changed==scope and len(scope)==7
+  assert changed==scope and len(scope)==8
   # R4-001: tasks.md rollback boundary debe incluir verify-report.md
-  tasks_text = Path('openspec/changes/reconcile-audit-remediation-plan/tasks.md').read_text(encoding='utf-8')
+  tasks_text = Path('openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/tasks.md').read_text(encoding='utf-8')
   assert 'verify-report.md' in tasks_text, "R4-001: tasks.md rollback boundary must include verify-report.md"
   assert subprocess.run(['git','diff','--quiet','HEAD','--','apps','.github','database','deploy']).returncode==0
   board=x.split('## 4.2 Tablero operativo actual',1)[1].split('## 4.3 Registro por ciclo',1)[0]
@@ -43,7 +52,7 @@ test_command: |-
   prose=re.sub(r'```.*?```','',x,flags=re.S)
   links=[h for h in re.findall(r'\]\(([^)#]+)',prose) if '://' not in h]
   assert not [h for h in links if not (p.parent/h).resolve().exists()]
-  paths=[Path(q) for q in ('docs/auditoria/03-reporte-baseline-p0-01.md','openspec/changes/archive/2026-07-02-database-cursos-alumnos-asistencias/verify-report.md','openspec/changes/archive/2026-06-29-docs-openspec-drift-cleanup/verify-report.md','openspec/changes/archive/2026-06-27-qa-backend-hardening-certificados/verify-report.md','openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md','openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md','openspec/changes/reconcile-audit-remediation-plan/exploration.md','.github/workflows/backend-tests.yml')]
+  paths=[Path(q) for q in ('docs/auditoria/03-reporte-baseline-p0-01.md','openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/verify-report.md','openspec/changes/archive/2026-06-29-docs-openspec-drift-cleanup/verify-report.md','openspec/changes/archive/2026-06-27-qa-backend-hardening-certificados/verify-report.md','openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md','openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md','openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/exploration.md','.github/workflows/backend-tests.yml')]
   assert all(q.is_file() for q in paths)
   contents=[q.read_text(encoding='utf-8') for q in paths[1:6]]
   assert '**Verdict**: **PASS WITH WARNINGS**' in contents[0]
@@ -70,14 +79,14 @@ test_command: |-
   assert re.search(r'# 11\. Próximo paso exacto.*?P5-02 — Fronteras HTTP Angular',x,re.S)
   assert '**No bloqueante** para la secuencia inmediata' in rows['P9'][1] and 'P9 no bloquea esta secuencia' in x
   for commit in ('1a6a1cf5aa1b19a9652cab82b9455e789885471c','27b34c63be917d32d9f987340d426eec0a8c421b'): assert subprocess.run(['git','cat-file','-e',f'{commit}^{{commit}}']).returncode==0
-  body=Path('openspec/changes/reconcile-audit-remediation-plan/verify-report.md').read_text(encoding='utf-8').rsplit('## Informe de verificación',1)[1].split('### Evidencia histórica pre-corrección',1)[0]
-  assert '`review-bde85d8c8f23974f` fue la revisión acotada previa a la verificación de seis paths, no una aprobación final de siete archivos' in body and 'La constancia final de entrega es administrada externamente por el ciclo de vida y no se autocertifica en este artefacto.' in body
-  pre = Path('openspec/changes/reconcile-audit-remediation-plan/verify-report.md').read_text(encoding='utf-8').split('\n### Evidencia histórica pre-corrección\n',1)[1].split('```text',1)[0]
-  assert '6 paths (verify-report.md no existía)' in pre or 'No constituye aprobación del cambio completo de 7 paths' in pre
+  body=Path('openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/verify-report.md').read_text(encoding='utf-8').rsplit('## Informe de verificación',1)[1].split('### Evidencia histórica pre-corrección',1)[0]
+  assert '`review-bde85d8c8f23974f` fue la revisión acotada previa a la verificación de seis paths, no una aprobación final de ocho archivos' in body and 'La constancia final de entrega es administrada externamente por el ciclo de vida y no se autocertifica en este artefacto.' in body
+  pre = Path('openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/verify-report.md').read_text(encoding='utf-8').split('\n### Evidencia histórica pre-corrección\n',1)[1].split('```text',1)[0]
+  assert '6 paths (verify-report.md no existía)' in pre or 'No constituye aprobación del cambio completo' in pre
   assert not re.search(r'review-428c0906adf11947.{0,100}(?:approved|aprob)',body,re.I)
   scenarios={'Cierre acreditado':all(rows[q][0]=='DONE' for q in ('P3','P4')),'Evidencia insuficiente':all(rows[q][0] in {'PARTIAL','PENDING','BLOCKED'} for q in ('P0','P1','P2','P5','P6','P7','P8','P9')),'Conflicto con plan histórico':rows['P0'][0]==rows['P1'][0]==rows['P2'][0]=='PARTIAL','Estado histórico desactualizado':br<=cr,'Staging aprobado':'[staging]' in board and 'no hay evidencia `[production]`' in board,'Cierre verificable':all('https://github.com/marcostoledo96/ifts14/' in rows[q][1] for q in ('P3','P4','P5')),'Próximo ciclo pendiente':'fase_actual: "P5-02"' in x and 'P5-02 sigue `PENDING`' in x,'Backlog no bloqueante':rows['P9'][0]=='PENDING' and '**No bloqueante**' in rows['P9'][1]}
   assert len(scenarios)==8 and all(scenarios.values())
-  print('deterministic documentation assertions: PASS (10/10 tasks; 6/6 requirements; 8/8 scenarios; P0/P0-01 PARTIAL; exact 7 paths)')
+  print('deterministic documentation assertions: PASS (10/10 tasks; 6/6 requirements; 8/8 scenarios; P0/P0-01 PARTIAL; exact 8 paths)')
   PY
 test_exit_code: 0
 test_output_hash: sha256:7ae4e50da7303bec2deffa2504cf4d002d20b155cb1b3cdbd78cf7835e8652db
@@ -96,7 +105,7 @@ build_output_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca49599
 
 ### Resumen ejecutivo
 
-La reconciliación cumple las 10/10 tareas, los 6 requisitos y los 8 escenarios del delta. El validador ejecutado comprobó taxonomía, precedencia, trazabilidad dual, entornos, historia, secuencia, links, siete paths congelados y commits; `git diff --check` también finalizó con exit `0`.
+La reconciliación cumple las 10/10 tareas, los 6 requisitos y los 8 escenarios del delta. El validador ejecutado comprobó taxonomía, precedencia, trazabilidad dual, entornos, historia, secuencia, links, ocho paths y commits; `git diff --check` también finalizó con exit `0`.
 
 Producción `/certificados/` permanece no validada. P5-02 es el siguiente ciclo independiente y P9 continúa `PENDING` no bloqueante.
 
@@ -121,7 +130,7 @@ Producción `/certificados/` permanece no validada. P5-02 es el siguiente ciclo 
 La corrida final produjo:
 
 ```text
-deterministic documentation assertions: PASS (10/10 tasks; 6/6 requirements; 8/8 scenarios; P0/P0-01 PARTIAL; exact 7 paths)
+deterministic documentation assertions: PASS (10/10 tasks; 6/6 requirements; 8/8 scenarios; P0/P0-01 PARTIAL; exact 8 paths)
 ```
 
 Dos corridas diagnósticas previas ajustaron únicamente supuestos demasiado literales del harness sobre el texto de brechas y la mención negativa de `[production]`; no revelaron fallas del documento ni modificaron el repositorio.
@@ -171,7 +180,7 @@ Dos corridas diagnósticas previas ajustaron únicamente supuestos demasiado lit
 | Commits locales | Ambos objetos existen y son commits. |
 | Links relativos del plan | Todos resuelven a paths existentes. |
 | Archives/reports | Baseline P0, esquema, deriva, hardening, P5-01 y evidencia staging existen. |
-| Review previo | `review-bde85d8c8f23974f` fue la revisión acotada previa a la verificación de seis paths, no una aprobación final de siete archivos. |
+| Review previo | `review-bde85d8c8f23974f` fue la revisión acotada previa a la verificación de seis paths, no una aprobación final de ocho archivos. |
 
 ### Hallazgos
 
@@ -203,7 +212,7 @@ test_exit_code=0
 test_output_hash=sha256:7ae4e50da7303bec2deffa2504cf4d002d20b155cb1b3cdbd78cf7835e8652db
 build_exit_code=0
 build_output_hash=sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-scope_paths=7
+scope_paths=8
 p0=P0/P0-01:PARTIAL
 product_changed=false
 delivery_receipt=external_lifecycle_managed_not_self_certified
@@ -213,7 +222,7 @@ delivery_receipt=external_lifecycle_managed_not_self_certified
 
 Los siguientes son los bytes exactos del preimage de `evidence_revision` anterior, preservados solo como evidencia histórica pre-corrección:
 
-> **Nota:** Este preimage corresponde a la revisión anterior que cubría 6 paths (verify-report.md no existía). No constituye aprobación del cambio completo de 7 paths.
+> **Nota:** Este preimage corresponde a la revisión anterior que cubría 6 paths (verify-report.md no existía). No constituye aprobación del cambio completo de 8 paths.
 
 ```text
 change=reconcile-audit-remediation-plan
