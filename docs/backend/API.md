@@ -39,7 +39,7 @@ El PDF de emisión incorpora `cert_configuracion_institucional` (`id = 1`) para 
 
 ## Descarga administrativa de QR PNG
 
-Nuevo endpoint `GET /certificados/api/admin/certificados/{id}/qr.png` protegido por `X-Admin-Key`. Devuelve el QR como PNG aislado (`image/png`, `attachment`) generado on-demand desde el mismo `publicValidationUrl` del PDF. No rota token, no persiste el PNG, no muta base, no inserta auditoría y no envía email.
+Endpoint `GET /certificados/api/admin/certificados/{id}/qr.png` protegido por sesión administrativa. Devuelve el QR como PNG aislado (`image/png`, `attachment`) generado on-demand desde el mismo `publicValidationUrl` del PDF. No rota token, no persiste el PNG, no muta base, no inserta auditoría y no envía email.
 
 - Headers: `Content-Disposition: attachment; filename="{certificateCode_sanitizado}-qr.png"`, `Content-Length` real, `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, anti-cache (`Cache-Control: no-store, private, max-age=0`, `Pragma: no-cache`, `Expires: 0`) centralizado en `Response::noStoreSecurityHeaders()`.
 - Filename sanitizado con `preg_replace('/[^A-Za-z0-9_-]/', '_', $certificateCode)` (mismo regex aplicado a PDF) para impedir CRLF, traversal ni token embebido.

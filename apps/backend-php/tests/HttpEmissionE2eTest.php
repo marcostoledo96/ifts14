@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/DniCipher.php';
+require_once __DIR__ . '/SessionHttpTest.php';
 
 $dsn = getenv('IFTS14_TEST_DB_DSN');
 $user = getenv('IFTS14_TEST_DB_USER') ?: 'root';
@@ -51,7 +52,10 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'db_user' => $user,
     'db_pass' => $pass,
     'token_pepper' => $pepper,
-    'admin_api_key' => $adminKey,
+    'admin_username' => 'bedelia',
+    'admin_password_hash' => password_hash($adminKey, PASSWORD_DEFAULT),
+    'admin_session_idle_seconds' => 1800,
+    'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $ratePath,
     'app_salt' => 'salt_demo_http_e2e',
     'public_base_url' => 'https://demo.example.edu.ar/certificados',
@@ -83,6 +87,7 @@ if (!is_resource($process)) {
 
 try {
     waitForServer($port);
+    $authHeaders = loginAdminSessionHeaders($port, 'bedelia', $adminKey);
 
     $courseResponse = postJson($port, '/admin/cursos', $adminKey, [
         'codigo' => 'CUR-HTTP',
@@ -122,10 +127,7 @@ try {
 
     assertStatus(postJson($port, '/admin/asistencias', $adminKey, ['alumnoId' => $alumnoId, 'cursoId' => $cursoId, 'cursoFechaId' => $fecha2]), 201, 'crear asistencia 2 HTTP');
 
-    $emission = request($port, 'POST', '/admin/certificados', [
-        'Content-Type: application/json',
-        'X-Admin-Key: ' . $adminKey,
-    ], json_encode([
+    $emission = request($port, 'POST', '/admin/certificados', sessionJsonHeaders($authHeaders), json_encode([
         'alumnoId' => $alumnoId,
         'cursoId' => $cursoId,
         'issuedAt' => '2026-07-02',
@@ -153,9 +155,7 @@ try {
     if ($pdfPath === '') {
         throw new RuntimeException('emisión HTTP: URL de descarga PDF inválida.');
     }
-    $pdf = request($port, 'GET', $pdfPath, [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $pdf = request($port, 'GET', $pdfPath, $authHeaders);
     assertPdfDownload($pdf, 'descarga PDF HTTP', ['IFTS 14 HTTP', 'Texto institucional HTTP.', 'Rector HTTP', 'Rector', 'Asesora HTTP', 'Asesora Pedagogica']);
 
     $unsafeCertificateCode = "CERT/2026\r\nBAD\\TOKEN";
@@ -167,32 +167,26 @@ try {
     $pdo->prepare('UPDATE cert_certificados SET codigo_certificado = ? WHERE id = ?')
         ->execute([$unsafeCertificateCode, $certificateId]);
 
-    $pdfWithUnsafeCode = request($port, 'GET', $pdfPath, [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $pdfWithUnsafeCode = request($port, 'GET', $pdfPath, $authHeaders);
     assertPdfDownload($pdfWithUnsafeCode, 'descarga PDF HTTP con filename sanitizado');
     assertContentDisposition($pdfWithUnsafeCode, 'attachment; filename="' . $safeCertificateCode . '.pdf"', 'descarga PDF HTTP con filename sanitizado');
 
     // Desactualizar el PDF borrando una asistencia
-    $deleteAtt = request($port, 'DELETE', '/admin/asistencias/' . $asistencia1Id, ['X-Admin-Key: ' . $adminKey]);
+    $deleteAtt = request($port, 'DELETE', '/admin/asistencias/' . $asistencia1Id, $authHeaders);
     assertStatus($deleteAtt, 200, 'anular asistencia HTTP');
 
-    $outdatedPdf = request($port, 'GET', $pdfPath, ['X-Admin-Key: ' . $adminKey]);
+    $outdatedPdf = request($port, 'GET', $pdfPath, $authHeaders);
     assertError($outdatedPdf, 409, 'PDF_OUTDATED', 'descarga PDF desactualizado HTTP');
 
     $tokenSnapshotBeforeQr = tokenSnapshot($pdo, $certificateId);
-    $qr = request($port, 'GET', '/admin/certificados/' . $certificateId . '/qr.png', [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $qr = request($port, 'GET', '/admin/certificados/' . $certificateId . '/qr.png', $authHeaders);
     assertPngDownload($qr, 'descarga QR HTTP');
     assertContentDisposition($qr, 'attachment; filename="' . $safeCertificateCode . '-qr.png"', 'descarga QR HTTP con filename sanitizado');
     if (tokenSnapshot($pdo, $certificateId) !== $tokenSnapshotBeforeQr) {
         throw new RuntimeException('descarga QR HTTP: mutó token o certificado.');
     }
 
-    $missingQr = request($port, 'GET', '/admin/certificados/999999/qr.png', [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $missingQr = request($port, 'GET', '/admin/certificados/999999/qr.png', $authHeaders);
     assertError($missingQr, 404, 'CERTIFICATE_NOT_FOUND', 'QR inexistente HTTP');
 
     $token = basename((string) parse_url($validationUrl, PHP_URL_PATH));
@@ -203,9 +197,7 @@ try {
         throw new RuntimeException('validación pública HTTP: DTO inválido.');
     }
 
-    $manual = request($port, 'GET', '/admin/certificados/' . $certificateId . '/entrega-manual', [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $manual = request($port, 'GET', '/admin/certificados/' . $certificateId . '/entrega-manual', $authHeaders);
     assertStatus($manual, 200, 'entrega manual HTTP');
     $manualBody = assertJson($manual, 'entrega manual HTTP');
     if (($manualBody['data']['publicValidationUrl'] ?? '') !== $validationUrl || ($manualBody['data']['tokenPrefix'] ?? '') !== $tokenPrefix) {
@@ -218,19 +210,13 @@ try {
         throw new RuntimeException('entrega manual HTTP: pdfStatus no es outdated.');
     }
 
-    $resend = request($port, 'POST', '/admin/certificados/' . $certificateId . '/reenviar', [
-        'Content-Type: application/json',
-        'X-Admin-Key: ' . $adminKey,
-    ], '{"destinatarioEmail":"persona@example.edu.ar"}');
+    $resend = request($port, 'POST', '/admin/certificados/' . $certificateId . '/reenviar', sessionJsonHeaders($authHeaders), '{"destinatarioEmail":"persona@example.edu.ar"}');
     assertError($resend, 404, 'NOT_FOUND', 'reenvío removido HTTP');
 
     $pdo->exec('DELETE FROM cert_configuracion_institucional WHERE id = 1');
     $revocation = postJson($port, '/admin/certificados/' . $certificateId . '/revocar', $adminKey, []);
     assertStatus($revocation, 200, 'revocación HTTP previa a nueva emisión');
-    $fallbackEmission = request($port, 'POST', '/admin/certificados', [
-        'Content-Type: application/json',
-        'X-Admin-Key: ' . $adminKey,
-    ], json_encode([
+    $fallbackEmission = request($port, 'POST', '/admin/certificados', sessionJsonHeaders($authHeaders), json_encode([
         'alumnoId' => $alumnoId,
         'cursoId' => $cursoId,
         'issuedAt' => '2026-07-02',
@@ -257,9 +243,7 @@ try {
 
     $pdo->prepare('UPDATE cert_tokens_verificacion SET token_cifrado = NULL WHERE certificado_id = ?')
         ->execute([$expiredStateCertificateId]);
-    $legacyQr = request($port, 'GET', '/admin/certificados/' . $expiredStateCertificateId . '/qr.png', [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $legacyQr = request($port, 'GET', '/admin/certificados/' . $expiredStateCertificateId . '/qr.png', $authHeaders);
     assertError($legacyQr, 409, 'TOKEN_NOT_RECOVERABLE', 'QR token no recuperable HTTP');
 } finally {
     proc_terminate($process);
@@ -360,10 +344,9 @@ function request(int $port, string $method, string $path, array $headers = [], s
 /** @return array{status:int,headers:array<string,string>,body:string} */
 function postJson(int $port, string $path, string $adminKey, array $body): array
 {
-    return request($port, 'POST', $path, [
-        'Content-Type: application/json',
-        'X-Admin-Key: ' . $adminKey,
-    ], json_encode($body, JSON_THROW_ON_ERROR));
+    global $authHeaders;
+
+    return request($port, 'POST', $path, sessionJsonHeaders($authHeaders), json_encode($body, JSON_THROW_ON_ERROR));
 }
 
 /** @param array{status:int,headers:array<string,string>,body:string} $response */

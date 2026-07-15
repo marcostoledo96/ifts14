@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/SessionHttpTest.php';
+
 // Harness: los notices del stream HTTP de file_get_contents() (Content-Type
 // ausente en GETs) se suprimen con `@` en request() para no silenciar
 // warnings/notices no relacionados del resto del harness.
@@ -13,7 +15,7 @@ if (!mkdir($tmpDir, 0700) && !is_dir($tmpDir)) {
 }
 
 $ratePath = $tmpDir . '/rate-limit.json';
-$adminKey = 'admin_demo_key_2026';
+$adminPassword = 'admin_demo_password_2026';
 $configPath = $tmpDir . '/config.php';
 file_put_contents($configPath, '<?php return ' . var_export([
     'db_host' => '127.0.0.1',
@@ -21,7 +23,10 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'db_user' => 'demo',
     'db_pass' => 'demo',
     'token_pepper' => 'pepper_demo_ficticio_2026_no_usar',
-    'admin_api_key' => $adminKey,
+    'admin_username' => 'bedelia',
+    'admin_password_hash' => password_hash($adminPassword, PASSWORD_DEFAULT),
+    'admin_session_idle_seconds' => 1800,
+    'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $ratePath,
     'app_salt' => 'salt_demo_http_contract',
     'public_base_url' => 'https://demo.example.edu.ar/certificados',
@@ -48,6 +53,7 @@ if (!is_resource($process)) {
 
 try {
     waitForServer($port);
+    $authHeaders = loginAdminSessionHeaders($port, 'bedelia', $adminPassword);
 
     $health = request($port, 'GET', '/health');
     assertStatus($health, 200, 'health');
@@ -75,32 +81,32 @@ try {
     assertNoRateLimitFile($ratePath, 'consulta JSON demasiado grande');
 
     $adminNoContentType = request($port, 'POST', '/admin/certificados');
-    assertError($adminNoContentType, 415, 'UNSUPPORTED_MEDIA_TYPE', 'admin sin Content-Type');
+    assertError($adminNoContentType, 401, 'UNAUTHORIZED', 'admin sin sesión');
 
     $adminWrongContentType = request($port, 'POST', '/admin/certificados', [
         'Content-Type: text/plain',
-        'X-Admin-Key: ' . $adminKey,
+        ...$authHeaders,
     ], '{}');
     assertError($adminWrongContentType, 415, 'UNSUPPORTED_MEDIA_TYPE', 'admin Content-Type inválido');
 
     $revokeNoContentType = request($port, 'POST', '/admin/certificados/1/revocar');
-    assertError($revokeNoContentType, 415, 'UNSUPPORTED_MEDIA_TYPE', 'revocación sin Content-Type');
+    assertError($revokeNoContentType, 401, 'UNAUTHORIZED', 'revocación sin sesión');
 
     $revokeWrongContentType = request($port, 'POST', '/admin/certificados/1/revocar', [
         'Content-Type: text/plain',
-        'X-Admin-Key: ' . $adminKey,
+        ...$authHeaders,
     ], '{}');
     assertError($revokeWrongContentType, 415, 'UNSUPPORTED_MEDIA_TYPE', 'revocación Content-Type inválido');
 
     $adminBadJson = request($port, 'POST', '/admin/certificados', [
         'Content-Type: application/json',
-        'X-Admin-Key: ' . $adminKey,
+        ...$authHeaders,
     ], '{');
     assertError($adminBadJson, 400, 'VALIDATION_ERROR', 'emisión JSON malformado');
 
     $revokeBadJson = request($port, 'POST', '/admin/certificados/1/revocar', [
         'Content-Type: application/json',
-        'X-Admin-Key: ' . $adminKey,
+        ...$authHeaders,
     ], '{');
     assertError($revokeBadJson, 400, 'VALIDATION_ERROR', 'revocación JSON malformado');
 
@@ -108,52 +114,42 @@ try {
     // 200 y 404 PDF_NOT_FOUND requieren MariaDB real y quedan como verificación
     // de integración diferida.
     $pdfNoAuth = request($port, 'GET', '/admin/certificados/1/pdf');
-    assertError($pdfNoAuth, 401, 'UNAUTHORIZED', 'PDF sin X-Admin-Key');
-    assertSecurityHeaders($pdfNoAuth, 'PDF sin X-Admin-Key');
+    assertError($pdfNoAuth, 401, 'UNAUTHORIZED', 'PDF sin sesión');
+    assertSecurityHeaders($pdfNoAuth, 'PDF sin sesión');
 
-    $pdfWrongMethod = request($port, 'POST', '/admin/certificados/1/pdf', [
-        'X-Admin-Key: ' . $adminKey,
-    ], '{}');
+    $pdfWrongMethod = request($port, 'POST', '/admin/certificados/1/pdf', $authHeaders, '{}');
     assertError($pdfWrongMethod, 405, 'METHOD_NOT_ALLOWED', 'PDF método no permitido');
     assertSecurityHeaders($pdfWrongMethod, 'PDF método no permitido');
     if (($pdfWrongMethod['headers']['allow'] ?? '') !== 'GET') {
         throw new RuntimeException('PDF método no permitido: falta Allow: GET.');
     }
 
-    $pdfNonNumericId = request($port, 'GET', '/admin/certificados/abc/pdf', [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $pdfNonNumericId = request($port, 'GET', '/admin/certificados/abc/pdf', $authHeaders);
     assertError($pdfNonNumericId, 400, 'VALIDATION_ERROR', 'PDF id no numérico');
     assertSecurityHeaders($pdfNonNumericId, 'PDF id no numérico');
 
     // Endpoint de descarga QR PNG: contrato pre-DB (401, 405, 400 id no numérico).
     $qrNoAuth = request($port, 'GET', '/admin/certificados/1/qr.png');
-    assertError($qrNoAuth, 401, 'UNAUTHORIZED', 'QR sin X-Admin-Key');
+    assertError($qrNoAuth, 401, 'UNAUTHORIZED', 'QR sin sesión');
 
-    $qrWrongMethod = request($port, 'POST', '/admin/certificados/1/qr.png', [
-        'X-Admin-Key: ' . $adminKey,
-    ], '{}');
+    $qrWrongMethod = request($port, 'POST', '/admin/certificados/1/qr.png', $authHeaders, '{}');
     assertError($qrWrongMethod, 405, 'METHOD_NOT_ALLOWED', 'QR método no permitido');
     if (($qrWrongMethod['headers']['allow'] ?? '') !== 'GET') {
         throw new RuntimeException('QR método no permitido: falta Allow: GET.');
     }
 
-    $qrNonNumericId = request($port, 'GET', '/admin/certificados/abc/qr.png', [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $qrNonNumericId = request($port, 'GET', '/admin/certificados/abc/qr.png', $authHeaders);
     assertError($qrNonNumericId, 400, 'VALIDATION_ERROR', 'QR id no numérico');
 
     // --- Entrega manual: contrato del endpoint GET /admin/certificados/{id}/entrega-manual ---
 
-    // 401 sin X-Admin-Key (antes de body/config).
+    // 401 sin sesión (antes de body/config).
     $manualNoAuth = request($port, 'GET', '/admin/certificados/1/entrega-manual');
-    assertError($manualNoAuth, 401, 'UNAUTHORIZED', 'entrega manual sin X-Admin-Key');
-    assertSecurityHeaders($manualNoAuth, 'entrega manual sin X-Admin-Key');
+    assertError($manualNoAuth, 401, 'UNAUTHORIZED', 'entrega manual sin sesión');
+    assertSecurityHeaders($manualNoAuth, 'entrega manual sin sesión');
 
     // 405 método no permitido.
-    $manualWrongMethod = request($port, 'POST', '/admin/certificados/1/entrega-manual', [
-        'X-Admin-Key: ' . $adminKey,
-    ], '{}');
+    $manualWrongMethod = request($port, 'POST', '/admin/certificados/1/entrega-manual', $authHeaders, '{}');
     assertError($manualWrongMethod, 405, 'METHOD_NOT_ALLOWED', 'entrega manual método no permitido');
     assertSecurityHeaders($manualWrongMethod, 'entrega manual método no permitido');
     if (($manualWrongMethod['headers']['allow'] ?? '') !== 'GET') {
@@ -161,24 +157,17 @@ try {
     }
 
     // 400 id no numérico (la regex captura [^/]+ y se valida con filter_var).
-    $manualNonNumericId = request($port, 'GET', '/admin/certificados/abc/entrega-manual', [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $manualNonNumericId = request($port, 'GET', '/admin/certificados/abc/entrega-manual', $authHeaders);
     assertError($manualNonNumericId, 400, 'VALIDATION_ERROR', 'entrega manual id no numérico');
     assertSecurityHeaders($manualNonNumericId, 'entrega manual id no numérico');
 
     // --- Reenvío removido: POST /admin/certificados/{id}/reenviar DEBE responder 404 ---
 
-    $resendRemoved = request($port, 'POST', '/admin/certificados/1/reenviar', [
-        'Content-Type: application/json',
-        'X-Admin-Key: ' . $adminKey,
-    ], '{"destinatarioEmail":"persona@example.edu.ar"}');
+    $resendRemoved = request($port, 'POST', '/admin/certificados/1/reenviar', sessionJsonHeaders($authHeaders), '{"destinatarioEmail":"persona@example.edu.ar"}');
     assertError($resendRemoved, 404, 'NOT_FOUND', 'reenvío removido 404');
     assertSecurityHeaders($resendRemoved, 'reenvío removido 404');
 
-    $resendRemovedGet = request($port, 'GET', '/admin/certificados/1/reenviar', [
-        'X-Admin-Key: ' . $adminKey,
-    ]);
+    $resendRemovedGet = request($port, 'GET', '/admin/certificados/1/reenviar', $authHeaders);
     assertError($resendRemovedGet, 404, 'NOT_FOUND', 'reenvío GET removido 404');
 } finally {
     proc_terminate($process);
