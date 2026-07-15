@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { provideRouter, Router } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { CertificationRevokePage } from './certification-revoke-page';
-import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
+import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
 import { InMemoryCertificationsService, seed } from '../../in-memory-certifications.service';
 import { ComponentRef } from '@angular/core';
 
@@ -124,4 +124,30 @@ describe('CertificationRevokePage', () => {
     expect(component.enviando()).toBeFalse();
     expect(router.navigate).toHaveBeenCalledWith(['/admin/certificaciones', '1'], { queryParams: { revocada: 1 } });
   }));
+
+  for (const [id, estado] of [['3', 'borrador'], ['4', 'vencido'], ['5', 'revocado']]) {
+    it(`protege el deep link cuando el certificado está ${estado}`, fakeAsync(() => {
+      const certs = TestBed.inject(CERTIFICATIONS_SOURCE) as CertificationsService;
+      const revocarSpy = spyOn(certs, 'revocar').and.callThrough();
+      const navigateSpy = spyOn(router, 'navigate');
+      (fixture.componentRef as ComponentRef<CertificationRevokePage>).setInput('id', id);
+      fixture.detectChanges();
+      tick();
+      fixture.detectChanges();
+
+      expect(component.puedeRevocar()).toBeFalse();
+      expect(fixture.nativeElement.querySelector('#motivo-revocacion')).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain(
+        'Solo las certificaciones vigentes pueden revocarse.',
+      );
+
+      component.onMotivoChange('Este es un motivo válido con la longitud correcta');
+      component.confirmado.set(true);
+      void component.onRevocar();
+      tick(900);
+
+      expect(revocarSpy).not.toHaveBeenCalled();
+      expect(navigateSpy).not.toHaveBeenCalled();
+    }));
+  }
 });
