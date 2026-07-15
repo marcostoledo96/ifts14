@@ -1,5 +1,9 @@
 # Arquitectura general
 
+## Estado operativo P5-01
+
+El candidato aislado de staging aprobó el runtime de autenticación el 2026-07-15. Producción no fue activada ni validada. La configuración usa `.user.ini` protegido con `auto_prepend_file` hacia bootstrap privado fuera del webroot, porque el host no dispone de `mod_env`/`SetEnv`. El esquema de staging es dedicado y vacío, con migraciones 001–010; la evidencia de permisos es sanitizada (`0600` para configuración y `0700` para directorios).
+
 ## Enfoque
 
 Arquitectura modular por capas simples, ajustada a hosting cPanel.

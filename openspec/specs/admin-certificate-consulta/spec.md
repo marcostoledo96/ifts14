@@ -8,7 +8,7 @@ Definir la consulta administrativa de certificados emitidos y la configuración 
 
 ### Requirement: Listado administrativo de certificados
 
-La API DEBE exponer `GET /admin/certificados` protegido por `X-Admin-Key` con filtros opcionales por `estado`, `cursoId` y `alumnoId`, devolviendo DTOs con `documentMasked` y sin token completo.
+La API DEBE exponer `GET /admin/certificados` autorizado según `admin-auth`, con filtros opcionales por `estado`, `cursoId` y `alumnoId`, devolviendo DTOs con `documentMasked` y sin token completo.
 
 #### Scenario: Listado con certificado vigente
 

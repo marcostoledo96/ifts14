@@ -44,7 +44,7 @@ Registrar evidencia sanitizada, timestamp, entorno y operador desde producción 
 | Límites/reloj | Header ≥8 KiB, body ≥64 KiB y desvío UTC ≤60 s. | Algún límite o reloj falla. |
 | Fuerza bruta | Control efectivo documentado para login en ambos entornos. | Falta control o evidencia: cambio de infraestructura separado. |
 
-La evidencia vigente continúa **STOP DESPLIEGUE**: HTTPS/rutas está en `FAIL` y los demás checks contienen `UNAVAILABLE`. No se reinterpreta como `PASS`.
+La evidencia histórica inicial fue **STOP DESPLIEGUE**: HTTPS/rutas estaba en `FAIL` y los demás checks contenían `UNAVAILABLE`. No se reinterpreta como `PASS`. La progresión posterior del 2026-07-15 se registra en `task-4-1-staging-evidence.md`: el candidato aislado de staging obtuvo `PASS` con evidencia operativa sanitizada. Producción permanece sin activar y no queda incluida en ese resultado.
 
 ## Secuencia TDD y archivos
 
@@ -68,4 +68,4 @@ Ejecutar luego tests procedurales enfocados, suite PHP existente y `bash scripts
 - `PASS DESPLIEGUE`: habilita deploy/activación browser del entorno validado.
 - `STOP DESPLIEGUE`: bloquea staging/producción, aunque exista `PASS LOCAL`.
 
-Estado actual: gate local pendiente de ejecución completa; gate de despliegue en **STOP**. La `size:exception` para un único PR está aprobada.
+Estado histórico: gate local pendiente de ejecución completa y gate de despliegue en **STOP**. Progresión al 2026-07-15: gate local `PASS LOCAL` y candidato aislado de staging `PASS`; producción permanece sin activar. La `size:exception` para un único PR está aprobada.

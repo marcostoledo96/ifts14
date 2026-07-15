@@ -1,5 +1,7 @@
 # Staging cPanel — /certificados_staging/
 
+> **Estado vigente:** candidato de staging PASS para P5-01 el 2026-07-15. Producción no fue activada ni validada. El host no dispone de `mod_env`/`SetEnv`; se usa `.user.ini` protegido con `auto_prepend_file` hacia bootstrap privado fuera del webroot. El esquema es dedicado, vacío y cubre migraciones 001–010; permisos sanitizados: configuración `0600`, directorios `0700`.
+
 Runbook de preparación local ejecutable y ejecución manual gated para staging del módulo de certificaciones. Distingue staging (`/certificados_staging/`) de producción (`/certificados/`). El agente no ejecuta deploy remoto, no sube archivos, no modifica cPanel, no toca DB real. No hay SMTP/email en el MVP: la entrega es manual (copiar link / descargar PDF).
 
 La guía productiva vigente sigue siendo [`00-cpanel-certificados.md`](00-cpanel-certificados.md). Este documento solo cubre staging.
@@ -7,6 +9,22 @@ La guía productiva vigente sigue siendo [`00-cpanel-certificados.md`](00-cpanel
 ## Objetivo
 
 Preparar localmente un paquete revisable para `/certificados_staging/` y dejar gates manuales para que Marcos ejecute la subida real en una ventana acordada. Hasta que los gates estén confirmados, el cambio queda como preparación local + documentación.
+
+## Evidencia operativa vigente
+
+El 2026-07-15, el candidato aislado de staging bajo `/certificados_staging/` aprobó el gate operativo P5-01. Producción bajo `/certificados/` no fue activada.
+
+| Área | Resultado verificado |
+|---|---|
+| Runtime | PHP CGI/FastCGI aislado; sesiones con handler `files`, storage configurado y escribible, modo estricto, solo cookies, trans-SID desactivado, GC de 28.800 segundos y round-trip correcto. |
+| Paquete y rutas internas | Health `200`; accesos directos a `src`, `vendor`, manifiestos Composer, binarios Composer y `.user.ini` bloqueados con `403`. |
+| Configuración | El hosting no dispone de `mod_env`: `SetEnv` produjo `500` y fue revertido. La solución compatible usa `.user.ini` protegido con `auto_prepend_file` hacia un bootstrap privado fuera del webroot. |
+| Persistencia | Esquema exclusivo de staging con diez tablas `cert_*` y migraciones `001` a `010`; no se sembraron filas de negocio. |
+| Autenticación | Login, sesión, CSRF, logout e invalidación posterior aprobaron; la cookie observada usa `Secure`, `HttpOnly`, `SameSite=Strict` y `Path=/certificados_staging/`. |
+| Protección ante fuerza bruta | Cinco intentos inválidos devolvieron `401` y el sexto `429`; el archivo runtime quedó restringido después de la prueba. |
+| Readiness | Dependencias, zona horaria, configuración externa, sesiones, almacenamiento, limitador, PDO/MariaDB y migraciones aprobaron con código de salida `0`. |
+
+La evidencia sanitizada y el límite de reversión están en [`task-4-1-staging-evidence.md`](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md). El smoke de entrega manual con datos de negocio no forma parte de P5-01: requiere datos ficticios separados y no se ejecutó porque el esquema de staging permanece vacío.
 
 ## Alcance
 
@@ -30,7 +48,7 @@ Antes de cualquier ejecución real, confirmar los 7 gates con Marcos:
 
 1. **Ruta final**: `/certificados_staging/` en dominio principal o subdominio.
 2. **Ventana cPanel**: pasos manuales aprobados. El agente no toca cPanel.
-3. **Config externa staging**: `CERTIFICADOS_CONFIG_PATH` apuntando a archivo externo propio de staging, separado de producción, con `admin_api_key` presente fuera de Git. Sin fallback a config productiva.
+3. **Config externa staging**: `.user.ini` protegido con `auto_prepend_file` hacia un bootstrap propio fuera del webroot y separado de producción. Sin fallback a configuración productiva.
 4. **DB/schema staging**: nombre, usuario, migración y seed ficticios. No usar datos reales.
 5. **Backup**: copia de resguardo de `/certificados_staging/` si existe; si es primera instalación, plan de reversión por retiro/renombre.
 6. **Composer/vendor**: `composer install --no-dev` en hosting o `vendor/` local. Nunca versionar `vendor/`.
@@ -49,7 +67,7 @@ Ver checklist completo en [`deploy/staging/CHECKLIST.md`](../../deploy/staging/C
 | `apps/frontend-angular/angular.json` | Modificado | Configuración `production-staging` con `baseHref /certificados_staging/` y `fileReplacement` a `environment.staging.ts`. |
 | `deploy/staging/MANIFIESTO.md` | Creado | Artefactos a copiar y exclusiones (`vendor/`, `.env*`, dumps, logs, `public_html/`, configs reales). |
 | `deploy/staging/.htaccess-root` | Creado | Plantilla SPA para `/certificados_staging/` sin capturar `/api/`. |
-| `deploy/staging/.htaccess-api` | Creado | Plantilla API: bloqueo `src/`/`config/` + `FallbackResource` + `SetEnv CERTIFICADOS_CONFIG_PATH`. |
+| `deploy/staging/.htaccess-api` | Creado | Plantilla inicial API: bloqueo `src`/`config`, `FallbackResource` y un `SetEnv` que resultó incompatible con este hosting. No reutilizar `SetEnv`; la configuración vigente usa `.user.ini` protegido. |
 | `deploy/staging/CHECKLIST.md` | Creado | Gates manuales de Phase 0, 2 y 3. |
 
 ## Rutas y estructura esperada
@@ -122,13 +140,9 @@ Sin una de estas dos opciones confirmada, la API de staging puede quedar incompl
 
 ## Configuración externa de staging
 
-La config real de staging se carga vía `CERTIFICADOS_CONFIG_PATH` apuntando a un archivo externo propio de staging, separado de producción. Declarar en `.htaccess-api`:
+La configuración vigente de staging se carga mediante un `.user.ini` protegido que declara `auto_prepend_file` hacia un bootstrap privado fuera del webroot. El archivo `.user.ini` no es accesible directamente y el bootstrap no se versiona ni se documenta con su ruta real.
 
-```apache
-SetEnv CERTIFICADOS_CONFIG_PATH "/ruta/externa/staging/certificados-config.php"
-```
-
-Si esa ruta no está definida o no existe, staging debe fallar cerrado; no debe caer al archivo productivo ni a una ruta default compartida. El archivo externo debe incluir `admin_api_key` de al menos 16 caracteres y coincidir con el header `X-Admin-Key` usado en los smokes, sin registrar su valor.
+El intento histórico de declarar `CERTIFICADOS_CONFIG_PATH` con `SetEnv` en `.htaccess` produjo un `500` determinista porque el hosting no dispone de `mod_env`; fue revertido. No debe reutilizarse ese mecanismo. La configuración externa debe seguir separada de producción y fallar cerrada si falta o es inválida.
 
 Plantilla con placeholders ficticios (no usar en producción):
 

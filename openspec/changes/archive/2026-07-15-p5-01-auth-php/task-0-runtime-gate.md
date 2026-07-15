@@ -4,20 +4,26 @@
 
 | Campo | Valor |
 |---|---|
-| Fecha UTC | 2026-07-15T00:17:52Z |
-| Operador | OpenCode, sesión local no autenticada |
+| Fecha UTC | 2026-07-15 |
+| Operador | Evidencia operativa sanitizada |
 | Rama verificada | `integration/admin-session-http` |
-| Entornos evaluados | Producción y staging |
+| Entornos evaluados | Candidato de staging aislado; producción sin activar |
 | Gate local de implementación | **PASS LOCAL**; evidencia final en `task-0-local-gate.md` (Docker PHP 8.4, código `0`). |
-| Gate de despliegue | **STOP** |
+| Gate de despliegue | **PASS para el candidato de staging**; evidencia en `task-4-1-staging-evidence.md`. |
 
-El gate local fue de falla cerrada hasta obtener `PASS LOCAL`; esa evidencia ya habilitó la implementación local. El gate de despliegue sigue fail-closed: el `FAIL` y la evidencia `UNAVAILABLE` existentes prohíben deploy y activación browser en staging/producción.
+El gate local fue de falla cerrada hasta obtener `PASS LOCAL`; esa evidencia ya habilitó la implementación local. La evidencia histórica de `FAIL` y `UNAVAILABLE` se conserva abajo sin alteración. El 2026-07-15, el candidato aislado de staging obtuvo evidencia operativa suficiente para este gate. Este resultado no activa ni evalúa producción.
+
+## Gate B: resultado actual del candidato de staging
+
+**Veredicto: PASS para staging.** El alcance se limita al candidato desplegado bajo `/certificados_staging/` en un host aislado. Producción permanece sin activar.
+
+La evidencia detallada, los límites de reversión y los seguimientos no P5 se registran en [`task-4-1-staging-evidence.md`](task-4-1-staging-evidence.md). No se registran credenciales, rutas privadas, identificadores de sesión, valores CSRF, datos personales ni hashes.
 
 ## Gate A: implementación local
 
 La evidencia incompleta inicial fue reemplazada por el `PASS LOCAL` final registrado en `task-0-local-gate.md`: path privado y descartable, API/config nativa, cookies exactas, ciclo de sesión, CSRF antes de efectos, errores genéricos, privacidad y salida `0`. Ese resultado habilita edición local, pero no declara equivalencia con PHP-FPM/cPanel.
 
-## Gate B: evidencia de despliegue conservada
+## Gate B: evidencia histórica anterior conservada
 
 | Gate | Estado | Evidencia sanitizada | Bloqueo exacto |
 |---|---|---|---|
@@ -44,8 +50,9 @@ date -u
 
 No se leyeron secretos, `.env`, material privado, credenciales, dumps ni logs. No se hicieron llamadas autenticadas a cPanel ni cambios de fuente, infraestructura, deploy, base de datos, Git o sistemas remotos.
 
-## Acción requerida
+## Estado y seguimiento
 
 1. Gate A local completado: ver `task-0-local-gate.md` para evidencia `PASS LOCAL`.
-2. Mantener **STOP DESPLIEGUE**. Para reabrir el gate B se necesita evidencia sanitizada y autorizada del PHP/FPM y cPanel reales para sesiones, ini efectivo, cookies, límites/reloj y control anti-fuerza-bruta, además de corregir o explicar la respuesta HTML idéntica de los health checks de producción y staging.
-3. No desplegar ni habilitar login browser en staging/producción hasta `PASS DESPLIEGUE` completo.
+2. Gate B de staging completado: ver `task-4-1-staging-evidence.md` para el `PASS` del candidato aislado.
+3. Producción permanece sin activar y requiere una validación operativa independiente antes de cualquier activación.
+4. El smoke de entrega manual con datos de negocio queda fuera de P5-01: el esquema de staging está vacío y no se sembraron filas de negocio.

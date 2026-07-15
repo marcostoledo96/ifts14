@@ -54,5 +54,5 @@ Chain strategy: no aplica; `size:exception` aprobada
 
 ## Fase 4: Gate de despliegue
 
-- [ ] 4.1 Antes de deploy o activación browser en staging/producción, obtener evidencia sanitizada del PHP-FPM/cPanel real: path/permisos de sesión; ini efectivo; HTTPS y front controller por base; cookie/path real; límites header/body y reloj UTC; control anti-fuerza-bruta efectivo.
-- [x] 4.2 Mantener `STOP DESPLIEGUE` ante cualquier `FAIL`, `UNAVAILABLE` o evidencia incompleta. El resultado vigente sigue en STOP y no bloquea trabajo local después del `PASS LOCAL`.
+- [x] 4.1 Evidencia sanitizada obtenida para el candidato de staging: runtime PHP/CGI, sesiones, ruta/cookie, front controller, protección de paquete, configuración privada, esquema aislado, autenticación, rate limit y readiness. Producción permanece sin activar; ver `task-4-1-staging-evidence.md`.
+- [x] 4.2 Se preservó el `STOP DESPLIEGUE` histórico ante `FAIL`, `UNAVAILABLE` o evidencia incompleta. El candidato aislado de staging pasó posteriormente con evidencia propia; producción continúa sin activar.

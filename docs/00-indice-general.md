@@ -36,6 +36,12 @@ Los prompts anteriores de `docs/opencode/` quedan archivados en `docs/opencode/a
 
 ## Referencias condicionales
 
+## Estado documental P5-01
+
+- Autenticación y sesión: `docs/backend/00-php84-api.md`, `docs/backend/API.md`, `openspec/specs/admin-auth/spec.md`.
+- Staging/cPanel: `docs/deploy/01-staging-cpanel-certificados.md` y `docs/deploy/00-cpanel-certificados.md`.
+- Producción no está activada ni validada; la entrega manual con datos de negocio es seguimiento fuera de P5-01.
+
 - `.atl/skill-registry.md`: leer solo cuando el ciclo trabaje sobre skills, agentes o configuración de OpenCode. No forma parte de la lectura por defecto.
 - `graphify-out/`: salida local generada por Graphify; no se versiona ni se lee como documentación fuente.
 
