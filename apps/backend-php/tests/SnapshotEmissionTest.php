@@ -41,6 +41,10 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/002_token_cifrado_en
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/003_cursos_alumnos_asistencias.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/004_certificados_alumno_curso.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/005_prevenir_certificados_duplicados.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/006_reconciliar_esquema_m4_02.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/007_schema_migrations.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_revision_contenido.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
 
 $tokenKey = str_repeat('t', 32);
 $dniKey = str_repeat('d', 32);
@@ -63,7 +67,7 @@ $cursoId = (int) $pdo->lastInsertId();
 $insertDate = $pdo->prepare('INSERT INTO cert_curso_fechas (curso_id, fecha, descripcion, orden, estado) VALUES (?, ?, ?, ?, ?)');
 $insertDate->execute([$cursoId, '2026-06-01', 'Clase 1', 1, 'realizada']);
 $fecha1 = (int) $pdo->lastInsertId();
-$insertDate->execute([$cursoId, '2026-06-08', 'Clase 2', 2, 'programada']);
+$insertDate->execute([$cursoId, '2026-06-08', 'Clase 2', 2, 'realizada']);
 $fecha2 = (int) $pdo->lastInsertId();
 $insertDate->execute([$cursoId, '2026-06-15', 'Cancelada', 3, 'cancelada']);
 $fechaCancelada = (int) $pdo->lastInsertId();

@@ -1,6 +1,6 @@
 # Verify Report: F3-05 — Build para /certificados/
 
-**Veredicto**: PASS
+**Veredicto**: PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE
 
 **Fecha**: 2026-07-12
 **Change**: `f3-05-build-para-certificados`
@@ -9,7 +9,7 @@
 
 ## Resumen
 
-El ciclo F3-05 verificó correctamente el build de producción de la app Angular 20 con `base-href /certificados/`. El build report `docs/frontend/04-build-validacion-f3-05.md` existe con 10 secciones, incluye output literal del build, documenta los 30 artefactos en `dist/`, y no tocó `public_html`, cPanel ni código de producto. Las 31 tareas están completas. El Plan de validación (16 checks) pasa en su totalidad. Los 2 warnings de CSS budget son carry-forward conocidos desde F4-01/F4-02, documentados en el reporte como no bloqueantes. Sin hallazgos CRITICAL. El ciclo está listo para `sdd-archive`.
+El ciclo F3-05 verificó la documentación histórica del build de producción con `base-href /certificados/`, pero no puede verificar un PASS del build. El reporte conserva completion, métricas y chunks del output parcial, aunque el exit code no quedó preservado y `dist/` no está disponible. El alcance documental está completo; la release readiness actual requiere regenerar el build y capturar su exit code.
 
 ## Plan de validación ejecutado
 
@@ -27,7 +27,7 @@ El ciclo F3-05 verificó correctamente el build de producción de la app Angular
 | 10 | `secreto\|dump\|credencial\|real.*DNI` en build report | 0 (o 1-2 false positives por "Sin secretos") | 1 match: "Sin secretos." en resumen ejecutivo — **falso positivo** (negación, el reporte declara que NO hay secretos). Sin coincidencias reales. | ✅ PASS |
 | 11 | `Build at:\|complete\.$` en build report | ≥ 1 match | 1 match: `**Build at: 2026-07-12T21:19:30.609Z**` (sección 3) | ✅ PASS |
 | 12 | `git diff --stat apps/frontend-angular/` | 0 líneas | Sin output (0 líneas). | ✅ PASS |
-| 13 | `git diff --stat dist/` | 0 líneas (dist no versionado) | `fatal: ambiguous argument 'dist/'` — `dist/` no existe en el árbol de Git, confirmando que no fue versionado. | ✅ PASS |
+| 13 | `git diff --stat -- apps/frontend-angular/dist/` | Sin cambios versionados | Sin output; `dist/` está ignorado y ausente en este checkout. | ✅ PASS |
 | 14 | `baseHref` en `angular.json` | Confirma `"/certificados/"` en production | 3 matches: `"/certificados/"` (production), `"/certificados_staging/"` (staging), `"/certificados/"` (otra ocurrencia). Production config confirmada. | ✅ PASS |
 | 15 | Engram observations | 5-6 observaciones F3-05 | 6 observaciones: #89 (rama creada), #90 (explore), #91 (proposal), #92 (design), #93 (tasks), #94 (apply-progress). | ✅ PASS |
 | 16 | Working tree final | 2 untracked, 0 modified, 0 staged, HEAD `ca2f9c3` | `?? docs/frontend/04-build-validacion-f3-05.md`, `?? openspec/changes/f3-05-build-para-certificados/`. HEAD `ca2f9c3`. | ✅ PASS |
@@ -39,11 +39,11 @@ El ciclo F3-05 verificó correctamente el build de producción de la app Angular
 | Criterio | Evidencia (archivo + sección) | Veredicto |
 |---|---|---|
 | 1. Build report con secciones requeridas | `docs/frontend/04-build-validacion-f3-05.md` — 10 secciones H2. Las 8 requeridas por el proposal están presentes: Resumen ejecutivo (§1), Comando ejecutado (§2), Output del build (§3), Artefactos generados (§4), Tamaño del bundle (§5), Errores y warnings (§6), Base href verificada (§7), Pendientes (§8). Las secciones 9 y 10 son valor agregado sin romper estructura. | ✅ PASS |
-| 2. Output literal del build | `04-build-validacion-f3-05.md` §3 — contiene verbatim output con chunk list, métricas (314.03 kB raw / 90.41 kB transfer), exit code implícito ("Application bundle generation complete"), y timestamp `2026-07-12T21:19:30.609Z`. | ✅ PASS |
-| 3. `dist/` artifact structure documentada | `04-build-validacion-f3-05.md` §4 — lista 30 archivos en `dist/frontend-angular/` con estructura de árbol, tabla por tipo (`index.html`, `3rdpartylicenses.txt`, chunks JS, CSS). Tamaños individuales presentes para chunks principales. | ✅ PASS |
-| 4. No deploy, no `public_html`, no cPanel | Evidencia triple: (a) `Test-Path public_html` → `DOES NOT EXIST`; (b) `git diff --stat apps/frontend-angular/` → 0 líneas; (c) Resumen ejecutivo del reporte declara explícitamente "Sin modificación de `public_html/`, cPanel, ni configuración real del servidor." | ✅ PASS |
+| 2. Output literal del build | `04-build-validacion-f3-05.md` §3 — contiene output histórico parcial con chunk list, métricas (314.03 kB raw / 90.41 kB transfer), completion y timestamp. El exit code no quedó preservado y no es verificable desde este checkout. | ⚠️ PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE |
+| 3. Evidencia de `dist/` documentada sin inventario inferido | `04-build-validacion-f3-05.md` §3-4 conserva el output parcial y declara que el listado completo no es reproducible desde la rama. | ✅ PASS |
+| 4. No deploy, no `public_html`, no cPanel | Evidencia triple: (a) `test ! -e public_html` → exit 0; (b) `git diff --stat -- apps/frontend-angular/` → sin cambios de producto; (c) el reporte declara explícitamente que no hubo deploy. | ✅ PASS |
 
-**Resultado de criterios**: 4/4 PASS.
+**Resultado de criterios**: 3 PASS / 1 PARTIAL. El criterio de evidencia del build no habilita release readiness actual.
 
 ## Tareas verificadas
 
@@ -62,35 +62,35 @@ Verificaciones específicas sobre el terreno:
 - 1.1: Rama `qa/frontend-release-readiness` confirmada. ✅
 - 1.4: `baseHref: "/certificados/"` en `angular.json` (production) confirmado. ✅
 - 2.1: `node_modules` ya instalado — el blocker fue resuelto. ✅
-- 2.2: Build ejecutado: exit code 0, 6.256 segundos. ✅
+- 2.2: Build ejecutado históricamente: el output preservado muestra completion en 6.256 segundos, pero el exit code no quedó preservado. Estado: ⚠️ PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE.
 - 2.4: `<base href="/certificados/">` en `dist/.../index.html` línea 6 confirmado. ✅
 - 3.6: Build report con 10 secciones H2. ✅
 - 3.7: 0 secretos reales; términos clave presentes. ✅
 - 3.8: Engram con 6 observaciones F3-05. ✅
-- 4.2: Patch `00-angular20-port-v0.md` **deferido a sdd-archive** (decisión documentada). ✅
+- 4.2: Patch `00-angular20-port-v0.md` aplicado durante `sdd-archive`; la sección "Ver también" enlaza el reporte. ✅
 - 5.2: No se ejecutó `git add`/`git commit`/`git push` por cuenta del agente. ✅
 
 ## Hallazgos
 
 ### CRITICAL
 
-Ninguno.
+- **C1 — Exit code no preservado**: el output histórico muestra completion y métricas, pero no prueba el resultado del proceso. No corresponde declarar PASS ni "sin errores". La release readiness actual requiere regenerar el build y capturar su exit code.
 
 ### WARNING
 
 - **W1 — Falso positivo en búsqueda de secretos**: `Select-String "secreto|dump|credencial|real.*DNI"` dio 1 match en "Sin secretos." (resumen ejecutivo). Es un falso positivo esperado por negación; el diseño lo anticipa explícitamente como aceptable ("0 o 1-2 false positives por la palabra 'secretos' como negación"). El reporte no contiene secretos reales.
 - **W2 — CSS budget warnings (2)**: `certification-preview-page.css` (14.31 kB) y `certification-pdf-preview-page.css` (13.70 kB) exceden el budget de warning de 8 kB. Documentados como carry-forward desde F4-01/F4-02 en el reporte §5-6. No bloquean el build (ambos < 16 kB error threshold). Sin acción en F3-05.
-- **W3 — `git diff --stat dist/` y `public_html/` retornaron error**: Ambos paths no existen en el árbol de Git, lo cual es evidencia positiva de que no fueron versionados. El error `fatal: ambiguous argument` es esperado para paths fuera de Git.
+- **W3 — paths ausentes**: `dist/` y `public_html/` no existen en este checkout. Se verifican con `test ! -e <path>` o con `git diff --stat -- <path>` para evitar errores de revisión ambiguos.
 
 ### SUGGESTION
 
 - **S1 — Comando de build vía `npm run build` vs `ng build`**: El comando ejecutado fue `npm run build -- --configuration production --base-href /certificados/` en lugar del literal `ng build`. Es equivalente funcionalmente (`npm run build` delega a `ng build`), y el reporte lo documenta con claridad. Ningún impacto en la verificación.
 - **S2 — Secciones extra en el build report**: El reporte tiene 10 secciones en lugar de las 8 definidas en el design. Las secciones 9 ("Comando documentado — referencia") y 10 ("Validación contra la guía MATIAS_PROMPTS") agregan valor sin romper estructura ni ocultar las requeridas. Considerar estandarizar el template de build report para futuros ciclos.
-- **S3 — Chunks sin nombre de feature**: Dos chunks grandes (`chunk-JQPWM6M7.js` 141.49 kB, `chunk-7EIYO3ES.js` 114.56 kB) aparecen con guion como nombre de feature (`-`). El reporte §8 los documenta como pendientes low. Investigar en ciclo futuro si corresponden a features lazy-loaded sin nombre explícito.
+- **S3 — Inventario no reproducible**: el output parcial permite verificar métricas y chunks nombrados, pero no reconstruir el listado completo. Regenerar el build cuando las dependencias estén disponibles si se necesita evidencia verbatim.
 
 ## Patches planificados para sdd-archive
 
-- `docs/frontend/00-angular20-port-v0.md` — agregar 1-2 líneas en sección "Ver también" con enlace al reporte F3-05. (Deferido desde apply; decisión documentada en `apply-progress.md` §4.2.)
+- `docs/frontend/00-angular20-port-v0.md` — resuelto durante `sdd-archive`: la sección "Ver también" enlaza el reporte F3-05.
 - `docs/deploy/00-cpanel-certificados.md` — patch opcional solo si el build revela notas de configuración de servidor. Al momento del verify, no se identificó necesidad (`.htaccess` SPA fallback es conocido pero fuera de scope F3-05).
 
 ## Estado Git
@@ -110,7 +110,7 @@ git commit -m "build(frontend): validar build certificados"
 git push -u origin qa/frontend-release-readiness
 ```
 
-**Pre-push safety**: Mati debe correr `git log origin/main..HEAD --oneline` y `git diff origin/main..HEAD --stat` antes del push. Como la rama es nueva, el primer push configura el upstream.
+**Pre-push safety**: después del commit, Mati debe correr `git log origin/main..HEAD --oneline` y confirmar que aparece el commit nuevo; luego `git diff origin/main...HEAD --stat` para revisar el diff desde el merge-base. Solo después corresponde el primer push con `--set-upstream`.
 
 ## Próximo paso
 

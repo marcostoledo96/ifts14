@@ -61,7 +61,7 @@ None — all 5 decisions resolved in the proposal.
 
 ## Phase 4 — Cierre
 
-- [ ] 4.1 Esperar a que sdd-verify retorne PASS.
+- [ ] 4.1 Registrar el veredicto honesto de sdd-verify. Sin exit code preservado, usar `PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE`; PASS requiere regenerar el build y capturar su exit code.
 - [ ] 4.2 Documentar en `apply-progress.md` la decisión final sobre el patch opcional de `docs/frontend/00-angular20-port-v0.md` (hecho o descartado con justificación). Decisión recomendada: SÍ, hacer el patch de 1-2 líneas con enlace al reporte.
 - [ ] 4.3 Proponer al operador los comandos Git exactos (NO ejecutarlos):
       `git add openspec/changes/f3-05-build-para-certificados/ docs/frontend/04-build-validacion-f3-05.md [y el patch opcional de 00-angular20-port-v0.md]`

@@ -1,9 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, InjectionToken, isDevMode, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
-import { Certificacion, EstadoCertificado } from '../../certifications.models';
+import {
+  Certificacion,
+  EstadoCertificado,
+  PAGINA_TAMANO,
+  TipoEnvio,
+} from '../../certifications.models';
 
-// Listado de certificaciones con filtros y datos demo. Sin HTTP/storage.
+type VistaQa = 'datos' | 'cargando' | 'error' | 'vacio-total';
+
+export const CERTIFICATIONS_QA_ENABLED = new InjectionToken<boolean>('CERTIFICATIONS_QA_ENABLED', {
+  factory: isDevMode,
+});
+
 @Component({
   selector: 'app-certifications-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -13,51 +23,76 @@ import { Certificacion, EstadoCertificado } from '../../certifications.models';
 })
 export class CertificationsListPage {
   private readonly certs = inject(CERTIFICATIONS_SOURCE);
+  readonly qaEnabled = inject(CERTIFICATIONS_QA_ENABLED);
+  // ponytail: descarta respuestas de filtros que ya no son la generación activa.
+  private loadGeneration = 0;
 
   readonly estados: readonly EstadoCertificado[] = ['borrador', 'vigente', 'revocado', 'vencido'];
-
-  // Filtros locales. Inician sin filtro para mostrar todo el seed.
+  readonly envios: readonly TipoEnvio[] = ['entregado', 'pendiente-entrega', 'requiere-nueva-entrega'];
   readonly q = signal('');
   readonly estado = signal<EstadoCertificado | 'todos'>('todos');
-
+  readonly envio = signal<TipoEnvio | 'todos'>('todos');
+  readonly curso = signal('todos');
+  readonly pagina = signal(1);
+  readonly vistaQA = signal<VistaQa>('datos');
   readonly certificados = signal<readonly Certificacion[]>([]);
   readonly cargando = signal(true);
   readonly error = signal('');
+  readonly cursos = computed(() => [...new Set(this.certificados().map((c) => c.cursoNombre))]);
+  readonly hayFiltrosActivos = computed(
+    () => !!this.q().trim() || this.estado() !== 'todos' || this.envio() !== 'todos' || this.curso() !== 'todos',
+  );
+  readonly resultadosFiltrados = computed(() => {
+    const texto = this.q().trim().toLowerCase();
+    return this.certificados().filter(
+      (c) =>
+        (this.estado() === 'todos' || c.estado === this.estado()) &&
+        (this.envio() === 'todos' || c.envio === this.envio()) &&
+        (this.curso() === 'todos' || c.cursoNombre === this.curso()) &&
+        (!texto ||
+          c.nombreAlumno.toLowerCase().includes(texto) ||
+          c.cursoNombre.toLowerCase().includes(texto) ||
+          c.documentMasked.toLowerCase().includes(texto) ||
+          c.numero.toLowerCase().includes(texto)),
+    );
+  });
+  readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.resultadosFiltrados().length / PAGINA_TAMANO)));
+  readonly paginaSegura = computed(() => Math.min(this.pagina(), this.totalPaginas()));
+  readonly itemsVisibles = computed(() => {
+    if (this.vistaQA() !== 'datos') return [];
+    const page = this.paginaSegura();
+    return this.resultadosFiltrados().slice((page - 1) * PAGINA_TAMANO, page * PAGINA_TAMANO);
+  });
+  readonly vacioTotal = computed(() => this.vistaQA() === 'vacio-total' || (!this.cargando() && !this.error() && !this.hayFiltrosActivos() && this.certificados().length === 0));
+  readonly sinCoincidencias = computed(() => !this.cargando() && !this.error() && this.vistaQA() === 'datos' && this.hayFiltrosActivos() && this.resultadosFiltrados().length === 0);
 
-  constructor() {
-    void this.recargar();
-  }
+  constructor() { void this.recargar(); }
 
   async recargar(): Promise<void> {
+    const generation = ++this.loadGeneration;
+    if (this.vistaQA() !== 'datos') return;
     this.cargando.set(true);
     this.error.set('');
     try {
-      const filtros: { estado?: EstadoCertificado; q?: string } = {};
-      if (this.estado() !== 'todos') {
-        filtros.estado = this.estado() as EstadoCertificado;
-      }
-      const texto = this.q().trim();
-      if (texto) {
-        filtros.q = texto;
-      }
-      const list = await this.certs.listar(filtros);
+      const list = await this.certs.listar();
+      if (generation !== this.loadGeneration) return;
       this.certificados.set(list);
-    } catch (e) {
-      this.error.set((e as Error).message);
+      this.pagina.set(Math.min(this.pagina(), this.totalPaginas()));
+    } catch {
+      if (generation !== this.loadGeneration) return;
+      this.error.set('No se pudo cargar el listado de certificaciones. Reintentá.');
     } finally {
-      this.cargando.set(false);
+      if (generation === this.loadGeneration) this.cargando.set(false);
     }
   }
 
-  onSearch(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.q.set(value);
-    void this.recargar();
-  }
-
-  onEstado(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value as EstadoCertificado | 'todos';
-    this.estado.set(value);
-    void this.recargar();
-  }
+  onSearch(event: Event): void { this.q.set((event.target as HTMLInputElement).value); this.pagina.set(1); }
+  onEstado(value: EstadoCertificado): void { this.estado.update((current) => current === value ? 'todos' : value); this.pagina.set(1); }
+  onEnvio(value: TipoEnvio): void { this.envio.update((current) => current === value ? 'todos' : value); this.pagina.set(1); }
+  onCurso(event: Event): void { this.curso.set((event.target as HTMLSelectElement).value); this.pagina.set(1); }
+  onLimpiarFiltros(): void { this.q.set(''); this.estado.set('todos'); this.envio.set('todos'); this.curso.set('todos'); this.pagina.set(1); }
+  onPagina(page: number): void { this.pagina.set(Math.min(Math.max(1, page), this.totalPaginas())); }
+  onVistaQA(value: VistaQa): void { if (!this.qaEnabled) return; this.vistaQA.set(value); this.pagina.set(1); if (value === 'datos') void this.recargar(); }
+  onReintentar(): void { if (this.qaEnabled && this.vistaQA() !== 'datos') { this.vistaQA.set('datos'); this.pagina.set(1); } void this.recargar(); }
+  etiquetaEnvio(value: TipoEnvio): string { return value === 'entregado' ? 'Entregado' : value === 'pendiente-entrega' ? 'Pendiente de entrega' : 'Requiere nueva entrega'; }
 }

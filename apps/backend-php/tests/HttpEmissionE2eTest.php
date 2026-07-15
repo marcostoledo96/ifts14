@@ -26,6 +26,10 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/002_token_cifrado_en
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/003_cursos_alumnos_asistencias.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/004_certificados_alumno_curso.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/005_prevenir_certificados_duplicados.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/006_reconciliar_esquema_m4_02.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/007_schema_migrations.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_revision_contenido.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
 
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-http-emission-e2e-' . bin2hex(random_bytes(4));
@@ -107,12 +111,15 @@ try {
         'fecha' => '2026-06-08',
         'descripcion' => 'Clase 2',
         'orden' => 2,
-        'estado' => 'programada',
+        'estado' => 'realizada',
     ]);
     assertStatus($date2Response, 201, 'crear fecha 2 HTTP');
     $fecha2 = (int) (assertJson($date2Response, 'crear fecha 2 HTTP')['data']['id'] ?? 0);
 
-    assertStatus(postJson($port, '/admin/asistencias', $adminKey, ['alumnoId' => $alumnoId, 'cursoId' => $cursoId, 'cursoFechaId' => $fecha1]), 201, 'crear asistencia 1 HTTP');
+    $asistencia1Response = postJson($port, '/admin/asistencias', $adminKey, ['alumnoId' => $alumnoId, 'cursoId' => $cursoId, 'cursoFechaId' => $fecha1]);
+    assertStatus($asistencia1Response, 201, 'crear asistencia 1 HTTP');
+    $asistencia1Id = (int) (assertJson($asistencia1Response, 'crear asistencia 1 HTTP')['data']['id'] ?? 0);
+
     assertStatus(postJson($port, '/admin/asistencias', $adminKey, ['alumnoId' => $alumnoId, 'cursoId' => $cursoId, 'cursoFechaId' => $fecha2]), 201, 'crear asistencia 2 HTTP');
 
     $emission = request($port, 'POST', '/admin/certificados', [
@@ -166,6 +173,13 @@ try {
     assertPdfDownload($pdfWithUnsafeCode, 'descarga PDF HTTP con filename sanitizado');
     assertContentDisposition($pdfWithUnsafeCode, 'attachment; filename="' . $safeCertificateCode . '.pdf"', 'descarga PDF HTTP con filename sanitizado');
 
+    // Desactualizar el PDF borrando una asistencia
+    $deleteAtt = request($port, 'DELETE', '/admin/asistencias/' . $asistencia1Id, ['X-Admin-Key: ' . $adminKey]);
+    assertStatus($deleteAtt, 200, 'anular asistencia HTTP');
+
+    $outdatedPdf = request($port, 'GET', $pdfPath, ['X-Admin-Key: ' . $adminKey]);
+    assertError($outdatedPdf, 409, 'PDF_OUTDATED', 'descarga PDF desactualizado HTTP');
+
     $tokenSnapshotBeforeQr = tokenSnapshot($pdo, $certificateId);
     $qr = request($port, 'GET', '/admin/certificados/' . $certificateId . '/qr.png', [
         'X-Admin-Key: ' . $adminKey,
@@ -185,7 +199,7 @@ try {
     $validation = request($port, 'GET', '/certificados/' . rawurlencode($token) . '/verificacion');
     assertStatus($validation, 200, 'validación pública HTTP');
     $validationBody = assertJson($validation, 'validación pública HTTP');
-    if (($validationBody['data']['student']['documentNumber'] ?? '') !== $dni || ($validationBody['data']['course']['attendedDates'] ?? []) !== ['2026-06-01', '2026-06-08']) {
+    if (($validationBody['data']['student']['documentNumber'] ?? '') !== $dni || ($validationBody['data']['course']['attendedDates'] ?? []) !== ['2026-06-08']) {
         throw new RuntimeException('validación pública HTTP: DTO inválido.');
     }
 
@@ -196,6 +210,12 @@ try {
     $manualBody = assertJson($manual, 'entrega manual HTTP');
     if (($manualBody['data']['publicValidationUrl'] ?? '') !== $validationUrl || ($manualBody['data']['tokenPrefix'] ?? '') !== $tokenPrefix) {
         throw new RuntimeException('entrega manual HTTP: rotó o cambió el token.');
+    }
+    if (($manualBody['data']['pdfAvailable'] ?? null) !== false) {
+        throw new RuntimeException('entrega manual HTTP: pdfAvailable no es false para certificado desactualizado.');
+    }
+    if (($manualBody['data']['pdfStatus'] ?? '') !== 'outdated') {
+        throw new RuntimeException('entrega manual HTTP: pdfStatus no es outdated.');
     }
 
     $resend = request($port, 'POST', '/admin/certificados/' . $certificateId . '/reenviar', [

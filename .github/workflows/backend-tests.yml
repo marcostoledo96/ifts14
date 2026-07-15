@@ -65,8 +65,15 @@ jobs:
               php apps/backend-php/tests/SnapshotEmissionTest.php &&
               php apps/backend-php/tests/HttpEmissionE2eTest.php &&
               php apps/backend-php/tests/AdminMasterDataHttpTest.php &&
-              php apps/backend-php/tests/AdminCertificadosConsultaHttpTest.php
+              php apps/backend-php/tests/AdminCertificadosConsultaHttpTest.php &&
+              php apps/backend-php/tests/ReadinessTest.php &&
+              php apps/backend-php/tests/CertificateRevisionMigrationTest.php &&
+              php apps/backend-php/tests/AttendanceRevisionTest.php &&
+              php apps/backend-php/tests/CourseDateRevisionTest.php
             '
+
+      - name: Privacy headers
+        run: bash scripts/test-privacy-headers.sh
 
   frontend-tests:
     runs-on: ubuntu-latest

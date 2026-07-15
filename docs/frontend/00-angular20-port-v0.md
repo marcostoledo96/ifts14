@@ -304,6 +304,76 @@ Handoff a F5-04/F6-03/F6-01: la UI ya está lista para que esos ciclos conecten 
 
 Detalle en `docs/frontend/F4-02-vista-previa-pdf.md` y archive `openspec/changes/archive/2026-07-12-f4-02-certificate-pdf-preview/`.
 
+### Estado F4-03 — Listado de cursos con paridad v0
+
+Ciclo `f4-03-courses-list` sobre la base F2-04. Evoluciona `CoursesListPage` in-place para que `/admin/cursos` alcance paridad funcional y visual con `muestra_pagina/components/admin/lista-cursos.tsx`, sin nuevas rutas, dependencias, backend, HTTP ni storage. Tabla accesible en desktop (`<caption>`, `<th scope="col">`, métricas con `—` y texto accesible "Dato disponible con integración real"), tarjetas mobile con las mismas métricas, filtro de búsqueda, selector de estado, chips `aria-pressed` con/sin fechas, `Limpiar filtros` condicional y diferenciación de loading, error con reintento, vacío total y sin coincidencias. Métricas `alumnosPresentes`/`certificaciones` quedan `null`/`—` con explicación accesible; el listado no consulta features de asistencias ni certificaciones.
+
+Archivos en `apps/frontend-angular/src/app/features/admin/courses/`:
+
+- `courses.models.ts` — `cuatrimestre: string`, `cantidadFechas: number`, `alumnosPresentes: number | null`, `certificaciones: number | null`; `CursosFiltros.conFechas?: boolean`.
+- `in-memory-courses.service.ts` — derivación de cuatrimestre y `cantidadFechas` desde el seed; métricas en `null`; alta crea `cuatrimestre: 'Sin programar'`, `cantidadFechas: 0`.
+- `courses-list-page.ts` — signals `q`/`estado`/`conFechas`; `recargar()` consume `CursosFiltros` completo; handlers `onConFechas`, `onLimpiarFiltros`, `onReintentar`; distinción `vacioTotal` vs `sinCoincidencias`; guard local de generación anti-race.
+- `courses-list-page.html` — `<table>` accesible desktop, `<ul class="cards-mobile">` mobile, métricas con `—` + texto accesible, banners con `aria-busy`/`role="alert"`, `<p aria-live="polite">` para resumen, links `Ver detalle`/`Editar` con nombre accesible.
+- `courses-list-page.css` — responsive con tokens existentes; tabla oculta `<md`, cards ocultas `≥md`; chips con `aria-pressed=true` diferenciado.
+- `courses.service.spec.ts` (24 specs) y `courses-list-page.spec.ts` (13 specs) — derivación, filtros, placeholders, semántica, acciones y links.
+- `__checks__/no-secrets.spec.ts` y `__checks__/no-real-data.spec.ts` — `CoursesListPage.prototype.recargar` y `onLimpiarFiltros` añadidos a `sources()`; cuatrimestres y datos ficticios institucionalmente seguros.
+
+Límites explícitos (F4-03): sin backend real, HTTP, `X-Admin-Key`, storage/cookies/IndexedDB, sesión real, DNI completo administrativo, token completo, email, legajo, matrícula, UUID, dependencias nuevas, Tailwind, copia literal React/Next ni datos reales. Las acciones reales (alta persistida, eliminar curso, acoplar con `Asistencia`/`Certificacion`) quedan como handoff a F4-04 y ciclos posteriores.
+
+Verificación (`sdd-verify`, lineage `review-fc99c946d72cec8e`):
+
+- `rtk npm run test:ci` **485/485 SUCCESS** (13 page + 24 service + 448 resto).
+- `rtk npm run build` exit 0 con **2 warnings de budget CSS preexistentes** (`certification-pdf-preview-page.css` 12,41 kB y `certification-preview-page.css` 14,31 kB, ambos < 16 kB error) — carry-forward de F4-01/F4-02, trade-off de paridad visual. F4-03 **no** introduce warnings nuevos.
+- Focused page 13/13, focused service 24/24, suite completa, `git diff --check` exit 0.
+- Runtime real con `ng serve`: desktop 1280×800 mostró tabla con 6 filas y cards ocultas; mobile 390×844 mostró 6 cards y tabla oculta; filtro sin coincidencias mostró mensaje diferenciado y `Limpiar filtros`; privacidad confirmada (sin DNI/email/token/UUID).
+- Capturas en `openspec/changes/archive/2026-07-12-f4-03-courses-list/evidence/` (desktop 1280×800, mobile 390×844, loading, error, empty-total, no-results + `parity-notes.md`).
+
+Fallo histórico y corrección (no ocultada):
+
+- La primera corrida de `sdd-verify` terminó en **FAIL** porque dos `listar()` superpuestos podían resolverse en orden inverso y mostrar cursos stale, error o loading de una generación vieja.
+- La corrección se aplicó con guard local de generación dentro de `CoursesListPage.recargar()` (contador que invalida respuestas previas en `try`, `catch` y `finally`), sin RxJS, sin cancelación ni abstracciones nuevas. R1–R3 verdes; suite 485/485, build exit 0, focused y `git diff --check` pasan.
+
+Warnings carry-forward (no bloqueantes):
+
+- Dos warnings de budget CSS preexistentes en preview/PDF de certificaciones, ajenos a `courses-list`.
+- `requestAnimationFrame` heredado de F4-02 sin cancelación de handle al destruir el componente; follow-up previamente aprobado, sin falla runtime observada.
+
+Handoff a F4-04: `Ver detalle` y `Editar` solo reusan rutas existentes. La evolución del detalle, los cambios persistentes en fechas y la integración con `Asistencia`/`Certificacion` llegan en F4-04 y ciclos posteriores. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior.
+
+Detalle en `docs/frontend/F4-03-listado-cursos-paridad-v0.md` y archive `openspec/changes/archive/2026-07-12-f4-03-courses-list/`.
+
+### Estado F5-01 — Listado de certificaciones con paridad v0 (filtros, paginación, harness QA)
+
+Ciclo `f5-01-certifications-list` sobre la base F2-06 (modelo y servicio en memoria) y F4-01/F4-02 (detalle y vista PDF imprimible mock-only). Evoluciona `CertificationsListPage` in-place para que `/admin/certificaciones` alcance paridad funcional y visual con `muestra_pagina/components/admin/lista-certificaciones.tsx`, sin nuevas rutas, dependencias, backend, HTTP, storage, cookies, IndexedDB ni `X-Admin-Key`. Mantiene `CERTIFICATIONS_SOURCE`/`InMemoryCertificationsService` y el seam `InMemory*` ya aprobado en F2-06; los handoffs F4-01/F4-02 (detalle y PDF imprimible) y F5-04/F6-01/F6-03 siguen deshabilitados con `aria-disabled="true"` salvo los CTAs de navegación ya habilitados.
+
+Archivos modificados en `apps/frontend-angular/src/app/features/admin/certifications/`:
+
+- `certifications.models.ts` — agrega `EnvioCertificacion` (`entregado`/`pendiente-entrega`/`requiere-nueva-entrega`), `numero` ficticio y `envio` en el modelo `Certificacion`. `documentMasked` sigue siendo el único documento visible; sin DNI completo, token completo, email, legajo, matrícula ni UUID.
+- `in-memory-certifications.service.ts` — completa los 6 registros ficticios con `numero` y `envio`; sin red, sin storage, sin claves admin, sin datos reales.
+- `pages/list/certifications-list-page.{ts,html,css,spec.ts}` — `signal`s de filtros (`validez`, `entrega`, `curso`, `busqueda`), `computed()` de resultados/conteos y `slice()` de 5; `onLimpiarFiltros` resetea y reinicia página; `onPagina()` acota con `paginaSegura()`; harness QA local no persistente (`datos|cargando|error|vacio-total`) habilitado mediante `isDevMode()` y seam inyectable para tests, ausente e inmutable en producción/staging; tabla desktop con `<caption>`, `<th scope="col">` y resumen `aria-live="polite"`; cards mobile con `<dl>`; skeleton de carga, alerta de error con reintento, vacío total y sin coincidencias diferenciados; links a detalle y PDF existentes conservados.
+- `certifications.service.spec.ts` y `certifications-list-page.spec.ts` — cubren `numero`/`envio`, filtros combinables, búsqueda segura, paginación y clamp, los cuatro estados del harness, semántica de tabla/cards, links a detalle/PDF, race guard anti-stale y reset.
+- `__checks__/no-secrets.spec.ts` y `__checks__/no-real-data.spec.ts` — endurecidos para incluir nuevos campos, métodos y DOM del listado en los checks negativos de seguridad y datos.
+
+Límites explícitos (F5-01): sin backend real, HTTP, `X-Admin-Key`, storage/cookies/IndexedDB, sesión real, DNI completo administrativo, token completo, email, legajo, matrícula, UUID, dependencias nuevas, Tailwind, copia literal React/Next ni datos reales. No se modifican `app.routes.ts`, detalle, PDF, servicio, backend, configuración ni dependencias. Las acciones reales (emisión, entrega manual, revocación, listado real) y la persistencia de filtros/página siguen como handoff a F4-F6; el harness QA no persiste estado entre recargas ni expone la app a URL/storage, y `onVistaQA` ignora invocaciones cuando QA está deshabilitado.
+
+Verificación (`sdd-verify`, receipt `review-ec94f4e582546bed`):
+
+- `rtk npm run test:ci` **498/498 SUCCESS** (160/160 focused: `certifications.service.spec.ts` + `certifications-list-page.spec.ts` + `app.routes.spec.ts` + `no-real-data.spec.ts` + `no-secrets.spec.ts`).
+- `rtk npm run build` exit 0 con **2 warnings de budget CSS preexistentes** (`certification-pdf-preview-page.css` 12,41 kB y `certification-preview-page.css` 14,31 kB) — carry-forward de F4-01/F4-02, ajenos a F5-01.
+- Compliance: 2/2 requisitos (Listado mock-only con datos seguros; Harness y evidencia verificable del listado); 8/8 escenarios compliant; 0 CRITICAL, 0 blockers. **PASS**.
+- Runtime real con `ng serve` + Playwright sobre `http://127.0.0.1:4200/certificados/admin/certificaciones`, sesión mock y viewports 1280×800 / 390×844: estado inicial `Total: 6 · Coincidencias: 6 · Visibles: 5` con tabla desktop; página 2 con una fila y botón siguiente deshabilitado; combinación `curso + vigente + Entregado + búsqueda Uno` → 1/1/1 con id 1 y reset a página 1; `Limpiar filtros` restaura 6/6/5 y página 1; harness QA fuerza carga con 5 skeletons, error con reintento, vacío total y sin coincidencias 6/0/0; mobile 390×844 muestra 5 cards con `<dl>`; navegación real desde cards a `/admin/certificaciones/1` y `/admin/certificaciones/1/pdf`; consola 0 errores / 0 warnings.
+- Privacidad: sin DNI completo, email, UUID, prefijo de token visible ni solicitudes no estáticas/fetch/XHR.
+- Capturas en `openspec/changes/archive/2026-07-13-f5-01-certifications-list/evidence/` (desktop 1280×800, mobile 390×844, loading, error, empty-total, no-results + `parity-notes.md`).
+- `git diff --check`: limpio. `package.json`, lockfiles, `angular.json` y `.atl`: sin cambios tracked ni untracked.
+
+Handoff a F4-F6: `Certificacion`/`EnvioCertificacion`/`numero` quedan listos para reuso; la integración con emisión, entrega, revocación y listado real llega en F5-04/F6-01/F6-03 y F5-04. El `HeaderInstitucional` raíz en `/admin/*` (tech debt documentado en F2-03) sigue sin refactorizar; queda para un ciclo posterior. El spec main `admin-certifications-frontend/spec.md` queda sincronizado con el delta de F5-01 (requisito `Listado mock-only con datos seguros` extendido a 6 escenarios y `Harness y evidencia verificable del listado` agregado).
+
+Detalle en archive `openspec/changes/archive/2026-07-13-f5-01-certifications-list/` y archive report del ciclo.
+
+### Estado F5-02 — Listado de alumnos con privacidad minimizada
+
+Implementación aplicada en `frontend/students-list`; cerrado y archivado en `openspec/changes/archive/2026-07-13-f5-02-students-list/` (verify PASS 6/6, 14/14, suite 521/521, build exit 0). `/admin/alumnos` usa un seed local independiente con documento enmascarado y `tieneEmail` booleano, sin direcciones, legajo, documento completo, red ni storage. Incluye búsqueda segura, filtros combinables, paginación de cinco, tabla desktop, tarjetas mobile, estados accesibles, guard anti-race y QA limitado a desarrollo/tests. Sidebar y dashboard enlazan la ruta; el detalle permanece deshabilitado y sin `:id` hasta F5-03. Ver `docs/frontend/F5-02-listado-alumnos-paridad-v0.md`.
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:
@@ -400,5 +470,7 @@ Cuando exista integración real:
 
 ## Ver también
 
-- [Verificación de build para /certificados/ — F3-05](04-build-validacion-f3-05.md) — reporte del build de producción con `base-href /certificados/`.
-- [Handoff a Marcos — F3-06](05-handoff-marcos-f3-06.md) — reporte de handoff final de Fase 3 a Marcos con 7 PRs, F3-04/F3-05 y roadmap F4-F6.
+- [F4-04 — Detalle de curso con paridad v0](./F4-04-detalle-curso-paridad-v0.md) — ficha, tabla desktop, tarjetas mobile y métricas opcionales de asistencia; evidencia de desktop, mobile, vacío, cancelada y realizadas con acción `Ver`.
+- [Reporte de QA manual F3-04](./03-qa-manual-f3-04.md) — checklist transversal de build, responsive, teclado/foco, contraste, estados, consola y datos sensibles. Estado BLOCKED hasta ejecutar QA manual y checks automáticos; F3-05 no satisface esos pendientes por sí solo.
+- [Verificación de build F3-05](./04-build-validacion-f3-05.md) — build de producción con `base-href /certificados/`, artefactos generados, tamaños, warnings y pendientes.
+- [Handoff a Marcos — F3-06](./05-handoff-marcos-f3-06.md) — reporte de handoff final de Fase 3 a Marcos con F3-04/F3-05 y roadmap F4-F6.

@@ -21,7 +21,7 @@ La API MUST exponer un contrato JSON para validar certificados desde QR o enlace
 
 - **Given** un token inexistente, revocado, vencido o no actual
 - **When** se consulta la verificación pública
-- **Then** la respuesta MUST usar `404 CERTIFICATE_NOT_FOUND` sin revelar cuál condición ocurrió.
+- **Then** la respuesta MUST usar el 404 unificado (`404 CERTIFICATE_NOT_FOUND`) sin revelar cuál condición ocurrió.
 
 ### Requirement: Consulta alternativa por POST
 
@@ -136,8 +136,8 @@ El endpoint público de verificación MUST aplicar rate limiting mínimo y respo
 
 ### Requirement: Contrato administrativo mínimo de certificados
 
-La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión desde `alumnoId` + `cursoId` con generación PDF/QR, snapshot de asistencias activas y respuesta `201` con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; `POST /admin/certificados/{id}/revocar`; `GET /admin/certificados/{id}/pdf`; y `GET /admin/certificados/{id}/entrega-manual`. Si ya existe un certificado con `estado='vigente'` y `revocado_en IS NULL` para el mismo alumno y curso, `POST /admin/certificados` DEBE responder `409 CERTIFICATE_ALREADY_EXISTS`; revocación o `estado='vencido'` liberan el slot, pero `vence_en` pasado no lo libera mientras el estado siga `vigente`. Entrega manual DEBE ser de solo lectura: NO DEBE rotar token, enviar email, activar SMTP/PHPMailer ni modificar estado. Las respuestas DEBEN usar envelopes existentes, DTOs seguros y errores sin DNI completo, token completo como campo separado, secretos, SQL ni rutas internas. `X-Admin-Key` es server-to-server y NO DEBE exponerse en Angular. `POST /admin/certificados/{id}/reenviar` NO DEBE formar parte del contrato MVP.
-(Previously: el contrato administrativo documentaba emisión, revocación, PDF y entrega manual, pero no el `409 CERTIFICATE_ALREADY_EXISTS` por duplicado vigente.)
+La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` protegidos por `X-Admin-Key`: `POST /admin/certificados` para emisión desde `alumnoId` + `cursoId` con generación PDF secundario (opcional en futuras iteraciones) o QR, snapshot de asistencias activas y respuesta `201` con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; `POST /admin/certificados/{id}/revocar`; `GET /admin/certificados/{id}/pdf`; y `GET /admin/certificados/{id}/entrega-manual`. Si ya existe un certificado con `estado='vigente'` y `revocado_en IS NULL` para el mismo alumno y curso, `POST /admin/certificados` DEBE responder `409 CERTIFICATE_ALREADY_EXISTS`; revocación o `estado='vencido'` liberan el slot. Entrega manual DEBE ser de solo lectura y usar el 404 unificado si está revocado: NO DEBE rotar token, enviar email, activar SMTP/PHPMailer ni modificar estado (cualquier envío por email queda diferido a procesos externos opcionales). Las respuestas DEBEN usar envelopes existentes, DTOs seguros y errores sin DNI completo, token completo, secretos ni SQL. `X-Admin-Key` es server-to-server. `POST /admin/certificados/{id}/reenviar` queda excluido del MVP.
+(Previously: el contrato administrativo documentaba emisión, revocación, PDF y entrega manual, pero no la obligatoriedad del 404 unificado para revocados en entrega manual ni la delegación de emails).
 
 #### Scenario: Admin sin autorización
 

@@ -3,13 +3,18 @@
 // Los DTOs seguros (documentMasked, tokenPrefix, URL truncada) se usan en UI admin.
 
 export type EstadoCertificado = 'borrador' | 'vigente' | 'revocado' | 'vencido';
+export type TipoEnvio = 'entregado' | 'pendiente-entrega' | 'requiere-nueva-entrega';
+
+export const PAGINA_TAMANO = 5;
 
 // Certificación listable: campos seguros para el listado admin.
 export interface Certificacion {
   readonly id: number;
+  readonly numero: string;
   readonly nombreAlumno: string; // ficticio, no plausible
   readonly cursoNombre: string; // ficticio, no plausible
   readonly estado: EstadoCertificado;
+  readonly envio: TipoEnvio;
   readonly documentMasked: string; // XX****XX
   readonly tokenPrefix: string; // prefijo_demo_xxx
   readonly emitidoEn: string | null; // ISO date
@@ -31,5 +36,7 @@ export interface AuditEvent {
 
 export interface CertificacionesFiltros {
   readonly estado?: EstadoCertificado;
+  readonly envio?: TipoEnvio;
+  readonly curso?: string;
   readonly q?: string; // texto libre sobre nombre/curso/alumno
 }

@@ -18,7 +18,7 @@ describe('SidebarAdmin', () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('[role="navigation"]')).not.toBeNull();
-    // 5 ítems: 4 links (dashboard + cursos + asistencias + certificaciones) + 1 placeholder deshabilitado
+    // Los cinco módulos del shell ya tienen ruta de listado.
     const links = el.querySelectorAll('nav ul li a');
     const placeholders = el.querySelectorAll('nav ul li button.nav-placeholder');
     expect(links.length + placeholders.length).toBe(5);
@@ -41,7 +41,7 @@ describe('SidebarAdmin', () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const links = Array.from(el.querySelectorAll('nav ul li a'));
-    expect(links.length).toBe(4);
+    expect(links.length).toBe(5);
     const cursosLink = links.find((a) => a.textContent?.includes('Cursos'));
     expect(cursosLink).toBeDefined();
     expect(cursosLink?.getAttribute('href')).toContain('/admin/cursos');
@@ -65,19 +65,11 @@ describe('SidebarAdmin', () => {
     expect(certLink?.getAttribute('href')).toContain('/admin/certificaciones');
   });
 
-  it('los ítems futuros (Alumnos) son placeholders deshabilitados sin href', async () => {
+  it('Alumnos es un link que navega a /admin/alumnos', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const placeholders = el.querySelectorAll('nav ul li button.nav-placeholder');
-    expect(placeholders.length).toBe(1);
-    placeholders.forEach((btn) => {
-      expect(btn.getAttribute('disabled')).not.toBeNull();
-      expect(btn.getAttribute('aria-disabled')).toBe('true');
-      expect(btn.getAttribute('href')).toBeNull();
-      expect(btn.tagName.toLowerCase()).toBe('button');
-    });
-    const labels = Array.from(placeholders).map((b) => b.textContent?.trim());
-    expect(labels).toEqual(['Alumnos']);
+    const link = Array.from(el.querySelectorAll('nav ul li a')).find((a) => a.textContent?.includes('Alumnos'));
+    expect(link?.getAttribute('href')).toContain('/admin/alumnos');
   });
 
   it('marca aria-current=page en Inicio cuando active=/admin/dashboard', async () => {
@@ -144,6 +136,11 @@ describe('SidebarAdmin', () => {
     const el = f.nativeElement as HTMLElement;
     const current = el.querySelector('nav a[aria-current="page"]');
     expect(current?.textContent).toContain('Certificaciones');
+  });
+
+  it('Alumnos queda activo por prefijo en /admin/alumnos', async () => {
+    const f = await render('/admin/alumnos');
+    expect((f.nativeElement as HTMLElement).querySelector('nav a[aria-current="page"]')?.textContent).toContain('Alumnos');
   });
 
   it('Inicio NO queda activo cuando active=/admin/cursos', async () => {

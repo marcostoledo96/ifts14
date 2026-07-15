@@ -1,71 +1,64 @@
 <section aria-labelledby="cursos-title">
   <div class="header-row">
     <div>
-      <p class="kicker">Admin · Cursos</p>
+      <p class="kicker">Archivo académico</p>
       <h1 id="cursos-title" class="title">Cursos</h1>
+      <p class="subtitle">Gestión de programas, fechas de cursada y certificaciones emitidas.</p>
     </div>
-    <a class="btn-primary" routerLink="/admin/cursos/nuevo">
-      <span>Nuevo curso</span>
-    </a>
+    <a class="btn-primary" routerLink="/admin/cursos/nuevo">Nuevo curso</a>
   </div>
 
-  <p class="demo-banner" role="status">
-    Datos de demostración: los cambios no se persisten al recargar.
-  </p>
+  <p class="demo-banner" role="status">Datos de demostración: los cambios no se persisten al recargar.</p>
 
-  <div class="filtros">
+  <section class="filtros" aria-label="Buscar y filtrar cursos">
     <label class="filtro-search">
-      <span class="filtro-label">Buscar</span>
-      <input
-        type="search"
-        [value]="q()"
-        (input)="onSearch($event)"
-        placeholder="Código o nombre…"
-        aria-label="Buscar curso por código o nombre"
-      />
+      <span class="filtro-label">Filtrar por nombre o código</span>
+      <input type="search" [value]="q()" (input)="onSearch($event)" placeholder="Ej. Curso de gestión…" aria-label="Buscar curso por código o nombre" />
     </label>
     <label class="filtro-estado">
       <span class="filtro-label">Estado</span>
       <select [value]="estado()" (change)="onEstado($event)" aria-label="Filtrar por estado">
         <option value="todos">Todos</option>
-        @for (e of estados; track e) {
-          <option [value]="e">{{ e }}</option>
-        }
+        @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
       </select>
     </label>
+    <div class="filtro-fechas">
+      <span class="filtro-label">Fechas de cursada</span>
+      <div class="filter-chips">
+        <button type="button" data-fechas="con" [attr.aria-pressed]="conFechas() === true" (click)="onConFechas(true)">Con fechas</button>
+        <button type="button" data-fechas="sin" [attr.aria-pressed]="conFechas() === false" (click)="onConFechas(false)">Sin fechas</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="results-summary">
+    <p aria-live="polite">{{ cursos().length }} {{ cursos().length === 1 ? 'curso' : 'cursos' }} {{ hayFiltrosActivos() ? 'coinciden con los filtros' : 'en el archivo' }}.</p>
+    @if (hayFiltrosActivos()) { <button class="clear-filters" type="button" (click)="onLimpiarFiltros()">Limpiar filtros</button> }
   </div>
 
   @if (cargando()) {
-    <p class="estado-linea">Cargando cursos…</p>
-  }
-  @if (error()) {
-    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
-  }
-
-  @if (!cargando() && cursos().length === 0) {
+    <p class="estado-linea" aria-busy="true">Cargando cursos…</p>
+  } @else if (error()) {
+    <div class="estado-linea estado-error" role="alert"><p>{{ error() }}</p><button type="button" (click)="onReintentar()">Reintentar</button></div>
+  } @else if (vacioTotal()) {
+    <p class="estado-linea">Todavía no hay cursos cargados.</p>
+  } @else if (sinCoincidencias()) {
     <p class="estado-linea">No hay cursos que coincidan con los filtros.</p>
-  }
-
-  @if (!cargando() && cursos().length > 0) {
-    <ul class="lista-cursos">
+  } @else {
+    <div class="courses-table-wrap">
+      <table>
+        <caption>Listado de cursos del Instituto</caption>
+        <thead><tr><th scope="col">Curso</th><th scope="col">Fechas</th><th scope="col">Presentes</th><th scope="col">Certificaciones</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
+        <tbody>
+          @for (c of cursos(); track c.id) {
+            <tr><td><strong>{{ c.nombre }}</strong><span class="course-code">{{ c.codigo }} · {{ c.cuatrimestre }}</span></td><td>{{ c.cantidadFechas }}</td><td><span title="Dato disponible con integración real">—</span><span class="sr-only">Dato disponible con integración real</span></td><td><span title="Dato disponible con integración real">—</span><span class="sr-only">Dato disponible con integración real</span></td><td><span class="estado-chip estado-{{ c.estado }}">{{ c.estado }}</span></td><td class="actions"><a [routerLink]="['/admin/cursos', c.id]" [attr.aria-label]="'Ver detalle de ' + c.nombre">Ver detalle</a><a [routerLink]="['/admin/cursos', c.id, 'editar']" [attr.aria-label]="'Editar ' + c.nombre">Editar</a></td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <ul class="cards-mobile">
       @for (c of cursos(); track c.id) {
-        <li>
-          <article class="card-curso">
-            <header class="card-curso-header">
-              <h2 class="card-curso-title">{{ c.nombre }}</h2>
-              <span class="estado-chip estado-{{ c.estado }}">{{ c.estado }}</span>
-            </header>
-            <dl class="card-curso-meta">
-              <dt>Código</dt>
-              <dd>{{ c.codigo }}</dd>
-              <dt>Actualizado</dt>
-              <dd>{{ c.updatedAt | date: 'short' }}</dd>
-            </dl>
-            <a class="card-curso-link" [routerLink]="['/admin/cursos', c.id]">
-              Ver detalle
-            </a>
-          </article>
-        </li>
+        <li class="card-curso"><header><div><h2>{{ c.nombre }}</h2><p>{{ c.codigo }} · {{ c.cuatrimestre }}</p></div><span class="estado-chip estado-{{ c.estado }}">{{ c.estado }}</span></header><dl class="metrics"><div><dt>Fechas</dt><dd>{{ c.cantidadFechas }}</dd></div><div><dt>Presentes</dt><dd title="Dato disponible con integración real">—<span class="sr-only">Dato disponible con integración real</span></dd></div><div><dt>Certif.</dt><dd title="Dato disponible con integración real">—<span class="sr-only">Dato disponible con integración real</span></dd></div></dl><div class="card-actions"><a [routerLink]="['/admin/cursos', c.id]" [attr.aria-label]="'Ver detalle de ' + c.nombre">Ver detalle</a><a [routerLink]="['/admin/cursos', c.id, 'editar']" [attr.aria-label]="'Editar ' + c.nombre">Editar</a></div></li>
       }
     </ul>
   }

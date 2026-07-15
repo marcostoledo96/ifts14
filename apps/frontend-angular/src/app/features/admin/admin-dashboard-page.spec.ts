@@ -6,6 +6,8 @@ import { InMemoryCoursesService } from './courses/in-memory-courses.service';
 import { CERTIFICATIONS_SOURCE } from './certifications/certifications.service';
 import { InMemoryCertificationsService } from './certifications/in-memory-certifications.service';
 import type { CertificationsService } from './certifications/certifications.service';
+import { STUDENTS_SOURCE } from './students/students.service';
+import { InMemoryStudentsService } from './students/in-memory-students.service';
 
 describe('AdminDashboardPage', () => {
   async function render() {
@@ -17,6 +19,7 @@ describe('AdminDashboardPage', () => {
         // el conteo en el futuro. El componente lo inyecta opcionalmente.
         { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
         { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+        { provide: STUDENTS_SOURCE, useClass: InMemoryStudentsService },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(AdminDashboardPage);
@@ -51,6 +54,12 @@ describe('AdminDashboardPage', () => {
     expect(certLink?.getAttribute('href')).toContain('/admin/certificaciones');
   });
 
+  it('muestra tarjeta Alumnos como enlace a /admin/alumnos', async () => {
+    const f = await render();
+    const link = Array.from((f.nativeElement as HTMLElement).querySelectorAll('a')).find((a) => a.textContent?.includes('Abrir Alumnos'));
+    expect(link?.getAttribute('href')).toContain('/admin/alumnos');
+  });
+
   it('muestra conteo ficticio de cursos en demo', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
@@ -79,9 +88,10 @@ describe('AdminDashboardPage', () => {
 
   it('si CERTIFICATIONS_SOURCE.contar() rechaza, el conteo queda en 0 sin romper el dashboard', async () => {
     const rejecting: CertificationsService = {
-      listar: () => Promise.resolve([]),
-      obtener: () => Promise.reject(new Error('no')),
-      contar: () => Promise.reject(new Error('boom')),
+      listar: () => Promise.reject(new Error('Network error')),
+      obtener: () => Promise.reject(new Error('Network error')),
+      contar: () => Promise.reject(new Error('Network error')),
+      revocar: () => Promise.reject(new Error('Network error')),
     };
     await TestBed.configureTestingModule({
       imports: [AdminDashboardPage],

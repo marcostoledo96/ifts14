@@ -91,7 +91,7 @@ Si el build pasa pero revela problemas de configuración:
 - [ ] No se modificó `public_html`, cPanel ni configuración real del servidor.
 - [ ] `dist/` y `node_modules/` NO fueron versionados.
 - [ ] El reporte no contiene secretos, DNI real ni credenciales de producción.
-- [ ] `verify-report.md` confirma sdd-verify PASS sin hallazgos CRITICAL.
+- [ ] `verify-report.md` registra `PARTIAL / EVIDENCIA HISTÓRICA NO REPRODUCIBLE` si no se preservó el exit code; PASS y release readiness requieren regenerar el build y capturar su exit code.
 - [ ] El ciclo termina con propuesta de commit a Mati (no se ejecuta Git automáticamente).
 - [ ] Mensaje de commit propuesto: `build(frontend): validar build certificados`.
 - [ ] Push propuesto: `git push -u origin qa/frontend-release-readiness`.

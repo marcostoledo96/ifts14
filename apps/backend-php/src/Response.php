@@ -46,6 +46,9 @@ final class Response
     {
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: SAMEORIGIN');
+        header('Referrer-Policy: no-referrer');
+        header('X-Robots-Tag: noindex, nofollow, noarchive');
+        header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox");
     }
 
     public static function noStoreSecurityHeaders(): void
