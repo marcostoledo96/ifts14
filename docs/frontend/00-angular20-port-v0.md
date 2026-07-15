@@ -473,3 +473,4 @@ Cuando exista integración real:
 - [F4-04 — Detalle de curso con paridad v0](./F4-04-detalle-curso-paridad-v0.md) — ficha, tabla desktop, tarjetas mobile y métricas opcionales de asistencia; evidencia de desktop, mobile, vacío, cancelada y realizadas con acción `Ver`.
 - [Reporte de QA manual F3-04](./03-qa-manual-f3-04.md) — checklist transversal de build, responsive, teclado/foco, contraste, estados, consola y datos sensibles. Estado BLOCKED hasta ejecutar QA manual y checks automáticos; F3-05 no satisface esos pendientes por sí solo.
 - [Verificación de build F3-05](./04-build-validacion-f3-05.md) — build de producción con `base-href /certificados/`, artefactos generados, tamaños, warnings y pendientes.
+- [Handoff a Marcos — F3-06](./05-handoff-marcos-f3-06.md) — reporte de handoff final de Fase 3 a Marcos con F3-04/F3-05 y roadmap F4-F6.
