@@ -24,6 +24,10 @@ final class AdminSessionAuth
     /** @param array<string, mixed> $config */
     public static function credentialsValid(array $config, string $username, string $password): bool
     {
+        if ($username === '' || $password === '') {
+            return false;
+        }
+
         $session = Config::adminSessionSettings($config);
         if ($session === null) {
             return false;
