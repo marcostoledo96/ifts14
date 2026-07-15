@@ -1,13 +1,13 @@
 ---
 titulo: "IFTS14 — Plan de correcciones preproducción con SDD y TDD"
-version: "1.0"
-fecha_plan: "2026-07-14"
+version: "1.1"
+fecha_plan: "2026-07-15"
 repositorio: "marcostoledo96/ifts14"
-commit_auditado: "9bc0dbdd92f90da3cb96dd271cfd93c8bca53987"
+commit_auditado: "1a6a1cf5aa1b19a9652cab82b9455e789885471c"
 rama_fuente: "main"
-estado_general: "EN_CURSO"
-fase_actual: "P3"
-ultimo_ciclo_cerrado: "P2-02"
+estado_general: "PARTIAL"
+fase_actual: "P5-02"
+ultimo_ciclo_cerrado: "P5-01 / PR #63"
 responsable_coordinacion: "Marcos"
 metodologia: "Gentle AI + OpenSpec + SDD + TDD"
 ---
@@ -71,10 +71,10 @@ Estas reglas pueden revisarse mediante SDD, pero son el punto de partida recomen
 
 ## 2.1 Ubicación recomendada dentro del repo
 
-Guardar este archivo como:
+Ruta vigente de este archivo:
 
 ```txt
-docs/planificacion/PLAN_CORRECCIONES_PREPRODUCCION_SDD_TDD.md
+docs/planificacion/IFTS14_PLAN_CORRECCIONES_PREPRODUCCION_SDD_TDD.md
 ```
 
 ## 2.2 Lectura mínima por ciclo
@@ -234,39 +234,70 @@ El agente debe verificar:
 
 # 4. Regla obligatoria de seguimiento
 
-## 4.1 Estados permitidos
+## 4.1 Estados vigentes y estados históricos
 
-Cada fase y ciclo debe tener uno de estos estados:
+La vista operativa actual usa exclusivamente `DONE`, `DONE WITH WARNINGS`, `PARTIAL`, `PENDING`, `BLOCKED` o `SUPERSEDED`. Los estados de ejecución como `EN_RED`, `EN_VERIFY` y `ARCHIVADO` permanecen en el registro histórico: no son evidencia de cierre por sí mismos.
 
-```txt
-PENDIENTE
-EN_EXPLORE
-ESPERANDO_APROBACION
-EN_RED
-EN_GREEN
-EN_REFACTOR
-EN_VERIFY
-ALTO_MANUAL
-BLOQUEADO
-ARCHIVADO
+La precedencia de evidencia es: merge/commit y `verify-report.md` archivado → runtime/CI versionado → spec vigente → documentación activa → este plan, checklist o auditoría histórica. Una fuente inferior no eleva un estado.
+
+## 4.2 Tablero operativo actual
+
+Este tablero es la vista vigente. Las auditorías, checklists y registros posteriores conservan su valor histórico, pero no cambian estos estados sin evidencia superior. Cada evidencia identifica su entorno; no hay evidencia `[production]` para producción `/certificados/`, que permanece **no validada**.
+
+| Fase | Estado | PR/commit | Evidencia dual, entorno y veredicto exacto | Brecha/advertencia vigente | Siguiente |
+|---|---|---|---|---|---|
+| P0 | `PARTIAL` | [PR #57](https://github.com/marcostoledo96/ifts14/pull/57) / [`9bc0dbd`](https://github.com/marcostoledo96/ifts14/commit/9bc0dbd) | [documental] [reporte P0-01](../auditoria/03-reporte-baseline-p0-01.md): frontend `543 SUCCESS`; backend `Fallo unexpected EOF`. P0 y P0-01 no tienen veredicto formal aprobatorio. | El backend falló y el baseline no acredita cierre; `ARCHIVADO` en 4.3 es solo historia. | P1 residual. |
+| P1 | `PARTIAL` | Sin cierre terminal de P1-03 | [local] [verify de esquema](../../openspec/changes/archive/2026-07-02-database-cursos-alumnos-asistencias/verify-report.md): **PASS WITH WARNINGS**; MariaDB 10.6 efímero aprobó. | P1-03 no acredita de forma directa las dos variantes históricas de `003` convergiendo al mismo resultado. | Prueba de upgrade o decisión formal `SUPERSEDED`. |
+| P2 | `PARTIAL` | Sin cierre terminal de P2-02 | [documental] [verify de deriva](../../openspec/changes/archive/2026-06-29-docs-openspec-drift-cleanup/verify-report.md): **PASS**. | Persisten warnings P5-01 sobre referencias operativas históricas; esta reconciliación corrige solo este plan. | Sincronización acotada posterior. |
+| P3 | `DONE` | [`c67c4d8`](https://github.com/marcostoledo96/ifts14/commit/c67c4d85f51e6d5ea365da1daab0292e65815153) | [local] [verify de hardening](../../openspec/changes/archive/2026-06-27-qa-backend-hardening-certificados/verify-report.md): **PASS WITH WARNINGS**; [CI] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): tests/lint exit `0`. | Advertencias históricas de archive/documentación ya no invalidan los requisitos P3; no implican producción validada. | P5-02. |
+| P4 | `DONE` | [`c337def`](https://github.com/marcostoledo96/ifts14/commit/c337deffe5d217ba56e53da6ca81e31ab4ec2219) | [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**, con E2E MariaDB de revisiones; [CI] mismo verify: MariaDB E2E exit `0`. | No se infiere regeneración automática de PDF ni validación de producción. | P5-02. |
+| P5 | `PARTIAL` | [PR #63](https://github.com/marcostoledo96/ifts14/pull/63) / [`1a6a1cf`](https://github.com/marcostoledo96/ifts14/commit/1a6a1cf5aa1b19a9652cab82b9455e789885471c) | [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**, 16/16 requirements y 52/52 escenarios; [staging] [evidencia Task 4.1](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md): **PASS para el candidato aislado de staging**. | P5-02/P5-03/P5-04 no están cerrados: faltan fronteras HTTP Angular, gate de mocks y login Angular real. | **P5-02** independiente. |
+| P6 | `PARTIAL` | [PR #65](https://github.com/marcostoledo96/ifts14/pull/65) / [`27b34c6`](https://github.com/marcostoledo96/ifts14/commit/27b34c63be917d32d9f987340d426eec0a8c421b) | [CI] PR #65 mergeado: revocación limitada a certificados `vigente`; [documental] [exploración de reconciliación](../../openspec/changes/reconcile-audit-remediation-plan/exploration.md): sin verify de cierre P6. | UI admin sigue mock/in-memory y quedan entrega, DTO y QA manual integrados. | Después de P5-02/P5-04. |
+| P7 | `PARTIAL` | Sin cierre terminal de P7 | [CI] `.github/workflows/backend-tests.yml`: tests backend/MariaDB/frontend básicos; [documental] [exploración de reconciliación](../../openspec/changes/reconcile-audit-remediation-plan/exploration.md): sin gate de mocks, links/docs ni secretos. | P7-01/P7-02 siguen parciales y P7-04 sigue `PENDING`; P7-03 tiene evidencia CI. | P7-01 y P7-04 tras integración admin. |
+| P8 | `PARTIAL` | [PR #63](https://github.com/marcostoledo96/ifts14/pull/63) / [`1a6a1cf`](https://github.com/marcostoledo96/ifts14/commit/1a6a1cf5aa1b19a9652cab82b9455e789885471c) | [staging] [evidencia Task 4.1](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md): **PASS para el candidato aislado de staging**; [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**. | Esquema staging vacío; faltan seed/flujo de negocio, smoke remoto completo y QA manual. Producción no validada. | P8-02 a P8-05, después de P5/P6/P7. |
+| P9 | `PENDING` | Sin PR/commit de cierre | [documental] este plan: backlog posterior; sin evidencia de cierre ni evidencia `[production]`. | **No bloqueante** para la secuencia inmediata. | Backlog posterior a P8. |
+
+### Chequeo determinista del tablero 4.2
+
+Ejecutar desde la raíz; falla ante estado inválido, falta de etiqueta de entorno, trazabilidad incompleta, falso `DONE` o tablero P5/P9 desactualizado.
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+p = Path('docs/planificacion/IFTS14_PLAN_CORRECCIONES_PREPRODUCCION_SDD_TDD.md')
+text = p.read_text(encoding='utf-8')
+board = text.split('## 4.2 Tablero operativo actual', 1)[1].split('## 4.3 Registro por ciclo', 1)[0]
+expected = {'P0': 'PARTIAL', 'P1': 'PARTIAL', 'P2': 'PARTIAL', 'P3': 'DONE', 'P4': 'DONE', 'P5': 'PARTIAL', 'P6': 'PARTIAL', 'P7': 'PARTIAL', 'P8': 'PARTIAL', 'P9': 'PENDING'}
+allowed = {'DONE', 'DONE WITH WARNINGS', 'PARTIAL', 'PENDING', 'BLOCKED', 'SUPERSEDED'}
+rows = {}
+for phase, status in re.findall(r'^\| (P[0-9]) \| `([^`]+)` \| (?:.+)$', board, re.M):
+    assert status in allowed, (phase, status)
+    rows[phase] = status
+assert rows == expected, rows
+# R3-001: P0 debe evidenciar fallo backend y falta de veredicto
+p0_line = next(line for line in board.splitlines() if line.startswith('| P0 |'))
+assert 'backend falló' in p0_line and 'no tienen veredicto formal aprobatorio' in p0_line
+for phase in expected:
+    row = next(line for line in board.splitlines() if line.startswith(f'| {phase} |'))
+    assert re.search(r'\[(?:local|CI|staging|production|documental)\]', row), row
+for phase in ('P3', 'P4'):
+    row = next(line for line in board.splitlines() if line.startswith(f'| {phase} |'))
+    assert 'https://github.com/marcostoledo96/ifts14/' in row and '](' in row, row
+    assert 'verify' in row.lower() or 'reporte P0-01' in row, row
+    assert not re.search(r'brecha|falta|pendiente', row, re.I), row
+p5 = next(line for line in board.splitlines() if line.startswith('| P5 |'))
+p9 = next(line for line in board.splitlines() if line.startswith('| P9 |'))
+assert 'P5-02' in p5 and 'no están cerrados' in p5, p5
+assert 'No bloqueante' in p9 and 'PENDING' in p9, p9
+assert re.search(r'producción.*\*\*no validada\*\*', board, re.I), 'missing production boundary'
+prose = re.sub(r'```.*?```', '', text, flags=re.S)
+bad = [href for href in re.findall(r'\]\(([^)#]+)', prose) if '://' not in href and not (p.parent / href).resolve().exists()]
+assert not bad, bad
+print('dashboard assertions: PASS')
+PY
 ```
-
-## 4.2 Tablero general
-
-Actualizar esta tabla al inicio y al cierre de cada ciclo.
-
-| Fase | Objetivo | Prioridad | Estado | Responsable | Última evidencia | PR/commit |
-|---|---|---:|---|---|---|---|
-| P0 | Baseline y congelamiento seguro | P0 | ARCHIVADO | Marcos | Tests OK, Error Docker | 9bc0dbd |
-| P1 | Reconciliar migraciones/esquema | P0 | ARCHIVADO | Marcos | Test DB Schema OK | — |
-| P2 | Sincronizar docs y OpenSpec | P0 | ARCHIVADO | Marcos | Docs actualizadas | — |
-| P3 | Hardening backend y privacidad | P1 | ARCHIVADO | Marcos | Tests PHP OK | — |
-| P4 | Asistencias mutables con mismo QR | P1 | ARCHIVADO | Marcos | E2E PDF_OUTDATED OK | — |
-| P5 | Auth simple e integración admin real | P1 | PENDIENTE | Marcos + Matías | — | — |
-| P6 | Correcciones frontend y UI pública | P1 | PENDIENTE | Matías + Marcos | — | — |
-| P7 | CI y gates automáticos | P1 | PENDIENTE | Marcos | — | — |
-| P8 | Staging cPanel integrado | P1 | PENDIENTE | Marcos | — | — |
-| P9 | Mejoras posteriores a presentación | P2 | PENDIENTE | Ambos | — | — |
 
 ## 4.3 Registro por ciclo
 
@@ -288,6 +319,8 @@ Al cerrar cada ciclo, agregar una fila:
 | 2026-07-14 | P4-03 | ARCHIVADO | `AttendanceRevisionTest.php` | Test PHP OK | N/A | `AdminMasterDataService.php`, Tests | — | P4-04 |
 | 2026-07-14 | P4-04 | ARCHIVADO | `CourseDateRevisionTest.php` | Test PHP OK | Confirmación de cancelación | `AdminMasterDataService.php`, Tests | — | P4-05 |
 | 2026-07-14 | P4-05 | ARCHIVADO | `HttpEmissionE2eTest.php` | E2E + Regresión OK | ALTO-C OK | `index.php`, Tests | — | P5-01 |
+| 2026-07-15 | P5-01 | DONE WITH WARNINGS | Evidencia RED preservada | 16/16 requirements, 52/52 escenarios; tests/lint exit `0` | Staging aislado PASS | Auth PHP, tests y docs | [PR #63](https://github.com/marcostoledo96/ifts14/pull/63) / `1a6a1cf` | P5-02 |
+| 2026-07-15 | P6-02 (parcial) | PARTIAL | Tests de estados no revocables | PR #65 protege revocación solo `vigente` | No aplica | Frontend de revocación | [PR #65](https://github.com/marcostoledo96/ifts14/pull/65) / `27b34c6` | No cierra P6; depende de P5-02/P5-04 |
 
 ## 4.4 Regla para la IA
 
@@ -407,6 +440,8 @@ No realizar antes de la presentación, salvo que ya esté verificado:
 ---
 
 # 7. Fases y ciclos
+
+> **Estado operativo vigente:** los criterios y checklists siguientes se preservan como planificación histórica. Para el estado acreditado y los gaps actuales, consultar exclusivamente el tablero 4.2; una casilla no marcada o marcada no constituye evidencia de cierre.
 
 # P0 — Baseline y congelamiento seguro
 
@@ -1153,6 +1188,8 @@ QA manual de login:
 [ ] Cookie segura.
 ```
 
+**Estado actual:** P5 permanece `PARTIAL`. P5-01 cerró `DONE WITH WARNINGS` con evidencia local/CI y staging aislado; P5-02 es el próximo ciclo independiente. La producción `/certificados/` no está validada.
+
 ---
 
 # P6 — Correcciones frontend, integración y diseño
@@ -1674,6 +1711,8 @@ Commit sugerido:
 
 # 10. Definition of Done global
 
+Los criterios se conservan como gate futuro. No se declaran satisfechos por el historial de este plan: el tablero 4.2 mantiene P1/P2/P5/P6/P7/P8 `PARTIAL`, P9 `PENDING` no bloqueante y producción `/certificados/` no validada.
+
 El proyecto solo puede considerarse candidato a producción cuando:
 
 ```txt
@@ -1696,23 +1735,17 @@ El proyecto solo puede considerarse candidato a producción cuando:
 
 ---
 
-# 11. Primer próximo paso exacto
+# 11. Próximo paso exacto
 
 Ejecutar únicamente:
 
 ```txt
-P0-01 — Baseline Git, tests y fuentes de verdad
+P5-02 — Fronteras HTTP Angular
 ```
 
-No comenzar por la migración, la autenticación ni el deploy.
+Alcance independiente: implementar y probar `HttpCoursesService`, `HttpStudentsService`, `HttpAttendanceService`, `HttpCertificationsService` y `HttpInstitutionalConfigService` con `HttpTestingController`; no cambiar UI. P5-02 sigue `PENDING` hasta contar con su propio cierre verificable.
 
-Después del baseline:
-
-```txt
-P1-01 — Spec y test RED de contrato de esquema
-```
-
-La primera intervención manual de base de datos ocurrirá recién en P8, salvo una DB descartable creada automáticamente para tests locales.
+Luego: P5-03, P5-04, P6-01/P6-02, P6-03/P6-05, P7-01/P7-04 y P8-02 a P8-05. P9 no bloquea esta secuencia.
 
 ---
 
@@ -1741,3 +1774,4 @@ Fuente oficial:
 | Versión | Fecha | Cambio | Responsable |
 |---|---|---|---|
 | 1.0 | 2026-07-14 | Plan inicial posterior a auditoría y decisiones D1 | Marcos / auditoría técnica |
+| 1.1 | 2026-07-15 | Reconciliación de tablero contra PR #63/#65 y evidencia archivada; no reescribe auditorías ni valida producción | Marcos / SDD documental |
