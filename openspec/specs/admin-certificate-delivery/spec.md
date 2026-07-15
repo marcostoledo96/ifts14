@@ -1,5 +1,7 @@
 # Spec — admin-certificate-delivery
 
+> **Actualización P5-01 (2026-07-15):** Las menciones históricas a `X-Admin-Key` como autorización HTTP están superseded. La autorización vigente usa sesión PHP y CSRF; el header no autoriza requests HTTP.
+
 ## Purpose
 
 Definir la entrega manual administrativa de certificados mediante link público y descarga de PDF, sin email, SMTP, PHPMailer ni reenvío automático. El QR/token es permanente; el token completo no se guarda en texto plano, no se expone como campo JSON separado y se recupera solo desde `token_cifrado` con clave externa.
@@ -8,7 +10,7 @@ Definir la entrega manual administrativa de certificados mediante link público 
 
 ### Requirement: Reenvío administrativo por email
 
-La API DEBE reemplazar el reenvío automático por email por `GET /certificados/api/admin/certificados/{id}/entrega-manual`, protegido por `X-Admin-Key`. El endpoint DEBE ser de solo lectura respecto del estado de certificado/token, conservar el token vigente, devolver `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`, y NO DEBE enviar email, usar SMTP/PHPMailer, activar `/reenviar`, rotar token ni exponer token completo, DNI completo, secretos, SQL, rutas internas o claves en respuestas operativas, logs, auditoría o errores. `X-Admin-Key` es server-to-server: NO DEBE haber llamadas Angular directas que lo usen, ni estar embebido o expuesto desde bundles de Angular ni almacenamiento del navegador. Si existe UI admin MVP en navegador, DEBE quedar protegida por cPanel Basic Auth o sesión/proxy PHP `HttpOnly`; si este ciclo queda backend-only, el wiring Angular admin queda fuera de alcance pero DEBEN existir checks/documentación que prueben que no se embebió la clave.
+La API DEBE reemplazar el reenvío automático por email por `GET /certificados/api/admin/certificados/{id}/entrega-manual`, autorizado según `admin-auth`. El endpoint DEBE ser de solo lectura respecto del estado de certificado/token, conservar el token vigente, devolver `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`, y NO DEBE enviar email, usar SMTP/PHPMailer, activar `/reenviar`, rotar token ni exponer token completo, DNI completo, secretos, SQL, rutas internas o claves en respuestas operativas, logs, auditoría o errores. El navegador DEBE usar sesión `HttpOnly`; `X-Admin-Key` NO DEBE aparecer en bundle o almacenamiento browser ni autorizar HTTP. El wiring Angular queda fuera de alcance.
 
 #### Scenario: Entrega manual exitosa
 
@@ -33,7 +35,7 @@ La API DEBE reemplazar el reenvío automático por email por `GET /certificados/
 
 #### Scenario: Entrega manual sin autorización
 
-- DADO un request sin `X-Admin-Key` válido
+- DADO un request sin autorización válida según `admin-auth`
 - CUANDO se solicita la entrega manual
 - ENTONCES la API DEBE responder `401 UNAUTHORIZED` con sobre seguro.
 - Y NO DEBE devolver link, PDF, token ni DNI completo.
@@ -44,7 +46,7 @@ La API DEBE reemplazar el reenvío automático por email por `GET /certificados/
 - CUANDO se inspecciona el bundle, `localStorage`, `sessionStorage` y cookies del navegador
 - ENTONCES NO DEBE aparecer `X-Admin-Key` ni su valor en ningún almacenamiento del navegador ni en el bundle JS.
 - Y NO DEBEN existir llamadas Angular directas con `X-Admin-Key`.
-- Y la UI admin DEBE usar cPanel Basic Auth o sesión/proxy PHP `HttpOnly` para el MVP; si Angular admin queda fuera de alcance, DEBE documentarse y validarse que no se embebió la clave.
+- Y la UI admin DEBE usar la sesión `HttpOnly` definida por `admin-auth`; si Angular admin queda fuera de alcance, DEBE documentarse y validarse que no se embebió la clave.
 
 #### Scenario: Respuesta admin sin DNI ni token completo
 

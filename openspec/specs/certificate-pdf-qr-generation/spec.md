@@ -1,8 +1,10 @@
 # Spec — certificate-pdf-qr-generation
 
+> **Actualización P5-01 (2026-07-15):** Las menciones históricas a `X-Admin-Key` como autorización HTTP están superseded. La autorización vigente usa sesión PHP y CSRF; el header no autoriza requests HTTP.
+
 ## Propósito
 
-Definir la generación, persistencia segura y descarga administrativa de certificados en PDF horizontal con un QR de validación pública. El PDF se genera sincrónicamente durante `emitir()`, se persiste como `{certificateCode}.pdf` (nunca con el token) y se ofrece mediante un endpoint administrativo protegido por `X-Admin-Key`. El token completo no se guarda en texto plano: para soportar el reenvío y la regeneración del PDF con el mismo QR, el sistema DEBE persistir un artefacto recuperable del token/URL pública (`token_cifrado` o equivalente, por ejemplo URL pública cifrada) con la clave de cifrado almacenada fuera de Git. El hash del token (`token_hash`) es insuficiente para reconstruir `/validar/{token}`.
+Definir la generación, persistencia segura y descarga administrativa de certificados en PDF horizontal con un QR de validación pública. El PDF se genera sincrónicamente durante `emitir()`, se persiste como `{certificateCode}.pdf` (nunca con el token) y se ofrece mediante un endpoint administrativo protegido por una sesión PHP administrativa válida. El token completo no se guarda en texto plano: para soportar el reenvío y la regeneración del PDF con el mismo QR, el sistema DEBE persistir un artefacto recuperable del token/URL pública (`token_cifrado` o equivalente, por ejemplo URL pública cifrada) con la clave de cifrado almacenada fuera de Git. El hash del token (`token_hash`) es insuficiente para reconstruir `/validar/{token}`.
 
 ## Requisitos
 
@@ -66,18 +68,18 @@ El sistema DEBE persistir los PDF generados en `certificate_storage_path` config
 
 ### Requisito: Descarga administrativa de PDF
 
-El sistema DEBE exponer `GET /certificados/api/admin/certificados/{id}/pdf` protegido por `X-Admin-Key` que devuelva el PDF persistido del certificado. La respuesta DEBE usar `Content-Type: application/pdf` y `Content-Disposition: attachment`. El sistema NO DEBE exponer el token completo en la descarga ni aceptar solicitudes sin autorización.
+El sistema DEBE exponer `GET /certificados/api/admin/certificados/{id}/pdf` autorizado según `admin-auth` que devuelva el PDF persistido del certificado. La respuesta DEBE usar `Content-Type: application/pdf` y `Content-Disposition: attachment`. El sistema NO DEBE exponer el token completo en la descarga ni aceptar solicitudes sin autorización.
 
 #### Escenario: Descarga autorizada
 
-- DADO un request con `X-Admin-Key` válido para un certificado con PDF persistido
+- DADO un request autorizado según `admin-auth` para un certificado con PDF persistido
 - CUANDO se invoca `GET /certificados/api/admin/certificados/{id}/pdf`
 - ENTONCES el sistema DEBE responder `200` con el contenido PDF
 - Y DEBE incluir `Content-Type: application/pdf` y `Content-Disposition: attachment`.
 
 #### Escenario: Descarga sin autorización
 
-- DADO un request sin `X-Admin-Key` o con valor inválido
+- DADO un request sin autorización válida
 - CUANDO se invoca el endpoint de descarga
 - ENTONCES el sistema DEBE responder `401 UNAUTHORIZED` sin exponer el PDF ni metadatos sensibles.
 

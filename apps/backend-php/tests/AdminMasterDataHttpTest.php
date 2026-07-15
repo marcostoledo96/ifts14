@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/SessionHttpTest.php';
+
 $dsn = getenv('IFTS14_TEST_DB_DSN');
 $user = getenv('IFTS14_TEST_DB_USER') ?: 'root';
 $pass = getenv('IFTS14_TEST_DB_PASS') ?: '';
@@ -43,7 +45,10 @@ $baseConfig = [
     'db_user' => $user,
     'db_pass' => $pass,
     'token_pepper' => 'pepper_master_data_demo_2026',
-    'admin_api_key' => $adminKey,
+    'admin_username' => 'bedelia',
+    'admin_password_hash' => password_hash($adminKey, PASSWORD_DEFAULT),
+    'admin_session_idle_seconds' => 1800,
+    'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $tmpDir . '/rate-limit.json',
     'app_salt' => 'salt_demo_master_data',
     'public_base_url' => 'https://demo.example.edu.ar/certificados',
@@ -57,6 +62,8 @@ $previousConfigPath = getenv('CERTIFICADOS_CONFIG_PATH');
 putenv('CERTIFICADOS_CONFIG_PATH=' . $configPath);
 $process = proc_open([
     PHP_BINARY,
+    '-d',
+    'opcache.enable=0',
     '-S',
     '127.0.0.1:' . $port,
     '-t',
@@ -70,9 +77,10 @@ if (!is_resource($process)) {
 
 try {
     waitForServer($port);
+    $authHeaders = loginAdminSessionHeaders($port, 'bedelia', $adminKey);
 
-    assertError(request($port, 'GET', '/admin/cursos'), 401, 'UNAUTHORIZED', 'admin sin header');
-    assertError(request($port, 'POST', '/admin/cursos', ['Content-Type: text/plain', 'X-Admin-Key: ' . $adminKey], '{}'), 415, 'UNSUPPORTED_MEDIA_TYPE', 'POST sin JSON content-type');
+    assertError(request($port, 'GET', '/admin/cursos'), 401, 'UNAUTHORIZED', 'admin sin sesión');
+    assertError(request($port, 'POST', '/admin/cursos', array_merge(['Content-Type: text/plain'], $authHeaders), '{}'), 415, 'UNSUPPORTED_MEDIA_TYPE', 'POST sin JSON content-type');
     assertError(request($port, 'POST', '/admin/cursos', jsonHeaders($adminKey), '{'), 400, 'VALIDATION_ERROR', 'JSON malformado');
 
     $course = postJson($port, '/admin/cursos', $adminKey, ['codigo' => 'CUR-MD-01', 'nombre' => 'Curso Master Data']);
@@ -83,8 +91,8 @@ try {
         throw new RuntimeException('Curso creado con DTO inválido.');
     }
     assertError(postJson($port, '/admin/cursos', $adminKey, ['codigo' => 'CUR-MD-01', 'nombre' => 'Duplicado']), 409, 'CONFLICT', 'curso duplicado');
-    assertStatus(request($port, 'GET', '/admin/cursos/' . $courseId, ['X-Admin-Key: ' . $adminKey]), 200, 'detalle curso');
-    assertStatus(request($port, 'GET', '/admin/cursos', ['X-Admin-Key: ' . $adminKey]), 200, 'listar cursos');
+    assertStatus(request($port, 'GET', '/admin/cursos/' . $courseId, $authHeaders), 200, 'detalle curso');
+    assertStatus(request($port, 'GET', '/admin/cursos', $authHeaders), 200, 'listar cursos');
     assertError(patchJson($port, '/admin/cursos/' . $courseId . '/estado', $adminKey, ['estado' => 'invalido']), 400, 'VALIDATION_ERROR', 'estado curso inválido');
     assertStatus(patchJson($port, '/admin/cursos/' . $courseId . '/estado', $adminKey, ['estado' => 'activo']), 200, 'estado curso');
 
@@ -106,10 +114,10 @@ try {
         throw new RuntimeException('Alumno creado con DTO inválido.');
     }
     assertError(postJson($port, '/admin/alumnos', $adminKey, ['apellidoNombre' => 'Alumno Dup', 'dni' => '12345678']), 409, 'CONFLICT', 'alumno duplicado');
-    $studentDetail = request($port, 'GET', '/admin/alumnos/' . $studentId, ['X-Admin-Key: ' . $adminKey]);
+    $studentDetail = request($port, 'GET', '/admin/alumnos/' . $studentId, $authHeaders);
     assertStatus($studentDetail, 200, 'detalle alumno');
     assertNoSensitiveStudentData($studentDetail['body']);
-    assertStatus(request($port, 'GET', '/admin/alumnos', ['X-Admin-Key: ' . $adminKey]), 200, 'listar alumnos');
+    assertStatus(request($port, 'GET', '/admin/alumnos', $authHeaders), 200, 'listar alumnos');
 
     writeConfig($configPath, $baseConfig);
     assertStatus(patchJson($port, '/admin/alumnos/' . $studentId . '/estado', $adminKey, ['estado' => 'inactivo']), 200, 'estado alumno sin dni key');
@@ -129,7 +137,7 @@ try {
     assertError(postJson($port, '/admin/cursos/' . $courseId . '/fechas', $adminKey, ['fecha' => '2026-08-29']), 400, 'VALIDATION_ERROR', 'orden fecha automático fuera de rango');
     assertError(postJson($port, '/admin/cursos/' . $courseId . '/fechas', $adminKey, ['fecha' => '2026-08-08', 'orden' => 3]), 409, 'CONFLICT', 'fecha duplicada');
     assertError(patchJson($port, '/admin/cursos/' . $courseId . '/fechas/' . $date1Id, $adminKey, ['estado' => 'invalido']), 400, 'VALIDATION_ERROR', 'estado fecha inválido');
-    assertStatus(request($port, 'GET', '/admin/cursos/' . $courseId . '/fechas', ['X-Admin-Key: ' . $adminKey]), 200, 'listar fechas');
+    assertStatus(request($port, 'GET', '/admin/cursos/' . $courseId . '/fechas', $authHeaders), 200, 'listar fechas');
 
     $attendance = postJson($port, '/admin/asistencias', $adminKey, ['alumnoId' => $studentId, 'cursoId' => $courseId, 'cursoFechaId' => $date1Id]);
     assertStatus($attendance, 201, 'registrar asistencia');
@@ -140,11 +148,11 @@ try {
     $dateCancelledId = (int) (assertJson($dateCancelled, 'fecha cancelada')['data']['id'] ?? 0);
     assertError(postJson($port, '/admin/asistencias', $adminKey, ['alumnoId' => $studentId, 'cursoId' => $courseId, 'cursoFechaId' => $dateCancelledId]), 400, 'VALIDATION_ERROR', 'asistencia con fecha cancelada');
 
-    assertStatus(request($port, 'GET', '/admin/asistencias?cursoId=' . $courseId . '&alumnoId=' . $studentId, ['X-Admin-Key: ' . $adminKey]), 200, 'listar asistencias');
-    assertError(request($port, 'GET', '/admin/asistencias?cursoId=abc', ['X-Admin-Key: ' . $adminKey]), 400, 'VALIDATION_ERROR', 'cursoId inválido en listado asistencias');
-    assertError(request($port, 'GET', '/admin/asistencias?alumnoId=abc', ['X-Admin-Key: ' . $adminKey]), 400, 'VALIDATION_ERROR', 'alumnoId inválido en listado asistencias');
-    assertStatus(request($port, 'DELETE', '/admin/asistencias/' . $attendanceId, ['X-Admin-Key: ' . $adminKey]), 200, 'anular asistencia');
-    $activeAfterVoid = assertJson(request($port, 'GET', '/admin/asistencias?cursoId=' . $courseId . '&alumnoId=' . $studentId, ['X-Admin-Key: ' . $adminKey]), 'listar luego de anular');
+    assertStatus(request($port, 'GET', '/admin/asistencias?cursoId=' . $courseId . '&alumnoId=' . $studentId, $authHeaders), 200, 'listar asistencias');
+    assertError(request($port, 'GET', '/admin/asistencias?cursoId=abc', $authHeaders), 400, 'VALIDATION_ERROR', 'cursoId inválido en listado asistencias');
+    assertError(request($port, 'GET', '/admin/asistencias?alumnoId=abc', $authHeaders), 400, 'VALIDATION_ERROR', 'alumnoId inválido en listado asistencias');
+    assertStatus(request($port, 'DELETE', '/admin/asistencias/' . $attendanceId, $authHeaders), 200, 'anular asistencia');
+    $activeAfterVoid = assertJson(request($port, 'GET', '/admin/asistencias?cursoId=' . $courseId . '&alumnoId=' . $studentId, $authHeaders), 'listar luego de anular');
     if (($activeAfterVoid['data']['items'] ?? []) !== []) {
         throw new RuntimeException('La asistencia anulada sigue listada como activa.');
     }
@@ -215,7 +223,9 @@ function waitForServer(int $port): void
 /** @return list<string> */
 function jsonHeaders(string $adminKey): array
 {
-    return ['Content-Type: application/json', 'X-Admin-Key: ' . $adminKey];
+    global $authHeaders;
+
+    return sessionJsonHeaders($authHeaders);
 }
 
 /** @return array{status:int,headers:array<string,string>,body:string} */

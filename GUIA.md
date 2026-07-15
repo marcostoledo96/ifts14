@@ -16,7 +16,7 @@ Este repositorio privado se usa para:
 
 ```txt
 Frontend: Angular 20
-Backend: PHP 8.4.21
+Backend: PHP 8.4.22 CGI/FastCGI en el candidato de staging; producción aún no fue activada ni validada
 Base de datos: MariaDB 10.6.27
 Hosting: cPanel
 Gestión DB: phpMyAdmin / MySQL Databases de cPanel
@@ -53,7 +53,7 @@ Bedelía carga curso y fechas
 | QR / token | Permanente. Reenvío normal no rota token. Solo revocación o regeneración excepcional auditada. |
 | DNI en validación pública | DNI completo visible por decisión institucional. Logs/auditoría/errores sin DNI completo. |
 | Certificado | Certificado de curso con fechas asistidas del alumno. |
-| Auth admin | `X-Admin-Key` temporal. Login real es fase posterior. |
+| Auth admin | Sesión PHP nativa, cookie `HttpOnly`/`Secure`/`SameSite=Strict` y CSRF. `X-Admin-Key` no autoriza HTTP. |
 | Email | Fuera del MVP. La entrega es manual; cualquier email futuro queda gated. |
 | Composer | Gate: si no disponible en cPanel, `vendor/` local como artefacto, nunca versionado. |
 | Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |

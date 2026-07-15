@@ -1,5 +1,7 @@
 # Deploy cPanel — /certificados/
 
+> **Estado P5-01:** staging candidato PASS; producción no activada ni validada. Las referencias históricas a `X-Admin-Key` HTTP y `STOP DESPLIEGUE` se conservan como antecedente, no como autorización actual.
+
 ## Objetivo
 
 Preparar el deploy manual futuro del módulo de certificaciones en cPanel, bajo:
@@ -17,7 +19,7 @@ Este ciclo SDD **no ejecuta la subida**, no toca `public_html`, no crea `.env`, 
 | Staging | `/certificados_staging/` separado de producción `/certificados/`. Ver `docs/deploy/01-staging-cpanel-certificados.md`. |
 | Composer/vendor | Gate: si Composer no está disponible en cPanel, generar `vendor/` localmente y subir como artefacto operativo. Nunca versionar `vendor/`. |
 | SMTP/Email | Sin flujo de email en el MVP. SMTP/PHPMailer fueron removidos. La entrega es manual: Bedelía copia link y descarga PDF. |
-| Auth admin | `X-Admin-Key` temporal. Login real es fase posterior. |
+| Auth admin | Sesión PHP nativa con cookie segura y CSRF. `X-Admin-Key` solo CLI/smoke server-side; no autoriza HTTP. |
 | Token/QR | Permanente. La entrega manual no rota token. `token_cifrado` (AES-256-GCM, clave externa) habilita recuperación. |
 | Clave de cifrado | `token_encryption_key` se inyecta por config externa a Git; debe decodificar (base64/base64url) a 32 bytes exactos. Su pérdida vuelve los certificados existentes no recuperables (`409`). |
 

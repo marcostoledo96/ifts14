@@ -11,7 +11,7 @@ Base mínima de la API PHP 8.4 para `/certificados/api/`.
 | `src/Config.php` | Carga configuración real desde un archivo externo no versionado. Normaliza PDF y clave externa de cifrado. |
 | `src/Database.php` | Crea PDO de forma diferida para endpoints que requieren base. |
 | `src/AdminCertificateService.php` | Emisión, revocación y entrega manual sin rotar token. |
-| `config/certificados-config.example.php` | Ejemplo ficticio con `token_encryption_key`, `admin_api_key` y rutas de prueba. |
+| `config/certificados-config.example.php` | Ejemplo ficticio con cifrado y configuración externa de sesión admin. |
 | `composer.json` / `composer.lock` | Fija `tecnickcom/tcpdf`. `vendor/` ignorado. |
 | `.htaccess` | Fallback mínimo hacia `index.php` para Apache. |
 
@@ -25,6 +25,10 @@ Orden de carga:
 2. `/home/usuario_demo/certificados_config/certificados-api.php` como ruta externa documentada.
 
 No versionar `.env`, `config.php`, `db.php`, `database.php`, `conexion.php` ni credenciales reales.
+
+### Sesión administrativa
+
+`admin_username`, `admin_password_hash`, `admin_session_idle_seconds` (`1800`) y `admin_session_absolute_seconds` (`28800`) son obligatorios para login. El hash se genera con `PASSWORD_DEFAULT` fuera de Git. Las rutas de browser son `POST /admin/auth/login`, `GET /admin/auth/session` y `POST /admin/auth/logout`; toda mutación admin requiere `X-CSRF-Token` emitido por la sesión. `X-Admin-Key` no autoriza HTTP.
 
 ### Entrega manual
 

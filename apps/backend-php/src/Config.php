@@ -8,7 +8,8 @@ require_once __DIR__ . '/DniCipher.php';
 final class Config
 {
     private const string DEFAULT_PATH = '/home/usuario_demo/certificados_config/certificados-api.php';
-    private const int MIN_ADMIN_KEY_LENGTH = 16;
+    private const int ADMIN_SESSION_IDLE_SECONDS = 1800;
+    private const int ADMIN_SESSION_ABSOLUTE_SECONDS = 28800;
 
     /** @return array<string, mixed> */
     public static function load(): array
@@ -46,8 +47,6 @@ final class Config
         if (!isset($config['app_salt']) || !is_string($config['app_salt']) || trim($config['app_salt']) === '') {
             $config['app_salt'] = $config['token_pepper'];
         }
-
-        $config['admin_api_key'] = self::adminApiKey($config);
 
         return $config;
     }
@@ -117,12 +116,29 @@ final class Config
         return [$config, $key];
     }
 
-    /** @param array<string, mixed> $config */
-    public static function adminApiKey(array $config): string
+    /** @param array<string, mixed> $config @return array{username:string,passwordHash:string,idleSeconds:int,absoluteSeconds:int}|null */
+    public static function adminSessionSettings(array $config): ?array
     {
-        $key = self::stringOrEmpty($config['admin_api_key'] ?? '');
+        $username = self::stringOrEmpty($config['admin_username'] ?? '');
+        $passwordHash = self::stringOrEmpty($config['admin_password_hash'] ?? '');
+        $hashInfo = $passwordHash === '' ? ['algo' => null] : password_get_info($passwordHash);
 
-        return strlen($key) >= self::MIN_ADMIN_KEY_LENGTH ? $key : '';
+        if (
+            $username === ''
+            || !is_string($hashInfo['algo'] ?? null)
+            || password_verify('', $passwordHash)
+            || self::positiveInt($config['admin_session_idle_seconds'] ?? 0, 0) !== self::ADMIN_SESSION_IDLE_SECONDS
+            || self::positiveInt($config['admin_session_absolute_seconds'] ?? 0, 0) !== self::ADMIN_SESSION_ABSOLUTE_SECONDS
+        ) {
+            return null;
+        }
+
+        return [
+            'username' => $username,
+            'passwordHash' => $passwordHash,
+            'idleSeconds' => self::ADMIN_SESSION_IDLE_SECONDS,
+            'absoluteSeconds' => self::ADMIN_SESSION_ABSOLUTE_SECONDS,
+        ];
     }
 
     private static function positiveInt(mixed $value, int $default): int

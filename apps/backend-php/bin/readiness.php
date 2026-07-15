@@ -14,6 +14,7 @@ require_once __DIR__ . '/../src/TokenCipher.php';
 require_once __DIR__ . '/../src/DniCipher.php';
 
 $exitCode = 0;
+ob_start();
 
 function check(string $name, callable $fn): void {
     global $exitCode;
@@ -47,7 +48,28 @@ if ($config === null) {
     $config = [];
 }
 
-check('Admin API Key', fn() => strlen($config['admin_api_key'] ?? '') >= 16);
+check('Admin Session Config', fn() => Config::adminSessionSettings($config) !== null);
+
+check('PHP Session Storage', function() {
+    if (session_status() !== PHP_SESSION_NONE) {
+        return false;
+    }
+
+    session_name('ifts14_readiness');
+    $key = '__readiness';
+    $value = bin2hex(random_bytes(16));
+    if (!@session_start()) {
+        return false;
+    }
+    $_SESSION[$key] = $value;
+    if (!session_write_close() || !@session_start()) {
+        return false;
+    }
+    $valid = ($_SESSION[$key] ?? null) === $value;
+    $_SESSION = [];
+
+    return $valid && @session_destroy();
+});
 
 check('Token Encryption Key', function() use ($config) {
     $encoded = $config['token_encryption_key'] ?? '';
@@ -99,4 +121,5 @@ check('Migraciones', function() use ($config) {
     }
 });
 
+ob_end_flush();
 exit($exitCode);
