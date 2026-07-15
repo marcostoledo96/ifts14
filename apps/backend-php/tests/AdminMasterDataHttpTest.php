@@ -62,6 +62,8 @@ $previousConfigPath = getenv('CERTIFICADOS_CONFIG_PATH');
 putenv('CERTIFICADOS_CONFIG_PATH=' . $configPath);
 $process = proc_open([
     PHP_BINARY,
+    '-d',
+    'opcache.enable=0',
     '-S',
     '127.0.0.1:' . $port,
     '-t',
