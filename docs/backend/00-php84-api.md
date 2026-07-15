@@ -46,14 +46,9 @@ Para certificados nuevos emitidos desde alumno+curso, `CertificateValidator::ver
 
 ### Gate operativo de entrega manual
 
-El endpoint `GET /certificados/api/admin/certificados/{id}/entrega-manual` requiere smoke DB-backed formal antes de cerrar el gate de deploy: un certificado recuperable debe responder `200` y un legacy sin `token_cifrado` debe responder `409 TOKEN_NOT_RECOVERABLE`. El happy path recuperable local quedó versionado en `apps/backend-php/tests/HttpEmissionE2eTest.php`: emisión `201`, validación pública `200`, entrega manual `200` sin rotación y `/reenviar` `404`. El gate SDD archive/operador sigue abierto hasta contar con evidencia redactada de staging/producción con configuración real aprobada, incluyendo el caso legacy `409`:
+El endpoint `GET /certificados/api/admin/certificados/{id}/entrega-manual` requiere smoke DB-backed formal antes de cerrar el gate de deploy: un certificado recuperable debe responder `200` y un legacy sin `token_cifrado` debe responder `409 TOKEN_NOT_RECOVERABLE`. El happy path recuperable local quedó versionado en `apps/backend-php/tests/HttpEmissionE2eTest.php`: emisión `201`, validación pública `200`, entrega manual `200` sin rotación y `/reenviar` `404`.
 
-```bash
-curl -sS -H "X-Admin-Key: <placeholder>" https://<host>/certificados/api/admin/certificados/<id_recuperable>/entrega-manual
-curl -sS -H "X-Admin-Key: <placeholder>" https://<host>/certificados/api/admin/certificados/<id_legacy>/entrega-manual
-```
-
-No pegar `X-Admin-Key`, tokens, DNI, URLs con tokens reales ni respuestas completas con datos personales en la evidencia.
+**BLOCKED / STOP DESPLIEGUE:** el smoke de staging permanece bloqueado hasta disponer de un script basado en login, cookie de sesión y CSRF que preserve secretos y redacte datos personales. `X-Admin-Key` no autoriza HTTP y no debe usarse para este gate. No inventar credenciales ni registrar contraseñas, cookies, CSRF, tokens, DNI, URLs con tokens reales o respuestas completas.
 
 ## Contrato vigente
 

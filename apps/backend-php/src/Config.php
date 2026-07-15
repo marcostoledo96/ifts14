@@ -126,6 +126,7 @@ final class Config
         if (
             $username === ''
             || !is_string($hashInfo['algo'] ?? null)
+            || password_verify('', $passwordHash)
             || self::positiveInt($config['admin_session_idle_seconds'] ?? 0, 0) !== self::ADMIN_SESSION_IDLE_SECONDS
             || self::positiveInt($config['admin_session_absolute_seconds'] ?? 0, 0) !== self::ADMIN_SESSION_ABSOLUTE_SECONDS
         ) {

@@ -26,6 +26,18 @@ if (!AdminSessionAuth::credentialsValid($config, 'bedelia', $password) || AdminS
     throw new RuntimeException('La validación de credenciales no falla cerrada.');
 }
 
+$emptyPasswordConfig = $config;
+$emptyPasswordConfig['admin_password_hash'] = password_hash('', PASSWORD_DEFAULT);
+if (
+    Config::adminSessionSettings($emptyPasswordConfig) !== null
+    || AdminSessionAuth::credentialsValid($emptyPasswordConfig, 'bedelia', '')
+    || AdminSessionAuth::credentialsValid($emptyPasswordConfig, '', '')
+    || AdminSessionAuth::login($emptyPasswordConfig, '/certificados', 'bedelia', '', time()) !== false
+    || AdminSessionAuth::login($emptyPasswordConfig, '/certificados', '', '', time()) !== false
+) {
+    throw new RuntimeException('Una contraseña vacía o ausente no debe autenticar ni habilitar configuración.');
+}
+
 $invalidTtlConfig = $config;
 $invalidTtlConfig['admin_session_idle_seconds'] = 1;
 if (AdminSessionAuth::settings([], '/certificados') !== null || AdminSessionAuth::settings($invalidTtlConfig, '/certificados') !== null) {
