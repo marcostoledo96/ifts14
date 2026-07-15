@@ -61,6 +61,7 @@ export class CertificationPreviewPage {
   });
 
   readonly estadoRevocado = computed<boolean>(() => this.detalle()?.estado === 'revocado');
+  readonly esRevocable = computed<boolean>(() => this.detalle()?.estado === 'vigente');
 
   // Handoffs explícitos por acción (una sola fuente de verdad para la UI).
   readonly handoffs = {
