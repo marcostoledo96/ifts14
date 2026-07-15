@@ -41,6 +41,10 @@ jobs:
         run: |
           docker run --rm -v "$PWD/apps/backend-php":/app -w /app ifts14-php84 sh -lc '
             php tests/AuthGateTest.php &&
+            php tests/AdminSessionAuthTest.php &&
+            php tests/AdminAuthHttpTest.php &&
+            php tests/AdminAuthorizationMatrixTest.php &&
+            php tests/AuthPrivacyTest.php &&
             php tests/NormalizePathTest.php &&
             php tests/EntregaManualTest.php &&
             php tests/AdminCertificateServiceTest.php &&

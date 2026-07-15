@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/InstitutionalConfig.php';
+require_once __DIR__ . '/SessionHttpTest.php';
 
 $dsn = getenv('IFTS14_TEST_DB_DSN');
 $user = getenv('IFTS14_TEST_DB_USER') ?: 'root';
@@ -46,7 +47,10 @@ writeConfig($configPath, [
     'db_user' => $user,
     'db_pass' => $pass,
     'token_pepper' => 'pepper_consulta_demo_2026',
-    'admin_api_key' => $adminKey,
+    'admin_username' => 'bedelia',
+    'admin_password_hash' => password_hash($adminKey, PASSWORD_DEFAULT),
+    'admin_session_idle_seconds' => 1800,
+    'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $tmpDir . '/rate-limit.json',
     'app_salt' => 'salt_demo_consulta',
     'public_base_url' => 'https://demo.example.edu.ar/certificados',
@@ -73,11 +77,12 @@ if (!is_resource($process)) {
 
 try {
     waitForServer($port);
+    $authHeaders = loginAdminSessionHeaders($port, 'bedelia', $adminKey);
 
     assertError(request($port, 'GET', '/admin/certificados'), 401, 'UNAUTHORIZED', 'listado sin admin key');
     assertError(request($port, 'GET', '/admin/configuracion-institucional'), 401, 'UNAUTHORIZED', 'config sin admin key');
 
-    $configGet = request($port, 'GET', '/admin/configuracion-institucional', ['X-Admin-Key: ' . $adminKey]);
+    $configGet = request($port, 'GET', '/admin/configuracion-institucional', $authHeaders);
     assertStatus($configGet, 200, 'config GET inicial');
     $configBody = assertJson($configGet, 'config GET inicial');
     if (($configBody['data']['institutionName'] ?? '') !== 'IFTS N.° 14') {
@@ -161,7 +166,7 @@ try {
     $expiredCertificateId = (int) (assertJson($emissionExpired, 'emitir segundo certificado')['data']['id'] ?? 0);
     $pdo->prepare("UPDATE cert_certificados SET vence_en = '2020-01-01' WHERE id = ?")->execute([$expiredCertificateId]);
 
-    $list = request($port, 'GET', '/admin/certificados', ['X-Admin-Key: ' . $adminKey]);
+    $list = request($port, 'GET', '/admin/certificados', $authHeaders);
     assertStatus($list, 200, 'listado certificados');
     $listBody = assertJson($list, 'listado certificados');
     $items = $listBody['data']['items'] ?? null;
@@ -170,35 +175,35 @@ try {
     }
     assertNoSensitiveAdminCertificateData($list['body']);
 
-    $filtered = request($port, 'GET', '/admin/certificados?estado=vigente&cursoId=' . $cursoId . '&alumnoId=' . $alumnoId, ['X-Admin-Key: ' . $adminKey]);
+    $filtered = request($port, 'GET', '/admin/certificados?estado=vigente&cursoId=' . $cursoId . '&alumnoId=' . $alumnoId, $authHeaders);
     assertStatus($filtered, 200, 'listado filtrado vigente');
     $filteredItems = assertJson($filtered, 'listado filtrado vigente')['data']['items'] ?? [];
     if (!is_array($filteredItems) || count($filteredItems) !== 1 || (int) ($filteredItems[0]['id'] ?? 0) !== $certificateId) {
         throw new RuntimeException('listado filtrado vigente no devolvió el certificado esperado o incluyó el vencido.');
     }
 
-    $expiredAsVigente = request($port, 'GET', '/admin/certificados?estado=vigente&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, ['X-Admin-Key: ' . $adminKey]);
+    $expiredAsVigente = request($port, 'GET', '/admin/certificados?estado=vigente&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, $authHeaders);
     $items = assertJson($expiredAsVigente, 'vencido excluido del filtro vigente')['data']['items'] ?? [];
     if ($items !== []) {
         throw new RuntimeException('El filtro vigente incluyó un certificado vencido.');
     }
 
-    $filteredVencido = request($port, 'GET', '/admin/certificados?estado=vencido&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, ['X-Admin-Key: ' . $adminKey]);
+    $filteredVencido = request($port, 'GET', '/admin/certificados?estado=vencido&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, $authHeaders);
     assertStatus($filteredVencido, 200, 'listado filtrado vencido');
     $filteredVencidoItems = assertJson($filteredVencido, 'listado filtrado vencido')['data']['items'] ?? [];
     if (!is_array($filteredVencidoItems) || count($filteredVencidoItems) !== 1 || (int) ($filteredVencidoItems[0]['id'] ?? 0) !== $expiredCertificateId) {
         throw new RuntimeException('listado filtrado vencido no devolvió el certificado esperado o incluyó el vigente.');
     }
 
-    assertError(request($port, 'GET', '/admin/certificados?estado=invalido', ['X-Admin-Key: ' . $adminKey]), 400, 'VALIDATION_ERROR', 'filtro estado inválido');
-    assertError(request($port, 'GET', '/admin/certificados?estado%5B%5D=invalido', ['X-Admin-Key: ' . $adminKey]), 400, 'VALIDATION_ERROR', 'filtro estado no escalar');
+    assertError(request($port, 'GET', '/admin/certificados?estado=invalido', $authHeaders), 400, 'VALIDATION_ERROR', 'filtro estado inválido');
+    assertError(request($port, 'GET', '/admin/certificados?estado%5B%5D=invalido', $authHeaders), 400, 'VALIDATION_ERROR', 'filtro estado no escalar');
 
     assertError(putJson($port, '/admin/configuracion-institucional', $adminKey, [
         'institutionName' => 'IFTS N.° 14',
         'rectorRole' => str_repeat('x', InstitutionalConfig::ROLE_MAX_LENGTH + 1),
     ]), 400, 'VALIDATION_ERROR', 'config PUT excede largo de cargo');
 
-    $detail = request($port, 'GET', '/admin/certificados/' . $certificateId, ['X-Admin-Key: ' . $adminKey]);
+    $detail = request($port, 'GET', '/admin/certificados/' . $certificateId, $authHeaders);
     assertStatus($detail, 200, 'detalle certificado');
     $detailBody = assertJson($detail, 'detalle certificado')['data'] ?? [];
     if (($detailBody['student']['documentMasked'] ?? '') === '' || isset($detailBody['student']['documentNumber'])) {
@@ -213,7 +218,7 @@ try {
 
     $updateLiveDate = $pdo->prepare('UPDATE cert_curso_fechas SET descripcion = ? WHERE id = ?');
     $updateLiveDate->execute(['Clase editada post emisión', $fechaId]);
-    $detailAfterLiveEdit = request($port, 'GET', '/admin/certificados/' . $certificateId, ['X-Admin-Key: ' . $adminKey]);
+    $detailAfterLiveEdit = request($port, 'GET', '/admin/certificados/' . $certificateId, $authHeaders);
     $detailAfterLiveEditBody = assertJson($detailAfterLiveEdit, 'detalle tras editar fecha viva')['data'] ?? [];
     if (($detailAfterLiveEditBody['attendedDates'][0]['descripcion'] ?? '') !== 'Clase consulta') {
         throw new RuntimeException('detalle: driftó al editar cert_curso_fechas en lugar de leer snapshot.');
@@ -226,7 +231,7 @@ try {
         throw new RuntimeException('detalle expuso DNI completo.');
     }
 
-    assertError(request($port, 'GET', '/admin/certificados/999999', ['X-Admin-Key: ' . $adminKey]), 404, 'CERTIFICATE_NOT_FOUND', 'detalle inexistente');
+    assertError(request($port, 'GET', '/admin/certificados/999999', $authHeaders), 404, 'CERTIFICATE_NOT_FOUND', 'detalle inexistente');
 } finally {
     proc_terminate($process);
     proc_close($process);
@@ -301,7 +306,9 @@ function waitForServer(int $port): void
 /** @return list<string> */
 function jsonHeaders(string $adminKey): array
 {
-    return ['Content-Type: application/json', 'X-Admin-Key: ' . $adminKey];
+    global $authHeaders;
+
+    return sessionJsonHeaders($authHeaders);
 }
 
 /** @return array{status:int,headers:array<string,string>,body:string} */

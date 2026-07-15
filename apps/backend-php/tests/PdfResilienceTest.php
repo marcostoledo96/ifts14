@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/SessionHttpTest.php';
+
 /**
  * Pruebas de resiliencia para feedback Codex PR #15:
  *  - /health funciona sin vendor/autoload.php (deploy sin Composer).
@@ -71,7 +73,10 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'db_user' => 'demo',
     'db_pass' => 'demo',
     'token_pepper' => 'pepper_demo_ficticio_2026_no_usar',
-    'admin_api_key' => $adminKey,
+    'admin_username' => 'bedelia',
+    'admin_password_hash' => password_hash($adminKey, PASSWORD_DEFAULT),
+    'admin_session_idle_seconds' => 1800,
+    'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $ratePath,
     'app_salt' => 'salt_demo_resilience',
     // Intencionalmente sin public_base_url ni certificate_storage_path.
@@ -95,6 +100,7 @@ if (!is_resource($process2)) {
 
 try {
     waitForServer($port2);
+    $authHeaders = loginAdminSessionHeaders($port2, 'bedelia', $adminKey);
 
     // /health sigue funcionando (no carga config).
     $health = request($port2, 'GET', '/health');
@@ -108,11 +114,9 @@ try {
     ], '{');
     assertError($badJson, 400, 'VALIDATION_ERROR', 'consulta JSON malformado config sin PDF');
 
-    // La ruta admin de descarga PDF debe responder CONFIGURATION_ERROR 500
-    // (no 500 INTERNAL_ERROR ni fatal) porque loadPdfDependencies pasa pero
-    // requirePdfConfig falla.
+    // Con sesión válida, la ruta llega a la validación fail-closed de PDF.
     $pdfNoConfig = request($port2, 'GET', '/admin/certificados/1/pdf', [
-        'X-Admin-Key: ' . $adminKey,
+        ...$authHeaders,
     ]);
     assertError($pdfNoConfig, 500, 'CONFIGURATION_ERROR', 'PDF sin config PDF');
 } finally {

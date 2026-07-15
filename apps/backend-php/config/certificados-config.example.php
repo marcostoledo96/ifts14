@@ -21,6 +21,14 @@ return [
     'token_encryption_key' => 'REEMPLAZAR_CON_CLAVE_BASE64_DE_32_BYTES',
     // Clave de cifrado de DNI (AES-256-GCM). Mismas reglas que token_encryption_key.
     'dni_cipher_key' => 'REEMPLAZAR_CON_CLAVE_DNI_BASE64_DE_32_BYTES',
-    // Placeholder: generar fuera de Git. No hardcodear esta clave en Angular.
-    'admin_api_key' => 'REEMPLAZAR_CON_ADMIN_API_KEY_EXTERNA',
+    // Credenciales de sesión admin: usar un usuario y un hash PASSWORD_DEFAULT
+    // externos a Git. Nunca versionar contraseña plana ni exponerlos al browser.
+    'admin_username' => 'REEMPLAZAR_CON_USUARIO_ADMIN_EXTERNO',
+    'admin_password_hash' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.',
+    'admin_session_idle_seconds' => 1800,
+    'admin_session_absolute_seconds' => 28800,
+    // Compatibilidad exclusiva CLI; queda deshabilitada y no autoriza HTTP.
+    'admin_legacy_key_enabled' => false,
+    'admin_legacy_key' => '',
+    'admin_legacy_key_expires_at' => '',
 ];

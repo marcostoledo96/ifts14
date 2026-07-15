@@ -10,7 +10,7 @@ Repositorio privado para estudiar el sitio actual del IFTS N.° 14 y desarrollar
 
 ```txt
 Frontend: Angular 20
-Backend: PHP 8.4.21
+Backend: PHP 8.4.22 CGI/FastCGI en el candidato de staging; producción aún no fue validada
 Base de datos: MariaDB 10.6.27
 Hosting: cPanel
 Gestión DB: phpMyAdmin / herramientas MySQL de cPanel
@@ -27,7 +27,7 @@ Decisiones confirmadas por Marcos, fuente de verdad del proyecto hasta nueva ord
 | QR / token | Permanente. El reenvío normal NO rota token/QR. Solo revocación explícita o regeneración excepcional auditada invalidan el token. |
 | DNI en validación pública | DNI completo visible públicamente por decisión institucional. Logs, auditoría y errores no exponen DNI completo. |
 | Tipo de documento | Certificado de curso. Debajo muestra las fechas del curso a las que asistió el alumno. |
-| Auth admin | Auth simple protegida con `X-Admin-Key` temporal. Login real queda para fase posterior. |
+| Auth admin | Sesión PHP nativa con cookie segura y CSRF. `X-Admin-Key` solo CLI/smokes server-side; no autoriza HTTP. |
 | Email | Fuera del MVP. La entrega es manual; cualquier email futuro queda gated hasta aprobación. |
 | Composer en cPanel | Gate: si no está disponible, `vendor/` se genera localmente y se sube como artefacto operativo, nunca versionado. |
 | Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |

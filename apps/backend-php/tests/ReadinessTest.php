@@ -15,7 +15,10 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'db_user' => 'demo',
     'db_pass' => 'demo',
     'token_pepper' => 'pep',
-    'admin_api_key' => 'short', // Too short
+    'admin_username' => '',
+    'admin_password_hash' => 'invalid',
+    'admin_session_idle_seconds' => 1,
+    'admin_session_absolute_seconds' => 1,
     'rate_limit_storage_path' => $tmpDir . '/invalid/path/rate.json', // Invalid dir
     'app_salt' => 'salt',
     'public_base_url' => 'http://localhost',
@@ -31,6 +34,14 @@ $output = [];
 $exitCode = 0;
 exec(PHP_BINARY . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/readiness.php') . ' 2>&1', $output, $exitCode);
 
+$positiveSessionOutput = [];
+$positiveSessionExit = 0;
+exec(PHP_BINARY . ' -d ' . escapeshellarg('session.save_path=' . $tmpDir) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/readiness.php') . ' 2>&1', $positiveSessionOutput, $positiveSessionExit);
+
+$brokenSessionOutput = [];
+$brokenSessionExit = 0;
+exec(PHP_BINARY . ' -d ' . escapeshellarg('session.save_path=' . $tmpDir . '/missing') . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/readiness.php') . ' 2>&1', $brokenSessionOutput, $brokenSessionExit);
+
 putenv($previousConfigPath === false ? 'CERTIFICADOS_CONFIG_PATH' : 'CERTIFICADOS_CONFIG_PATH=' . $previousConfigPath);
 array_map(static fn(string $file) => is_file($file) ? unlink($file) : true, glob($tmpDir . '/*') ?: []);
 rmdir($tmpDir);
@@ -39,7 +50,7 @@ $outputStr = implode("\n", $output);
 
 $failures = [
     'PDO/MariaDB' => 'FAIL',
-    'Admin API Key' => 'FAIL',
+    'Admin Session Config' => 'FAIL',
     'Token Encryption Key' => 'FAIL',
     'DNI Cipher Key' => 'FAIL',
     'Storage PDF' => 'FAIL',
@@ -54,6 +65,14 @@ foreach ($failures as $check => $expected) {
 
 if ($exitCode === 0) {
     throw new RuntimeException("Se esperaba exit code > 0, se recibió 0.");
+}
+
+if (!str_contains(implode("\n", $brokenSessionOutput), 'PHP Session Storage: FAIL') || $brokenSessionExit === 0) {
+    throw new RuntimeException('Readiness no detectó session.save_path inutilizable.');
+}
+
+if (!str_contains(implode("\n", $positiveSessionOutput), 'PHP Session Storage: OK')) {
+    throw new RuntimeException('Readiness no completó el round-trip de session.save_path utilizable.');
 }
 
 echo "OK ReadinessTest\n";
