@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { CertificationPreviewPage } from './certification-preview-page';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
 import { CertificacionDetalle } from '../../certifications.models';
@@ -147,6 +147,22 @@ describe('CertificationPreviewPage', () => {
     expect(revocarLink).not.toBeNull();
     expect(revocarLink?.getAttribute('disabled')).toBeNull();
   });
+
+  for (const [id, estado] of [['3', 'borrador'], ['4', 'vencido'], ['5', 'revocado']]) {
+    it(`no permite navegar a revocación cuando el certificado está ${estado}`, async () => {
+      const f = await render(id);
+      const riesgo = (f.nativeElement as HTMLElement).querySelector('.riesgo-panel');
+      const boton = riesgo?.querySelector('button.btn-revocar') as HTMLButtonElement | null;
+      const navigateSpy = spyOn(TestBed.inject(Router), 'navigateByUrl');
+
+      expect(riesgo?.querySelector('a.btn-revocar')).toBeNull();
+      expect(boton?.disabled).toBeTrue();
+      expect(boton?.getAttribute('aria-describedby')).toBe('revocacion-no-disponible');
+      expect(riesgo?.textContent).toContain('Solo las certificaciones vigentes pueden revocarse.');
+      boton?.click();
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+  }
 
   it('acciones deshabilitadas tienen aria-disabled="true" y cursor not-allowed', async () => {
     const f = await render('1');
