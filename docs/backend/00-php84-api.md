@@ -29,12 +29,12 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 | `GET` | `/certificados/api/health` | Estado técnico básico, sin abrir configuración ni PDO. |
 | `GET` | `/certificados/api/certificados/{token}/verificacion` | Valida token público por hash `SHA-256(token + token_pepper)` y devuelve DTO público mínimo. |
 | `POST` | `/certificados/api/certificados/consulta` | Lee JSON `{ "token": "..." }` y reutiliza la misma validación que el GET. |
-| `POST` | `/certificados/api/admin/certificados` | Emite certificado desde `alumnoId` + `cursoId` y asistencias activas; requiere `X-Admin-Key` y devuelve DTO seguro con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; sin DNI ni token completos como campos separados. |
-| `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revoca certificado e invalida tokens activos; requiere `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/certificados` | Emite certificado desde `alumnoId` + `cursoId` y asistencias activas; requiere sesión admin y CSRF, y devuelve DTO seguro con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; sin DNI ni token completos como campos separados. |
+| `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revoca certificado e invalida tokens activos; requiere sesión admin y CSRF. |
 | `GET` | `/certificados/api/admin/certificados/{id}/entrega-manual` | Entrega manual de solo lectura: devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para copia/descarga externa por Bedelía; sin email, sin rotación, sin escritura. |
 | `GET` | `/certificados/api/admin/certificados/{id}/qr.png` | Descarga administrativa del QR como PNG aislado (`image/png`, `attachment`) generado on-demand desde el mismo `publicValidationUrl`. No rota token, no persiste PNG, no envía email; requiere extensión PHP `gd` (o equivalente) en hosting. |
-| `POST/GET/PATCH` | `/certificados/api/admin/cursos`, `/admin/cursos/{id}`, `/admin/cursos/{id}/estado` | CRUD mínimo de cursos para datos maestros; requiere `X-Admin-Key`. |
-| `POST/GET/PATCH` | `/certificados/api/admin/alumnos`, `/admin/alumnos/{id}`, `/admin/alumnos/{id}/estado` | CRUD mínimo de alumnos con DNI cifrado/hash y DTO administrativo enmascarado; requiere `X-Admin-Key`. |
+| `POST/GET/PATCH` | `/certificados/api/admin/cursos`, `/admin/cursos/{id}`, `/admin/cursos/{id}/estado` | CRUD mínimo de cursos para datos maestros; requiere sesión admin; las mutaciones exigen CSRF. |
+| `POST/GET/PATCH` | `/certificados/api/admin/alumnos`, `/admin/alumnos/{id}`, `/admin/alumnos/{id}/estado` | CRUD mínimo de alumnos con DNI cifrado/hash y DTO administrativo enmascarado; requiere sesión admin; las mutaciones exigen CSRF. |
 | `POST/GET/PATCH` | `/certificados/api/admin/cursos/{cursoId}/fechas`, `/admin/cursos/{cursoId}/fechas/{fechaId}` | Carga y mantenimiento de fechas de curso ordenadas. |
 | `POST/GET/DELETE` | `/certificados/api/admin/asistencias`, `/admin/asistencias/{id}` | Registro, listado y anulación lógica de asistencias activas. |
 
@@ -63,6 +63,26 @@ El contrato público futuro de la API de certificados QR está documentado en:
 
 Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, reglas de seguridad y expectativas de integración. La implementación actual cubre la validación pública mínima y el slice administrativo mínimo de emisión/revocación protegido por `X-Admin-Key`.
 
+## Autenticación administrativa por sesión (P5-01)
+
+Los endpoints administrativos usan sesión PHP nativa: `POST /admin/auth/login`, `GET /admin/auth/session` y `POST /admin/auth/logout`. La cookie es `HttpOnly`, `Secure`, `SameSite=Strict`, host-only y usa `/certificados/` en producción o `/certificados_staging/` en staging. Login regenera el ID; la sesión vence por 30 minutos de inactividad o 8 horas absolutas. Las mutaciones requieren `X-CSRF-Token` antes de acceder a servicios o base.
+
+La configuración externa requiere `admin_username`, `admin_password_hash` creado con `PASSWORD_DEFAULT` y ambos TTL exactos. No se versionan ni exponen valores. `X-Admin-Key` no autoriza HTTP; la compatibilidad CLI queda deshabilitada por defecto, requiere expiración futura y debe retirarse antes de activar login de navegador en producción.
+
+El smoke histórico `scripts/test-alto-c-interactive.sh` fue discontinuado porque dependía de `X-Admin-Key` por HTTP. El gate local habilita pruebas; el gate PHP-FPM/cPanel permanece **STOP DESPLIEGUE** y prohíbe activar la autenticación en staging o producción.
+
+### Inventario de compatibilidad legacy
+
+| Alcance rastreado | Estado | Tratamiento |
+|---|---|---|
+| Runtime PHP HTTP | Retirado | No lee `HTTP_X_ADMIN_KEY`; toda autorización usa sesión/cookie y CSRF. |
+| `AuthGateTest`, `AdminAuthHttpTest`, matriz de 18 sitios | Negativo | Envían el header solo para probar que responde `401`; no es un consumidor autorizado. |
+| `AuthGate::requireLegacyCli()` | CLI acotado | Requiere opt-in externo, clave de 16+ caracteres, vencimiento futuro y `PHP_SAPI === 'cli'`; deshabilitado por defecto y en producción. |
+| `scripts/test-alto-c-interactive.sh` | Discontinuado | Termina con código `2`; no ejecuta requests ni despliegues. |
+| Docs/specs/archivos históricos y deploy | No ejecutable | Se conservan como evidencia o quedan bajo el gate de despliegue; no autorizan HTTP ni se modifican en este ciclo. |
+
+El audit `fault-injection-audit.php` es un arnés CLI opcional de seguridad, no parte de la suite CI estándar: exige configuración demo/test explícita y fixtures de seed antes de renombrar la tabla de auditoría. Su rechazo sin esos prerequisitos es una protección correcta, no una falla del producto.
+
 ## Pendientes
 
 - Confirmar si Composer está disponible en cPanel (gate para TCPDF). PHPMailer fue removido: no hay flujo de email en el MVP.
@@ -70,7 +90,7 @@ Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, 
 - La entrega manual reemplaza al reenvío por email: Bedelía copia el link público y descarga el PDF por canal externo. No hay SMTP/PHPMailer activos.
 - `token_cifrado` (AES-256-GCM, clave externa a Git) habilita reconstruir `publicValidationUrl` sin rotar token. Certificados previos sin `token_cifrado` responden `409 TOKEN_NOT_RECOVERABLE`; no se regeneran salvo decisión auditada explícita.
 - Firmantes institucionales completos en PDF quedan pendientes de un ciclo específico si no se cargan desde configuración institucional.
-- Auth admin simple con `X-Admin-Key` queda temporal; login real es fase posterior.
+- La activación de login de navegador en staging/producción queda bloqueada hasta `PASS DESPLIEGUE`.
 - **Rate limiting público**: implementado como protección básica de nodo único con JSON temporal y `flock()`. No reemplaza controles anti-abuso distribuidos.
 - **Auditoría fault-injection**: disponible en `apps/backend-php/tests/fault-injection-audit.php` para DB demo ficticia; restaura `cert_eventos_auditoria` en `finally`.
 - **Dependencia runtime `gd` para QR PNG**: el endpoint `GET /certificados/api/admin/certificados/{id}/qr.png` exige la extensión PHP `gd` (o equivalente) en hosting. La imagen Docker `docker/php84/Dockerfile` instala `libpng-dev` y compila `gd`; `scripts/php-docker-modules-check.sh` valida el módulo. Confirmar `gd` habilitado en cPanel antes de deploy; si falta, la ruta responde `500 CONFIGURATION_ERROR` y queda como gate pendiente.
@@ -133,7 +153,7 @@ Cambios quirúrgicos implementados en el front controller PHP y las clases comun
 | Headers de seguridad en toda respuesta JSON | `Response::json()` y `Response::error()` emiten `X-Content-Type-Options: nosniff` y `X-Frame-Options: SAMEORIGIN` antes de `Content-Type`. | `backend-base-php-certificados`, `backend-contrato-api-certificados`. |
 | `415 UNSUPPORTED_MEDIA_TYPE` por `Content-Type` no JSON | Helper local `requireJsonContentType()` en `index.php`: split por `;`, `trim`, `strtolower`, exige `application/json` exacto. Se aplica antes de cualquier side effect o rate-limit. | `backend-contrato-api-certificados`. |
 | `400 VALIDATION_ERROR` por JSON malformado en POST JSON | Helper local `readJsonBody()` exige `json_decode` como array sin `JSON_ERROR_NONE`. Aplica a `POST /certificados/consulta`, `POST /admin/certificados` y `POST /admin/certificados/{id}/revocar`. | `backend-contrato-api-certificados`, `admin-certificate-emission`. |
-| Falla cerrada para `admin_api_key` corta | `Config::adminApiKey()` devuelve `''` si la clave configurada está vacía o mide menos de 16 caracteres tras `trim`. Las rutas admin responden `401 UNAUTHORIZED` sin revelar causa; los endpoints públicos no se rompen. | `admin-auth`. |
+| Falla cerrada para sesión admin inválida | `Config::adminSessionSettings()` exige usuario externo, hash `PASSWORD_DEFAULT` y TTL exactos. Las rutas admin responden `401 UNAUTHORIZED` sin revelar causa; los endpoints públicos no se rompen. | `admin-auth`. |
 | Revocación sin motivo | Cuando no se envía `reason`, el cliente debe enviar un body JSON `{}`. Un body sin `Content-Type: application/json` o con JSON malformado responde `415`/`400` sin persistir. | `backend-contrato-api-certificados`. |
 
 ### Pendientes diferidos (fuera de este ciclo)

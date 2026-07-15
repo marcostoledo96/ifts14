@@ -79,6 +79,95 @@ if ($path === '/certificados/consulta') {
     return;
 }
 
+if ($path === '/admin/auth/login') {
+    if ($method !== 'POST') {
+        header('Allow: POST');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+    if (!requireJsonContentType($requestId)) {
+        return;
+    }
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
+    }
+
+    try {
+        $config = Config::load();
+    } catch (RuntimeException) {
+        Response::error(401, 'UNAUTHORIZED', 'No autorizado.', $requestId);
+        return;
+    }
+    if (!AdminSessionAuth::allowLoginAttempt($config, $_SERVER)) {
+        Response::error(429, 'RATE_LIMITED', 'No autorizado.', $requestId);
+        return;
+    }
+    $username = is_string($body['username'] ?? null) ? $body['username'] : '';
+    $password = is_string($body['password'] ?? null) ? $body['password'] : '';
+    $csrf = AdminSessionAuth::login($config, AdminSessionAuth::basePath($_SERVER), $username, $password, time());
+    if ($csrf === null) {
+        error_log('ifts14_admin_session_start_failed');
+        Response::error(500, 'INTERNAL_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return;
+    }
+    if ($csrf === false) {
+        Response::error(401, 'UNAUTHORIZED', 'No autorizado.', $requestId);
+        return;
+    }
+
+    Response::json(200, ['authenticated' => true, 'csrfToken' => $csrf], $requestId);
+    return;
+}
+
+if ($path === '/admin/auth/session') {
+    if ($method !== 'GET') {
+        header('Allow: GET');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    try {
+        $config = Config::load();
+        $session = AdminSessionAuth::state($config, AdminSessionAuth::basePath($_SERVER), time());
+    } catch (RuntimeException) {
+        $session = null;
+    }
+
+    $data = ['authenticated' => $session !== null];
+    if ($session !== null && is_string($session['csrfToken'] ?? null)) {
+        $data['csrfToken'] = $session['csrfToken'];
+    }
+    Response::json(200, $data, $requestId);
+    return;
+}
+
+if ($path === '/admin/auth/logout') {
+    if ($method !== 'POST') {
+        header('Allow: POST');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    try {
+        $config = Config::load();
+        $session = AdminSessionAuth::state($config, AdminSessionAuth::basePath($_SERVER), time());
+    } catch (RuntimeException) {
+        $config = null;
+        $session = null;
+    }
+
+    if ($session !== null && is_array($config) && !requireAdmin($config, $requestId)) {
+        return;
+    }
+    if (!AdminSessionAuth::logout($config, AdminSessionAuth::basePath($_SERVER))) {
+        Response::error(500, 'INTERNAL_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return;
+    }
+    Response::json(200, ['authenticated' => false], $requestId);
+    return;
+}
+
 if ($path === '/admin/cursos') {
     if (!in_array($method, ['GET', 'POST'], true)) {
         Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
@@ -640,10 +729,15 @@ function readJsonBody(string $requestId): ?array
 function requireAdmin(array $config, string $requestId): bool
 {
     try {
-        AuthGate::requireAdmin($config, $_SERVER, $requestId);
+        AuthGate::requireHttpSession(
+            $config,
+            $_SERVER,
+            $requestId,
+            in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['POST', 'PUT', 'PATCH', 'DELETE'], true),
+        );
 
         return true;
-    } catch (UnauthorizedException) {
+    } catch (UnauthorizedException|CsrfException) {
         return false;
     }
 }
@@ -651,12 +745,12 @@ function requireAdmin(array $config, string $requestId): bool
 /** @return array<string, mixed>|null */
 function adminConfig(string $requestId, bool $requiresJson = false): ?array
 {
-    if ($requiresJson && !requireJsonContentType($requestId)) {
+    $config = Config::load();
+    if (!requireAdmin($config, $requestId)) {
         return null;
     }
 
-    $config = Config::load();
-    if (!requireAdmin($config, $requestId)) {
+    if ($requiresJson && !requireJsonContentType($requestId)) {
         return null;
     }
 
