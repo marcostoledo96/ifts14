@@ -2,12 +2,19 @@ import { Routes } from '@angular/router';
 import { adminGuard } from './features/admin/admin-guard';
 import { COURSES_SOURCE } from './features/admin/courses/courses.service';
 import { InMemoryCoursesService } from './features/admin/courses/in-memory-courses.service';
+import { HttpCoursesService } from './features/admin/courses/http-courses.service';
 import { ATTENDANCE_SOURCE } from './features/admin/attendances/data/attendance.token';
 import { AttendanceMockService } from './features/admin/attendances/data/attendance-mock.service';
+import { HttpAttendanceService } from './features/admin/attendances/data/http-attendance.service';
 import { CERTIFICATIONS_SOURCE } from './features/admin/certifications/certifications.service';
 import { InMemoryCertificationsService } from './features/admin/certifications/in-memory-certifications.service';
+import { HttpCertificationsService } from './features/admin/certifications/http-certifications.service';
 import { STUDENTS_SOURCE } from './features/admin/students/students.service';
 import { InMemoryStudentsService } from './features/admin/students/in-memory-students.service';
+import { HttpStudentsService } from './features/admin/students/http-students.service';
+import { INSTITUTIONAL_CONFIG_SOURCE } from './features/admin/institutional-config/institutional-config.service';
+import { HttpInstitutionalConfigService } from './features/admin/institutional-config/http-institutional-config.service';
+import { environment } from '../environments/environment';
 
 export const routes: Routes = [
   // La raíz carga una página de inicio no validante: no llama a la API ni usa
@@ -51,16 +58,13 @@ export const routes: Routes = [
     // HTTP/storage/secretos. Si se saca, /admin/cursos* falla con
     // NullInjectorError en runtime (no en specs, que lo proveen a mano).
     providers: [
-      { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
-      // ponytail: provee ATTENDANCE_SOURCE solo en el árbol admin; sin
-      // HTTP/storage/secretos. Si se saca, /admin/asistencias* falla con
-      // NullInjectorError en runtime (no en specs, que lo proveen a mano).
-      { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
-      // ponytail: provee CERTIFICATIONS_SOURCE solo en el árbol admin; sin
-      // HTTP/storage/secretos. Si se saca, /admin/certificaciones* falla con
-      // NullInjectorError en runtime (no en specs, que lo proveen a mano).
-      { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
-      { provide: STUDENTS_SOURCE, useClass: InMemoryStudentsService },
+      // ponytail: conmutación mock→HTTP vía environment.useRealApi (patrón VALIDATION_SOURCE).
+      // useRealApi=false (default) → InMemoryXxx; true → HttpXxx contra environment.apiBaseUrl.
+      { provide: COURSES_SOURCE, useClass: environment.useRealApi ? HttpCoursesService : InMemoryCoursesService },
+      { provide: ATTENDANCE_SOURCE, useClass: environment.useRealApi ? HttpAttendanceService : AttendanceMockService },
+      { provide: CERTIFICATIONS_SOURCE, useClass: environment.useRealApi ? HttpCertificationsService : InMemoryCertificationsService },
+      { provide: STUDENTS_SOURCE, useClass: environment.useRealApi ? HttpStudentsService : InMemoryStudentsService },
+      { provide: INSTITUTIONAL_CONFIG_SOURCE, useClass: HttpInstitutionalConfigService },
     ],
     loadComponent: () =>
       import('./features/admin/admin-shell').then((m) => m.AdminShell),
