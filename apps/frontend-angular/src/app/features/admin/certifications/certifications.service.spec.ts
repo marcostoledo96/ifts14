@@ -127,6 +127,34 @@ describe('InMemoryCertificationsService', () => {
     expect(count).toBe(list.length);
   });
 
+  it('revocar cambia un certificado vigente a revocado', async () => {
+    const svc = setup();
+
+    await svc.revocar(1, 'Motivo de prueba');
+
+    const stored = await svc.obtener(1);
+    expect(stored.estado).toBe('revocado');
+    expect(stored.auditEvents[0].accion).toBe('revocacion');
+    expect(stored.auditEvents[0].detalle).toBe('Motivo de prueba');
+  });
+
+  for (const [estado, id] of [
+    ['borrador', 3],
+    ['vencido', 4],
+    ['revocado', 5],
+  ] as const) {
+    it(`revocar rechaza un certificado ${estado} sin mutarlo`, async () => {
+      const svc = setup();
+      const before = await svc.obtener(id);
+
+      await expectAsync(svc.revocar(id, 'Motivo de prueba')).toBeRejectedWithError(
+        'Certificado no revocable.',
+      );
+
+      expect(await svc.obtener(id)).toEqual(before);
+    });
+  }
+
   it('documentMasked cumple formato XX****XX', async () => {
     const svc = setup();
     const list = await svc.listar();
