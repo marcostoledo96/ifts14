@@ -1,13 +1,13 @@
 ---
 titulo: "IFTS14 — Plan de correcciones preproducción con SDD y TDD"
-version: "1.3"
+version: "1.4"
 fecha_plan: "2026-07-15"
 repositorio: "marcostoledo96/ifts14"
 commit_auditado: "1a6a1cf5aa1b19a9652cab82b9455e789885471c"
 rama_fuente: "main"
 estado_general: "PARTIAL"
-fase_actual: "P6-01"
-ultimo_ciclo_cerrado: "P6-01"
+fase_actual: "P6-02"
+ultimo_ciclo_cerrado: "P6-02"
 responsable_coordinacion: "Marcos"
 metodologia: "Gentle AI + OpenSpec + SDD + TDD"
 ---
@@ -252,7 +252,7 @@ Este tablero es la vista vigente. Las auditorías, checklists y registros poster
 | P3 | `DONE` | [`c67c4d8`](https://github.com/marcostoledo96/ifts14/commit/c67c4d85f51e6d5ea365da1daab0292e65815153) | [local] [verify de hardening](../../openspec/changes/archive/2026-06-27-qa-backend-hardening-certificados/verify-report.md): **PASS WITH WARNINGS**; [CI] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): tests/lint exit `0`. | Advertencias históricas de archive/documentación ya no invalidan los requisitos P3; no implican producción validada. | P5-04. |
 | P4 | `DONE` | [`c337def`](https://github.com/marcostoledo96/ifts14/commit/c337deffe5d217ba56e53da6ca81e31ab4ec2219) | [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**, con E2E MariaDB de revisiones; [CI] mismo verify: MariaDB E2E exit `0`. | No se infiere regeneración automática de PDF ni validación de producción. | P5-04. |
 | P5 | `DONE` | [PR #63](https://github.com/marcostoledo96/ifts14/pull/63) / [`1a6a1cf`](https://github.com/marcostoledo96/ifts14/commit/1a6a1cf5aa1b19a9652cab82b9455e789885471c) | [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**, 16/16 requirements y 52/52 escenarios; [staging] [evidencia Task 4.1](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md): **PASS para el candidato aislado de staging**; [local] [verify P5-03](../../openspec/changes/archive/2026-07-15-p5-03-environments/verify-report.md): **PASS** 6/6 requirements, 597/597 tests y guarda de CI activa; [local] [verify P5-04](../../openspec/changes/archive/2026-07-15-p5-04-login-angular-real/verify-report.md): **PASS** 8/8 requirements, 605/605 tests y 0 blockers. | No se infiere regeneración automática de PDF ni validación de producción. P5-01 conserva su warning W1 histórico; la producción `/certificados/` no está validada. | P6-01. |
-| P6 | `DONE` | [PR #65](https://github.com/marcostoledo96/ifts14/pull/65) / [`27b34c6`](https://github.com/marcostoledo96/ifts14/commit/27b34c63be917d32d9f987340d426eec0a8c421b) | [CI] PR #65 mergeado: revocación limitada a certificados `vigente`; [documental] [exploración de reconciliación](../../openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/exploration.md): sin verify de cierre P6 global; [local] [verify P6-01](../../openspec/changes/archive/2026-07-15-p6-01-entrega-manual-funcional/verify-report.md): **PASS** 7/7 requirements, 617/617 tests, 0 blockers y 0 warnings — entrega manual real con URL canónica, descarga QR Blob con filename semántico, clipboard fallback, detección de PDF `outdated` y botón "Entrega manual" habilitado desde preview. | No se infiere regeneración automática de PDF ni validación de producción. La regeneración real del PDF queda como handoff MVP; la producción `/certificados/` no está validada. | P6-02. |
+| P6 | `DONE` | [PR #65](https://github.com/marcostoledo96/ifts14/pull/65) / [`27b34c6`](https://github.com/marcostoledo96/ifts14/commit/27b34c63be917d32d9f987340d426eec0a8c421b) | [CI] PR #65 mergeado: revocación limitada a certificados `vigente`; [documental] [exploración de reconciliación](../../openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/exploration.md): sin verify de cierre P6 global; [local] [verify P6-01](../../openspec/changes/archive/2026-07-15-p6-01-entrega-manual-funcional/verify-report.md): **PASS** 7/7 requirements, 617/617 tests, 0 blockers y 0 warnings — entrega manual real con URL canónica, descarga QR Blob con filename semántico, clipboard fallback, detección de PDF `outdated` y botón "Entrega manual" habilitado desde preview; [local] [verify P6-02](../../openspec/changes/archive/2026-07-15-p6-02-reenvio-automatico/verify-report.md): **PASS** 4/4 requirements (REQ-REGEN-001 a REQ-REGEN-004), 621/621 tests, 0 blockers y 1 warning (W1 backend test no ejecutable sin PHP local) — regeneración real de PDF con mismo token, rechazo de PDF vigente, botón en preview que dispara endpoint y auditoría `pdf_regenerado`. | No se infiere envío automático por email ni validación de producción. P6-02 deja el backend test `RegenerarPdfTest.php` pendiente de corrida en CI/entorno con PHP 8.4.21 + TCPDF (W1); la producción `/certificados/` no está validada. | P6-03. |
 | P7 | `PARTIAL` | Sin cierre terminal de P7 | [CI] `.github/workflows/backend-tests.yml`: tests backend/MariaDB/frontend básicos; [documental] [exploración de reconciliación](../../openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/exploration.md): sin gate de mocks, links/docs ni secretos. | P7-01/P7-02 siguen parciales y P7-04 sigue `PENDING`; P7-03 tiene evidencia CI. | P7-01 y P7-04 tras integración admin. |
 | P8 | `PARTIAL` | [PR #63](https://github.com/marcostoledo96/ifts14/pull/63) / [`1a6a1cf`](https://github.com/marcostoledo96/ifts14/commit/1a6a1cf5aa1b19a9652cab82b9455e789885471c) | [staging] [evidencia Task 4.1](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md): **PASS para el candidato aislado de staging**; [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**. | Esquema staging vacío; faltan seed/flujo de negocio, smoke remoto completo y QA manual. Producción no validada. | P8-02 a P8-05, después de P5/P6/P7. |
 | P9 | `PENDING` | Sin PR/commit de cierre | [documental] este plan: backlog posterior; sin evidencia de cierre ni evidencia `[production]`. | **No bloqueante** para la secuencia inmediata. | Backlog posterior a P8. |
@@ -325,6 +325,7 @@ Al cerrar cada ciclo, agregar una fila:
 | 2026-07-15 | P5-04 | DONE | admin-auth.service.spec.ts | 605/605 SUCCESS | N/A | 21 archivos (3 nuevos, 16 mod, 2 elim) | — | P6-01 |
 | 2026-07-15 | P6-02 (parcial) | PARTIAL | Tests de estados no revocables | PR #65 protege revocación solo `vigente` | No aplica | Frontend de revocación | [PR #65](https://github.com/marcostoledo96/ifts14/pull/65) / `27b34c6` | No cierra P6; depende de P5-04 |
 | 2026-07-15 | P6-01 | DONE | `certification-delivery-page.spec.ts` | 617/617 SUCCESS | N/A | 8 archivos (7 mod, 1 reescrito) | — | P6-02 |
+| 2026-07-15 | P6-02 (reenvío) | DONE | Tests de estados no regenerables (vigente) | 621/621 SUCCESS Front; 5 tests PHP no ejecutables localmente (W1) | N/A | 14 archivos (3 backend + 11 frontend) | — | P6-03 (eliminar estados no sustentados) / P6-05 (CSS/a11y) |
 
 ## 4.4 Regla para la IA
 
@@ -1744,12 +1745,12 @@ El proyecto solo puede considerarse candidato a producción cuando:
 Ejecutar únicamente:
 
 ```txt
-P6-02 — Reenvío automático tras regeneración
+P6-03 — Eliminar estados no sustentados
 ```
 
-Alcance: incorporar el envío automático de la URL pública de validación cuando el PDF se regenere, reutilizando el endpoint backend existente de entrega manual. P6-02 parte del cierre verificable de P6-01 (entrega manual real con URL canónica, descarga QR Blob, clipboard fallback, detección de PDF `outdated` y botón "Entrega manual" habilitado desde preview) y de la fila `DONE` de P6 en el tablero 4.2.
+Alcance: limpiar de la UI activa los estados `entregado`, `pendiente-entrega` y `requiere-nueva-entrega` que no cuentan con persistencia real, y suprimir los mensajes "firma digital verificada" y "validez legal" sin copy aprobado. P6-03 parte del cierre verificable de P6-01 (entrega manual real con URL canónica, descarga QR Blob, clipboard fallback y detección de PDF `outdated`) y de P6-02 (regeneración real del PDF con mismo token, rechazo de PDF vigente, botón en preview que dispara el endpoint y auditoría `pdf_regenerado`).
 
-Luego: P6-03/P6-05, P7-01/P7-04 y P8-02 a P8-05. P9 no bloquea esta secuencia.
+Luego: P6-04 (validación pública refinada), P6-05 (CSS/accesibilidad), P7-01/P7-04 y P8-02 a P8-05. P9 no bloquea esta secuencia.
 
 ---
 
@@ -1781,3 +1782,4 @@ Fuente oficial:
 | 1.1 | 2026-07-15 | Reconciliación de tablero contra PR #63/#65 y evidencia archivada; no reescribe auditorías ni valida producción | Marcos / SDD documental |
 | 1.2 | 2026-07-15 | Cierre de P5-04: P5 → `DONE`; tablero, sección 11, aserción Python e historial actualizados; spec canónica `admin-angular-auth` creada | Marcos / SDD documental |
 | 1.3 | 2026-07-15 | Cierre de P6-01: P6 → `DONE`; tablero, sección 4.10, sección 11, aserción Python e historial actualizados; spec canónica `admin-certificate-delivery-frontend` creada | Marcos / SDD documental |
+| 1.4 | 2026-07-15 | Cierre de P6-02 (reenvío/regeneración): P6 sigue `DONE`; tablero, sección 4.3, sección 11, aserción Python e historial actualizados; spec canónica `pdf-regeneration` creada; doc frontend `00-angular20-port-v0.md` actualizada con el cierre P6-02 | Marcos / SDD documental |

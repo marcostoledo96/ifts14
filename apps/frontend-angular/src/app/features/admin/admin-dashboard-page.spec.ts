@@ -91,6 +91,7 @@ describe('AdminDashboardPage', () => {
       listar: () => Promise.reject(new Error('Network error')),
       obtener: () => Promise.reject(new Error('Network error')),
       obtenerEntregaManual: () => Promise.reject(new Error('Network error')),
+      regenerarPdf: () => Promise.reject(new Error('Network error')),
       contar: () => Promise.reject(new Error('Network error')),
       revocar: () => Promise.reject(new Error('Network error')),
     };

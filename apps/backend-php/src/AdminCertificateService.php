@@ -310,6 +310,158 @@ final class AdminCertificateService
         return $this->loadManualDeliveryData($this->validatedCertificateId($id));
     }
 
+    /**
+     * Regenera el PDF de un certificado emitido con el mismo token (no rota).
+     * Si el PDF ya está vigente y las revisiones están alineadas, responde
+     * sin regenerar. Si está desactualizado, regenera el PDF, actualiza
+     * pdf_estado='vigente' y pdf_generado_revision=contenido_revision, y
+     * audita el evento 'pdf_regenerado'.
+     *
+     * @param int|string $id Identificador del certificado.
+     * @return array<string, mixed> {regenerado:bool, mensaje?:string, publicValidationUrl?:string, pdfDownloadUrl?:string, pdfStatus?:string}
+     * @throws AdminCertificateException 400/404/409/500.
+     */
+    public function regenerarPdf(int|string $id): array
+    {
+        $certificateId = $this->validatedCertificateId($id);
+
+        // Carga certificado vigente + token activo + revisiones + datos.
+        $row = $this->loadRegenerationData($certificateId);
+
+        $pdfEstado = is_string($row['pdf_estado'] ?? null) ? $row['pdf_estado'] : 'no_generado';
+        $contenidoRevision = isset($row['contenido_revision']) ? (int) $row['contenido_revision'] : 1;
+        $pdfGeneradoRevision = isset($row['pdf_generado_revision']) ? (int) $row['pdf_generado_revision'] : null;
+
+        // Si ya está vigente y alineado, no regenerar.
+        if ($pdfEstado === 'vigente' && $pdfGeneradoRevision === $contenidoRevision) {
+            return [
+                'regenerado' => false,
+                'mensaje' => 'El PDF ya está actualizado.',
+            ];
+        }
+
+        $token = $row['token'];
+        $code = $row['codigo_certificado'];
+
+        // Regenera el PDF con los datos actuales del certificado.
+        $this->generatePdfWithinTransaction(
+            $code,
+            $row['documentNumber'],
+            [
+                'studentDisplayName' => $row['alumno_nombre_mostrar'],
+                'courseName' => $row['curso_nombre'],
+                'issuedAt' => $row['emitido_en'],
+                'expiresAt' => $row['vence_en'],
+                'attendedDates' => $row['attendedDates'],
+                'institutionalConfig' => $row['institutionalConfig'],
+            ],
+            $token,
+        );
+
+        // Marca el PDF como vigente y alinea la revisión generada.
+        $statement = $this->pdo->prepare(<<<'SQL'
+            UPDATE cert_certificados
+            SET pdf_estado = 'vigente',
+                pdf_generado_revision = contenido_revision
+            WHERE id = ?
+            SQL);
+        $statement->execute([$certificateId]);
+
+        $this->safeAudit('pdf_regenerado', 'ok', ['certificado_id' => $certificateId]);
+
+        return [
+            'regenerado' => true,
+            'publicValidationUrl' => $this->buildPublicValidationUrl($token),
+            'pdfDownloadUrl' => $this->buildPdfDownloadUrl($certificateId),
+            'pdfStatus' => 'vigente',
+        ];
+    }
+
+    /**
+     * Carga los datos necesarios para regenerar el PDF: certificado vigente,
+     * token activo (descifrado), DNI del alumno, snapshot de fechas asistidas
+     * y configuración institucional.
+     *
+     * @return array<string, mixed>
+     * @throws AdminCertificateException 404/409 si no se encuentra o el token no se recupera.
+     */
+    private function loadRegenerationData(int $certificateId): array
+    {
+        $statement = $this->pdo->prepare(<<<'SQL'
+            SELECT c.id, c.estado, c.revocado_en AS cert_revocado_en, c.vence_en,
+                   (c.vence_en IS NULL OR c.vence_en >= CURRENT_DATE) AS vence_en_vigente,
+                   c.codigo_certificado, c.pdf_estado, c.contenido_revision,
+                   c.pdf_generado_revision, c.alumno_nombre_mostrar, c.curso_nombre,
+                   c.emitido_en, c.vence_en, c.alumno_id,
+                   t.token_prefijo, t.token_cifrado
+            FROM cert_certificados c
+            LEFT JOIN cert_tokens_verificacion t
+              ON t.certificado_id = c.id
+             AND t.estado = 'activo'
+             AND t.revocado_en IS NULL
+             AND t.vigente_desde <= CURRENT_TIMESTAMP
+             AND (t.vigente_hasta IS NULL OR t.vigente_hasta >= CURRENT_TIMESTAMP)
+            WHERE c.id = ?
+            LIMIT 1
+            SQL);
+        $statement->execute([$certificateId]);
+        $row = $statement->fetch();
+
+        if ($row === false) {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+        }
+
+        $estado = (string) ($row['estado'] ?? '');
+        $venceEnVigente = (int) ($row['vence_en_vigente'] ?? 0) === 1;
+        $certRevocadoEn = $row['cert_revocado_en'] ?? null;
+        if ($estado !== 'vigente' || !$venceEnVigente || $certRevocadoEn !== null) {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+        }
+
+        $tokenPrefix = is_string($row['token_prefijo'] ?? null) ? $row['token_prefijo'] : '';
+        if ($tokenPrefix === '') {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+        }
+
+        $tokenCipher = $this->readLobAsString($row['token_cifrado'] ?? null);
+        $token = $this->recoverToken($tokenCipher);
+        $code = is_string($row['codigo_certificado'] ?? null) ? $row['codigo_certificado'] : '';
+        if ($code === '') {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+        }
+
+        // DNI completo desde cert_alumnos (necesario para el PDF).
+        $alumnoId = isset($row['alumno_id']) ? (int) $row['alumno_id'] : 0;
+        $statementAlumno = $this->pdo->prepare('SELECT dni_cifrado FROM cert_alumnos WHERE id = ? LIMIT 1');
+        $statementAlumno->execute([$alumnoId]);
+        $alumnoRow = $statementAlumno->fetch();
+        if (!is_array($alumnoRow)) {
+            throw new AdminCertificateException(404, 'CERTIFICATE_NOT_FOUND', 'Certificado no encontrado.');
+        }
+        $documentNumber = $this->decryptDocumentNumber($this->readLobAsString($alumnoRow['dni_cifrado'] ?? null));
+
+        // Snapshot de fechas asistidas desde cert_certificado_fechas.
+        $attendedDates = $this->loadCertificateSnapshotDates($certificateId);
+
+        // Configuración institucional vigente.
+        $institutionalConfig = $this->loadInstitutionalConfig($this->pdo);
+
+        return [
+            'codigo_certificado' => $code,
+            'pdf_estado' => $row['pdf_estado'],
+            'contenido_revision' => $row['contenido_revision'] ?? 1,
+            'pdf_generado_revision' => $row['pdf_generado_revision'] ?? null,
+            'alumno_nombre_mostrar' => (string) $row['alumno_nombre_mostrar'],
+            'curso_nombre' => (string) $row['curso_nombre'],
+            'emitido_en' => (string) $row['emitido_en'],
+            'vence_en' => is_string($row['vence_en'] ?? null) ? $row['vence_en'] : null,
+            'attendedDates' => $attendedDates,
+            'institutionalConfig' => $institutionalConfig,
+            'documentNumber' => $documentNumber,
+            'token' => $token,
+        ];
+    }
+
     private function validatedCertificateId(int|string $id): int
     {
         $certificateId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);

@@ -384,6 +384,7 @@ describe('CertificationPdfPreviewPage', () => {
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
       obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
       obtener: (id: number) =>
         new Promise<CertificacionDetalle>((resolve) => {
           pending.set(id, { resolve: resolve as (v: unknown) => void });
