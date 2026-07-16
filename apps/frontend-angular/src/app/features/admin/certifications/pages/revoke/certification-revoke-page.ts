@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, ElementRef, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, ElementRef, viewChild, HostListener } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle } from '../../certifications.models';
@@ -111,6 +111,32 @@ export class CertificationRevokePage {
       if (gen === this.loadGen) this.error.set((e as Error).message);
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
+    }
+  }
+
+  // T5: focus trap — Tab/Shift+Tab se mantiene dentro del diálogo
+  @HostListener('keydown.tab', ['$event'])
+  @HostListener('keydown.shift.tab', ['$event'])
+  onTab(e: KeyboardEvent): void {
+    const dialog = this.dialogRef()?.nativeElement;
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'a[href], button:not(:disabled), textarea, input, [tabindex]:not([tabindex="-1"])',
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey) {
+      if (active === first || !dialog.contains(active)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   }
 

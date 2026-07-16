@@ -188,6 +188,10 @@ dl {
 }
 
 /* ── Tabla de asistencias ─────────────────────────────── */
+/* T7: contenedor con scroll horizontal en pantallas angostas */
+.tabla-asistencias-wrap {
+  overflow-x: auto;
+}
 .tabla-asistencias {
   width: 100%;
   border-collapse: collapse;
