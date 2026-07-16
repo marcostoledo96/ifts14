@@ -1,6 +1,6 @@
 # Deploy cPanel — /certificados/
 
-> **Estado P8-01:** staging aislado creado y validado. P8-01 DONE. PHP 8.4.22 (ea-php84, CGI/FastCGI), MariaDB 10.6.27, migraciones 001–010 aplicadas. Producción `/certificados/` permanece en PHP 8.1 sin tocar. Las referencias históricas a `X-Admin-Key` HTTP y `STOP DESPLIEGUE` se conservan como antecedente, no como autorización actual.
+> **Estado P8-03:** staging deploy funcional. Login admin verificado en local y staging. Fix de envelope (`res.data.*`) commiteado. Producción `/certificados/` permanece en PHP 8.1 sin tocar.
 
 ## Entorno real de staging (P8-01)
 
@@ -14,14 +14,27 @@
 | Config externa | `/home/<cpanel_user>/ifts14_config/` (0700) |
 | Sesiones | files, strict_mode=1, use_only_cookies=1, use_trans_sid=0 |
 
+### Config admin — reglas no negociables
+
+| Campo | Valor obligatorio | Nota |
+|---|---|---|
+| `admin_username` | string | Ej: `bedelia_admin` |
+| `admin_password_hash` | bcrypt | `password_hash()` |
+| `admin_session_idle_seconds` | **1800** exacto | `Config::adminSessionSettings()` compara igualdad estricta |
+| `admin_session_absolute_seconds` | **28800** exacto | Cualquier otro valor → login 401 silencioso |
+| `CERTIFICADOS_CONFIG_PATH` | path al `.php` de config | **Nunca `IFTS14_CONFIG_PATH`** — ese nombre no lo lee el código |
+
 ### Lecciones del entorno
 
 1. **SetEnv NO funciona.** `mod_env` no está habilitado → usar `.user.ini` + `auto_prepend_file`.
 2. **No hay Terminal ni SSH.** Todo se prepara local y se sube.
-3. **Composer no instalado.** Generar `vendor/` localmente (`composer install --no-dev --prefer-dist --classmap-authoritative`) y subir como ZIP.
+3. **Composer no instalado.** Generar `vendor/` localmente y subir como ZIP.
 4. **Dominio principal usa PHP 8.1.** No cambiarlo globalmente.
 5. **PHP-FPM no disponible.** CGI/FastCGI funciona correctamente.
-6. **Nunca compartir:** contraseñas, hashes, tokens, DNI, rutas privadas, IPs, credenciales DB.
+6. **Rate-limit login:** 5 intentos / 300s por IP → 429. Borrar bucket `ifts14-admin-login-*.json` en `runtime/` para resetear.
+7. **Backend usa envelope `{ data, meta }`.** El frontend debe leer `res.data.*`, no `res.*`. Fix commiteado en `875e3dc`.
+8. **TTL admin son fijos (1800/28800).** No son configurables sin cambiar constantes en `Config.php`.
+9. **Nunca compartir:** contraseñas, hashes, tokens, DNI, rutas privadas, IPs, credenciales DB.
 
 ## Objetivo
 
