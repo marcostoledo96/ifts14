@@ -71,3 +71,64 @@ La validación pública DEBE confirmar el contrato D0 vigente sin cambiar la UI:
 - **Cuando** Angular mapea el error
 - **Entonces** DEBE mostrar estado no verificable, no error técnico.
 - **Y** NO DEBE revelar si el token no existe, está revocado o está vencido.
+
+### Requirement: Layout folio con sidebar (validación pública refinada)
+
+La pantalla pública DEBE renderizar un layout grid de 2 columnas para certificados vigentes: contenido principal (folio, alumno, DNI completo, curso, tabla de fechas asistidas, fecha de emisión, código de certificado) y sidebar con trazabilidad (folio del certificado, timestamp de consulta del cliente, sello oficial decorativo). En mobile, el sidebar DEBE apilar debajo del contenido principal.
+
+#### Scenario: Certificado vigente en desktop
+
+- **Dado** una respuesta `valid` con datos completos
+- **Cuando** se renderiza la página con viewport desktop
+- **Entonces** la pantalla DEBE mostrar grid de 2 columnas (principal + sidebar).
+- **Y** el sidebar DEBE incluir folio, timestamp de consulta (cliente) y sello oficial decorativo marcado `aria-hidden`.
+
+#### Scenario: Certificado vigente en mobile
+
+- **Dado** una respuesta `valid` con datos completos
+- **Cuando** se renderiza la página con viewport mobile
+- **Entonces** el sidebar DEBE apilar debajo del contenido principal sin perder legibilidad.
+
+### Requirement: Membrete institucional IFTS 14
+
+La pantalla pública DEBE mostrar el membrete institucional "IFTS N.° 14 — Bedelía" en cualquier estado de validación, alineado con la identidad institucional vigente.
+
+#### Scenario: Membrete visible en página válida
+
+- **Dado** una respuesta `valid`
+- **Cuando** se renderiza la página
+- **Entonces** el header DEBE incluir el membrete "IFTS N.° 14 — Bedelía".
+
+#### Scenario: Membrete visible en página no verificable
+
+- **Dado** una respuesta `not-verifiable` o `technical-error`
+- **Cuando** se renderiza la página
+- **Entonces** el header DEBE incluir el membrete "IFTS N.° 14 — Bedelía".
+
+### Requirement: Estados no válidos con cuerpo editorial
+
+La pantalla pública DEBE mostrar, para los estados `not-verifiable` y `technical-error`, tanto la banda de estado como un cuerpo editorial explicativo que oriente al visitante sin exponer detalles operativos, de infraestructura ni trazas técnicas.
+
+#### Scenario: Cuerpo editorial en estado no verificable
+
+- **Dado** una respuesta `not-verifiable`
+- **Cuando** se renderiza la página
+- **Entonces** la pantalla DEBE mostrar la banda de estado Y un cuerpo editorial explicativo.
+
+#### Scenario: Cuerpo editorial en error técnico
+
+- **Dado** una respuesta `technical-error`
+- **Cuando** se renderiza la página
+- **Entonces** la pantalla DEBE mostrar la banda de estado Y un cuerpo editorial explicativo.
+- **Y** NO DEBE exponer stack traces, rutas internas ni detalles de infraestructura.
+
+### Requirement: Sin QR decorativo en la página pública
+
+La pantalla pública NO DEBE dibujar un QR falso ni decorativo en ningún estado de validación. La verificación real ocurre en backend contra el token de la URL.
+
+#### Scenario: Página sin QR decorativo
+
+- **Dado** cualquier estado de validación (`valid`, `not-verifiable`, `technical-error`)
+- **Cuando** se renderiza la página
+- **Entonces** la pantalla NO DEBE mostrar un QR falso o decorativo.
+- **Y** la verificación DEBE seguir basándose en el token de la ruta.

@@ -1,43 +1,276 @@
 <section class="validation" aria-labelledby="validation-title">
-  <h1 id="validation-title">Validación de certificado</h1>
+  <h1 id="validation-title" class="visually-hidden">Validación de certificado</h1>
 
-  <div>
-    @if (isLoading()) {
-      <app-banda-estado kind="loading" title="Verificando…" />
-    } @else if (hasError()) {
-      <!-- ponytail: error de resource (no del mapper) → técnico genérico -->
-      <app-banda-estado kind="error" title="No se pudo completar la verificación. Intente nuevamente." />
-    } @else if (view(); as v) {
-      @switch (v.kind) {
-        @case ('valid') {
-          <app-banda-estado kind="valid" title="Certificado verificable" />
-          <article class="state state-valid" aria-labelledby="valid-title">
-            <h2 id="valid-title">Certificado verificable</h2>
-            <dl>
-              <dt appCampoDato>Curso</dt>
-              <dd appCampoDato>{{ v.certificate.course.name }}</dd>
-              <dt appCampoDato>Fecha de emisión</dt>
-              <dd appCampoDato>{{ v.certificate.course.issuedAt }}</dd>
-              <dt appCampoDato>Estudiante</dt>
-              <dd appCampoDato variant="highlight">{{ v.certificate.student.displayName }}</dd>
-              <dt appCampoDato>Documento</dt>
-              <dd appCampoDato variant="mono">{{ documentDisplay(v.certificate.student) }}</dd>
+  @if (isLoading()) {
+    <app-banda-estado kind="loading" title="Verificando…" />
+  } @else if (isTechnicalError()) {
+    <app-banda-estado
+      kind="error"
+      title="No se pudo completar la verificación. Intente nuevamente."
+    />
+    <article class="folio folio-error" aria-labelledby="error-title">
+      <header class="membrete membrete-error">
+        <p class="membrete-eyebrow">SISTEMA DE GESTIÓN ACADÉMICA</p>
+        <h2 id="error-title" class="membrete-titulo">No pudimos completar la validación</h2>
+        <p class="membrete-bajada">
+          El servidor de credenciales digitales está experimentando una demora técnica temporal.
+          Intentá nuevamente más tarde.
+        </p>
+        <div class="membrete-consulta">
+          <span class="membrete-consulta-label">CONSULTA</span>
+          <span class="membrete-consulta-valor">{{ consultaTimestamp() }}</span>
+        </div>
+      </header>
+
+      <div class="cuerpo cuerpo-error">
+        <p class="cuerpo-nota">
+          Este aviso no indica la invalidez del documento presentado, sino una interrupción temporal
+          en el enlace de comunicación con la base de datos de títulos oficiales.
+        </p>
+      </div>
+
+      <footer class="folio-pie">
+        <button type="button" class="btn-primario" (click)="reintentar()">
+          Reintentar validación
+        </button>
+        <a class="btn-secundario" href="/certificados/" rel="noopener">Volver al sitio del instituto</a>
+      </footer>
+    </article>
+  } @else if (view(); as v) {
+    @switch (v.kind) {
+      @case ('valid') {
+        <app-banda-estado kind="valid" title="Certificado verificable" />
+        <article class="folio" aria-labelledby="valid-title">
+          <header class="membrete">
+            <div class="membrete-fila">
+              <div class="membrete-texto">
+                <p class="membrete-eyebrow">IFTS N.° 14 — Bedelía</p>
+                <h2 id="valid-title" class="membrete-titulo">Certificación válida</h2>
+                <p class="membrete-bajada">
+                  Esta certificación fue emitida por el Instituto de Formación Técnica Superior N.° 14
+                  y se encuentra vigente en los registros académicos oficiales.
+                </p>
+              </div>
+              <div class="membrete-caja-numero">
+                <p class="caja-numero-label">N.° DE CERTIFICADO</p>
+                <p class="caja-numero-valor">{{ v.certificate.certificateCode }}</p>
+              </div>
+            </div>
+            <div class="membrete-consulta">
+              <span class="membrete-consulta-label">CONSULTA</span>
+              <span class="membrete-consulta-valor">{{ consultaTimestamp() }}</span>
+            </div>
+          </header>
+
+          <div class="folio-grid">
+            <main class="folio-main">
+              <section class="seccion">
+                <div class="seccion-titulo">
+                  <span class="seccion-numero" aria-hidden="true">I.</span>
+                  <h3 class="seccion-rotulo">DATOS DEL ALUMNO</h3>
+                </div>
+                <dl>
+                  <dt appCampoDato>Alumno/a</dt>
+                  <dd appCampoDato variant="highlight">{{ v.certificate.student.displayName }}</dd>
+                  <dt appCampoDato>DNI</dt>
+                  <dd appCampoDato variant="mono">{{ documentDisplay(v.certificate.student) }}</dd>
+                </dl>
+              </section>
+
+              <section class="seccion">
+                <div class="seccion-titulo">
+                  <span class="seccion-numero" aria-hidden="true">II.</span>
+                  <h3 class="seccion-rotulo">DATOS DEL CURSO</h3>
+                </div>
+                <dl>
+                  <dt appCampoDato>Curso</dt>
+                  <dd appCampoDato variant="highlight">{{ v.certificate.course.name }}</dd>
+                  <dt appCampoDato>N.° de certificado</dt>
+                  <dd appCampoDato variant="mono">{{ v.certificate.certificateCode }}</dd>
+                  <dt appCampoDato>Fecha de emisión</dt>
+                  <dd appCampoDato variant="mono">{{ v.certificate.course.issuedAt }}</dd>
+                </dl>
+              </section>
+
               @if (v.certificate.course.attendedDates?.length) {
-                <dt appCampoDato>Fechas asistidas</dt>
-                <dd appCampoDato>{{ formatAttendedDates(v.certificate.course.attendedDates) }}</dd>
+                <section class="seccion">
+                  <div class="seccion-titulo">
+                    <span class="seccion-numero" aria-hidden="true">III.</span>
+                    <h3 class="seccion-rotulo">REGISTRO DE ASISTENCIA</h3>
+                  </div>
+                  <table class="tabla-asistencias">
+                    <thead>
+                      <tr>
+                        <th scope="col">SEQ</th>
+                        <th scope="col">FECHA REGISTRADA</th>
+                        <th scope="col">PRESENTE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (fecha of v.certificate.course.attendedDates; track fecha; let i = $index) {
+                        <tr>
+                          <td>{{ i + 1 }}</td>
+                          <td>{{ fecha }}</td>
+                          <td>
+                            <span class="presente">
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                aria-hidden="true"
+                              >
+                                <circle
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="var(--color-valid)"
+                                  stroke-width="1.5"
+                                />
+                                <path
+                                  d="M7.5 12.5l3 3 6-6.5"
+                                  stroke="var(--color-valid)"
+                                  stroke-width="1.75"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                />
+                              </svg>
+                              <span class="presente-texto">Sí</span>
+                            </span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                  <p class="tabla-pie">
+                    Fechas del curso en las que se registró la presencia del alumno.
+                  </p>
+                </section>
               }
-              <dt appCampoDato>Código de certificado</dt>
-              <dd appCampoDato variant="mono">{{ v.certificate.certificateCode }}</dd>
-            </dl>
-          </article>
-        }
-        @case ('not-verifiable') {
-          <app-banda-estado kind="not-verifiable" title="El certificado no es verificable." />
-        }
-        @case ('technical-error') {
-          <app-banda-estado kind="error" title="No se pudo completar la verificación. Intente nuevamente." />
-        }
+            </main>
+
+            <aside class="folio-aside" aria-label="Trazabilidad y verificación">
+              <p class="aside-eyebrow">IV. TRAZABILIDAD Y VERIFICACIÓN</p>
+
+              <div class="sello">
+                <svg
+                  width="112"
+                  height="112"
+                  viewBox="0 0 112 112"
+                  fill="none"
+                  aria-hidden="true"
+                  class="sello-svg"
+                >
+                  <circle
+                    cx="56"
+                    cy="56"
+                    r="53"
+                    stroke="var(--color-valid)"
+                    stroke-width="1.5"
+                    stroke-dasharray="2.5 3.5"
+                    opacity="0.9"
+                  />
+                  <circle cx="56" cy="56" r="45" stroke="var(--color-valid)" stroke-width="1" />
+                  <defs>
+                    <path id="sello-arco" d="M 56 20 a 36 36 0 1 1 -0.01 0" fill="none" />
+                  </defs>
+                  <text
+                    font-size="6.4"
+                    letter-spacing="1.6"
+                    fill="var(--color-valid)"
+                    style="font-family: var(--font-mono)"
+                  >
+                    <textPath href="#sello-arco" start-offset="0">
+                      INSTITUTO DE FORMACIÓN TÉCNICA SUPERIOR N.° 14 · GCBA ·
+                    </textPath>
+                  </text>
+                  <path
+                    d="M46 56.5l7 7 13-14"
+                    stroke="var(--color-valid)"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <text
+                    x="56"
+                    y="79"
+                    text-anchor="middle"
+                    font-size="7"
+                    letter-spacing="1.4"
+                    font-weight="600"
+                    fill="var(--color-valid)"
+                    style="font-family: var(--font-mono)"
+                  >
+                    VÁLIDO
+                  </text>
+                </svg>
+              </div>
+
+              <dl class="aside-dl">
+                <div>
+                  <dt class="aside-label">CÓDIGO DE VALIDACIÓN</dt>
+                  <dd class="aside-valor">{{ v.certificate.certificateCode }}</dd>
+                </div>
+                <div>
+                  <dt class="aside-label">FECHA Y HORA DE CONSULTA</dt>
+                  <dd class="aside-valor">{{ consultaTimestamp() }}</dd>
+                </div>
+              </dl>
+
+              <p class="aside-nota">
+                El certificado es verificable en el sistema central del IFTS 14.
+              </p>
+            </aside>
+          </div>
+
+          <footer class="folio-pie">
+            <a class="btn-secundario" href="/certificados/" rel="noopener">Volver al sitio del instituto</a>
+          </footer>
+        </article>
+      }
+      @case ('not-verifiable') {
+        <app-banda-estado kind="not-verifiable" title="El certificado no es verificable." />
+        <article class="folio folio-no-verificable" aria-labelledby="nv-title">
+          <header class="membrete membrete-nv">
+            <p class="membrete-eyebrow">IFTS N.° 14 — Bedelía</p>
+            <h2 id="nv-title" class="membrete-titulo">Certificación no encontrada</h2>
+            <p class="membrete-bajada">
+              No encontramos una certificación válida asociada a esta consulta en los registros
+              académicos oficiales.
+            </p>
+            <div class="membrete-consulta">
+              <span class="membrete-consulta-label">CONSULTA</span>
+              <span class="membrete-consulta-valor">{{ consultaTimestamp() }}</span>
+            </div>
+          </header>
+
+          <div class="cuerpo cuerpo-nv">
+            <section class="seccion">
+              <div class="seccion-titulo">
+                <span class="seccion-numero" aria-hidden="true">I.</span>
+                <h3 class="seccion-rotulo">QUÉ PODÉS HACER</h3>
+              </div>
+              <ol class="sugerencias">
+                <li>Verificá que el enlace o QR sea el último entregado por el instituto.</li>
+                <li>Las certificaciones nuevas pueden tardar hasta 48 hs en impactar en el sistema público.</li>
+                <li>Si el problema persiste, comunicate con Bedelía del IFTS N.° 14.</li>
+              </ol>
+            </section>
+
+            <p class="cuerpo-nota">
+              Este resultado no invalida el certificado en papel o PDF: indica que la consulta no
+              coincide con ningún registro publicado.
+            </p>
+          </div>
+
+          <footer class="folio-pie">
+            <button type="button" class="btn-primario" (click)="reintentar()">
+              Reintentar búsqueda
+            </button>
+            <a class="btn-secundario" href="/certificados/" rel="noopener">Volver al sitio del instituto</a>
+          </footer>
+        </article>
       }
     }
-  </div>
+  }
 </section>

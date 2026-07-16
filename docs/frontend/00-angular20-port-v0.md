@@ -588,3 +588,18 @@ Verificación: archive `openspec/changes/archive/2026-07-15-p6-03-estados-no-sus
 Spec canónica nueva: `openspec/specs/ui-cleanup/spec.md` con 4 requirements y 4 escenarios Given/When/Then (modelo sin `TipoEnvio`/`envio`, listado sin chips ni columna "Entrega", sin "firma digital verificada" en preview/PDF preview, sin "validez legal" en preview/PDF preview).
 
 Límites explícitos (P6-03): no reemplaza los estados eliminados con otros nuevos (eso es rediseño, queda como handoff), no cambia el backend, no rota token/QR, no agrega dependencias, no toca la landing pública ni los mocks de validación, mantiene la paridad visual con `muestra_pagina/` (la referencia v0 ya no exponía esos estados en su diseño final). Próximo ciclo: P6-04 (validación pública refinada).
+
+## Cierre P6-04 — Validación pública refinada
+
+El ciclo `p6-04-validacion-publica-refinada` (archive `openspec/changes/archive/2026-07-15-p6-04-validacion-publica-refinada/`) refinó la página pública de validación (`/certificados/validar/:tokenCertificacion`) para alcanzar paridad visual con `muestra_pagina/`:
+
+- `public-validation-page.html`: layout grid folio de 2 columnas (principal + sidebar), header con membrete "IFTS N.° 14 — Bedelía", secciones de datos completos (folio, alumno, DNI completo, curso, código de certificado, fecha de emisión, tabla de fechas asistidas) y sidebar con folio, timestamp de consulta del cliente y sello oficial decorativo marcado `aria-hidden`. Los estados `not-verifiable` y `technical-error` ahora muestran la banda de estado más un cuerpo editorial explicativo.
+- `public-validation-page.css`: grid layout, estilos del sidebar, tipografía institucional, colores de la paleta v0 y responsive (mobile: sidebar apilado debajo del contenido principal).
+- `public-validation-page.ts`: timestamp de consulta generado en cliente y bindings adaptados al nuevo template. No dibuja QR decorativo.
+- `public-validation-page.spec.ts`: assertions DOM actualizadas para cubrir la nueva estructura (folio, datos, tabla, sidebar con sello, membrete, responsive stack, cuerpo editorial en estados no válidos, ausencia de QR).
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-04-validacion-publica-refinada/verify-report.md` — **PASS** 6/6 requirements (REQ-VAL-001 a REQ-VAL-006), 626/626 tests SUCCESS en Karma + ChromeHeadless (`npm run test:ci` exit `0`), TypeScript compila limpio.
+
+Spec canónica ampliada: `openspec/specs/frontend-public-validation/spec.md` agrega 4 nuevos requirements al capability existente (folio con sidebar, membrete IFTS 14, cuerpo editorial en estados no válidos, sin QR decorativo) preservando los scenarios originales de la pantalla pública.
+
+Límites explícitos (P6-04): no cambia el backend, no rota token/QR, no agrega dependencias, no introduce QR decorativo falso, no toca la UI admin, no agrega diferenciación pública entre revocado/vencido/inexistente (sigue como `not-verifiable` único, D1-03), no modifica la ruta ni el token. Próximo ciclo: P6-05 (CSS y accesibilidad).
