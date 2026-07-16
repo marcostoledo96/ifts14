@@ -8,7 +8,9 @@ import {
   Certificacion,
   CertificacionDetalle,
   CertificacionesFiltros,
+  EntregaManualDto,
   EstadoCertificado,
+  PdfStatus,
   TipoEnvio,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
@@ -179,6 +181,23 @@ export class InMemoryCertificationsService implements CertificationsService {
       publicValidationUrl: truncarUrl(found.publicValidationUrl),
       auditEvents: clone(found.auditEvents),
       attendedDates: clone(found.attendedDates),
+    });
+  }
+
+  obtenerEntregaManual(id: number): Promise<EntregaManualDto> {
+    const found = this.certificados.find((c) => c.id === id);
+    if (!found) {
+      return Promise.reject(new Error(`Certificación no encontrada: ${id}`));
+    }
+    // ponytail: mock construye URL canónica a partir del seed; pdfStatus 'valid' salvo id 4 (vencido).
+    const pdfStatus: PdfStatus = found.id === 4 ? 'outdated' : 'valid';
+    return Promise.resolve({
+      certificadoId: found.id,
+      publicValidationUrl: `https://ifts14.edu.ar/certificados/validar/${found.tokenPrefix}-completo`,
+      pdfDownloadUrl: `${found.id}/pdf`,
+      tokenPrefix: found.tokenPrefix,
+      pdfAvailable: found.estado !== 'borrador',
+      pdfStatus,
     });
   }
 

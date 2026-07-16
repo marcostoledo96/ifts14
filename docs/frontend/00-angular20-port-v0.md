@@ -535,3 +535,22 @@ Verificación: archive `openspec/changes/archive/2026-07-15-p5-04-login-angular-
 Spec canónica nueva: `openspec/specs/admin-angular-auth/spec.md` con 8 requirements y 8 escenarios Given/When/Then (login con credenciales reales, sesión vía cookie HttpOnly, guard verifica sesión real, logout real, CSRF en mutantes, 401 redirige a login, sin X-Admin-Key en bundle y sin credenciales en memoria).
 
 Límites explícitos (P5-04): no cambia backend PHP, no agrega roles ni recuperación de contraseña, no toca configuración CORS/cookies del cPanel (responsabilidad de infraestructura), no modifica mocks públicos de validación ni rutas de la landing pública. QA manual de login (refresh, pestaña nueva, logout, back button, expiración, cookies en DevTools) queda como ALTO-C pendiente de ejecución humana; el corte del ciclo no incluye esa corrida.
+
+## Cierre P6-01 — Entrega manual funcional
+
+El ciclo `p6-01-entrega-manual-funcional` (archive `openspec/changes/archive/2026-07-15-p6-01-entrega-manual-funcional/`) conectó la página de entrega manual con los endpoints backend existentes y eliminó el comportamiento mock-only de Bedelía:
+
+- `certifications.models.ts` agrega `EntregaManualDto` con `certificadoId`, `publicValidationUrl`, `pdfDownloadUrl`, `tokenPrefix`, `pdfAvailable` y `pdfStatus`.
+- `CertificationsService` expone `obtenerEntregaManual(id): Promise<EntregaManualDto>` y se implementa en `http-certifications.service.ts` (`GET /admin/certificados/{id}/entrega-manual`) e `in-memory-certifications.service.ts` (mock con `pdfStatus` sample).
+- `CertificationDeliveryPage` consume el endpoint real: muestra `publicValidationUrl` desde el DTO (sin host hardcodeado), descarga el QR PNG con `fetch` + `Blob` + `URL.createObjectURL` y filename semántico `{codigo}-qr.png`, y aplica fallback de clipboard con `navigator.clipboard.writeText` y `document.execCommand('copy')` sobre un `textarea` temporal.
+- Detección de PDF `outdated`: cuando `pdfStatus === 'outdated'` se muestra un alert y el botón "Volver a generar PDF" (MVP: mensaje informativo; la regeneración real del PDF queda como handoff P6-02).
+- `CertificationPreviewPage` quita `disabled` y `aria-disabled` del botón "Entrega manual" y navega a `/admin/certificaciones/:id/entrega` vía `routerLink`.
+- Foco y escape: el handler de Escape existente se preserva; el cambio cumple REQ-DEL-007 sin regresiones.
+
+Archivos: 8 cambios totales — 7 modificados (`certifications.models.ts`, `certifications.service.ts`, `http-certifications.service.ts`, `in-memory-certifications.service.ts`, `certification-delivery-page.{ts,html,css}`) y 1 spec reescrito (`certification-delivery-page.spec.ts`). Además 7 tests modificados o ampliados (`certification-preview-page.spec.ts`, `http-certifications.service.spec.ts`, `certifications.service.spec.ts`, `app.routes.spec.ts`, `admin-dashboard-page.spec.ts`, `certification-pdf-preview-page.spec.ts`, `certifications-list-page.spec.ts`).
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-01-entrega-manual-funcional/verify-report.md` — **PASS** 7/7 requirements (REQ-DEL-001 a REQ-DEL-007), 617/617 tests SUCCESS en Karma + ChromeHeadless, 0 blockers y 0 warnings. `npm run test:ci` exit `0`.
+
+Spec canónica nueva: `openspec/specs/admin-certificate-delivery-frontend/spec.md` con 7 requirements y 7 escenarios Given/When/Then (URL canónica desde backend, descarga QR Blob con filename semántico, fallback de clipboard, detección de PDF `outdated`, botón "Volver a generar", botón "Entrega manual" habilitado en preview y foco/escape en diálogos).
+
+Límites explícitos (P6-01): no agrega endpoint backend nuevo (se reutilizan `entrega-manual`, `qr.png` y `pdf`), no introduce envío automático por email (P6-02), no implementa regeneración real de PDF (MVP: mensaje), no toca configuración CORS/cookies del cPanel, no modifica mocks públicos de validación ni rutas de la landing pública. La regeneración real del PDF y el envío automático tras regeneración siguen como handoff P6-02.

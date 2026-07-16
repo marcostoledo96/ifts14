@@ -11,6 +11,8 @@ import {
   Certificacion,
   CertificacionDetalle,
   CertificacionesFiltros,
+  EntregaManualDto,
+  PdfStatus,
   TipoEnvio,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
@@ -42,6 +44,15 @@ interface ApiEnvelope<T> {
 }
 
 interface ListResponse { items: CertListDto[] }
+
+interface EntregaManualDtoResponse {
+  certificadoId: number;
+  publicValidationUrl: string;
+  pdfDownloadUrl: string;
+  tokenPrefix: string;
+  pdfAvailable: boolean;
+  pdfStatus: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class HttpCertificationsService implements CertificationsService {
@@ -84,6 +95,21 @@ export class HttpCertificationsService implements CertificationsService {
       this.http.get<ApiEnvelope<CertDetailDto>>(url),
     );
     return this.toCertificacionDetalle(envelope.data);
+  }
+
+  async obtenerEntregaManual(id: number): Promise<EntregaManualDto> {
+    const url = `${environment.apiBaseUrl}/admin/certificados/${id}/entrega-manual`;
+    const envelope = await firstValueFrom(
+      this.http.get<ApiEnvelope<EntregaManualDtoResponse>>(url),
+    );
+    return {
+      certificadoId: envelope.data.certificadoId,
+      publicValidationUrl: envelope.data.publicValidationUrl,
+      pdfDownloadUrl: envelope.data.pdfDownloadUrl,
+      tokenPrefix: envelope.data.tokenPrefix,
+      pdfAvailable: envelope.data.pdfAvailable,
+      pdfStatus: envelope.data.pdfStatus as PdfStatus,
+    };
   }
 
   async contar(): Promise<number> {

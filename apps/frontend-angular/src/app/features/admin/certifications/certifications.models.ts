@@ -40,3 +40,16 @@ export interface CertificacionesFiltros {
   readonly curso?: string;
   readonly q?: string; // texto libre sobre nombre/curso/alumno
 }
+
+// DTO de entrega manual: respuesta de GET /admin/certificados/{id}/entrega-manual.
+// publicValidationUrl es la URL canónica construida por el backend (no hardcodear dominio).
+export type PdfStatus = 'valid' | 'outdated' | 'missing';
+
+export interface EntregaManualDto {
+  readonly certificadoId: number;
+  readonly publicValidationUrl: string;
+  readonly pdfDownloadUrl: string;
+  readonly tokenPrefix: string;
+  readonly pdfAvailable: boolean;
+  readonly pdfStatus: PdfStatus;
+}

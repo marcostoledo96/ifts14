@@ -120,6 +120,27 @@ describe('InMemoryCertificationsService', () => {
     await expectAsync(svc.obtener(999)).toBeRejected();
   });
 
+  it('obtenerEntregaManual devuelve DTO con URL canónica y pdfStatus', async () => {
+    const svc = setup();
+    const entrega = await svc.obtenerEntregaManual(1);
+    expect(entrega.certificadoId).toBe(1);
+    expect(entrega.publicValidationUrl).toContain('ifts14.edu.ar');
+    expect(entrega.publicValidationUrl).toContain('validar/');
+    expect(entrega.tokenPrefix).toMatch(/^prefijo_demo_[a-z0-9]{3}$/);
+    expect(entrega.pdfStatus).toMatch(/^(valid|outdated|missing)$/);
+  });
+
+  it('obtenerEntregaManual id 4 devuelve pdfStatus outdated (mock scenario)', async () => {
+    const svc = setup();
+    const entrega = await svc.obtenerEntregaManual(4);
+    expect(entrega.pdfStatus).toBe('outdated');
+  });
+
+  it('obtenerEntregaManual id inexistente rechaza', async () => {
+    const svc = setup();
+    await expectAsync(svc.obtenerEntregaManual(999)).toBeRejected();
+  });
+
   it('contar devuelve la cantidad de certificados seed', async () => {
     const svc = setup();
     const list = await svc.listar();
