@@ -707,7 +707,8 @@ function readJsonBody(string $requestId): ?array
         }
     }
 
-    $bodyContent = file_get_contents('php://input', false, null, 0, 65537) ?: '';
+    $maxBytes = ($contentLength !== null) ? ((int)$contentLength + 1) : 65537;
+    $bodyContent = file_get_contents('php://input', false, null, 0, $maxBytes) ?: '';
     
     if (strlen($bodyContent) > 65536) {
         Response::error(413, 'PAYLOAD_TOO_LARGE', 'consulta JSON demasiado grande.', $requestId);
