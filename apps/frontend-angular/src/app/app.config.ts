@@ -4,33 +4,29 @@ import {
   provideZoneChangeDetection,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
 import { VALIDATION_SOURCE } from './shared/certificates/validation-source';
 import { MockValidationSource } from './shared/certificates/mock-tokens';
 import { HttpValidationSource } from './shared/certificates/http-validation.source';
-import { MOCK_SESSION, InMemoryMockSession } from './features/admin/mock-session';
+import { ADMIN_AUTH, HttpAdminAuthService } from './features/admin/admin-auth.service';
+import { csrfInterceptor } from './core/interceptors/csrf.interceptor';
 import { environment } from '../environments/environment';
 
-// provideHttpClient habilita HttpClient para HttpValidationSource.
-// Conmutación mock/API real vía environment.useRealApi (M3-06).
-// useRealApi=true → HttpValidationSource contra environment.apiBaseUrl.
-// useRealApi=false → MockValidationSource con tokens demo.
-//
-// MOCK_SESSION se provee a nivel app para que LoginPage, AdminShell y
-// adminGuard resuelvan la inyección en runtime. InMemoryMockSession es
-// providedIn: 'root'; useExisting evita una segunda instancia del servicio.
+// provideHttpClient con interceptor CSRF que también habilita withCredentials
+// para enviar cookies de sesión PHP (HttpOnly, Secure, SameSite=Strict).
+// ADMIN_AUTH reemplaza MOCK_SESSION: autenticación real contra backend.
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([csrfInterceptor])),
     {
       provide: VALIDATION_SOURCE,
       useClass: environment.useRealApi ? HttpValidationSource : MockValidationSource,
     },
-    { provide: MOCK_SESSION, useExisting: InMemoryMockSession },
+    { provide: ADMIN_AUTH, useExisting: HttpAdminAuthService },
   ],
 };

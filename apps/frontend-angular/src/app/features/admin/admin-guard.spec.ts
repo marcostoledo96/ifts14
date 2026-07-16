@@ -1,41 +1,41 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { adminGuard } from './admin-guard';
-import { MOCK_SESSION, InMemoryMockSession } from './mock-session';
+import { ADMIN_AUTH, FakeAdminAuthService } from './admin-auth.service';
 
 describe('adminGuard', () => {
-  async function setup(active: boolean) {
+  async function setup(authenticated: boolean) {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    if (active) {
-      session.signIn();
-    } else {
-      session.signOut();
-    }
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(authenticated);
     return TestBed.inject(Router);
   }
 
-  it('permite acceso si hay sesión mock activa', async () => {
+  it('permite acceso si hay sesión activa', async () => {
     await setup(true);
-    const result = TestBed.runInInjectionContext(() => adminGuard({} as never, {} as never));
+    const result = await TestBed.runInInjectionContext(() =>
+      adminGuard({} as never, {} as never),
+    );
     expect(result).toBe(true);
   });
 
   it('redirige a /admin/login si no hay sesión', async () => {
     await setup(false);
-    const result = TestBed.runInInjectionContext(() => adminGuard({} as never, {} as never));
+    const result = await TestBed.runInInjectionContext(() =>
+      adminGuard({} as never, {} as never),
+    );
     expect(result.toString()).toContain('/admin/login');
   });
 
-  it('no invoca fetch ni HttpClient al evaluar', async () => {
+  it('no invoca fetch al evaluar', async () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();
     await setup(true);
-    TestBed.runInInjectionContext(() => adminGuard({} as never, {} as never));
+    await TestBed.runInInjectionContext(() => adminGuard({} as never, {} as never));
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

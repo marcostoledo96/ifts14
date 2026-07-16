@@ -2,7 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { CertificationPreviewPage } from './certification-preview-page';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
-import { CertificacionDetalle } from '../../certifications.models';
+import {
+  CertificacionDetalle,
+  EntregaManualDto,
+  RegenerarPdfResult,
+} from '../../certifications.models';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
 import { URL_PUBLICA_MAX } from '../../in-memory-certifications.service';
 
@@ -74,17 +78,17 @@ describe('CertificationPreviewPage', () => {
     const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
     // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink (no
     // disabled). F6-01 delta: Revocar pasa a routerLink.
-    // Los dos restantes (Copiar link, Entrega manual) siguen disabled.
-    expect(disabledBtns.length).toBeGreaterThanOrEqual(2);
+    // P6-01 delta: Entrega manual pasa a routerLink.
+    // Solo queda Copiar link disabled.
+    expect(disabledBtns.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('CTAs deshabilitados mencionan handoff a F4-02, F5-04, F6-03 y F6-01', async () => {
+  it('CTAs deshabilitados mencionan handoff a F6-03', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const text = el.textContent || '';
-    // F4-02 PDF y F6-01 Revocación ya no son handoffs visibles en los botones.
-    // Quedan F5-04 entrega, F6-03 link/delivery.
-    expect(text).toContain('F5-04');
+    // F4-02 PDF, F6-01 Revocación y F5-04 entrega ya no son handoffs visibles.
+    // Queda F6-03 link.
     expect(text).toContain('F6-03');
   });
 
@@ -103,16 +107,16 @@ describe('CertificationPreviewPage', () => {
     expect(descargarLink?.getAttribute('disabled')).toBeNull();
   });
 
-  it('F4-02: "Regenerar PDF" es un enlace (routerLink) a :id/pdf, no disabled', async () => {
+  it('F4-02: "Regenerar PDF" es un botón funcional (P6-02), no routerLink', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const acciones = el.querySelector('.acciones-panel');
-    const links = acciones?.querySelectorAll('a') || [];
-    const regenerarLink = Array.from(links).find((a) =>
-      a.textContent?.includes('Regenerar PDF'),
+    const regenerarBtn = Array.from(acciones?.querySelectorAll('button') || []).find(
+      (b) => b.textContent?.includes('Regenerar PDF'),
     );
-    expect(regenerarLink).toBeTruthy();
-    expect(regenerarLink?.getAttribute('disabled')).toBeNull();
+    expect(regenerarBtn).toBeTruthy();
+    expect(regenerarBtn?.getAttribute('disabled')).toBeNull();
+    expect(regenerarBtn?.getAttribute('aria-disabled')).toBe('false');
   });
 
   it('F4-02: "Copiar link" sigue disabled con handoff F6-03', async () => {
@@ -128,15 +132,17 @@ describe('CertificationPreviewPage', () => {
     expect(copiarBtns.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('F4-02: "Entrega manual" sigue disabled con handoff F5-04', async () => {
+  it('P6-01: "Entrega manual" es un enlace (routerLink) a :id/entrega, no disabled', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const acciones = el.querySelector('.acciones-panel');
-    const entregaBtns = Array.from(acciones?.querySelectorAll('button[disabled]') || []).filter(
-      (b) => b.textContent?.includes('Entrega manual'),
+    const links = acciones?.querySelectorAll('a') || [];
+    const entregaLink = Array.from(links).find((a) =>
+      a.textContent?.includes('Entrega manual'),
     );
-    expect(entregaBtns.length).toBeGreaterThanOrEqual(1);
-    expect(entregaBtns[0]?.textContent).toContain('F5-04');
+    expect(entregaLink).toBeTruthy();
+    expect(entregaLink?.getAttribute('disabled')).toBeNull();
+    expect(entregaLink?.getAttribute('href')).toContain('/entrega');
   });
 
   it('F6-01: "Revocar certificación" es un enlace (routerLink) a :id/revocar, no disabled', async () => {
@@ -236,7 +242,7 @@ describe('CertificationPreviewPage', () => {
     const el = f.nativeElement as HTMLElement;
     const autoridades = el.querySelector('.doc-autoridades');
     expect(autoridades).not.toBeNull();
-    expect(autoridades?.textContent).toContain('Firma digital');
+    expect(autoridades?.textContent).toContain('Autoridad firmante');
   });
 
   it('QR decorativo visible sin datos personales', async () => {
@@ -393,6 +399,8 @@ describe('CertificationPreviewPage', () => {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
+      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
       obtener: (id: number) =>
         new Promise<CertificacionDetalle>((resolve) => {
           pending.set(id, { resolve: resolve as (v: unknown) => void });
@@ -478,19 +486,12 @@ describe('CertificationPreviewPage', () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const acciones = el.querySelector('.acciones-panel');
-    // F4-02 ya no aparece como handoff en acciones porque los CTAs PDF
-    // pasaron a routerLink. Los enlaces PDF están presentes.
+    // F4-02: "Descargar PDF" es enlace. P6-02: "Regenerar PDF" pasó a botón
+    // funcional. Solo queda 1 enlace PDF (Descargar).
     const pdfLinks = Array.from(acciones?.querySelectorAll('a') || []).filter(
       (a) => a.textContent?.includes('PDF'),
     );
-    expect(pdfLinks.length).toBe(2);
-  });
-
-  it('handoff de entrega menciona F5-04 explícitamente', async () => {
-    const f = await render('1');
-    const el = f.nativeElement as HTMLElement;
-    const acciones = el.querySelector('.acciones-panel');
-    expect(acciones?.textContent).toContain('F5-04');
+    expect(pdfLinks.length).toBe(1);
   });
 
   it('handoff de link/validación menciona F6-03 explícitamente', async () => {
@@ -508,5 +509,191 @@ describe('CertificationPreviewPage', () => {
     expect(revocarLink).not.toBeNull();
     // Ya no muestra el handoff de F6-01.
     expect(riesgo?.textContent).not.toContain('F6-01');
+  });
+
+  // --- P6-02: Regeneración de PDF ---
+
+  it('P6-02: botón "Regenerar PDF" llama a regenerarPdf() y muestra resultado ok', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const acciones = el.querySelector('.acciones-panel');
+    const regenerarBtn = Array.from(acciones?.querySelectorAll('button') || []).find(
+      (b) => b.textContent?.includes('Regenerar PDF'),
+    );
+    expect(regenerarBtn).toBeTruthy();
+    (regenerarBtn as HTMLElement | undefined)?.click();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    // El resultado ok debe mostrar "PDF regenerado correctamente".
+    const ok = el.querySelector('.regeneracion-ok');
+    expect(ok).not.toBeNull();
+    expect(ok?.textContent).toContain('regenerado');
+  });
+
+  it('P6-02: regeneración con regenerado=false muestra "El PDF ya está actualizado"', async () => {
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      obtener: (id: number) =>
+        Promise.resolve({
+          id,
+          numero: 'IFTS14-CERT-0001',
+          nombreAlumno: 'Alumno Demo Uno',
+          cursoNombre: 'Curso Demo',
+          estado: 'vigente' as const,
+          documentMasked: '12****34',
+          tokenPrefix: 'prefijo_demo_a1b',
+          emitidoEn: '2026-03-01',
+          venceEn: '2027-03-01',
+          publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
+          attendedDates: ['2026-03-02'],
+          auditEvents: [],
+        }),
+      regenerarPdf: () =>
+        Promise.resolve({ regenerado: false, mensaje: 'El PDF ya está actualizado.' }),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [CertificationPreviewPage],
+      providers: [
+        provideRouter([]),
+        { provide: CERTIFICATIONS_SOURCE, useValue: fakeCerts },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CertificationPreviewPage);
+    fixture.componentRef.setInput('id', '1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const regenerarBtn = Array.from(
+      el.querySelectorAll('.acciones-panel button') || [],
+    ).find((b) => b.textContent?.includes('Regenerar PDF'));
+    (regenerarBtn as HTMLElement | undefined)?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const info = el.querySelector('.regeneracion-info');
+    expect(info).not.toBeNull();
+    expect(info?.textContent).toContain('El PDF ya está actualizado');
+  });
+
+  it('P6-02: regeneración con error muestra mensaje descriptivo', async () => {
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      obtener: (id: number) =>
+        Promise.resolve({
+          id,
+          numero: 'IFTS14-CERT-0001',
+          nombreAlumno: 'Alumno Demo Uno',
+          cursoNombre: 'Curso Demo',
+          estado: 'vigente' as const,
+          documentMasked: '12****34',
+          tokenPrefix: 'prefijo_demo_a1b',
+          emitidoEn: '2026-03-01',
+          venceEn: '2027-03-01',
+          publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
+          attendedDates: ['2026-03-02'],
+          auditEvents: [],
+        }),
+      regenerarPdf: () => Promise.reject(new Error('Error de servidor')),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [CertificationPreviewPage],
+      providers: [
+        provideRouter([]),
+        { provide: CERTIFICATIONS_SOURCE, useValue: fakeCerts },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CertificationPreviewPage);
+    fixture.componentRef.setInput('id', '1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const regenerarBtn = Array.from(
+      el.querySelectorAll('.acciones-panel button') || [],
+    ).find((b) => b.textContent?.includes('Regenerar PDF'));
+    (regenerarBtn as HTMLElement | undefined)?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const error = el.querySelector('.regeneracion-error');
+    expect(error).not.toBeNull();
+    expect(error?.textContent).toContain('Error de servidor');
+  });
+
+  it('P6-02: botón "Regenerar PDF" muestra estado loading mientras regenera', async () => {
+    let resolveRegen: (v: RegenerarPdfResult) => void = () => {};
+    const pending = new Promise<RegenerarPdfResult>((r) => {
+      resolveRegen = r;
+    });
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      obtener: (id: number) =>
+        Promise.resolve({
+          id,
+          numero: 'IFTS14-CERT-0001',
+          nombreAlumno: 'Alumno Demo Uno',
+          cursoNombre: 'Curso Demo',
+          estado: 'vigente' as const,
+          documentMasked: '12****34',
+          tokenPrefix: 'prefijo_demo_a1b',
+          emitidoEn: '2026-03-01',
+          venceEn: '2027-03-01',
+          publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
+          attendedDates: ['2026-03-02'],
+          auditEvents: [],
+        }),
+      regenerarPdf: () => pending,
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [CertificationPreviewPage],
+      providers: [
+        provideRouter([]),
+        { provide: CERTIFICATIONS_SOURCE, useValue: fakeCerts },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CertificationPreviewPage);
+    fixture.componentRef.setInput('id', '1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const regenerarBtn = Array.from(
+      el.querySelectorAll('.acciones-panel button') || [],
+    ).find((b) => b.textContent?.includes('Regenerar PDF'));
+    (regenerarBtn as HTMLElement | undefined)?.click();
+    fixture.detectChanges();
+    // Mientras la promise está pendiente, el botón muestra "Regenerando…"
+    // y está disabled.
+    const loadingBtn = Array.from(
+      el.querySelectorAll('.acciones-panel button') || [],
+    ).find((b) => b.textContent?.includes('Regenerando'));
+    expect(loadingBtn).toBeTruthy();
+    expect(loadingBtn?.getAttribute('disabled')).toBe('');
+    expect(loadingBtn?.getAttribute('aria-disabled')).toBe('true');
+
+    // Resolver para limpiar el estado.
+    resolveRegen({ regenerado: true, publicValidationUrl: 'https://demo/validar/x' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
   });
 });

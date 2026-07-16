@@ -12,12 +12,10 @@ describe('LoginForm', () => {
     return fixture;
   }
 
-  it('renderiza el subtítulo visible de simulación', async () => {
+  it('renderiza el subtítulo de acceso', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain(
-      'Acceso simulado — la autenticación real se define en una fase posterior',
-    );
+    expect(el.textContent).toContain('Ingresá tu ID institucional y clave de acceso');
   });
 
   it('usa fieldset/legend sr-only y label asociados', async () => {
@@ -81,17 +79,30 @@ describe('LoginForm', () => {
     expect(el.querySelector('#login-error')?.textContent).toContain('al menos 6 caracteres');
   });
 
-  it('emite accesoSimulado con datos válidos y limpia el error', async () => {
+  it('emite accesoSimulado con credenciales y limpia el error', async () => {
     const f = await render();
-    let called = false;
-    f.componentInstance.accesoSimulado.subscribe(() => (called = true));
+    let emitted: { username: string; password: string } | undefined;
+    f.componentInstance.accesoSimulado.subscribe((creds) => (emitted = creds));
     f.componentInstance.usuario.set('admin');
     f.componentInstance.clave.set('clave123');
     f.componentInstance.enviar();
     f.detectChanges();
-    expect(called).toBe(true);
+    expect(emitted).toBeDefined();
+    expect(emitted?.username).toBe('admin');
+    expect(emitted?.password).toBe('clave123');
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('#login-error')).toBeNull();
+  });
+
+  it('limpia los campos tras el envío exitoso', async () => {
+    const f = await render();
+    f.componentInstance.usuario.set('admin');
+    f.componentInstance.clave.set('clave123');
+    f.componentInstance.enviar();
+    f.detectChanges();
+    // REQ-AUTH-008: credenciales limpiadas del formulario tras envío.
+    expect(f.componentInstance.usuario()).toBe('');
+    expect(f.componentInstance.clave()).toBe('');
   });
 
   it('no invoca fetch ni HttpClient al enviar', async () => {

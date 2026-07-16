@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
-import { CertificacionDetalle, EstadoCertificado } from '../../certifications.models';
+import { CertificacionDetalle, EstadoCertificado, RegenerarPdfResult } from '../../certifications.models';
 
 // Expediente administrativo mock-only de una certificación. Sin HTTP/storage.
 // Paridad visual con muestra_pagina/components/admin/expediente-certificacion.tsx
@@ -24,6 +24,11 @@ export class CertificationPreviewPage {
   readonly detalle = signal<CertificacionDetalle | null>(null);
   readonly error = signal('');
   readonly cargando = signal(true);
+
+  // Estado de regeneración de PDF.
+  readonly regenerando = signal(false);
+  readonly regeneracionResultado = signal<RegenerarPdfResult | null>(null);
+  readonly regeneracionError = signal('');
 
   // Id numérico validado. Acepta solo enteros decimales positivos: rechaza
   // formas coercibles como "0x1" (hex) o "1e0" (notación científica) que
@@ -113,6 +118,22 @@ export class CertificationPreviewPage {
       if (gen === this.loadGen) this.error.set((e as Error).message);
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
+    }
+  }
+
+  async regenerarPdf(): Promise<void> {
+    const cid = this.certId();
+    if (cid === null) return;
+    this.regenerando.set(true);
+    this.regeneracionResultado.set(null);
+    this.regeneracionError.set('');
+    try {
+      const result = await this.certs.regenerarPdf(cid);
+      this.regeneracionResultado.set(result);
+    } catch (e) {
+      this.regeneracionError.set((e as Error).message);
+    } finally {
+      this.regenerando.set(false);
     }
   }
 }

@@ -53,29 +53,10 @@ describe('HttpCertificationsService', () => {
     expect(result[0].nombreAlumno).toBe('Juan Pérez');
     expect(result[0].cursoNombre).toBe('Curso Demo');
     expect(result[0].estado).toBe('vigente');
-    expect(result[0].envio).toBe('pendiente-entrega');
     expect(result[0].documentMasked).toBe('12****78');
     expect(result[0].tokenPrefix).toBe('prefijo_demo');
     expect(result[0].emitidoEn).toBe('2026-01-01');
     expect(result[0].venceEn).toBeNull();
-  });
-
-  it('envio default pendiente-entrega cuando backend no envía el campo', async () => {
-    const p = service.listar();
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
-    req.flush({ data: { items: [listDto()] }, meta: { requestId: 'r2' } });
-    const result = await p;
-    expect(result[0].envio).toBe('pendiente-entrega');
-  });
-
-  it('filtro envio aplicado client-side', async () => {
-    const p = service.listar({ envio: 'entregado' });
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
-    // Backend devuelve todos; el servicio filtra client-side.
-    req.flush({ data: { items: [listDto({ id: 1 }), listDto({ id: 2 })] }, meta: { requestId: 'r3' } });
-    const result = await p;
-    // Ninguno tiene envio='entregado' (todos default 'pendiente-entrega') → lista vacía.
-    expect(result.length).toBe(0);
   });
 
   it('filtro estado aplicado client-side', async () => {
@@ -107,6 +88,57 @@ describe('HttpCertificationsService', () => {
     expect(result.auditEvents.length).toBe(1);
     expect(result.auditEvents[0].accion).toBe('emision');
     expect(result.publicValidationUrl).toBe('/admin/certificados/7/pdf');
+  });
+
+  it('obtenerEntregaManual hace GET a /admin/certificados/:id/entrega-manual y mapea el DTO', async () => {
+    const p = service.obtenerEntregaManual(7);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados/7/entrega-manual`);
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      data: {
+        certificadoId: 7,
+        publicValidationUrl: 'https://ifts14.edu.ar/certificados/validar/token-demo-123',
+        pdfDownloadUrl: '/admin/certificados/7/pdf',
+        tokenPrefix: 'prefijo_demo',
+        pdfAvailable: true,
+        pdfStatus: 'valid',
+      },
+      meta: { requestId: 'r-entrega' },
+    });
+    const result = await p;
+    expect(result.certificadoId).toBe(7);
+    expect(result.publicValidationUrl).toContain('ifts14.edu.ar');
+    expect(result.pdfStatus).toBe('valid');
+    expect(result.pdfAvailable).toBeTrue();
+  });
+
+  it('obtenerEntregaManual mapea pdfStatus outdated correctamente', async () => {
+    const p = service.obtenerEntregaManual(4);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados/4/entrega-manual`);
+    req.flush({
+      data: {
+        certificadoId: 4,
+        publicValidationUrl: 'https://ifts14.edu.ar/certificados/validar/token-4',
+        pdfDownloadUrl: '/admin/certificados/4/pdf',
+        tokenPrefix: 'prefijo_demo_g4h',
+        pdfAvailable: false,
+        pdfStatus: 'outdated',
+      },
+      meta: { requestId: 'r-outdated' },
+    });
+    const result = await p;
+    expect(result.pdfStatus).toBe('outdated');
+    expect(result.pdfAvailable).toBeFalse();
+  });
+
+  it('obtenerEntregaManual 4xx rechaza con error', async () => {
+    const p = service.obtenerEntregaManual(99);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados/99/entrega-manual`);
+    req.flush(
+      { error: { code: 'CERTIFICATE_NOT_FOUND', message: 'No encontrado', details: [] }, meta: { requestId: 'r404' } },
+      { status: 404, statusText: 'Not Found' },
+    );
+    await expectAsync(p).toBeRejected();
   });
 
   it('contar devuelve la longitud del listado', async () => {
