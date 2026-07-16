@@ -1,14 +1,14 @@
-// Guards admin. Sesión mock por inject(); redirige sin sesión.
-// NO usa la clave admin temporal ni endpoints. Ver spec admin-foundation.
+// Guard admin: verifica sesión real contra backend PHP.
+// Si no hay sesión o error de red, redirige a /admin/login.
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { MOCK_SESSION } from './mock-session';
+import { ADMIN_AUTH } from './admin-auth.service';
 
-// /admin/* exige sesión mock activa; si no, va a /admin/login.
-export const adminGuard: CanActivateFn = () => {
-  const session = inject(MOCK_SESSION);
+export const adminGuard: CanActivateFn = async () => {
+  const auth = inject(ADMIN_AUTH);
   const router = inject(Router);
-  if (session.hasSession()) {
+  const authenticated = await auth.session();
+  if (authenticated) {
     return true;
   }
   return router.parseUrl('/admin/login');

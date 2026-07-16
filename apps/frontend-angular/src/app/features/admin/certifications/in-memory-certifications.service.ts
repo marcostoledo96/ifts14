@@ -8,8 +8,10 @@ import {
   Certificacion,
   CertificacionDetalle,
   CertificacionesFiltros,
+  EntregaManualDto,
   EstadoCertificado,
-  TipoEnvio,
+  PdfStatus,
+  RegenerarPdfResult,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
 
@@ -23,7 +25,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Uno',
       cursoNombre: 'Curso de introducción a la gestión',
       estado: 'vigente',
-      envio: 'entregado',
       documentMasked: '12****34',
       tokenPrefix: 'prefijo_demo_a1b',
       emitidoEn: '2026-03-01',
@@ -40,7 +41,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Dos',
       cursoNombre: 'Curso de herramientas administrativas',
       estado: 'vigente',
-      envio: 'pendiente-entrega',
       documentMasked: '34****56',
       tokenPrefix: 'prefijo_demo_c2d',
       emitidoEn: '2026-04-05',
@@ -57,7 +57,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Tres',
       cursoNombre: 'Curso de prácticas documentales',
       estado: 'borrador',
-      envio: 'pendiente-entrega',
       documentMasked: '56****78',
       tokenPrefix: 'prefijo_demo_e3f',
       emitidoEn: null,
@@ -74,7 +73,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Cuatro',
       cursoNombre: 'Curso de procedimientos básicos',
       estado: 'vencido',
-      envio: 'requiere-nueva-entrega',
       documentMasked: '78****90',
       tokenPrefix: 'prefijo_demo_g4h',
       emitidoEn: '2025-09-01',
@@ -92,7 +90,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Cinco',
       cursoNombre: 'Curso de registros y archivo',
       estado: 'revocado',
-      envio: 'entregado',
       documentMasked: '90****12',
       tokenPrefix: 'prefijo_demo_i5j',
       emitidoEn: '2025-06-10',
@@ -110,7 +107,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Seis',
       cursoNombre: 'Curso de atención al público',
       estado: 'vigente',
-      envio: 'entregado',
       documentMasked: '23****45',
       tokenPrefix: 'prefijo_demo_k6l',
       emitidoEn: '2026-06-01',
@@ -148,9 +144,6 @@ export class InMemoryCertificationsService implements CertificationsService {
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
     }
-    if (filtros?.envio) {
-      list = list.filter((c) => c.envio === filtros.envio);
-    }
     if (filtros?.curso) {
       list = list.filter((c) => c.cursoNombre === filtros.curso);
     }
@@ -182,8 +175,40 @@ export class InMemoryCertificationsService implements CertificationsService {
     });
   }
 
+  obtenerEntregaManual(id: number): Promise<EntregaManualDto> {
+    const found = this.certificados.find((c) => c.id === id);
+    if (!found) {
+      return Promise.reject(new Error(`Certificación no encontrada: ${id}`));
+    }
+    // ponytail: mock construye URL canónica a partir del seed; pdfStatus 'valid' salvo id 4 (vencido).
+    const pdfStatus: PdfStatus = found.id === 4 ? 'outdated' : 'valid';
+    return Promise.resolve({
+      certificadoId: found.id,
+      publicValidationUrl: `https://ifts14.edu.ar/certificados/validar/${found.tokenPrefix}-completo`,
+      pdfDownloadUrl: `${found.id}/pdf`,
+      tokenPrefix: found.tokenPrefix,
+      pdfAvailable: found.estado !== 'borrador',
+      pdfStatus,
+    });
+  }
+
   contar(): Promise<number> {
     return Promise.resolve(this.certificados.length);
+  }
+
+  regenerarPdf(id: number): Promise<RegenerarPdfResult> {
+    const found = this.certificados.find((c) => c.id === id);
+    if (!found) {
+      return Promise.reject(new Error(`Certificación no encontrada: ${id}`));
+    }
+    // ponytail: mock simula regeneración exitosa. Marca pdfStatus 'valid'
+    // y devuelve los datos de entrega como entregaManual.
+    return Promise.resolve({
+      regenerado: true,
+      publicValidationUrl: `https://ifts14.edu.ar/certificados/validar/${found.tokenPrefix}-completo`,
+      pdfDownloadUrl: `${found.id}/pdf`,
+      pdfStatus: 'valid' as PdfStatus,
+    });
   }
 
   revocar(id: number, motivo: string): Promise<void> {

@@ -115,8 +115,8 @@ describe('PublicValidationPage', () => {
     expect(liveRegions.length).toBe(1);
     expect(liveRegions[0].closest('app-banda-estado')).not.toBeNull();
     expect(liveRegions[0].getAttribute('aria-atomic')).toBe('true');
-    // El wrapper genérico de la página no debe replicar live semantics.
-    const wrapper = el.querySelector('section.validation > div');
+    // El contenedor raíz de la página no debe replicar live semantics.
+    const wrapper = el.querySelector('section.validation');
     expect(wrapper?.hasAttribute('aria-live')).toBe(false);
   });
 
@@ -131,9 +131,9 @@ describe('PublicValidationPage', () => {
     const banda = el.querySelector('app-banda-estado');
     expect(banda).not.toBeNull();
     expect(banda?.textContent ?? '').toContain('Certificado verificable');
-    // Sin región live anidada dentro del bloque de detalles.
-    const article = el.querySelector('article.state-valid');
-    expect(article?.querySelectorAll('[aria-live]').length ?? 0).toBe(0);
+    // Sin región live anidada dentro del folio de detalles.
+    const folio = el.querySelector('article.folio');
+    expect(folio?.querySelectorAll('[aria-live]').length ?? 0).toBe(0);
   });
 
   it('render basado en primitivos: dl/dt/dd nativos válidos en bloque válido (W2)', async () => {
@@ -145,7 +145,81 @@ describe('PublicValidationPage', () => {
     expect(dl?.querySelector('dt')).not.toBeNull();
     expect(dl?.querySelector('dd')).not.toBeNull();
     // Sin elementos custom dentro del <dl> (content model válido).
-    expect(dl?.querySelector('app-campo-dato, app-banda-estado, app-folio-shell')).toBeNull();
+    expect(dl?.querySelector('app-campo-dato, app-banda-estado')).toBeNull();
+  });
+
+  it('membrete institucional "IFTS N.° 14 — Bedelía" visible en estado válido', async () => {
+    const fixture = await renderWith('demo-valido', new StubSource(validResult));
+    const text = textOf(fixture);
+    expect(text).toContain('IFTS N.° 14 — Bedelía');
+  });
+
+  it('tabla de fechas asistidas: una fila por fecha, sin coma-separadas', async () => {
+    const fixture = await renderWith('demo-valido', new StubSource(validResult));
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('table.tabla-asistencias tbody tr');
+    expect(filas.length).toBe(2);
+    // Cada celda de fecha contiene solo una fecha, no ambas separadas por coma.
+    const fechas = Array.from(filas).map((f) => f.querySelectorAll('td')[1]?.textContent?.trim() ?? '');
+    expect(fechas).toContain('2025-03-10');
+    expect(fechas).toContain('2025-03-12');
+  });
+
+  it('sidebar con sello decorativo aria-hidden y timestamp de consulta', async () => {
+    const fixture = await renderWith('demo-valido', new StubSource(validResult));
+    const el = fixture.nativeElement as HTMLElement;
+    const aside = el.querySelector('aside.folio-aside');
+    expect(aside).not.toBeNull();
+    const sello = aside?.querySelector('svg.sello-svg');
+    expect(sello).not.toBeNull();
+    expect(sello?.getAttribute('aria-hidden')).toBe('true');
+    expect(aside?.textContent ?? '').toContain('CONSULTA');
+    expect(aside?.textContent ?? '').toMatch(/\d{2}\/\d{2}\/\d{4} · \d{2}:\d{2} ART/);
+  });
+
+  it('no dibuja QR decorativo', async () => {
+    const fixture = await renderWith('demo-valido', new StubSource(validResult));
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-qr-verificacion')).toBeNull();
+    const aside = el.querySelector('aside.folio-aside');
+    // Solo el sello SVG en el aside, sin QR ni canvas/canvas-like.
+    const svgs = aside?.querySelectorAll('svg') ?? [];
+    expect(svgs.length).toBe(1);
+  });
+
+  it('estado no-verificable con cuerpo editorial y sugerencias', async () => {
+    const fixture = await renderWith('demo-inexistente', new StubSource(notFoundResult));
+    const el = fixture.nativeElement as HTMLElement;
+    const folio = el.querySelector('article.folio-no-verificable');
+    expect(folio).not.toBeNull();
+    // Cuerpo editorial con lista de sugerencias.
+    expect(folio?.querySelector('ol.sugerencias')).not.toBeNull();
+    expect(folio?.querySelectorAll('ol.sugerencias li').length).toBeGreaterThan(0);
+    // Botón reintentar presente.
+    expect(folio?.querySelector('button.btn-primario')).not.toBeNull();
+  });
+
+  it('estado technical-error con botón reintentar', async () => {
+    const fixture = await renderWith('demo-error-tecnico', new StubSource(techResult));
+    const el = fixture.nativeElement as HTMLElement;
+    const folio = el.querySelector('article.folio-error');
+    expect(folio).not.toBeNull();
+    expect(folio?.querySelector('button.btn-primario')).not.toBeNull();
+  });
+
+  it('error de resource() muestra bloque técnico (isTechnicalError)', async () => {
+    const source = new StubSource(techResult);
+    await TestBed.configureTestingModule({
+      imports: [PublicValidationPage],
+      providers: configureProviders(source),
+    }).compileComponents();
+    const fixture = TestBed.createComponent(PublicValidationPage);
+    fixture.componentRef.setInput('tokenCertificacion', 'demo-error-tecnico');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('article.folio-error')).not.toBeNull();
   });
 
   it('no expone token, stack ni rutas en el render válido', async () => {

@@ -22,6 +22,11 @@
   gap: 1rem;
 }
 
+/* T4: overlay de error por encima del diálogo (z-index 60) */
+.error-overlay {
+  z-index: 60;
+}
+
 .estado-linea {
   font-size: 0.875rem;
   font-weight: 500;
@@ -75,7 +80,7 @@
 
 .dialog-card {
   position: relative;
-  z-index: 10;
+  z-index: 60;
   display: flex;
   max-height: 100dvh;
   width: 100%;

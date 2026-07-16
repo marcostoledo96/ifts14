@@ -632,6 +632,64 @@ if (preg_match('#^/admin/certificados/([^/]+)/qr\.png$#', $path, $matches) === 1
     return;
 }
 
+if (preg_match('#^/admin/certificados/(\d+)/regenerar-pdf$#', $path, $matches) === 1) {
+    if ($method !== 'POST') {
+        header('Allow: POST');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    $certificateId = filter_var($matches[1], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if (!is_int($certificateId)) {
+        Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
+        return;
+    }
+
+    $config = adminConfig($requestId);
+    if ($config === null) {
+        return;
+    }
+
+    if (!loadPdfDependencies($requestId)) {
+        return;
+    }
+
+    try {
+        $config = Config::requirePdfConfig($config);
+    } catch (RuntimeException) {
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return;
+    }
+
+    $tokenCipherKey = loadTokenCipherKey($config, $requestId);
+    if ($tokenCipherKey === null) {
+        return;
+    }
+
+    $dniCipherKey = loadDniCipherKey($config, $requestId);
+    if ($dniCipherKey === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $certificateId, $tokenCipherKey, $dniCipherKey): array {
+        $service = new AdminCertificateService(
+            Database::pdo($config),
+            (string) $config['token_pepper'],
+            $requestId,
+            null,
+            (string) $config['app_salt'],
+            new CertificatePdfService((string) $config['certificate_storage_path']),
+            (string) $config['public_base_url'],
+            $tokenCipherKey,
+            null,
+            $dniCipherKey,
+        );
+
+        return ['status' => 200, 'data' => $service->regenerarPdf($certificateId)];
+    }, $requestId);
+    return;
+}
+
 if (preg_match('#^/admin/certificados/([^/]+)/entrega-manual$#', $path, $matches) === 1) {
     if ($method !== 'GET') {
         header('Allow: GET');

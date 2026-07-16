@@ -1,8 +1,7 @@
 // Fuente HTTP de certificaciones. Implementa CertificationsService contra la API PHP admin.
 // GET /admin/certificados → envelope { data: { items: CertDto[] } }.
 // Mapeo: certificateCode→numero, student.displayName→nombreAlumno, course.name→cursoNombre,
-// status→estado, envio default 'pendiente-entrega' (backend sin campo envío).
-// Filtro envio aplicado client-side.
+// status→estado.
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -11,7 +10,9 @@ import {
   Certificacion,
   CertificacionDetalle,
   CertificacionesFiltros,
-  TipoEnvio,
+  EntregaManualDto,
+  PdfStatus,
+  RegenerarPdfResult,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
 
@@ -43,6 +44,23 @@ interface ApiEnvelope<T> {
 
 interface ListResponse { items: CertListDto[] }
 
+interface EntregaManualDtoResponse {
+  certificadoId: number;
+  publicValidationUrl: string;
+  pdfDownloadUrl: string;
+  tokenPrefix: string;
+  pdfAvailable: boolean;
+  pdfStatus: string;
+}
+
+interface RegenerarPdfResponse {
+  regenerado: boolean;
+  mensaje?: string;
+  publicValidationUrl?: string;
+  pdfDownloadUrl?: string;
+  pdfStatus?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class HttpCertificationsService implements CertificationsService {
   private readonly http = inject(HttpClient);
@@ -53,10 +71,6 @@ export class HttpCertificationsService implements CertificationsService {
       this.http.get<ApiEnvelope<ListResponse>>(url),
     );
     let list = envelope.data.items.map((dto) => this.toCertificacion(dto));
-    // ponytail: filtro envio client-side; backend no conoce envio.
-    if (filtros?.envio) {
-      list = list.filter((c) => c.envio === filtros.envio);
-    }
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
     }
@@ -86,12 +100,41 @@ export class HttpCertificationsService implements CertificationsService {
     return this.toCertificacionDetalle(envelope.data);
   }
 
+  async obtenerEntregaManual(id: number): Promise<EntregaManualDto> {
+    const url = `${environment.apiBaseUrl}/admin/certificados/${id}/entrega-manual`;
+    const envelope = await firstValueFrom(
+      this.http.get<ApiEnvelope<EntregaManualDtoResponse>>(url),
+    );
+    return {
+      certificadoId: envelope.data.certificadoId,
+      publicValidationUrl: envelope.data.publicValidationUrl,
+      pdfDownloadUrl: envelope.data.pdfDownloadUrl,
+      tokenPrefix: envelope.data.tokenPrefix,
+      pdfAvailable: envelope.data.pdfAvailable,
+      pdfStatus: envelope.data.pdfStatus as PdfStatus,
+    };
+  }
+
   async contar(): Promise<number> {
     const url = `${environment.apiBaseUrl}/admin/certificados`;
     const envelope = await firstValueFrom(
       this.http.get<ApiEnvelope<ListResponse>>(url),
     );
     return envelope.data.items.length;
+  }
+
+  async regenerarPdf(id: number): Promise<RegenerarPdfResult> {
+    const url = `${environment.apiBaseUrl}/admin/certificados/${id}/regenerar-pdf`;
+    const envelope = await firstValueFrom(
+      this.http.post<ApiEnvelope<RegenerarPdfResponse>>(url, {}),
+    );
+    return {
+      regenerado: envelope.data.regenerado,
+      mensaje: envelope.data.mensaje,
+      publicValidationUrl: envelope.data.publicValidationUrl,
+      pdfDownloadUrl: envelope.data.pdfDownloadUrl,
+      pdfStatus: envelope.data.pdfStatus as PdfStatus | undefined,
+    };
   }
 
   async revocar(id: number, motivo: string): Promise<void> {
@@ -107,8 +150,6 @@ export class HttpCertificationsService implements CertificationsService {
       nombreAlumno: dto.student.displayName,
       cursoNombre: dto.course.name,
       estado: dto.status as Certificacion['estado'],
-      // ponytail: backend sin campo envío; default pendiente-entrega.
-      envio: 'pendiente-entrega' as TipoEnvio,
       documentMasked: dto.student.documentMasked,
       tokenPrefix: dto.tokenPrefix ?? '',
       emitidoEn: dto.issuedAt,

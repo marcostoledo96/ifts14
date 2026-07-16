@@ -5,6 +5,7 @@ import {
   inject,
   input,
   resource,
+  signal,
 } from '@angular/core';
 import { ValidationService } from '../../shared/certificates/validation.service';
 import { studentDocumentDisplay, ValidationViewState } from '../../shared/certificates/dto';
@@ -40,8 +41,29 @@ export class PublicValidationPage {
   readonly isLoading = computed(() => this.verification.isLoading());
   readonly hasError = computed(() => this.verification.error() !== undefined);
 
+  // Error de resource (no del mapper) y technical-error del mapper → mismo bloque.
+  readonly isTechnicalError = computed(
+    () => this.hasError() || this.view()?.kind === 'technical-error',
+  );
+
   readonly documentDisplay = studentDocumentDisplay;
 
-  readonly formatAttendedDates = (dates: string[] | undefined): string =>
-    (dates ?? []).join(', ');
+  // Timestamp de consulta del cliente (no viene del backend). Se actualiza al reintentar.
+  readonly consulta = signal(new Date());
+  readonly consultaTimestamp = computed(() => this.formatConsulta(this.consulta()));
+
+  reintentar(): void {
+    this.consulta.set(new Date());
+    this.verification.reload();
+  }
+
+  private formatConsulta(fecha: Date): string {
+    // dd/mm/yyyy · HH:MM ART
+    const dd = String(fecha.getDate()).padStart(2, '0');
+    const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+    const yyyy = fecha.getFullYear();
+    const hh = String(fecha.getHours()).padStart(2, '0');
+    const min = String(fecha.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} · ${hh}:${min} ART`;
+  }
 }

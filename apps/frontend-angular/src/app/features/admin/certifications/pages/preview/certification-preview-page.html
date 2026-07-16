@@ -100,20 +100,50 @@
               <button type="button" class="btn-disabled" disabled aria-disabled="true">
                 Copiar link <span class="handoff">{{ handoffs.link }}</span>
               </button>
-              <button type="button" class="btn-disabled" disabled aria-disabled="true">
-                Entrega manual <span class="handoff">{{ handoffs.entrega }}</span>
-              </button>
               <a
                 class="btn-pdf"
-                routerLink="/admin/certificaciones/{{ id() }}/pdf"
+                routerLink="/admin/certificaciones/{{ id() }}/entrega"
               >
-                Regenerar PDF
+                Entrega manual
               </a>
+              <button
+                type="button"
+                class="btn-regenerar"
+                (click)="regenerarPdf()"
+                [disabled]="regenerando()"
+                [attr.aria-disabled]="regenerando()"
+              >
+                @if (regenerando()) {
+                  Regenerando…
+                } @else {
+                  Regenerar PDF
+                }
+              </button>
+              @if (regeneracionError()) {
+                <p class="regeneracion-estado regeneracion-error" role="alert">
+                  {{ regeneracionError() }}
+                </p>
+              }
+              @if (regeneracionResultado(); as r) {
+                @if (r.regenerado) {
+                  <div class="regeneracion-estado regeneracion-ok" role="status">
+                    <p>PDF regenerado correctamente.</p>
+                    @if (r.publicValidationUrl) {
+                      <p class="mono public-url">{{ r.publicValidationUrl }}</p>
+                    }
+                    <p class="regeneracion-note">El QR de validación es permanente.</p>
+                  </div>
+                } @else {
+                  <p class="regeneracion-estado regeneracion-info" role="status">
+                    {{ r.mensaje || 'El PDF ya está actualizado.' }}
+                  </p>
+                }
+              }
             </div>
             <p class="acciones-note">
-              Descargar y regenerar abren la vista imprimible. Copiar link y
-              entrega manual son handoff a {{ handoffs.link }} y
-              {{ handoffs.entrega }}.
+              Descargar abre la vista imprimible. Regenerar PDF actualiza el
+              documento con los datos vigentes. Copiar link es handoff a
+              {{ handoffs.link }}.
             </p>
           </div>
         </section>
@@ -222,7 +252,7 @@
 
           @if (estadoRevocado()) {
             <div class="doc-revocado-banda">
-              <p><strong>Certificación revocada.</strong> El documento carece de validez legal y académica.</p>
+              <p><strong>Certificación revocada.</strong> El documento carece de validez.</p>
             </div>
           }
 
@@ -272,7 +302,7 @@
               <div class="doc-firma">
                 <div class="doc-firma-sello">
                   <span class="doc-firma-icon" aria-hidden="true">🛡</span>
-                  <span class="doc-firma-italic">Firma digital verificada</span>
+                  <span class="doc-firma-italic">Autoridad firmante</span>
                 </div>
                 <p class="doc-firma-nombre">Autoridad Demo Uno</p>
                 <p class="doc-firma-cargo">Rectora — IFTS N.° 14</p>
@@ -280,7 +310,7 @@
               <div class="doc-firma">
                 <div class="doc-firma-sello">
                   <span class="doc-firma-icon" aria-hidden="true">🛡</span>
-                  <span class="doc-firma-italic">Firma digital verificada</span>
+                  <span class="doc-firma-italic">Autoridad firmante</span>
                 </div>
                 <p class="doc-firma-nombre">Autoridad Demo Dos</p>
                 <p class="doc-firma-cargo">Asesor Pedagógico — IFTS N.° 14</p>

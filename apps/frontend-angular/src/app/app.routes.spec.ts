@@ -7,7 +7,7 @@ import { PublicValidationPage } from './features/public-validation/public-valida
 import { LandingPage } from './features/landing/landing-page';
 import { LoginPage } from './features/admin/login-page';
 import { AdminShell } from './features/admin/admin-shell';
-import { MOCK_SESSION, InMemoryMockSession } from './features/admin/mock-session';
+import { ADMIN_AUTH, FakeAdminAuthService } from './features/admin/admin-auth.service';
 import { CoursesListPage } from './features/admin/courses/courses-list-page';
 import { CourseDetailPage } from './features/admin/courses/course-detail-page';
 import { CourseEditorPage } from './features/admin/courses/course-editor-page';
@@ -20,6 +20,8 @@ import { InMemoryCertificationsService } from './features/admin/certifications/i
 import { StudentsListPage } from './features/admin/students/pages/list/students-list-page';
 import { StudentDetailPage } from './features/admin/students/pages/detail/student-detail-page';
 import { STUDENTS_SOURCE } from './features/admin/students/students.service';
+import { InMemoryStudentsService } from './features/admin/students/in-memory-students.service';
+import { provideHttpClient } from '@angular/common/http';
 
 
 // Verifica que ninguna ruta apunte a un token de demo salvo la validación
@@ -30,7 +32,7 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
     const router = TestBed.inject(Router);
@@ -148,11 +150,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin');
     expect(router.url).toBe('/admin/dashboard');
@@ -213,11 +215,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/typo');
     expect(router.url).toBe('/admin/dashboard');
@@ -310,10 +312,10 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(stripped),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    TestBed.inject(MOCK_SESSION).signIn();
+    (TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService).setAuthenticated(true);
     await expectAsync(RouterTestingHarness.create('/admin/alumnos')).toBeRejected();
   });
 
@@ -356,11 +358,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/cursos/nuevo');
     expect(router.url).toBe('/admin/cursos/nuevo');
@@ -370,11 +372,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/cursos/123/editar');
     expect(router.url).toBe('/admin/cursos/123/editar');
@@ -402,11 +404,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/cursos');
     expect(router.url).toBe('/admin/cursos');
@@ -416,11 +418,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/cursos/1');
     expect(router.url).toBe('/admin/cursos/1');
@@ -430,11 +432,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/cursos/nuevo');
     expect(router.url).toBe('/admin/cursos/nuevo');
@@ -457,15 +459,32 @@ describe('app.routes', () => {
   // vive el provider), para probar el wiring runtime de verdad.
 
   async function setupHarnessWithSession() {
+    // P5-03: environment.useRealApi=true → admin route providers usan HTTP sources.
+    // Sobrescribimos solo los providers de la ruta admin con children a InMemory.
+    const testRoutes: Routes = routes.map((r) => {
+      if (r.path === 'admin' && r.children !== undefined) {
+        return {
+          ...r,
+          providers: [
+            { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+            { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
+            { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+            { provide: STUDENTS_SOURCE, useClass: InMemoryStudentsService },
+          ],
+        };
+      }
+      return r;
+    });
     await TestBed.configureTestingModule({
       providers: [
-        provideRouter(routes, withComponentInputBinding()),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        provideRouter(testRoutes, withComponentInputBinding()),
+        provideHttpClient(),
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
-    return session;
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
+    return auth;
   }
 
   it("runtime: /admin/cursos instancia CoursesListPage via route injector sin NullInjectorError", async () => {
@@ -516,11 +535,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(stripped),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     await expectAsync(RouterTestingHarness.create('/admin/cursos')).toBeRejected();
   });
 
@@ -625,11 +644,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/asistencias');
     expect(router.url).toBe('/admin/asistencias');
@@ -639,11 +658,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes, withComponentInputBinding()),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/cursos/1/fechas/11/asistencias');
     expect(router.url).toBe('/admin/cursos/1/fechas/11/asistencias');
@@ -696,11 +715,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(stripped),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     await expectAsync(RouterTestingHarness.create('/admin/asistencias')).toBeRejected();
   });
 
@@ -752,11 +771,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/certificaciones');
     expect(router.url).toBe('/admin/certificaciones');
@@ -766,11 +785,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes, withComponentInputBinding()),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/certificaciones/1');
     expect(router.url).toBe('/admin/certificaciones/1');
@@ -828,10 +847,10 @@ describe('app.routes', () => {
     expect(el.querySelector('.auditoria-timeline')).not.toBeNull();
     // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink.
     // F6-01 delta: Revocar pasa a routerLink.
-    // Quedan 2 botones disabled: Copiar link, Entrega manual.
+    // P6-01 delta: Entrega manual pasa a routerLink.
+    // Quedan 1 botón disabled: Copiar link.
     const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
-    expect(disabledBtns.length).toBeGreaterThanOrEqual(2);
-    expect(el.textContent).toContain('F5-04');
+    expect(disabledBtns.length).toBeGreaterThanOrEqual(1);
     expect(el.textContent).toContain('F6-03');
   });
 
@@ -866,11 +885,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(stripped),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     await expectAsync(RouterTestingHarness.create('/admin/certificaciones')).toBeRejected();
   });
 
@@ -906,11 +925,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes, withComponentInputBinding()),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/certificaciones/1/pdf');
     expect(router.url).toBe('/admin/certificaciones/1/pdf');
@@ -920,11 +939,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes, withComponentInputBinding()),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/certificaciones/1/pdf');
     // Si :id capturara /pdf, la URL final no terminaría en /pdf.
@@ -979,11 +998,11 @@ describe('app.routes', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter(routes, withComponentInputBinding()),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/admin/certificaciones/1/revocar');
     expect(router.url).toBe('/admin/certificaciones/1/revocar');

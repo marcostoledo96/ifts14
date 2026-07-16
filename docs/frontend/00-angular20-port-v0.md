@@ -504,4 +504,121 @@ Cuando exista integración real:
 - [F4-04 — Detalle de curso con paridad v0](./F4-04-detalle-curso-paridad-v0.md) — ficha, tabla desktop, tarjetas mobile y métricas opcionales de asistencia; evidencia de desktop, mobile, vacío, cancelada y realizadas con acción `Ver`.
 - [Reporte de QA manual F3-04](./03-qa-manual-f3-04.md) — checklist transversal de build, responsive, teclado/foco, contraste, estados, consola y datos sensibles. Estado BLOCKED hasta ejecutar QA manual y checks automáticos; F3-05 no satisface esos pendientes por sí solo.
 - [Verificación de build F3-05](./04-build-validacion-f3-05.md) — build de producción con `base-href /certificados/`, artefactos generados, tamaños, warnings y pendientes.
+
+## Cierre P5-03 — Environments
+
+El ciclo `p5-03-environments` (archive `openspec/changes/archive/2026-07-15-p5-03-environments/`) corrigió el estado por defecto del entorno de build:
+
+- `apps/frontend-angular/src/environments/environment.ts` ahora expone `useRealApi: true` (producción usa API real).
+- `apps/frontend-angular/src/environments/environment.development.ts` sigue en `useRealApi: false` (desarrollo usa mocks).
+- `apps/frontend-angular/src/environments/environment.staging.ts` mantiene `useRealApi: true` y `apiBaseUrl: '/certificados_staging/api'`.
+- Se agregó `apps/frontend-angular/src/environments/environment.guard.spec.ts` como guarda de CI: el test falla con `exit ≠ 0` si `environment.useRealApi !== true`.
+
+Las menciones anteriores en este documento (sección "Checkpoint M3-06" y "Estructura técnica") describían `useRealApi: false` en `environment.ts`; esa descripción corresponde al estado previo a P5-03. La spec canónica vigente es `openspec/specs/frontend-environments/spec.md` y la verificación quedó en `verify-report.md` del archive: 6/6 requirements y 597/597 tests en verde.
+
+## Cierre P5-04 — Login Angular real
+
+El ciclo `p5-04-login-angular-real` (archive `openspec/changes/archive/2026-07-15-p5-04-login-angular-real/`) reemplazó la sesión mock del panel admin por autenticación real contra la API PHP:
+
+- Se eliminó `apps/frontend-angular/src/app/features/admin/mock-session.ts` y su test. La pieza `InMemoryMockSession` ya no existe en el árbol frontend.
+- Nuevo `AdminAuthService` (`apps/frontend-angular/src/app/features/admin/admin-auth.service.ts`) expone `login(creds)`, `session()` y `logout()` sobre `HttpClient` con paths relativos a `apiBaseUrl`. El `csrfToken` se mantiene como `Signal<string|null>` y nunca se persiste en `localStorage` ni `sessionStorage`.
+- Nuevo `csrf.interceptor.ts` (`apps/frontend-angular/src/app/core/interceptors/csrf.interceptor.ts`) inyecta `X-CSRF-Token` solo en requests mutantes (POST/PUT/PATCH/DELETE) y limpia sesión + redirige a `/admin/login` ante 401.
+- `app.config.ts` ahora registra `provideHttpClient(withInterceptors([csrfInterceptor]))` y expone el `InjectionToken ADMIN_AUTH` en lugar del viejo `MOCK_SESSION`.
+- `LoginPage` hace POST real a `/admin/auth/login`, maneja 401/429 con mensajes genéricos y limpia el campo `password` antes de navegar a `/admin/dashboard`.
+- `adminGuard` consulta `GET /admin/auth/session` de forma asíncrona y redirige a `/admin/login` cuando la respuesta es negativa o hay error de red.
+- `AdminShell` ejecuta POST real de logout y limpia estado local antes de navegar a `/admin/login`.
+
+Archivos: 21 cambios totales — 3 nuevos (`admin-auth.service.ts`, `csrf.interceptor.ts`, `admin-auth.service.spec.ts`), 16 modificados (rutas, `app.config`, login/admin/shell y sus tests) y 2 eliminados (`mock-session.ts`, `mock-session.spec.ts`).
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p5-04-login-angular-real/verify-report.md` — **PASS** 8/8 requirements, 605/605 tests SUCCESS en Karma + ChromeHeadless, 0 blockers y 1 warning LOW (W1: `withCredentials` aplicado vía `req.clone({ withCredentials: true })` en el interceptor porque `withCredentials()` no es export de Angular 20; funcionalmente equivalente). `X-Admin-Key` no aparece en el bundle productivo y la contraseña no se retiene en memoria más allá del request HTTP.
+
+Spec canónica nueva: `openspec/specs/admin-angular-auth/spec.md` con 8 requirements y 8 escenarios Given/When/Then (login con credenciales reales, sesión vía cookie HttpOnly, guard verifica sesión real, logout real, CSRF en mutantes, 401 redirige a login, sin X-Admin-Key en bundle y sin credenciales en memoria).
+
+Límites explícitos (P5-04): no cambia backend PHP, no agrega roles ni recuperación de contraseña, no toca configuración CORS/cookies del cPanel (responsabilidad de infraestructura), no modifica mocks públicos de validación ni rutas de la landing pública. QA manual de login (refresh, pestaña nueva, logout, back button, expiración, cookies en DevTools) queda como ALTO-C pendiente de ejecución humana; el corte del ciclo no incluye esa corrida.
+
+## Cierre P6-01 — Entrega manual funcional
+
+El ciclo `p6-01-entrega-manual-funcional` (archive `openspec/changes/archive/2026-07-15-p6-01-entrega-manual-funcional/`) conectó la página de entrega manual con los endpoints backend existentes y eliminó el comportamiento mock-only de Bedelía:
+
+- `certifications.models.ts` agrega `EntregaManualDto` con `certificadoId`, `publicValidationUrl`, `pdfDownloadUrl`, `tokenPrefix`, `pdfAvailable` y `pdfStatus`.
+- `CertificationsService` expone `obtenerEntregaManual(id): Promise<EntregaManualDto>` y se implementa en `http-certifications.service.ts` (`GET /admin/certificados/{id}/entrega-manual`) e `in-memory-certifications.service.ts` (mock con `pdfStatus` sample).
+- `CertificationDeliveryPage` consume el endpoint real: muestra `publicValidationUrl` desde el DTO (sin host hardcodeado), descarga el QR PNG con `fetch` + `Blob` + `URL.createObjectURL` y filename semántico `{codigo}-qr.png`, y aplica fallback de clipboard con `navigator.clipboard.writeText` y `document.execCommand('copy')` sobre un `textarea` temporal.
+- Detección de PDF `outdated`: cuando `pdfStatus === 'outdated'` se muestra un alert y el botón "Volver a generar PDF" (MVP: mensaje informativo; la regeneración real del PDF queda como handoff P6-02).
+- `CertificationPreviewPage` quita `disabled` y `aria-disabled` del botón "Entrega manual" y navega a `/admin/certificaciones/:id/entrega` vía `routerLink`.
+- Foco y escape: el handler de Escape existente se preserva; el cambio cumple REQ-DEL-007 sin regresiones.
+
+Archivos: 8 cambios totales — 7 modificados (`certifications.models.ts`, `certifications.service.ts`, `http-certifications.service.ts`, `in-memory-certifications.service.ts`, `certification-delivery-page.{ts,html,css}`) y 1 spec reescrito (`certification-delivery-page.spec.ts`). Además 7 tests modificados o ampliados (`certification-preview-page.spec.ts`, `http-certifications.service.spec.ts`, `certifications.service.spec.ts`, `app.routes.spec.ts`, `admin-dashboard-page.spec.ts`, `certification-pdf-preview-page.spec.ts`, `certifications-list-page.spec.ts`).
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-01-entrega-manual-funcional/verify-report.md` — **PASS** 7/7 requirements (REQ-DEL-001 a REQ-DEL-007), 617/617 tests SUCCESS en Karma + ChromeHeadless, 0 blockers y 0 warnings. `npm run test:ci` exit `0`.
+
+Spec canónica nueva: `openspec/specs/admin-certificate-delivery-frontend/spec.md` con 7 requirements y 7 escenarios Given/When/Then (URL canónica desde backend, descarga QR Blob con filename semántico, fallback de clipboard, detección de PDF `outdated`, botón "Volver a generar", botón "Entrega manual" habilitado en preview y foco/escape en diálogos).
+
+Límites explícitos (P6-01): no agrega endpoint backend nuevo (se reutilizan `entrega-manual`, `qr.png` y `pdf`), no introduce envío automático por email (P6-02), no implementa regeneración real de PDF (MVP: mensaje), no toca configuración CORS/cookies del cPanel, no modifica mocks públicos de validación ni rutas de la landing pública. La regeneración real del PDF y el envío automático tras regeneración siguen como handoff P6-02.
+
+## Cierre P6-02 — Reenvío automático (MVP, regeneración real de PDF)
+
+El ciclo `p6-02-reenvio-automatico` (archive `openspec/changes/archive/2026-07-15-p6-02-reenvio-automatico/`) convirtió el botón "Regenerar PDF" del preview en una llamada real al backend y dejó el envío automático por email como handoff fuera de alcance (D1-14):
+
+- `certifications.models.ts` agrega `RegenerarPdfResult` con `regenerado`, `mensaje?`, `publicValidationUrl?`, `pdfDownloadUrl?` y `pdfStatus?` (`vigente` cuando se regeneró, mensaje en otro caso).
+- `CertificationsService` expone `regenerarPdf(id): Promise<RegenerarPdfResult>`; `http-certifications.service.ts` lo implementa como `POST /admin/certificados/{id}/regenerar-pdf` e `in-memory-certifications.service.ts` lo simula con el mismo shape para que los tests de componentes no dependan del backend real.
+- `CertificationPreviewPage.onRegenerarPdf()` reemplaza el `routerLink` por una llamada HTTP con `loading`, `error` y `resultado` reactivos; el botón muestra estado de carga y al finalizar renderiza los datos de entrega (`publicValidationUrl`, `pdfDownloadUrl`, `pdfStatus`) usando el mismo bloque visual de la página de entrega manual. Si el PDF ya estaba vigente, el backend responde `{ regenerado: false, mensaje: "El PDF ya está actualizado" }` y la UI lo muestra sin error.
+- `AdminCertificateService::regenerarPdf()` regenera el PDF con `CertificatePdfService` reutilizando el mismo token (D1-15, sin rotación), marca `pdf_estado='vigente'`, actualiza `pdf_generado_revision` y registra `accion='pdf_regenerado'` en auditoría.
+- Backend test nuevo: `apps/backend-php/tests/RegenerarPdfTest.php` cubre 5 escenarios (certificado inexistente, certificado emitido, PDF vigente no regenera, PDF desactualizado regenera, auditoría). No ejecutable en el entorno local por ausencia de PHP 8.4.21 con TCPDF (W1); debe correrse en CI o en el entorno de staging.
+
+Archivos: 14 cambios totales — 3 backend (`index.php`, `AdminCertificateService.php`, `RegenerarPdfTest.php` nuevo) y 11 frontend (`certifications.models.ts`, `certifications.service.ts`, `http-certifications.service.ts`, `in-memory-certifications.service.ts`, `certification-preview-page.{ts,html,css}`, `certification-preview-page.spec.ts`, `admin-dashboard-page.spec.ts`, `certifications-list-page.spec.ts`, `certification-pdf-preview-page.spec.ts`).
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-02-reenvio-automatico/verify-report.md` — **PASS** 4/4 requirements (REQ-REGEN-001 a REQ-REGEN-004), 621/621 tests SUCCESS en Karma + ChromeHeadless (`npm run test:ci` exit `0`), 0 blockers y 1 warning (W1 backend test no ejecutable sin PHP local).
+
+Spec canónica nueva: `openspec/specs/pdf-regeneration/spec.md` con 4 requirements y 4 escenarios Given/When/Then (regenerar PDF con mismo token, rechazar PDF vigente con `regenerado: false`, botón en preview que dispara el endpoint con loading/resultado y auditoría `pdf_regenerado`).
+
+Límites explícitos (P6-02): no introduce envío automático por email (D1-14, sigue fuera del MVP), no rota token/QR (D1-15), no agrega dependencias nuevas, no toca configuración CORS/cookies del cPanel, no modifica mocks públicos de validación ni rutas de la landing pública. El warning W1 queda como ALTO-B pendiente: ejecutar `RegenerarPdfTest.php` en CI con PHP 8.4.21 + TCPDF antes de promover el cierre a `DONE WITH WARNINGS` formal.
+
+## Cierre P6-03 — Eliminar estados no sustentados
+
+El ciclo `p6-03-estados-no-sustentados` (archive `openspec/changes/archive/2026-07-15-p6-03-estados-no-sustentados/`) eliminó de la UI activa los estados de entrega sin persistencia real y el copy legal sin aprobación institucional:
+
+- `certifications.models.ts`: `TipoEnvio` y el campo `envio: TipoEnvio` en `Certificacion` se retiran; `envio` también sale de `CertificacionesFiltros`. `http-certifications.service.ts` deja de inyectar `envio: 'pendiente-entrega'` por defecto.
+- `in-memory-certifications.service.ts`: el seed deja de incluir `envio` en los 6 registros ficticios; los specs que dependían de ese campo se ajustan.
+- `certifications-list-page.{ts,html}`: el array `envios`, la signal `envio`, los chips de filtro por entrega, la columna "Entrega" de la tabla y el helper `etiquetaEnvio()` se eliminan; los tests del listado (`certifications-list-page.spec.ts`, `admin-dashboard-page.spec.ts`) cubren ahora la nueva forma sin estado de entrega.
+- `certification-preview-page.html` y `certification-pdf-preview-page.{ts,html}`: se suprimen los textos "firma digital verificada", "validez legal" y "validez legal y académica"; el copy de autoridad firmante y la nota de validez genérica los reemplazan sin claims legales.
+- Tests: ajustes en `certifications.service.spec.ts`, `http-certifications.service.spec.ts`, `in-memory-certifications.service.spec.ts`, `certifications-list-page.spec.ts`, `certification-preview-page.spec.ts` y `certification-pdf-preview-page.spec.ts` para reflejar el modelo y el copy limpios.
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-03-estados-no-sustentados/verify-report.md` — **PASS** 4/4 requirements (REQ-CLEAN-001 a REQ-CLEAN-004), 619/619 tests SUCCESS en Karma + ChromeHeadless (`npm run test:ci` exit `0`), TypeScript compila limpio, `grep` 0 matches residuales de `TipoEnvio`, `envio`, `firma digital verificada` o `validez legal` en el código activo.
+
+Spec canónica nueva: `openspec/specs/ui-cleanup/spec.md` con 4 requirements y 4 escenarios Given/When/Then (modelo sin `TipoEnvio`/`envio`, listado sin chips ni columna "Entrega", sin "firma digital verificada" en preview/PDF preview, sin "validez legal" en preview/PDF preview).
+
+Límites explícitos (P6-03): no reemplaza los estados eliminados con otros nuevos (eso es rediseño, queda como handoff), no cambia el backend, no rota token/QR, no agrega dependencias, no toca la landing pública ni los mocks de validación, mantiene la paridad visual con `muestra_pagina/` (la referencia v0 ya no exponía esos estados en su diseño final). Próximo ciclo: P6-04 (validación pública refinada).
+
+## Cierre P6-04 — Validación pública refinada
+
+El ciclo `p6-04-validacion-publica-refinada` (archive `openspec/changes/archive/2026-07-15-p6-04-validacion-publica-refinada/`) refinó la página pública de validación (`/certificados/validar/:tokenCertificacion`) para alcanzar paridad visual con `muestra_pagina/`:
+
+- `public-validation-page.html`: layout grid folio de 2 columnas (principal + sidebar), header con membrete "IFTS N.° 14 — Bedelía", secciones de datos completos (folio, alumno, DNI completo, curso, código de certificado, fecha de emisión, tabla de fechas asistidas) y sidebar con folio, timestamp de consulta del cliente y sello oficial decorativo marcado `aria-hidden`. Los estados `not-verifiable` y `technical-error` ahora muestran la banda de estado más un cuerpo editorial explicativo.
+- `public-validation-page.css`: grid layout, estilos del sidebar, tipografía institucional, colores de la paleta v0 y responsive (mobile: sidebar apilado debajo del contenido principal).
+- `public-validation-page.ts`: timestamp de consulta generado en cliente y bindings adaptados al nuevo template. No dibuja QR decorativo.
+- `public-validation-page.spec.ts`: assertions DOM actualizadas para cubrir la nueva estructura (folio, datos, tabla, sidebar con sello, membrete, responsive stack, cuerpo editorial en estados no válidos, ausencia de QR).
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-04-validacion-publica-refinada/verify-report.md` — **PASS** 6/6 requirements (REQ-VAL-001 a REQ-VAL-006), 626/626 tests SUCCESS en Karma + ChromeHeadless (`npm run test:ci` exit `0`), TypeScript compila limpio.
+
+Spec canónica ampliada: `openspec/specs/frontend-public-validation/spec.md` agrega 4 nuevos requirements al capability existente (folio con sidebar, membrete IFTS 14, cuerpo editorial en estados no válidos, sin QR decorativo) preservando los scenarios originales de la pantalla pública.
+
+Límites explícitos (P6-04): no cambia el backend, no rota token/QR, no agrega dependencias, no introduce QR decorativo falso, no toca la UI admin, no agrega diferenciación pública entre revocado/vencido/inexistente (sigue como `not-verifiable` único, D1-03), no modifica la ruta ni el token. Próximo ciclo: P6-05 (CSS y accesibilidad).
+
+## Cierre P6-05 — CSS y accesibilidad
+
+El ciclo `p6-05-css-accesibilidad` (archive `openspec/changes/archive/2026-07-15-p6-05-css-accesibilidad/`) aplicó un polish de CSS y accesibilidad sobre la UI activa de admin y validación pública, manteniendo paridad visual con `muestra_pagina/` y sin nuevas dependencias. 10 fixes quirúrgicos de 1–5 líneas cada uno:
+
+- `styles.css`: declaración de custom properties faltantes en `:root` (`--color-secondary`, `--color-accent`, `--color-primary-foreground`, `--radius-xl`) y exclusión de `.focus-visible` del reset de animaciones para que el indicador de foco siga visible cuando el usuario activa `prefers-reduced-motion`.
+- `certification-delivery-page.css`: corrección de la media query `prefers-reduced-motion` (`prefers-reduced-motion: reduce`) y eliminación del `box-shadow` duplicado en `.btn:focus-visible`.
+- `certification-revoke-page.html` / `.css`: movimiento del `z-index: 60` inline del botón de revocación a la clase CSS `.dialog-card` con z-index consistente, evitando solapamientos con el dialog overlay.
+- `certification-revoke-page.ts` / `certification-delivery-page.ts`: focus trap de teclado (Tab / Shift+Tab) dentro de los diálogos para mantener el foco en su contenido cerrable.
+- `admin-shell.html`: atributo `inert` en `.content` cuando `menuAbierto()` está activo, dejando el contenido fuera del tab order y de lectores de pantalla mientras el drawer mobile está abierto.
+- `public-validation-page.css`: `overflow-x: auto` en la tabla de fechas para que la lista de muchas fechas no rompa el layout en mobile.
+- `certifications-list-page.css`: reformateo del CSS minificado con saltos de línea para que el diff futuro sea legible.
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-05-css-accesibilidad/verify-report.md` — **PASS**, 0 blockers y 0 warnings, 626/626 tests SUCCESS en Karma + ChromeHeadless (`npm run test:ci` exit `0`), TypeScript compila limpio.
+
+P6 cierra con 5/5 ciclos archivados (P6-01 a P6-05). Este ciclo no introdujo delta de spec canónica nueva: los cambios son mejoras de implementación que no alteran el contrato observable de las specs existentes (`frontend-public-validation`, `admin-certificate-delivery-frontend`, `admin-certificate-revocation`, `frontend-angular-shell`).
+
+Límites explícitos (P6-05): no agrega dependencias nuevas, no rota token/QR, no cambia el backend, no introduce un sistema de diseño distinto del vigente, no modifica la ruta ni el token, no toca la lógica de los flujos 4–22, no agrega diferenciación pública entre estados (D1-03), no reescribe `muestra_pagina/`. Próximo ciclo: P7-01 (CI frontend).
 - [Handoff a Marcos — F3-06](./05-handoff-marcos-f3-06.md) — reporte de handoff final de Fase 3 a Marcos con F3-04/F3-05 y roadmap F4-F6.

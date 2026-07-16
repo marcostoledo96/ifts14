@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { CertificationPdfPreviewPage } from './certification-pdf-preview-page';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
-import { CertificacionDetalle } from '../../certifications.models';
+import { CertificacionDetalle, EntregaManualDto } from '../../certifications.models';
 import { InMemoryCertificationsService, URL_PUBLICA_MAX } from '../../in-memory-certifications.service';
 
 describe('CertificationPdfPreviewPage', () => {
@@ -383,6 +383,8 @@ describe('CertificationPdfPreviewPage', () => {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
+      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
       obtener: (id: number) =>
         new Promise<CertificacionDetalle>((resolve) => {
           pending.set(id, { resolve: resolve as (v: unknown) => void });

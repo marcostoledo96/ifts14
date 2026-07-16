@@ -71,11 +71,10 @@ describe('no-real-data en seed de certificaciones', () => {
     expect(list.length).toBeLessThanOrEqual(6);
   });
 
-  it('número y envío del seed respetan el contrato mock-only', async () => {
+  it('número del seed respeta el contrato mock-only', async () => {
     const { list } = await setup();
     for (const c of list) {
       expect(c.numero).toMatch(/^IFTS14-CERT-\d{4}$/);
-      expect(c.envio).toMatch(/^(entregado|pendiente-entrega|requiere-nueva-entrega)$/);
     }
   });
 
