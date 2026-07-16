@@ -6,8 +6,8 @@ repositorio: "marcostoledo96/ifts14"
 commit_auditado: "1a6a1cf5aa1b19a9652cab82b9455e789885471c"
 rama_fuente: "main"
 estado_general: "PARTIAL"
-fase_actual: "P6-02"
-ultimo_ciclo_cerrado: "P6-02"
+fase_actual: "P6-03"
+ultimo_ciclo_cerrado: "P6-03"
 responsable_coordinacion: "Marcos"
 metodologia: "Gentle AI + OpenSpec + SDD + TDD"
 ---
@@ -326,6 +326,7 @@ Al cerrar cada ciclo, agregar una fila:
 | 2026-07-15 | P6-02 (parcial) | PARTIAL | Tests de estados no revocables | PR #65 protege revocación solo `vigente` | No aplica | Frontend de revocación | [PR #65](https://github.com/marcostoledo96/ifts14/pull/65) / `27b34c6` | No cierra P6; depende de P5-04 |
 | 2026-07-15 | P6-01 | DONE | `certification-delivery-page.spec.ts` | 617/617 SUCCESS | N/A | 8 archivos (7 mod, 1 reescrito) | — | P6-02 |
 | 2026-07-15 | P6-02 (reenvío) | DONE | Tests de estados no regenerables (vigente) | 621/621 SUCCESS Front; 5 tests PHP no ejecutables localmente (W1) | N/A | 14 archivos (3 backend + 11 frontend) | — | P6-03 (eliminar estados no sustentados) / P6-05 (CSS/a11y) |
+| 2026-07-15 | P6-03 | DONE | Tests de `TipoEnvio`/`envio` y copy "firma digital verificada" / "validez legal" | 619/619 SUCCESS Front; `npm run test:ci` exit `0`; grep 0 matches residuales | N/A | Frontend de cleanup (modelos, list, preview, PDF preview) | `archive/2026-07-15-p6-03-estados-no-sustentados/` | P6-04 (validación pública) / P6-05 (CSS/a11y) |
 
 ## 4.4 Regla para la IA
 
@@ -1745,12 +1746,12 @@ El proyecto solo puede considerarse candidato a producción cuando:
 Ejecutar únicamente:
 
 ```txt
-P6-03 — Eliminar estados no sustentados
+P6-04 — Validación pública refinada
 ```
 
-Alcance: limpiar de la UI activa los estados `entregado`, `pendiente-entrega` y `requiere-nueva-entrega` que no cuentan con persistencia real, y suprimir los mensajes "firma digital verificada" y "validez legal" sin copy aprobado. P6-03 parte del cierre verificable de P6-01 (entrega manual real con URL canónica, descarga QR Blob, clipboard fallback y detección de PDF `outdated`) y de P6-02 (regeneración real del PDF con mismo token, rechazo de PDF vigente, botón en preview que dispara el endpoint y auditoría `pdf_regenerado`).
+Alcance: mantener los tres estados técnicos `valid` / `not-verifiable` / `technical-error` (sin diferenciar revocado) y aplicar el diseño v0 refinado — folio, alumno, DNI completo, curso, todas las fechas, código, consulta, trazabilidad y responsive. No dibujar un QR decorativo falso. P6-04 parte del cierre verificable de P6-01 (entrega manual real), P6-02 (regeneración real del PDF con mismo token) y P6-03 (limpieza de estados no sustentados y copy no aprobado).
 
-Luego: P6-04 (validación pública refinada), P6-05 (CSS/accesibilidad), P7-01/P7-04 y P8-02 a P8-05. P9 no bloquea esta secuencia.
+Luego: P6-05 (CSS/accesibilidad), P7-01/P7-04 y P8-02 a P8-05. P9 no bloquea esta secuencia.
 
 ---
 

@@ -1,8 +1,7 @@
 // Fuente HTTP de certificaciones. Implementa CertificationsService contra la API PHP admin.
 // GET /admin/certificados → envelope { data: { items: CertDto[] } }.
 // Mapeo: certificateCode→numero, student.displayName→nombreAlumno, course.name→cursoNombre,
-// status→estado, envio default 'pendiente-entrega' (backend sin campo envío).
-// Filtro envio aplicado client-side.
+// status→estado.
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -14,7 +13,6 @@ import {
   EntregaManualDto,
   PdfStatus,
   RegenerarPdfResult,
-  TipoEnvio,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
 
@@ -73,10 +71,6 @@ export class HttpCertificationsService implements CertificationsService {
       this.http.get<ApiEnvelope<ListResponse>>(url),
     );
     let list = envelope.data.items.map((dto) => this.toCertificacion(dto));
-    // ponytail: filtro envio client-side; backend no conoce envio.
-    if (filtros?.envio) {
-      list = list.filter((c) => c.envio === filtros.envio);
-    }
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
     }
@@ -156,8 +150,6 @@ export class HttpCertificationsService implements CertificationsService {
       nombreAlumno: dto.student.displayName,
       cursoNombre: dto.course.name,
       estado: dto.status as Certificacion['estado'],
-      // ponytail: backend sin campo envío; default pendiente-entrega.
-      envio: 'pendiente-entrega' as TipoEnvio,
       documentMasked: dto.student.documentMasked,
       tokenPrefix: dto.tokenPrefix ?? '',
       emitidoEn: dto.issuedAt,

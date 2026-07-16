@@ -226,7 +226,7 @@ describe('CertificationPreviewPage', () => {
     const el = f.nativeElement as HTMLElement;
     const autoridades = el.querySelector('.doc-autoridades');
     expect(autoridades).not.toBeNull();
-    expect(autoridades?.textContent).toContain('Firma digital');
+    expect(autoridades?.textContent).toContain('Autoridad firmante');
   });
 
   it('QR decorativo visible sin datos personales', async () => {
@@ -528,7 +528,6 @@ describe('CertificationPreviewPage', () => {
           nombreAlumno: 'Alumno Demo Uno',
           cursoNombre: 'Curso Demo',
           estado: 'vigente' as const,
-          envio: 'pendiente-entrega' as const,
           documentMasked: '12****34',
           tokenPrefix: 'prefijo_demo_a1b',
           emitidoEn: '2026-03-01',
@@ -581,7 +580,6 @@ describe('CertificationPreviewPage', () => {
           nombreAlumno: 'Alumno Demo Uno',
           cursoNombre: 'Curso Demo',
           estado: 'vigente' as const,
-          envio: 'pendiente-entrega' as const,
           documentMasked: '12****34',
           tokenPrefix: 'prefijo_demo_a1b',
           emitidoEn: '2026-03-01',
@@ -637,7 +635,6 @@ describe('CertificationPreviewPage', () => {
           nombreAlumno: 'Alumno Demo Uno',
           cursoNombre: 'Curso Demo',
           estado: 'vigente' as const,
-          envio: 'pendiente-entrega' as const,
           documentMasked: '12****34',
           tokenPrefix: 'prefijo_demo_a1b',
           emitidoEn: '2026-03-01',

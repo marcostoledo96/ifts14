@@ -36,12 +36,13 @@ describe('CertificationsListPage', () => {
     expect(el.querySelector('input[type="search"]')).not.toBeNull();
   });
 
-  it('expone chips de validez y entrega accesibles', async () => {
+  it('expone chips de validez accesibles', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('button[aria-pressed]').length).toBeGreaterThanOrEqual(11);
+    // 4 chips de estado + 4 botones de vista QA (en dev) = 8.
+    expect(el.querySelectorAll('button[aria-pressed]').length).toBeGreaterThanOrEqual(4);
     expect(el.textContent).toContain('Estado de validez');
-    expect(el.textContent).toContain('Estado de entrega');
+    expect(el.textContent).not.toContain('Estado de entrega');
   });
 
   it('expone selector de curso independiente basado en el seed seguro', async () => {
@@ -59,7 +60,7 @@ describe('CertificationsListPage', () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('table caption')).not.toBeNull();
-    expect(el.querySelectorAll('th[scope="col"]').length).toBe(7);
+    expect(el.querySelectorAll('th[scope="col"]').length).toBe(6);
     expect(el.querySelectorAll('.cards-mobile article').length).toBe(5);
     expect(el.querySelector('.cards-mobile dl')).not.toBeNull();
   });
@@ -95,12 +96,11 @@ describe('CertificationsListPage', () => {
     expect(el.textContent).not.toMatch(/\b\d{7,8}\b/);
   });
 
-  it('filtra por validez, entrega y búsqueda de forma combinada y limpia filtros', async () => {
+  it('filtra por validez y búsqueda de forma combinada y limpia filtros', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('button'));
     buttons.find((button) => button.textContent?.includes('vigente'))?.click();
-    buttons.find((button) => button.textContent?.includes('Entregado'))?.click();
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
@@ -108,7 +108,7 @@ describe('CertificationsListPage', () => {
     expect(el.querySelector('button[aria-pressed="true"]')).not.toBeNull();
   });
 
-  it('combina curso, validez, entrega y búsqueda; conserva el texto y reinicia la página', async () => {
+  it('combina curso, validez y búsqueda; conserva el texto y reinicia la página', async () => {
     const f = await render();
     const page = f.componentInstance;
     const el = f.nativeElement as HTMLElement;
@@ -118,7 +118,6 @@ describe('CertificationsListPage', () => {
     select.dispatchEvent(new Event('change'));
     const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('button'));
     buttons.find((button) => button.textContent?.includes('vigente'))?.click();
-    buttons.find((button) => button.textContent?.includes('Entregado'))?.click();
     const input = el.querySelector('input[type="search"]') as HTMLInputElement;
     input.value = 'Uno';
     input.dispatchEvent(new Event('input'));
@@ -217,7 +216,7 @@ describe('CertificationsListPage', () => {
   });
 
   it('reintenta errores reales en producción sin habilitar controles QA', async () => {
-    const recovered = [{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', envio: 'entregado', documentMasked: '12****34', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }] satisfies readonly Certificacion[];
+    const recovered = [{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', documentMasked: '12****34', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }] satisfies readonly Certificacion[];
     const listarSpy = jasmine.createSpy('listar').and.returnValues(
       Promise.reject(new Error('fallo real')),
       Promise.resolve(recovered),
@@ -282,9 +281,9 @@ describe('CertificationsListPage', () => {
     fixture.detectChanges();
     const page = fixture.componentInstance;
     void page.recargar();
-    resolveSecond([{ id: 2, numero: 'IFTS14-CERT-0002', nombreAlumno: 'Alumno Demo Dos', cursoNombre: 'Curso', estado: 'vigente', envio: 'entregado', documentMasked: '34****56', tokenPrefix: 'prefijo_demo_c2d', emitidoEn: null, venceEn: null }]);
+    resolveSecond([{ id: 2, numero: 'IFTS14-CERT-0002', nombreAlumno: 'Alumno Demo Dos', cursoNombre: 'Curso', estado: 'vigente', documentMasked: '34****56', tokenPrefix: 'prefijo_demo_c2d', emitidoEn: null, venceEn: null }]);
     await fixture.whenStable();
-    resolveFirst([{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', envio: 'entregado', documentMasked: '12****34', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }]);
+    resolveFirst([{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', documentMasked: '12****34', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }]);
     await fixture.whenStable();
     expect(page.certificados()[0].id).toBe(2);
   });
