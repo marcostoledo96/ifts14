@@ -219,8 +219,8 @@ export class InMemoryCertificationsService implements CertificationsService {
         if (index === -1) {
           return reject(new Error(`Certificación no encontrada: ${id}`));
         }
-        if (this.certificados[index].estado === 'revocado') {
-          return reject(new Error('La certificación ya se encuentra revocada.'));
+        if (this.certificados[index].estado !== 'vigente') {
+          return reject(new Error('Certificado no revocable.'));
         }
         const found = clone(this.certificados[index]) as any;
         found.estado = 'revocado';

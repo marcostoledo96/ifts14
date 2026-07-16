@@ -55,8 +55,10 @@ export class CertificationRevokePage {
     return this.motivo().trim().length >= this.MOTIVO_MIN;
   });
 
+  readonly esRevocable = computed(() => this.detalle()?.estado === 'vigente');
+
   readonly puedeRevocar = computed(() => {
-    return this.motivoValido() && this.confirmado() && !this.enviando();
+    return this.esRevocable() && this.motivoValido() && this.confirmado() && !this.enviando();
   });
 
   readonly motivoError = computed(() => {
@@ -141,6 +143,8 @@ export class CertificationRevokePage {
   }
 
   async onRevocar(): Promise<void> {
+    if (!this.esRevocable()) return;
+
     this.intentado.set(true);
     
     if (!this.motivoValido()) {
