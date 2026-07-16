@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
-import { MOCK_SESSION } from './mock-session';
+import { ADMIN_AUTH } from './admin-auth.service';
 import { SidebarAdmin } from './sidebar-admin';
 
 // Shell admin: banner sticky, sidebar fija desktop/drawer mobile,
@@ -16,7 +16,7 @@ import { SidebarAdmin } from './sidebar-admin';
   styleUrl: './admin-shell.css',
 })
 export class AdminShell {
-  private readonly session = inject(MOCK_SESSION);
+  private readonly auth = inject(ADMIN_AUTH);
   private readonly router = inject(Router);
 
   // Drawer mobile: cerrado por defecto. El botón hamburguesa abre;
@@ -43,7 +43,8 @@ export class AdminShell {
   }
 
   cerrarSesion(): void {
-    this.session.signOut();
-    void this.router.navigate(['/admin/login']);
+    void this.auth.logout().then(() => {
+      void this.router.navigate(['/admin/login']);
+    });
   }
 }

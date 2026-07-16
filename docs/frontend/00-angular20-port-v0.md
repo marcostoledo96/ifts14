@@ -504,3 +504,34 @@ Cuando exista integración real:
 - [F4-04 — Detalle de curso con paridad v0](./F4-04-detalle-curso-paridad-v0.md) — ficha, tabla desktop, tarjetas mobile y métricas opcionales de asistencia; evidencia de desktop, mobile, vacío, cancelada y realizadas con acción `Ver`.
 - [Reporte de QA manual F3-04](./03-qa-manual-f3-04.md) — checklist transversal de build, responsive, teclado/foco, contraste, estados, consola y datos sensibles. Estado BLOCKED hasta ejecutar QA manual y checks automáticos; F3-05 no satisface esos pendientes por sí solo.
 - [Verificación de build F3-05](./04-build-validacion-f3-05.md) — build de producción con `base-href /certificados/`, artefactos generados, tamaños, warnings y pendientes.
+
+## Cierre P5-03 — Environments
+
+El ciclo `p5-03-environments` (archive `openspec/changes/archive/2026-07-15-p5-03-environments/`) corrigió el estado por defecto del entorno de build:
+
+- `apps/frontend-angular/src/environments/environment.ts` ahora expone `useRealApi: true` (producción usa API real).
+- `apps/frontend-angular/src/environments/environment.development.ts` sigue en `useRealApi: false` (desarrollo usa mocks).
+- `apps/frontend-angular/src/environments/environment.staging.ts` mantiene `useRealApi: true` y `apiBaseUrl: '/certificados_staging/api'`.
+- Se agregó `apps/frontend-angular/src/environments/environment.guard.spec.ts` como guarda de CI: el test falla con `exit ≠ 0` si `environment.useRealApi !== true`.
+
+Las menciones anteriores en este documento (sección "Checkpoint M3-06" y "Estructura técnica") describían `useRealApi: false` en `environment.ts`; esa descripción corresponde al estado previo a P5-03. La spec canónica vigente es `openspec/specs/frontend-environments/spec.md` y la verificación quedó en `verify-report.md` del archive: 6/6 requirements y 597/597 tests en verde.
+
+## Cierre P5-04 — Login Angular real
+
+El ciclo `p5-04-login-angular-real` (archive `openspec/changes/archive/2026-07-15-p5-04-login-angular-real/`) reemplazó la sesión mock del panel admin por autenticación real contra la API PHP:
+
+- Se eliminó `apps/frontend-angular/src/app/features/admin/mock-session.ts` y su test. La pieza `InMemoryMockSession` ya no existe en el árbol frontend.
+- Nuevo `AdminAuthService` (`apps/frontend-angular/src/app/features/admin/admin-auth.service.ts`) expone `login(creds)`, `session()` y `logout()` sobre `HttpClient` con paths relativos a `apiBaseUrl`. El `csrfToken` se mantiene como `Signal<string|null>` y nunca se persiste en `localStorage` ni `sessionStorage`.
+- Nuevo `csrf.interceptor.ts` (`apps/frontend-angular/src/app/core/interceptors/csrf.interceptor.ts`) inyecta `X-CSRF-Token` solo en requests mutantes (POST/PUT/PATCH/DELETE) y limpia sesión + redirige a `/admin/login` ante 401.
+- `app.config.ts` ahora registra `provideHttpClient(withInterceptors([csrfInterceptor]))` y expone el `InjectionToken ADMIN_AUTH` en lugar del viejo `MOCK_SESSION`.
+- `LoginPage` hace POST real a `/admin/auth/login`, maneja 401/429 con mensajes genéricos y limpia el campo `password` antes de navegar a `/admin/dashboard`.
+- `adminGuard` consulta `GET /admin/auth/session` de forma asíncrona y redirige a `/admin/login` cuando la respuesta es negativa o hay error de red.
+- `AdminShell` ejecuta POST real de logout y limpia estado local antes de navegar a `/admin/login`.
+
+Archivos: 21 cambios totales — 3 nuevos (`admin-auth.service.ts`, `csrf.interceptor.ts`, `admin-auth.service.spec.ts`), 16 modificados (rutas, `app.config`, login/admin/shell y sus tests) y 2 eliminados (`mock-session.ts`, `mock-session.spec.ts`).
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p5-04-login-angular-real/verify-report.md` — **PASS** 8/8 requirements, 605/605 tests SUCCESS en Karma + ChromeHeadless, 0 blockers y 1 warning LOW (W1: `withCredentials` aplicado vía `req.clone({ withCredentials: true })` en el interceptor porque `withCredentials()` no es export de Angular 20; funcionalmente equivalente). `X-Admin-Key` no aparece en el bundle productivo y la contraseña no se retiene en memoria más allá del request HTTP.
+
+Spec canónica nueva: `openspec/specs/admin-angular-auth/spec.md` con 8 requirements y 8 escenarios Given/When/Then (login con credenciales reales, sesión vía cookie HttpOnly, guard verifica sesión real, logout real, CSRF en mutantes, 401 redirige a login, sin X-Admin-Key en bundle y sin credenciales en memoria).
+
+Límites explícitos (P5-04): no cambia backend PHP, no agrega roles ni recuperación de contraseña, no toca configuración CORS/cookies del cPanel (responsabilidad de infraestructura), no modifica mocks públicos de validación ni rutas de la landing pública. QA manual de login (refresh, pestaña nueva, logout, back button, expiración, cookies en DevTools) queda como ALTO-C pendiente de ejecución humana; el corte del ciclo no incluye esa corrida.

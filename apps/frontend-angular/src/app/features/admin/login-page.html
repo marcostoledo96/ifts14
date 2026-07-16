@@ -12,19 +12,22 @@
     <p class="aside-kicker">IFTS N.° 14 — Panel administrativo</p>
     <h1 class="aside-title">Acceso administrativo</h1>
     <p class="aside-simulacion" role="note">
-      Acceso simulado — la autenticación real se define en una fase posterior
+      Acceso administrativo — autenticación con credenciales institucionales
     </p>
     <dl class="estado-sistema">
       <dt>Estado del sistema</dt>
-      <dd><span class="dot dot-valid" aria-hidden="true"></span> Operativo (mock)</dd>
+      <dd><span class="dot dot-valid" aria-hidden="true"></span> Operativo</dd>
       <dt>Protocolo</dt>
-      <dd>Sesión en memoria — sin persistencia ni red</dd>
+      <dd>Sesión con cookie HttpOnly + CSRF</dd>
     </dl>
   </aside>
   <main class="login-main" id="contenido" role="main">
     <section class="card">
       <h2 class="card-title">Iniciar sesión</h2>
-      <app-login-form (accesoSimulado)="onAccesoSimulado()" />
+      @if (errorMsg()) {
+        <p class="error-login" role="alert" tabindex="-1">{{ errorMsg() }}</p>
+      }
+      <app-login-form (accesoSimulado)="onAccesoSimulado($event)" />
     </section>
   </main>
 </div>
