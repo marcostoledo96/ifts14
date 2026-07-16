@@ -95,6 +95,11 @@
           </dl>
         </section>
 
+        @if (!esRevocable()) {
+          <p class="warning-banner" role="status">
+            Solo las certificaciones vigentes pueden revocarse. Volvé al expediente para consultar su estado.
+          </p>
+        } @else {
         <!-- Motivo obligatorio -->
         <section class="section-motivo">
           <div class="motivo-header">
@@ -166,6 +171,7 @@
             La acción quedará registrada en auditoría con tu usuario, la fecha y hora, y el motivo ingresado.
           </p>
         </section>
+        }
       </div>
 
       <!-- Pie de acciones -->
@@ -176,22 +182,24 @@
         >
           Cancelar
         </a>
-        <button
-          type="button"
-          (click)="onRevocar()"
-          [disabled]="enviando()"
-          [attr.aria-disabled]="!puedeRevocar()"
-          class="btn-submit"
-          [class.btn-disabled]="!puedeRevocar()"
-        >
-          @if (enviando()) {
-            <span class="spinner" aria-hidden="true"></span>
-            Revocando…
-          } @else {
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"/><path d="M5 5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 1.58-.76"/><path d="M19.95 14.95A2 2 0 0 0 21 13V7a2 2 0 0 0-2-2H8.32"/></svg>
-            Revocar certificación
-          }
-        </button>
+        @if (esRevocable()) {
+          <button
+            type="button"
+            (click)="onRevocar()"
+            [disabled]="enviando()"
+            [attr.aria-disabled]="!puedeRevocar()"
+            class="btn-submit"
+            [class.btn-disabled]="!puedeRevocar()"
+          >
+            @if (enviando()) {
+              <span class="spinner" aria-hidden="true"></span>
+              Revocando…
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"/><path d="M5 5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 1.58-.76"/><path d="M19.95 14.95A2 2 0 0 0 21 13V7a2 2 0 0 0-2-2H8.32"/></svg>
+              Revocar certificación
+            }
+          </button>
+        }
       </footer>
     </div>
   </div>

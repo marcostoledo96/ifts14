@@ -186,16 +186,30 @@
             <h2 id="riesgo-title" class="panel-title panel-title-danger">Zona de riesgo</h2>
           </header>
           <div class="panel-body">
-            <p class="riesgo-texto">
-              Revocar este certificado invalidaría su verificación criptográfica
-              para siempre.
-            </p>
-            <a
-              [routerLink]="['/admin/certificaciones', id(), 'revocar']"
-              class="btn-revocar"
-            >
-              Revocar certificación
-            </a>
+            @if (esRevocable()) {
+              <p class="riesgo-texto">
+                Revocar este certificado invalidaría su verificación criptográfica
+                para siempre.
+              </p>
+              <a
+                [routerLink]="['/admin/certificaciones', id(), 'revocar']"
+                class="btn-revocar"
+              >
+                Revocar certificación
+              </a>
+            } @else {
+              <p id="revocacion-no-disponible" class="riesgo-texto">
+                Solo las certificaciones vigentes pueden revocarse.
+              </p>
+              <button
+                type="button"
+                class="btn-revocar"
+                disabled
+                aria-describedby="revocacion-no-disponible"
+              >
+                Revocación no disponible
+              </button>
+            }
           </div>
         </section>
       </aside>
