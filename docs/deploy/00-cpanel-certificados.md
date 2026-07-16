@@ -350,6 +350,20 @@ Contrato vigente: el job se marca como `success` solo si el paso `database-setup
 
 PHPUnit/Pest, cobertura de código y refactor de los tests E2E a un framework se difieren a ciclos posteriores y no forman parte de estos gates.
 
+## Quality gates de CI (security/docs)
+
+El job `security-docs-gates` de `.github/workflows/backend-tests.yml` ejecuta los quality gates de seguridad y mantenimiento documental en cada PR, en este orden (resumen operativo; detalles del paso exacto en el YAML):
+
+1. **Gitleaks** (`gitleaks/gitleaks-action@v2`) — escanea el repositorio en busca de secretos versionados. Falla con código distinto de `0` ante cualquier API key, token o private key real. La configuración de allowlist vive en `.gitleaks.toml` versionado en la raíz y cubre `muestra_pagina/` (referencia visual), código de test (`apps/backend-php/tests/**`, `apps/frontend-angular/src/**/*.spec.ts`) y migraciones SQL (`database/migrations/**/*.sql`).
+2. **`git diff --check origin/main...HEAD`** — falla si hay errores de whitespace (espacios al final, tabs mezclados, líneas sin newline final). Se ejecuta **antes** de los chequeos documentales para detectar regresiones de formato de forma temprana.
+3. **Enlaces internos** (`scripts/ci-link-check.sh`) — verifica que los enlaces internos en `docs/` y `openspec/specs/` apunten a archivos existentes. Falla con código distinto de `0` ante cualquier enlace roto. Los enlaces externos (http/https) quedan fuera del alcance.
+4. **Términos obsoletos** (`scripts/ci-obsolete-terms.sh`, rewrite con `awk` para performance) — busca términos obsoletos en docs activas: `SMTP` (como feature activo), `PHPMailer` (como feature activo), `firma digital verificada`, `reenvío automático`, `M4-01B` (como pendiente cuando ya está implementado), `entregado` (como estado), `pendiente-entrega` y `requiere-nueva-entrega`. Aplica filtro de contexto para reducir falsos positivos en frases históricas o de remoción.
+5. **OpenSpec sin huérfanos** (`scripts/ci-openspec-orphan-check.sh`) — verifica que no haya carpetas que estén **simultáneamente** activas en `openspec/changes/<nombre>/` y archivadas en `openspec/changes/archive/YYYY-MM-DD-<nombre>/`. Falla con código distinto de `0` ante cualquier huérfano. Un ciclo SDD en curso (no archivado) no es huérfano.
+
+Contrato vigente: el job se marca como `success` solo si los cinco pasos pasan con código `0`. Un fallo en cualquier paso impide el merge. Spec canónica: `openspec/specs/security-docs-ci-gates/spec.md`. Detalle del ciclo en `openspec/changes/archive/2026-07-16-p7-04-seguridad-docs/`.
+
+Los tres scripts (`ci-link-check.sh`, `ci-obsolete-terms.sh`, `ci-openspec-orphan-check.sh`) son POSIX-shellscripts validables con `bash -n` y exit-code explícito. ESLint, hooks de pre-commit, escaneo de `muestra_pagina/` y escaneo de `material_privado_no_versionar/` se difieren a ciclos posteriores y no forman parte de estos gates.
+
 ## Estado de capacidad pública
 
 Rate limiting y fault-injection ya fueron implementados y verificados en el ciclo `backend-public-endpoint-hardening` (archivado en `openspec/changes/archive/2026-06-26-backend-public-endpoint-hardening/`):

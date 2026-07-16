@@ -171,7 +171,7 @@ The system SHALL provide `HttpCertificationsService` implementing `Certification
 - WHEN `listar(filtros)` is called with `envio`, `estado`, `cursoId`, or `q` filters
 - THEN the service SHALL fetch all certifications and apply the filters client-side
 - AND the response SHALL include `numero` (from `certificateCode`), `nombreAlumno` (from `student.displayName`), `estado` (from `status`)
-- AND `envio` SHALL default to `'pendiente-entrega'` when absent
+- AND `envio` SHALL default to `'no_emitido'` when absent
 
 #### Scenario: Get certification detail
 
