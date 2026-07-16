@@ -12,7 +12,6 @@ import {
   EstadoCertificado,
   PdfStatus,
   RegenerarPdfResult,
-  TipoEnvio,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
 
@@ -26,7 +25,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Uno',
       cursoNombre: 'Curso de introducción a la gestión',
       estado: 'vigente',
-      envio: 'entregado',
       documentMasked: '12****34',
       tokenPrefix: 'prefijo_demo_a1b',
       emitidoEn: '2026-03-01',
@@ -43,7 +41,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Dos',
       cursoNombre: 'Curso de herramientas administrativas',
       estado: 'vigente',
-      envio: 'pendiente-entrega',
       documentMasked: '34****56',
       tokenPrefix: 'prefijo_demo_c2d',
       emitidoEn: '2026-04-05',
@@ -60,7 +57,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Tres',
       cursoNombre: 'Curso de prácticas documentales',
       estado: 'borrador',
-      envio: 'pendiente-entrega',
       documentMasked: '56****78',
       tokenPrefix: 'prefijo_demo_e3f',
       emitidoEn: null,
@@ -77,7 +73,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Cuatro',
       cursoNombre: 'Curso de procedimientos básicos',
       estado: 'vencido',
-      envio: 'requiere-nueva-entrega',
       documentMasked: '78****90',
       tokenPrefix: 'prefijo_demo_g4h',
       emitidoEn: '2025-09-01',
@@ -95,7 +90,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Cinco',
       cursoNombre: 'Curso de registros y archivo',
       estado: 'revocado',
-      envio: 'entregado',
       documentMasked: '90****12',
       tokenPrefix: 'prefijo_demo_i5j',
       emitidoEn: '2025-06-10',
@@ -113,7 +107,6 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Seis',
       cursoNombre: 'Curso de atención al público',
       estado: 'vigente',
-      envio: 'entregado',
       documentMasked: '23****45',
       tokenPrefix: 'prefijo_demo_k6l',
       emitidoEn: '2026-06-01',
@@ -150,9 +143,6 @@ export class InMemoryCertificationsService implements CertificationsService {
     );
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
-    }
-    if (filtros?.envio) {
-      list = list.filter((c) => c.envio === filtros.envio);
     }
     if (filtros?.curso) {
       list = list.filter((c) => c.cursoNombre === filtros.curso);

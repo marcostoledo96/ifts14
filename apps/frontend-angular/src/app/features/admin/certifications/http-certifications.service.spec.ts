@@ -53,29 +53,10 @@ describe('HttpCertificationsService', () => {
     expect(result[0].nombreAlumno).toBe('Juan Pérez');
     expect(result[0].cursoNombre).toBe('Curso Demo');
     expect(result[0].estado).toBe('vigente');
-    expect(result[0].envio).toBe('pendiente-entrega');
     expect(result[0].documentMasked).toBe('12****78');
     expect(result[0].tokenPrefix).toBe('prefijo_demo');
     expect(result[0].emitidoEn).toBe('2026-01-01');
     expect(result[0].venceEn).toBeNull();
-  });
-
-  it('envio default pendiente-entrega cuando backend no envía el campo', async () => {
-    const p = service.listar();
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
-    req.flush({ data: { items: [listDto()] }, meta: { requestId: 'r2' } });
-    const result = await p;
-    expect(result[0].envio).toBe('pendiente-entrega');
-  });
-
-  it('filtro envio aplicado client-side', async () => {
-    const p = service.listar({ envio: 'entregado' });
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
-    // Backend devuelve todos; el servicio filtra client-side.
-    req.flush({ data: { items: [listDto({ id: 1 }), listDto({ id: 2 })] }, meta: { requestId: 'r3' } });
-    const result = await p;
-    // Ninguno tiene envio='entregado' (todos default 'pendiente-entrega') → lista vacía.
-    expect(result.length).toBe(0);
   });
 
   it('filtro estado aplicado client-side', async () => {

@@ -67,7 +67,7 @@ export class CertificationPdfPreviewPage {
           clave: 'borrador',
           marca: 'BORRADOR',
           titulo: 'Certificado borrador.',
-          detalle: 'Este documento aún no tiene validez legal ni académica.',
+          detalle: 'Este documento aún no tiene validez.',
         };
       case 'vencido':
         return {
@@ -81,7 +81,7 @@ export class CertificationPdfPreviewPage {
           clave: 'revocado',
           marca: 'REVOCADO',
           titulo: 'Certificación revocada.',
-          detalle: 'El documento carece de validez legal y académica.',
+          detalle: 'El documento carece de validez.',
         };
       default:
         return null;

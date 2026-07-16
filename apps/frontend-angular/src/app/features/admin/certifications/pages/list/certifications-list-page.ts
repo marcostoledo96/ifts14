@@ -5,7 +5,6 @@ import {
   Certificacion,
   EstadoCertificado,
   PAGINA_TAMANO,
-  TipoEnvio,
 } from '../../certifications.models';
 
 type VistaQa = 'datos' | 'cargando' | 'error' | 'vacio-total';
@@ -28,10 +27,8 @@ export class CertificationsListPage {
   private loadGeneration = 0;
 
   readonly estados: readonly EstadoCertificado[] = ['borrador', 'vigente', 'revocado', 'vencido'];
-  readonly envios: readonly TipoEnvio[] = ['entregado', 'pendiente-entrega', 'requiere-nueva-entrega'];
   readonly q = signal('');
   readonly estado = signal<EstadoCertificado | 'todos'>('todos');
-  readonly envio = signal<TipoEnvio | 'todos'>('todos');
   readonly curso = signal('todos');
   readonly pagina = signal(1);
   readonly vistaQA = signal<VistaQa>('datos');
@@ -40,14 +37,13 @@ export class CertificationsListPage {
   readonly error = signal('');
   readonly cursos = computed(() => [...new Set(this.certificados().map((c) => c.cursoNombre))]);
   readonly hayFiltrosActivos = computed(
-    () => !!this.q().trim() || this.estado() !== 'todos' || this.envio() !== 'todos' || this.curso() !== 'todos',
+    () => !!this.q().trim() || this.estado() !== 'todos' || this.curso() !== 'todos',
   );
   readonly resultadosFiltrados = computed(() => {
     const texto = this.q().trim().toLowerCase();
     return this.certificados().filter(
       (c) =>
         (this.estado() === 'todos' || c.estado === this.estado()) &&
-        (this.envio() === 'todos' || c.envio === this.envio()) &&
         (this.curso() === 'todos' || c.cursoNombre === this.curso()) &&
         (!texto ||
           c.nombreAlumno.toLowerCase().includes(texto) ||
@@ -88,11 +84,9 @@ export class CertificationsListPage {
 
   onSearch(event: Event): void { this.q.set((event.target as HTMLInputElement).value); this.pagina.set(1); }
   onEstado(value: EstadoCertificado): void { this.estado.update((current) => current === value ? 'todos' : value); this.pagina.set(1); }
-  onEnvio(value: TipoEnvio): void { this.envio.update((current) => current === value ? 'todos' : value); this.pagina.set(1); }
   onCurso(event: Event): void { this.curso.set((event.target as HTMLSelectElement).value); this.pagina.set(1); }
-  onLimpiarFiltros(): void { this.q.set(''); this.estado.set('todos'); this.envio.set('todos'); this.curso.set('todos'); this.pagina.set(1); }
+  onLimpiarFiltros(): void { this.q.set(''); this.estado.set('todos'); this.curso.set('todos'); this.pagina.set(1); }
   onPagina(page: number): void { this.pagina.set(Math.min(Math.max(1, page), this.totalPaginas())); }
   onVistaQA(value: VistaQa): void { if (!this.qaEnabled) return; this.vistaQA.set(value); this.pagina.set(1); if (value === 'datos') void this.recargar(); }
   onReintentar(): void { if (this.qaEnabled && this.vistaQA() !== 'datos') { this.vistaQA.set('datos'); this.pagina.set(1); } void this.recargar(); }
-  etiquetaEnvio(value: TipoEnvio): string { return value === 'entregado' ? 'Entregado' : value === 'pendiente-entrega' ? 'Pendiente de entrega' : 'Requiere nueva entrega'; }
 }

@@ -572,3 +572,19 @@ Verificación: archive `openspec/changes/archive/2026-07-15-p6-02-reenvio-automa
 Spec canónica nueva: `openspec/specs/pdf-regeneration/spec.md` con 4 requirements y 4 escenarios Given/When/Then (regenerar PDF con mismo token, rechazar PDF vigente con `regenerado: false`, botón en preview que dispara el endpoint con loading/resultado y auditoría `pdf_regenerado`).
 
 Límites explícitos (P6-02): no introduce envío automático por email (D1-14, sigue fuera del MVP), no rota token/QR (D1-15), no agrega dependencias nuevas, no toca configuración CORS/cookies del cPanel, no modifica mocks públicos de validación ni rutas de la landing pública. El warning W1 queda como ALTO-B pendiente: ejecutar `RegenerarPdfTest.php` en CI con PHP 8.4.21 + TCPDF antes de promover el cierre a `DONE WITH WARNINGS` formal.
+
+## Cierre P6-03 — Eliminar estados no sustentados
+
+El ciclo `p6-03-estados-no-sustentados` (archive `openspec/changes/archive/2026-07-15-p6-03-estados-no-sustentados/`) eliminó de la UI activa los estados de entrega sin persistencia real y el copy legal sin aprobación institucional:
+
+- `certifications.models.ts`: `TipoEnvio` y el campo `envio: TipoEnvio` en `Certificacion` se retiran; `envio` también sale de `CertificacionesFiltros`. `http-certifications.service.ts` deja de inyectar `envio: 'pendiente-entrega'` por defecto.
+- `in-memory-certifications.service.ts`: el seed deja de incluir `envio` en los 6 registros ficticios; los specs que dependían de ese campo se ajustan.
+- `certifications-list-page.{ts,html}`: el array `envios`, la signal `envio`, los chips de filtro por entrega, la columna "Entrega" de la tabla y el helper `etiquetaEnvio()` se eliminan; los tests del listado (`certifications-list-page.spec.ts`, `admin-dashboard-page.spec.ts`) cubren ahora la nueva forma sin estado de entrega.
+- `certification-preview-page.html` y `certification-pdf-preview-page.{ts,html}`: se suprimen los textos "firma digital verificada", "validez legal" y "validez legal y académica"; el copy de autoridad firmante y la nota de validez genérica los reemplazan sin claims legales.
+- Tests: ajustes en `certifications.service.spec.ts`, `http-certifications.service.spec.ts`, `in-memory-certifications.service.spec.ts`, `certifications-list-page.spec.ts`, `certification-preview-page.spec.ts` y `certification-pdf-preview-page.spec.ts` para reflejar el modelo y el copy limpios.
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-03-estados-no-sustentados/verify-report.md` — **PASS** 4/4 requirements (REQ-CLEAN-001 a REQ-CLEAN-004), 619/619 tests SUCCESS en Karma + ChromeHeadless (`npm run test:ci` exit `0`), TypeScript compila limpio, `grep` 0 matches residuales de `TipoEnvio`, `envio`, `firma digital verificada` o `validez legal` en el código activo.
+
+Spec canónica nueva: `openspec/specs/ui-cleanup/spec.md` con 4 requirements y 4 escenarios Given/When/Then (modelo sin `TipoEnvio`/`envio`, listado sin chips ni columna "Entrega", sin "firma digital verificada" en preview/PDF preview, sin "validez legal" en preview/PDF preview).
+
+Límites explícitos (P6-03): no reemplaza los estados eliminados con otros nuevos (eso es rediseño, queda como handoff), no cambia el backend, no rota token/QR, no agrega dependencias, no toca la landing pública ni los mocks de validación, mantiene la paridad visual con `muestra_pagina/` (la referencia v0 ya no exponía esos estados en su diseño final). Próximo ciclo: P6-04 (validación pública refinada).
