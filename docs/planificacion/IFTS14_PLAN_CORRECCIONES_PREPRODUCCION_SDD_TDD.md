@@ -1,13 +1,13 @@
 ---
 titulo: "IFTS14 — Plan de correcciones preproducción con SDD y TDD"
-version: "2.0"
+version: "2.1"
 fecha_plan: "2026-07-16"
 repositorio: "marcostoledo96/ifts14"
 commit_auditado: "1a6a1cf5aa1b19a9652cab82b9455e789885471c"
 rama_fuente: "main"
 estado_general: "PARTIAL"
-fase_actual: "P8-01"
-ultimo_ciclo_cerrado: "P7-04"
+fase_actual: "P8-02"
+ultimo_ciclo_cerrado: "P8-01"
 responsable_coordinacion: "Marcos"
 metodologia: "Gentle AI + OpenSpec + SDD + TDD"
 ---
@@ -254,7 +254,7 @@ Este tablero es la vista vigente. Las auditorías, checklists y registros poster
 | P5 | `DONE` | [PR #63](https://github.com/marcostoledo96/ifts14/pull/63) / [`1a6a1cf`](https://github.com/marcostoledo96/ifts14/commit/1a6a1cf5aa1b19a9652cab82b9455e789885471c) | [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**, 16/16 requirements y 52/52 escenarios; [staging] [evidencia Task 4.1](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md): **PASS para el candidato aislado de staging**; [local] [verify P5-03](../../openspec/changes/archive/2026-07-15-p5-03-environments/verify-report.md): **PASS** 6/6 requirements, 597/597 tests y guarda de CI activa; [local] [verify P5-04](../../openspec/changes/archive/2026-07-15-p5-04-login-angular-real/verify-report.md): **PASS** 8/8 requirements, 605/605 tests y 0 blockers. | No se infiere regeneración automática de PDF ni validación de producción. P5-01 conserva su warning W1 histórico; la producción `/certificados/` no está validada. | P6-01. |
 | P6 | `DONE` | [PR #65](https://github.com/marcostoledo96/ifts14/pull/65) / [`27b34c6`](https://github.com/marcostoledo96/ifts14/commit/27b34c63be917d32d9f987340d426eec0a8c421b) | [CI] PR #65 mergeado: revocación limitada a certificados `vigente`; [documental] [exploración de reconciliación](../../openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/exploration.md): sin verify de cierre P6 global; [local] [verify P6-01](../../openspec/changes/archive/2026-07-15-p6-01-entrega-manual-funcional/verify-report.md): **PASS** 7/7 requirements, 617/617 tests, 0 blockers y 0 warnings — entrega manual real con URL canónica, descarga QR Blob con filename semántico, clipboard fallback, detección de PDF `outdated` y botón "Entrega manual" habilitado desde preview; [local] [verify P6-02](../../openspec/changes/archive/2026-07-15-p6-02-reenvio-automatico/verify-report.md): **PASS** 4/4 requirements (REQ-REGEN-001 a REQ-REGEN-004), 621/621 tests, 0 blockers y 1 warning (W1 backend test no ejecutable sin PHP local) — regeneración real de PDF con mismo token, rechazo de PDF vigente, botón en preview que dispara endpoint y auditoría `pdf_regenerado`; [local] [verify P6-03](../../openspec/changes/archive/2026-07-15-p6-03-estados-no-sustentados/verify-report.md): **PASS** 4/4 requirements (REQ-CLEAN-001 a REQ-CLEAN-004), 619/619 tests, 0 blockers y 0 warnings — modelo sin `TipoEnvio`/`envio`, listado sin chips ni columna "Entrega", sin "firma digital verificada" ni "validez legal" en preview/PDF preview; [local] [verify P6-04](../../openspec/changes/archive/2026-07-15-p6-04-validacion-publica-refinada/verify-report.md): **PASS** 6/6 requirements (REQ-VAL-001 a REQ-VAL-006), 626/626 tests, 0 blockers y 0 warnings — layout folio con sidebar, membrete IFTS N.° 14 — Bedelía, datos completos (alumno, DNI, curso, código, tabla de fechas), sidebar con trazabilidad y sello `aria-hidden`, cuerpo editorial en `not-verifiable` y `technical-error`, sin QR decorativo; [local] [verify P6-05](../../openspec/changes/archive/2026-07-15-p6-05-css-accesibilidad/verify-report.md): **PASS**, 0 blockers y 0 warnings, 626/626 tests — 10 fixes quirúrgicos de CSS y accesibilidad (custom properties en `:root`, `prefers-reduced-motion: reduce`, focus ring duplicado eliminado, z-index consistente en revoke, focus trap en diálogos, `inert` en drawer mobile, `overflow-x` en tabla de validación, CSS formateado, `focus-visible` excluido del reset de animaciones) sin nuevas dependencias. P6 cierra con 5/5 ciclos archivados (P6-01 a P6-05). | No se infiere envío automático por email ni validación de producción. P6-02 deja el backend test `RegenerarPdfTest.php` pendiente de corrida en CI/entorno con PHP 8.4.21 + TCPDF (W1); la producción `/certificados/` no está validada. | P7-01. |
 | P7 | `DONE` | Sin cierre terminal de P7 (P7-01, P7-02, P7-03 y P7-04 archivados) | [CI] `.github/workflows/backend-tests.yml`: tests backend/MariaDB/frontend con P7-01 (tsc --noEmit, build staging, mock guard), P7-02 (composer validate --strict, composer audit, php -l), P7-03 (paso `database-setup` con 10 migraciones 001–010, suite E2E sin SKIP, schema contract, upgrade test) y P7-04 (job `security-docs-gates` con gitleaks, git diff --check, ci-link-check, ci-obsolete-terms, ci-openspec-orphan-check) activos; [local] [verify P7-01](../../openspec/changes/archive/2026-07-16-p7-01-frontend-ci/verify-report.md): **PASS** 6/6 requirements (REQ-CI-001 a REQ-CI-006), 636/636 tests, 0 blockers; [local] [verify P7-02](../../openspec/changes/archive/2026-07-16-p7-02-backend-ci/verify-report.md): **PASS** 5/5 requirements (REQ-BE-001 a REQ-BE-005), 8/8 scenarios, 0 blockers y 0 critical findings — composer validate/audit y php -l activos, 12/12 unit tests y 11/11 E2E tests en CI; [local] [verify P7-03](../../openspec/changes/archive/2026-07-16-p7-03-mariadb-ci/verify-report.md): **PASS** 5/5 requirements (REQ-MDB-001 a REQ-MDB-005), 8/8 scenarios, 0 blockers y 0 critical findings — paso `database-setup` aplica 10/10 migraciones 001–010 en orden numérico, 7/7 tests E2E con DB reemplazan el patrón `SKIP` por `exit(1)` + `STDERR`, schema contract (`DatabaseSchemaContractTest.php`, 201 líneas) valida 10 tablas/columnas/enums/versiones 007–010, upgrade test (`scripts/test-database-upgrade.sh`, 53 líneas) compara variantes históricas vs actuales y converge tras 006–010, suite E2E encadenada 11/11 con `&&`; [local] [verify P7-04](../../openspec/changes/archive/2026-07-16-p7-04-seguridad-docs/verify-report.md): **PASS** 7/7 requirements (REQ-SEC-001 a REQ-SEC-007), 2/2 scenarios, 0 blockers y 0 critical findings — gitleaks (`gitleaks/gitleaks-action@v2` + `.gitleaks.toml` con allowlist de 3 paths: `muestra_pagina/`, tests, migraciones SQL) activo, `git diff --check origin/main...HEAD` exit `0`, `scripts/ci-link-check.sh` exit `0` (50/50 enlaces válidos en `docs/` y `openspec/specs/`), `scripts/ci-obsolete-terms.sh` exit `0` (0 finds sobre términos obsoletos), `scripts/ci-openspec-orphan-check.sh` exit `0` (0 huérfanos activos), 3 carpetas huérfanas movidas a `archive/` con prefijo de fecha (`m4-01a-*`, `m4-02-*`, `p5-03-environments`), 2 términos residuales corregidos (`pendiente-entrega` → `no_emitido` en `frontend-http-services/spec.md:174`; "último entregado por el instituto" → "el emitido por el instituto" en `public-validation-page.html:256`). | Branch protection del check `frontend-tests` debe configurarse manualmente en GitHub. ESLint diferido. | P8-01 (staging en cPanel). |
-| P8 | `PARTIAL` | [PR #63](https://github.com/marcostoledo96/ifts14/pull/63) / [`1a6a1cf`](https://github.com/marcostoledo96/ifts14/commit/1a6a1cf5aa1b19a9652cab82b9455e789885471c) | [staging] [evidencia Task 4.1](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md): **PASS para el candidato aislado de staging**; [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**. | Esquema staging vacío; faltan seed/flujo de negocio, smoke remoto completo y QA manual. Producción no validada. | P8-02 a P8-05, después de P5/P6/P7. |
+| P8 | `PARTIAL` | Subdominio staging [`staging.example.edu.ar`](https://staging.example.edu.ar/certificados_staging/api/) | [staging] [evidencia P8-01](#p8-01--investigación-manual-de-capacidades): **DONE** — PHP 8.4.22 (ea-php84, CGI/FastCGI), 7/7 extensiones OK, subdominio aislado certificados-qa, DB staging (`<cpanel_prefix>_cert_stg`) MariaDB 10.6.27 con migraciones 001–010 aplicadas (10 tablas `cert_*` vacías), config externa en `/home/<cpanel_user>/ifts14_config/` (0700), sin Terminal/Composer/SSH/mod_env, `.user.ini` + `auto_prepend_file` como alternativa a `SetEnv`; [staging] [evidencia Task 4.1](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md): **PASS para el candidato aislado de staging**. | Esquema staging vacío (sin seed/flujo de negocio); faltan smoke remoto completo (P8-04) y QA manual (P8-05). Producción `/certificados/` no validada. | P8-02 (seed) y P8-03 (build+deploy actualizado). |
 | P9 | `PENDING` | Sin PR/commit de cierre | [documental] este plan: backlog posterior; sin evidencia de cierre ni evidencia `[production]`. | **No bloqueante** para la secuencia inmediata. | Backlog posterior a P8. |
 
 ### Chequeo determinista del tablero 4.2
@@ -335,7 +335,8 @@ Al cerrar cada ciclo, agregar una fila:
 | 2026-07-16 | P7-01 | DONE | 9/9 tareas; gates previos de `test:ci` y `environment.guard.spec.ts` | 6/6 requirements (REQ-CI-001 a REQ-CI-006); 14/14 escenarios; 636/636 SUCCESS Front; `npm run test:ci`, `npx tsc --noEmit -p tsconfig.app.json`, `npm run build`, `npm run build -- --configuration production-staging` y `node scripts/ci-mock-guard.mjs` exit `0`; 0 blockers y 2 warnings no bloqueantes (CSS budget) | N/A | `apps/frontend-angular/scripts/ci-mock-guard.mjs` (nuevo), `.github/workflows/backend-tests.yml`, `openspec/config.yaml` | `archive/2026-07-16-p7-01-frontend-ci/`; spec canónica `frontend-ci-quality-gates` | P7-02 (backend CI) / P7-04 (seguridad/docs); branch protection manual de `frontend-tests` pendiente |
 | 2026-07-16 | P7-02 | DONE | 7/7 tareas; gates previos de composer validate/audit y php -l | 5/5 requirements (REQ-BE-001 a REQ-BE-005); 8/8 scenarios; `docker build -t ifts14-php84` exit `0`; `composer validate --strict` → `./composer.json is valid`; `composer audit` → `No security vulnerability advisories found`; `php -l` sobre 41 archivos backend (excluyendo `vendor/`) y sobre los 5 tests huérfanos (AdminMasterDataServiceTest, SessionHttpTest, QrImageTest, RegenerarPdfTest, fault-injection-audit) → 0 errores; 12/12 unit tests y 11/11 E2E tests con MariaDB exit `0`; 0 blockers y 0 warnings | N/A | `.github/workflows/backend-tests.yml`, `openspec/config.yaml` | `archive/2026-07-16-p7-02-backend-ci/`; spec canónica `backend-ci-quality-gates` (5 requirements) | P7-03 (MariaDB CI) / P7-04 (seguridad/docs) |
 | 2026-07-16 | P7-03 | DONE | 13/13 tareas; gates previos de composer validate/audit y php -l, schema contract y upgrade test | 5/5 requirements (REQ-MDB-001 a REQ-MDB-005); 8/8 scenarios; `php -l` sobre 8 archivos de test (DatabaseSchemaContract, SnapshotEmission, HttpEmissionE2e, AdminMasterDataHttp, AdminCertificadosConsultaHttp, AttendanceRevision, CertificateRevisionMigration, CourseDateRevision) → 8/8 "No syntax errors detected"; `python3 -c "import yaml; yaml.safe_load(...)"` sobre `.github/workflows/backend-tests.yml` exit `0`; `bash -n scripts/test-database-upgrade.sh` exit `0`; paso `database-setup` aplica 10/10 migraciones 001–010 vía `mariadb` CLI; 7/7 tests E2E con DB reemplazan `echo "SKIP..."; return;` por `fwrite(STDERR, "FATAL: ..."); exit(1);`; `DatabaseSchemaContractTest.php` valida 10 tablas/columnas/enums/versiones 007–010; `scripts/test-database-upgrade.sh` crea 2 contenedores MariaDB y converge variantes históricas y actuales tras 006–010 con `diff` exit `0`; suite E2E encadenada 11/11 con `&&`; 0 blockers y 0 critical findings | N/A | `.github/workflows/backend-tests.yml`, `apps/backend-php/tests/DatabaseSchemaContractTest.php`, `apps/backend-php/tests/{SnapshotEmissionTest,HttpEmissionE2eTest,AdminMasterDataHttpTest,AdminCertificadosConsultaHttpTest,AttendanceRevisionTest,CertificateRevisionMigrationTest,CourseDateRevisionTest}.php`, `scripts/test-database-upgrade.sh`, `openspec/config.yaml` | `archive/2026-07-16-p7-03-mariadb-ci/`; spec canónica `mariadb-ci-quality-gates` (5 requirements) | P7-04 (seguridad/docs) |
-| 2026-07-16 | P7-04 | DONE | 17/17 tareas; gates previos de CI scripts (`bash -n scripts/ci-*.sh`) y YAML workflow válido | 7/7 requirements (REQ-SEC-001 a REQ-SEC-007); 2/2 scenarios; `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/backend-tests.yml'))"` exit `0`; `bash scripts/ci-link-check.sh` → 50 enlaces chequeados, 0 broken, exit `0`; `bash scripts/ci-obsolete-terms.sh` → FINDS=0, exit `0`; `bash scripts/ci-openspec-orphan-check.sh` → 1 active change chequeado, 0 orphans, exit `0`; `git diff --check` exit `0`; gitleaks (`gitleaks/gitleaks-action@v2`) activo con `.gitleaks.toml` (allowlist de 3 paths: `muestra_pagina/`, tests, migraciones SQL); 3 carpetas huérfanas movidas a `archive/` con prefijo de fecha (`m4-01a-backend-contrato-token-permanente-dni-fechas/` → `archive/2026-07-02-m4-01a-backend-contrato/`, `m4-02-database-cursos-alumnos-asistencias/` → `archive/2026-07-02-m4-02-database/`, `p5-03-environments/` → `archive/2026-07-15-p5-03-environments/`); 2 términos residuales corregidos (`pendiente-entrega` → `no_emitido` en `openspec/specs/frontend-http-services/spec.md:174`; "último entregado por el instituto" → "el emitido por el instituto" en `public-validation-page.html:256`); 0 blockers y 0 critical findings | N/A | `.github/workflows/backend-tests.yml` (job `security-docs-gates` agregado), `.gitleaks.toml` (nuevo), `scripts/ci-link-check.sh` (nuevo), `scripts/ci-obsolete-terms.sh` (nuevo), `scripts/ci-openspec-orphan-check.sh` (nuevo), `openspec/specs/frontend-http-services/spec.md`, `public-validation-page.html` | `archive/2026-07-16-p7-04-seguridad-docs/`; spec canónica `security-docs-ci-gates` (7 requirements) | P8-01 (staging en cPanel) — P7 cierra como DONE |
+| 2026-07-16 | P7-04 | DONE | 17/17 tareas; gates previos de CI scripts (`bash -n scripts/ci-*.sh`) y YAML workflow válido | 7/7 requirements (REQ-SEC-001 a REQ-SEC-007); 2/2 scenarios; `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/backend-tests.yml'))"` exit `0`; `bash scripts/ci-link-check.sh` → 50 enlaces chequeados, 0 broken, exit `0`; `bash scripts/ci-obsolete-terms.sh` → FINDS=0, exit `0`; `bash scripts/ci-openspec-orphan-check.sh` → 1 active change chequeado, 0 orphans, exit `0`; `git diff --check` exit `0`; gitleaks (`gitleaks/gitleaks-action@v2`) activo con `.gitleaks.toml` (allowlist de 3 paths: `muestra_pagina/`, tests, migraciones SQL); 3 carpetas huérfanas movidas a `archive/` con prefijo de fecha; 2 términos residuales corregidos (`pendiente-entrega` → `no_emitido`, "último entregado" → "emitido"); 0 blockers y 0 critical findings | N/A | `.github/workflows/backend-tests.yml`, `.gitleaks.toml` (nuevo), `scripts/ci-link-check.sh`, `scripts/ci-obsolete-terms.sh`, `scripts/ci-openspec-orphan-check.sh`, `openspec/specs/frontend-http-services/spec.md`, `public-validation-page.html` | `archive/2026-07-16-p7-04-seguridad-docs/`; spec canónica `security-docs-ci-gates` (7 requirements) | P8-01 (staging en cPanel) — P7 cierra como DONE |
+| 2026-07-16 | P8-01 | DONE | Investigación manual de capacidades cPanel ejecutada por Marcos | [staging] PHP 8.4.22 (ea-php84, CGI/FastCGI); 7/7 extensiones OK (pdo_mysql, openssl, mbstring, curl, gd, zip, xml); sin Terminal/Composer/SSH/mod_env; subdominio staging.example.edu.ar creado con document root `/public_html/certificados_qa/`; backend desplegado en `/certificados_staging/api/`; ruta externa `/home/<cpanel_user>/ifts14_config/` (0700) con `bootstrap-staging.php` + `certificados-staging.php` + `runtime/` + `pdfs/`; `.user.ini` con `auto_prepend_file` como reemplazo de `SetEnv`; MariaDB 10.6.27, DB `<cpanel_prefix>_cert_stg` con migraciones 001–010 aplicadas (10 tablas `cert_*` vacías); sesiones configuradas (files, strict_mode=1, use_only_cookies=1, use_trans_sid=0). | Esquema sin seed; `php -v` y `composer` no ejecutables (sin terminal); SetEnv NO funciona → usar `.user.ini`. Producción intacta en PHP 8.1. | P8-02 (seed de datos ficticios) y P8-03 (build+deploy actualizado con lecciones aprendidas). |
 
 ## 4.4 Regla para la IA
 
@@ -1447,39 +1448,37 @@ Esta fase contiene múltiples `ALTO-D`. La IA prepara y guía; Marcos ejecuta en
 
 ## Ciclos
 
-### P8-01 — Investigación manual de capacidades
+### P8-01 — Investigación manual de capacidades ✅ DONE
 
-**ALTO-D inmediato**
+**Ejecutado por Marcos en cPanel — 2026-07-16.**
 
-La IA debe pedir a Marcos que revise, paso a paso:
+**ALTO-D resuelto.** El staging está creado y funcional:
 
-1. cPanel → **Software / Select PHP Version**:
-   - versión 8.4;
-   - `pdo_mysql`;
-   - `openssl`;
-   - `mbstring`;
-   - `curl`;
-   - `gd`;
-   - `zip`;
-   - `xml`.
-2. Buscar **Terminal**.
-3. Si hay Terminal:
-   ```bash
-   php -v
-   php -m
-   command -v composer
-   composer --version
-   ```
-4. Revisar File Manager.
-5. Revisar MySQL Databases/phpMyAdmin.
-6. Confirmar posibilidad de crear:
-   ```txt
-   public_html/certificados_staging/
-   ```
-7. Confirmar ruta externa a webroot para config y PDFs.
-8. No copiar credenciales al chat.
+| Recurso | Valor real |
+|---|---|
+| PHP | 8.4.22 (ea-php84, CGI/FastCGI). Dominio principal sigue en 8.1. |
+| Extensiones | pdo_mysql, openssl, mbstring, curl, gd, zip, xml — todas OK |
+| Terminal / SSH | No disponible |
+| Composer | No instalado → vendor se genera local y se sube como ZIP |
+| mod_env / SetEnv | **NO funciona** (error 500) → reemplazado por `.user.ini` + `auto_prepend_file` |
+| Subdominio staging | `staging.example.edu.ar` |
+| Document root | `/public_html/certificados_qa/` |
+| Backend path | `/public_html/certificados_qa/certificados_staging/api/` |
+| Config externa | `/home/<cpanel_user>/ifts14_config/` (0700) |
+| Config files | `bootstrap-staging.php` (0600), `certificados-staging.php` (0600) |
+| Sesiones | files handler, `strict_mode=1`, `use_only_cookies=1`, `use_trans_sid=0` |
+| MariaDB | 10.6.27 |
+| DB staging | `<cpanel_prefix>_cert_stg` (usuario exclusivo `<cpanel_prefix>_cert_stg_usr`) |
+| Migraciones | 001–010 aplicadas, 10 tablas `cert_*` vacías |
 
-La IA debe adaptar el runbook según las respuestas.
+**Lecciones aprendidas (NO repetir):**
+
+1. **SetEnv NO funciona.** `mod_env` no está habilitado. Cualquier `SetEnv` en `.htaccess` produce error 500. Usar `.user.ini` + `auto_prepend_file`.
+2. **PHP-FPM NO está disponible.** El hosting usa CGI/FastCGI. No asumir que se puede activar FPM.
+3. **No hay Terminal.** No ejecutar `php -v`, `composer` ni comandos en el servidor. Todo se prepara local y se sube.
+4. **Dominio principal usa PHP 8.1.** No cambiar la versión global. El staging usa su propio subdominio con PHP 8.4.
+5. **El subdominio de staging es temporal.** Se puede eliminar sin afectar producción.
+6. **Nunca compartir en el chat:** contraseñas, hashes, tokens CSRF, DNI, rutas privadas completas, IPs ni credenciales de DB.
 
 ### P8-02 — DB staging
 
@@ -1764,10 +1763,10 @@ El proyecto solo puede considerarse candidato a producción cuando:
 Ejecutar únicamente:
 
 ```txt
-P8-01 — Investigación manual de capacidades de cPanel (staging)
+P8-02 — DB staging (seed de datos ficticios)
 ```
 
-Alcance: cierre del último gap de P7 con P7-04 (DONE). P7 queda completo con cuatro sub-ciclos: P7-01 (frontend CI), P7-02 (backend CI), P7-03 (MariaDB CI) y P7-04 (seguridad/docs). Con P7 cerrado como `DONE`, se habilita P8 — Staging integrado en cPanel. P8-01 requiere ALTO-D inmediato: la IA debe pedir a Marcos que revise paso a paso las capacidades de cPanel (versión PHP, módulos PDO/openssl/mbstring/curl/gd/zip/xml, Terminal, File Manager, MySQL Databases/phpMyAdmin, posibilidad de crear `public_html/certificados_staging/` y ruta externa al webroot para config y PDFs). La IA adapta el runbook según las respuestas. P8-02 (DB staging), P8-03 (paquete y Composer), P8-04 (smoke remoto) y P8-05 (QA manual) se ejecutan después, secuencialmente. P9 (backlog posterior a la presentación) no bloquea esta secuencia.
+Alcance: P8-01 está DONE. El staging existe bajo `staging.example.edu.ar` con PHP 8.4.22 (ea-php84, CGI/FastCGI), MariaDB 10.6.27, migraciones 001–010 aplicadas y 10 tablas `cert_*` vacías. No hay Terminal, Composer ni mod_env. La configuración se carga vía `.user.ini` + `auto_prepend_file` desde `/home/<cpanel_user>/ifts14_config/`. P8-02 debe poblar la DB con datos ficticios (cursos, alumnos, fechas, asistencias) para habilitar smoke testing (P8-04). **ALTO-B:** no aplicar seed sin revisión de Marcos. La IA entrega cada SQL por bloque y espera confirmación. P8-03 (build+deploy actualizado) y P8-04 (smoke remoto) se ejecutan después, secuencialmente. P9 no bloquea.
 
 ---
 
