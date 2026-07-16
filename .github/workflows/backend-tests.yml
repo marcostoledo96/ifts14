@@ -101,5 +101,14 @@ jobs:
       - name: Bloquear focused tests + tests unitarios (Karma headless)
         run: npm run test:ci
 
-      - name: Build Angular
+      - name: TypeScript strict check (tsc --noEmit)
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Build producción
         run: npm run build
+
+      - name: Build staging
+        run: npm run build -- --configuration production-staging
+
+      - name: Detectar mocks en producción
+        run: node scripts/ci-mock-guard.mjs
