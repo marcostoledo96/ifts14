@@ -192,11 +192,15 @@ final class AdminMasterDataService
             }
             $this->pdo->commit();
         } catch (PDOException $exception) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             $this->throwConflictForUnique($exception, 'uq_cert_curso_fechas_curso_fecha', 'uq_cert_curso_fechas_curso_orden');
             throw $exception;
         } catch (Throwable $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             throw $e;
         }
 
@@ -225,11 +229,15 @@ final class AdminMasterDataService
             }
             $this->pdo->commit();
         } catch (PDOException $exception) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             $this->throwConflictForUnique($exception, 'uq_cert_asistencias_activa');
             throw $exception;
         } catch (Throwable $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             throw $e;
         }
 
@@ -276,7 +284,9 @@ final class AdminMasterDataService
             }
             $this->pdo->commit();
         } catch (Throwable $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             throw $e;
         }
 

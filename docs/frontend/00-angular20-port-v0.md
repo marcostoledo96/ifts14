@@ -374,6 +374,37 @@ Detalle en archive `openspec/changes/archive/2026-07-13-f5-01-certifications-lis
 
 Implementación aplicada en `frontend/students-list`; cerrado y archivado en `openspec/changes/archive/2026-07-13-f5-02-students-list/` (verify PASS 6/6, 14/14, suite 521/521, build exit 0). `/admin/alumnos` usa un seed local independiente con documento enmascarado y `tieneEmail` booleano, sin direcciones, legajo, documento completo, red ni storage. Incluye búsqueda segura, filtros combinables, paginación de cinco, tabla desktop, tarjetas mobile, estados accesibles, guard anti-race y QA limitado a desarrollo/tests. Sidebar y dashboard enlazan la ruta; el detalle permanece deshabilitado y sin `:id` hasta F5-03. Ver `docs/frontend/F5-02-listado-alumnos-paridad-v0.md`.
 
+### Estado P5-02 — servicios HTTP del panel admin (HttpClient + toggle)
+
+Capa de servicios HTTP que reemplaza los mocks en memoria del panel admin (`CoursesService`, `StudentsService`, `AttendanceService`, `CertificationsService`) y agrega `InstitutionalConfigService` nuevo. Cero cambios en UI, rutas, modelos consumidos por componentes o dependencias. Mocks (`InMemory*`, `AttendanceMockService`) y `InjectionToken` (`COURSES_SOURCE`, `STUDENTS_SOURCE`, `ATTENDANCE_SOURCE`, `CERTIFICATIONS_SOURCE`) quedan intactos como fallback.
+
+Archivos nuevos (11):
+
+- `apps/frontend-angular/src/app/features/admin/institutional-config/institutional-config.service.ts` — interfaz `InstitutionalConfigService` + token `INSTITUTIONAL_CONFIG_SOURCE`.
+- `apps/frontend-angular/src/app/features/admin/institutional-config/http-institutional-config.service.ts` — `GET /admin/configuracion-institucional`; `institutionName` → `nombre`, `direccion` y `logoUrl` default `null`.
+- `apps/frontend-angular/src/app/features/admin/students/http-students.service.ts` — `listar`/`contar` (GET `/admin/alumnos`), `obtener` (GET `/admin/alumnos/:id`); `apellidoNombre` se parte en el primer espacio; `ingreso` default `''`; 404 → `null`.
+- `apps/frontend-angular/src/app/features/admin/certifications/http-certifications.service.ts` — `listar`/`contar` (GET `/admin/certificados`), `obtener`, `revocar` (POST `/admin/certificados/:id/revocar` con `{ reason }`); mapeos `certificateCode` → `numero`, `student.displayName` → `nombreAlumno`, `status` → `estado`; `envio` default `'pendiente-entrega'`.
+- `apps/frontend-angular/src/app/features/admin/courses/http-courses.service.ts` — CRUD contra `/admin/cursos` y `/admin/cursos/:id/fechas`; `reemplazarFechas` orquesta GET → PATCH cancelada → PATCH existentes → POST nuevas → re-read; filtros `q`/`estado`/`conFechas` client-side; `cuatrimestre` default `'Sin programar'`.
+- `apps/frontend-angular/src/app/features/admin/attendances/data/http-attendance.service.ts` — `listarAlumnos` (GET `/admin/alumnos`, filtra `activo`), `listarAsistencias` (GET `/admin/asistencias?cursoId=`, filtra `fechaId` client-side), `marcar` (DELETE existentes + POST presentes, all-or-nothing), `anular` (DELETE).
+
+Archivo modificado:
+
+- `apps/frontend-angular/src/app/app.routes.ts` — el toggle `environment.useRealApi` ahora selecciona HTTP o in-memory para los 4 tokens del panel admin, replicando el patrón M3-06 de `VALIDATION_SOURCE`. `INSTITUTIONAL_CONFIG_SOURCE` queda cableado directo a `HttpInstitutionalConfigService` porque no hay `InMemoryInstitutionalConfigService`.
+
+Decisiones de diseño cerradas en archive (resueltas por ausencia de endpoint en backend):
+
+| Decisión | Resolución | Razón |
+|---|---|---|
+| `cuatrimestre` default | `'Sin programar'` (string) | tipo `string` en `courses.models.ts` |
+| `ingreso` default | `''` (string vacío) | tipo `string` en `students.models.ts` |
+| `reemplazarFechas` estrategia de baja | PATCH `estado: 'cancelada'` | backend no expone DELETE de fechas |
+| `listarAlumnos(cursoId)` filtro por curso | devuelve todos los activos, ignora `cursoId` | backend no tiene tabla curso-alumno |
+| `revocar` body key | `reason` (no `motivo`) | contrato PHP usa clave en inglés |
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p5-02-frontend-http-angular/` — PASS WITH WARNINGS, 24/24 tareas, 7/7 requirements, 30/30 escenarios, suite 595/595 SUCCESS, `ng build` exit 0. Review 4R lineage `review-8cecf76c4d5a4f4d` aprobada con `risk_level: high` y 12 findings WARNING clasificadas `info` (sin CRITICAL). Las 5 advertencias W1–W4/S1–S2 del verify-report ya quedaron reflejadas en la spec canónica `openspec/specs/frontend-http-services/spec.md`. Spec canónica con 8 requirements y 30 escenarios. Detalle completo en `openspec/changes/archive/2026-07-15-p5-02-frontend-http-angular/design.md` y `verify-report.md`.
+
+Límites explícitos (P5-02): sin cambios de UI, rutas, modelos consumidos, mocks, `InjectionToken`, backend, deploy, base de datos, `.htaccess`, material privado, sesión real más allá del toggle, DNI completo administrativo, tokens completos, emails, matrículas, credenciales demo, Tailwind, dependencias nuevas ni copia literal de React/Next. La activación real contra la API PHP queda en manos de cada operador local (toggle `useRealApi: true` en `environment.development.ts` solo para smoke).
+
 ### Checkpoint M3-06 — integración Angular/API local
 
 Conmutación local mock/API real sin reescribir la pantalla pública:
