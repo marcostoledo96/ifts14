@@ -165,3 +165,28 @@ jobs:
 
       - name: Detectar mocks en producción
         run: node scripts/ci-mock-guard.mjs
+
+  security-docs-gates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+      - name: git diff --check
+        run: git diff --check origin/main...HEAD
+
+      - name: Enlaces internos
+        run: bash scripts/ci-link-check.sh
+
+      - name: Términos obsoletos
+        run: bash scripts/ci-obsolete-terms.sh
+
+      - name: OpenSpec huérfano
+        run: bash scripts/ci-openspec-orphan-check.sh
