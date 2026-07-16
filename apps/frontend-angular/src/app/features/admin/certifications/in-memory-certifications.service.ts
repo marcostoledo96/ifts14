@@ -11,6 +11,7 @@ import {
   EntregaManualDto,
   EstadoCertificado,
   PdfStatus,
+  RegenerarPdfResult,
   TipoEnvio,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
@@ -203,6 +204,21 @@ export class InMemoryCertificationsService implements CertificationsService {
 
   contar(): Promise<number> {
     return Promise.resolve(this.certificados.length);
+  }
+
+  regenerarPdf(id: number): Promise<RegenerarPdfResult> {
+    const found = this.certificados.find((c) => c.id === id);
+    if (!found) {
+      return Promise.reject(new Error(`Certificación no encontrada: ${id}`));
+    }
+    // ponytail: mock simula regeneración exitosa. Marca pdfStatus 'valid'
+    // y devuelve los datos de entrega como entregaManual.
+    return Promise.resolve({
+      regenerado: true,
+      publicValidationUrl: `https://ifts14.edu.ar/certificados/validar/${found.tokenPrefix}-completo`,
+      pdfDownloadUrl: `${found.id}/pdf`,
+      pdfStatus: 'valid' as PdfStatus,
+    });
   }
 
   revocar(id: number, motivo: string): Promise<void> {

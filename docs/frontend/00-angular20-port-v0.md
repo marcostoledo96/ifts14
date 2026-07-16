@@ -554,3 +554,21 @@ Verificación: archive `openspec/changes/archive/2026-07-15-p6-01-entrega-manual
 Spec canónica nueva: `openspec/specs/admin-certificate-delivery-frontend/spec.md` con 7 requirements y 7 escenarios Given/When/Then (URL canónica desde backend, descarga QR Blob con filename semántico, fallback de clipboard, detección de PDF `outdated`, botón "Volver a generar", botón "Entrega manual" habilitado en preview y foco/escape en diálogos).
 
 Límites explícitos (P6-01): no agrega endpoint backend nuevo (se reutilizan `entrega-manual`, `qr.png` y `pdf`), no introduce envío automático por email (P6-02), no implementa regeneración real de PDF (MVP: mensaje), no toca configuración CORS/cookies del cPanel, no modifica mocks públicos de validación ni rutas de la landing pública. La regeneración real del PDF y el envío automático tras regeneración siguen como handoff P6-02.
+
+## Cierre P6-02 — Reenvío automático (MVP, regeneración real de PDF)
+
+El ciclo `p6-02-reenvio-automatico` (archive `openspec/changes/archive/2026-07-15-p6-02-reenvio-automatico/`) convirtió el botón "Regenerar PDF" del preview en una llamada real al backend y dejó el envío automático por email como handoff fuera de alcance (D1-14):
+
+- `certifications.models.ts` agrega `RegenerarPdfResult` con `regenerado`, `mensaje?`, `publicValidationUrl?`, `pdfDownloadUrl?` y `pdfStatus?` (`vigente` cuando se regeneró, mensaje en otro caso).
+- `CertificationsService` expone `regenerarPdf(id): Promise<RegenerarPdfResult>`; `http-certifications.service.ts` lo implementa como `POST /admin/certificados/{id}/regenerar-pdf` e `in-memory-certifications.service.ts` lo simula con el mismo shape para que los tests de componentes no dependan del backend real.
+- `CertificationPreviewPage.onRegenerarPdf()` reemplaza el `routerLink` por una llamada HTTP con `loading`, `error` y `resultado` reactivos; el botón muestra estado de carga y al finalizar renderiza los datos de entrega (`publicValidationUrl`, `pdfDownloadUrl`, `pdfStatus`) usando el mismo bloque visual de la página de entrega manual. Si el PDF ya estaba vigente, el backend responde `{ regenerado: false, mensaje: "El PDF ya está actualizado" }` y la UI lo muestra sin error.
+- `AdminCertificateService::regenerarPdf()` regenera el PDF con `CertificatePdfService` reutilizando el mismo token (D1-15, sin rotación), marca `pdf_estado='vigente'`, actualiza `pdf_generado_revision` y registra `accion='pdf_regenerado'` en auditoría.
+- Backend test nuevo: `apps/backend-php/tests/RegenerarPdfTest.php` cubre 5 escenarios (certificado inexistente, certificado emitido, PDF vigente no regenera, PDF desactualizado regenera, auditoría). No ejecutable en el entorno local por ausencia de PHP 8.4.21 con TCPDF (W1); debe correrse en CI o en el entorno de staging.
+
+Archivos: 14 cambios totales — 3 backend (`index.php`, `AdminCertificateService.php`, `RegenerarPdfTest.php` nuevo) y 11 frontend (`certifications.models.ts`, `certifications.service.ts`, `http-certifications.service.ts`, `in-memory-certifications.service.ts`, `certification-preview-page.{ts,html,css}`, `certification-preview-page.spec.ts`, `admin-dashboard-page.spec.ts`, `certifications-list-page.spec.ts`, `certification-pdf-preview-page.spec.ts`).
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-02-reenvio-automatico/verify-report.md` — **PASS** 4/4 requirements (REQ-REGEN-001 a REQ-REGEN-004), 621/621 tests SUCCESS en Karma + ChromeHeadless (`npm run test:ci` exit `0`), 0 blockers y 1 warning (W1 backend test no ejecutable sin PHP local).
+
+Spec canónica nueva: `openspec/specs/pdf-regeneration/spec.md` con 4 requirements y 4 escenarios Given/When/Then (regenerar PDF con mismo token, rechazar PDF vigente con `regenerado: false`, botón en preview que dispara el endpoint con loading/resultado y auditoría `pdf_regenerado`).
+
+Límites explícitos (P6-02): no introduce envío automático por email (D1-14, sigue fuera del MVP), no rota token/QR (D1-15), no agrega dependencias nuevas, no toca configuración CORS/cookies del cPanel, no modifica mocks públicos de validación ni rutas de la landing pública. El warning W1 queda como ALTO-B pendiente: ejecutar `RegenerarPdfTest.php` en CI con PHP 8.4.21 + TCPDF antes de promover el cierre a `DONE WITH WARNINGS` formal.

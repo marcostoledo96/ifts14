@@ -226,6 +226,7 @@ describe('CertificationsListPage', () => {
       listar: listarSpy,
       obtener: () => Promise.resolve({} as any),
       obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
     };
@@ -269,6 +270,7 @@ describe('CertificationsListPage', () => {
         }),
       obtener: () => Promise.reject(new Error('N/A')),
       obtenerEntregaManual: () => Promise.reject(new Error('N/A')),
+      regenerarPdf: () => Promise.reject(new Error('N/A')),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
     };

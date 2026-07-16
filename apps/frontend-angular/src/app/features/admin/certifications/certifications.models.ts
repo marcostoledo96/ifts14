@@ -53,3 +53,12 @@ export interface EntregaManualDto {
   readonly pdfAvailable: boolean;
   readonly pdfStatus: PdfStatus;
 }
+
+// Resultado de POST /admin/certificados/{id}/regenerar-pdf.
+export interface RegenerarPdfResult {
+  readonly regenerado: boolean;
+  readonly mensaje?: string;
+  readonly publicValidationUrl?: string;
+  readonly pdfDownloadUrl?: string;
+  readonly pdfStatus?: PdfStatus;
+}

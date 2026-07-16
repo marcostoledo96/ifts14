@@ -13,6 +13,7 @@ import {
   CertificacionesFiltros,
   EntregaManualDto,
   PdfStatus,
+  RegenerarPdfResult,
   TipoEnvio,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
@@ -52,6 +53,14 @@ interface EntregaManualDtoResponse {
   tokenPrefix: string;
   pdfAvailable: boolean;
   pdfStatus: string;
+}
+
+interface RegenerarPdfResponse {
+  regenerado: boolean;
+  mensaje?: string;
+  publicValidationUrl?: string;
+  pdfDownloadUrl?: string;
+  pdfStatus?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -118,6 +127,20 @@ export class HttpCertificationsService implements CertificationsService {
       this.http.get<ApiEnvelope<ListResponse>>(url),
     );
     return envelope.data.items.length;
+  }
+
+  async regenerarPdf(id: number): Promise<RegenerarPdfResult> {
+    const url = `${environment.apiBaseUrl}/admin/certificados/${id}/regenerar-pdf`;
+    const envelope = await firstValueFrom(
+      this.http.post<ApiEnvelope<RegenerarPdfResponse>>(url, {}),
+    );
+    return {
+      regenerado: envelope.data.regenerado,
+      mensaje: envelope.data.mensaje,
+      publicValidationUrl: envelope.data.publicValidationUrl,
+      pdfDownloadUrl: envelope.data.pdfDownloadUrl,
+      pdfStatus: envelope.data.pdfStatus as PdfStatus | undefined,
+    };
   }
 
   async revocar(id: number, motivo: string): Promise<void> {
