@@ -119,7 +119,8 @@ export class CertificationRevokePage {
   // T5: focus trap — Tab/Shift+Tab se mantiene dentro del diálogo
   @HostListener('keydown.tab', ['$event'])
   @HostListener('keydown.shift.tab', ['$event'])
-  onTab(e: KeyboardEvent): void {
+  onTab(e: Event): void {
+    const ke = e as KeyboardEvent;
     const dialog = this.dialogRef()?.nativeElement;
     if (!dialog) return;
     const focusable = dialog.querySelectorAll<HTMLElement>(
@@ -129,14 +130,14 @@ export class CertificationRevokePage {
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
     const active = document.activeElement;
-    if (e.shiftKey) {
+    if (ke.shiftKey) {
       if (active === first || !dialog.contains(active)) {
-        e.preventDefault();
+        ke.preventDefault();
         last.focus();
       }
     } else {
       if (active === last) {
-        e.preventDefault();
+        ke.preventDefault();
         first.focus();
       }
     }
