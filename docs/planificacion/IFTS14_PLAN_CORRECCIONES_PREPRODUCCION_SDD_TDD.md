@@ -1,13 +1,13 @@
 ---
 titulo: "IFTS14 — Plan de correcciones preproducción con SDD y TDD"
-version: "1.5"
-fecha_plan: "2026-07-15"
+version: "1.7"
+fecha_plan: "2026-07-16"
 repositorio: "marcostoledo96/ifts14"
 commit_auditado: "1a6a1cf5aa1b19a9652cab82b9455e789885471c"
 rama_fuente: "main"
 estado_general: "PARTIAL"
-fase_actual: "P7-01"
-ultimo_ciclo_cerrado: "P6-05"
+fase_actual: "P7-02"
+ultimo_ciclo_cerrado: "P7-01"
 responsable_coordinacion: "Marcos"
 metodologia: "Gentle AI + OpenSpec + SDD + TDD"
 ---
@@ -253,7 +253,7 @@ Este tablero es la vista vigente. Las auditorías, checklists y registros poster
 | P4 | `DONE` | [`c337def`](https://github.com/marcostoledo96/ifts14/commit/c337deffe5d217ba56e53da6ca81e31ab4ec2219) | [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**, con E2E MariaDB de revisiones; [CI] mismo verify: MariaDB E2E exit `0`. | No se infiere regeneración automática de PDF ni validación de producción. | P5-04. |
 | P5 | `DONE` | [PR #63](https://github.com/marcostoledo96/ifts14/pull/63) / [`1a6a1cf`](https://github.com/marcostoledo96/ifts14/commit/1a6a1cf5aa1b19a9652cab82b9455e789885471c) | [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**, 16/16 requirements y 52/52 escenarios; [staging] [evidencia Task 4.1](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md): **PASS para el candidato aislado de staging**; [local] [verify P5-03](../../openspec/changes/archive/2026-07-15-p5-03-environments/verify-report.md): **PASS** 6/6 requirements, 597/597 tests y guarda de CI activa; [local] [verify P5-04](../../openspec/changes/archive/2026-07-15-p5-04-login-angular-real/verify-report.md): **PASS** 8/8 requirements, 605/605 tests y 0 blockers. | No se infiere regeneración automática de PDF ni validación de producción. P5-01 conserva su warning W1 histórico; la producción `/certificados/` no está validada. | P6-01. |
 | P6 | `DONE` | [PR #65](https://github.com/marcostoledo96/ifts14/pull/65) / [`27b34c6`](https://github.com/marcostoledo96/ifts14/commit/27b34c63be917d32d9f987340d426eec0a8c421b) | [CI] PR #65 mergeado: revocación limitada a certificados `vigente`; [documental] [exploración de reconciliación](../../openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/exploration.md): sin verify de cierre P6 global; [local] [verify P6-01](../../openspec/changes/archive/2026-07-15-p6-01-entrega-manual-funcional/verify-report.md): **PASS** 7/7 requirements, 617/617 tests, 0 blockers y 0 warnings — entrega manual real con URL canónica, descarga QR Blob con filename semántico, clipboard fallback, detección de PDF `outdated` y botón "Entrega manual" habilitado desde preview; [local] [verify P6-02](../../openspec/changes/archive/2026-07-15-p6-02-reenvio-automatico/verify-report.md): **PASS** 4/4 requirements (REQ-REGEN-001 a REQ-REGEN-004), 621/621 tests, 0 blockers y 1 warning (W1 backend test no ejecutable sin PHP local) — regeneración real de PDF con mismo token, rechazo de PDF vigente, botón en preview que dispara endpoint y auditoría `pdf_regenerado`; [local] [verify P6-03](../../openspec/changes/archive/2026-07-15-p6-03-estados-no-sustentados/verify-report.md): **PASS** 4/4 requirements (REQ-CLEAN-001 a REQ-CLEAN-004), 619/619 tests, 0 blockers y 0 warnings — modelo sin `TipoEnvio`/`envio`, listado sin chips ni columna "Entrega", sin "firma digital verificada" ni "validez legal" en preview/PDF preview; [local] [verify P6-04](../../openspec/changes/archive/2026-07-15-p6-04-validacion-publica-refinada/verify-report.md): **PASS** 6/6 requirements (REQ-VAL-001 a REQ-VAL-006), 626/626 tests, 0 blockers y 0 warnings — layout folio con sidebar, membrete IFTS N.° 14 — Bedelía, datos completos (alumno, DNI, curso, código, tabla de fechas), sidebar con trazabilidad y sello `aria-hidden`, cuerpo editorial en `not-verifiable` y `technical-error`, sin QR decorativo; [local] [verify P6-05](../../openspec/changes/archive/2026-07-15-p6-05-css-accesibilidad/verify-report.md): **PASS**, 0 blockers y 0 warnings, 626/626 tests — 10 fixes quirúrgicos de CSS y accesibilidad (custom properties en `:root`, `prefers-reduced-motion: reduce`, focus ring duplicado eliminado, z-index consistente en revoke, focus trap en diálogos, `inert` en drawer mobile, `overflow-x` en tabla de validación, CSS formateado, `focus-visible` excluido del reset de animaciones) sin nuevas dependencias. P6 cierra con 5/5 ciclos archivados (P6-01 a P6-05). | No se infiere envío automático por email ni validación de producción. P6-02 deja el backend test `RegenerarPdfTest.php` pendiente de corrida en CI/entorno con PHP 8.4.21 + TCPDF (W1); la producción `/certificados/` no está validada. | P7-01. |
-| P7 | `PARTIAL` | Sin cierre terminal de P7 | [CI] `.github/workflows/backend-tests.yml`: tests backend/MariaDB/frontend básicos; [documental] [exploración de reconciliación](../../openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/exploration.md): sin gate de mocks, links/docs ni secretos. | P7-01/P7-02 siguen parciales y P7-04 sigue `PENDING`; P7-03 tiene evidencia CI. | P7-01 y P7-04 tras integración admin. |
+| P7 | `PARTIAL` | Sin cierre terminal de P7 (P7-01 archivado) | [CI] `.github/workflows/backend-tests.yml`: tests backend/MariaDB/frontend básicos con P7-01 activo (tsc --noEmit, build staging, mock guard); [local] [verify P7-01](../../openspec/changes/archive/2026-07-16-p7-01-frontend-ci/verify-report.md): **PASS** 6/6 requirements (REQ-CI-001 a REQ-CI-006), 636/636 tests, 0 blockers; [documental] [exploración de reconciliación](../../openspec/changes/archive/2026-07-15-reconcile-audit-remediation-plan/exploration.md): sin gate de mocks, links/docs ni secretos (gap de P7-02/P7-04 vigente). | P7-02 (backend CI), P7-04 (seguridad/docs) siguen pendientes; P7-03 tiene evidencia CI previa. Branch protection del check `frontend-tests` debe configurarse manualmente en GitHub. ESLint diferido. | P7-02 y P7-04. |
 | P8 | `PARTIAL` | [PR #63](https://github.com/marcostoledo96/ifts14/pull/63) / [`1a6a1cf`](https://github.com/marcostoledo96/ifts14/commit/1a6a1cf5aa1b19a9652cab82b9455e789885471c) | [staging] [evidencia Task 4.1](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/task-4-1-staging-evidence.md): **PASS para el candidato aislado de staging**; [local] [verify P5-01](../../openspec/changes/archive/2026-07-15-p5-01-auth-php/verify-report.md): **PASS WITH WARNINGS**. | Esquema staging vacío; faltan seed/flujo de negocio, smoke remoto completo y QA manual. Producción no validada. | P8-02 a P8-05, después de P5/P6/P7. |
 | P9 | `PENDING` | Sin PR/commit de cierre | [documental] este plan: backlog posterior; sin evidencia de cierre ni evidencia `[production]`. | **No bloqueante** para la secuencia inmediata. | Backlog posterior a P8. |
 
@@ -332,6 +332,7 @@ Al cerrar cada ciclo, agregar una fila:
 | 2026-07-15 | P6-03 | DONE | Tests de `TipoEnvio`/`envio` y copy "firma digital verificada" / "validez legal" | 619/619 SUCCESS Front; `npm run test:ci` exit `0`; grep 0 matches residuales | N/A | Frontend de cleanup (modelos, list, preview, PDF preview) | `archive/2026-07-15-p6-03-estados-no-sustentados/` | P6-04 (validación pública) / P6-05 (CSS/a11y) |
 | 2026-07-15 | P6-04 | DONE | Tests de layout folio, membrete, tabla de fechas, sidebar con sello `aria-hidden` y sin QR decorativo | 626/626 SUCCESS Front; `npm run test:ci` exit `0` | N/A | Frontend de validación pública (template, CSS, TS, spec) | `archive/2026-07-15-p6-04-validacion-publica-refinada/` | P6-05 (CSS/a11y) |
 | 2026-07-15 | P6-05 | DONE | 10 fixes de CSS/a11y sin delta de spec; tests `npm run test:ci` | 626/626 SUCCESS Front; `npm run test:ci` exit `0`; 0 blockers y 0 warnings | N/A | 10 archivos (styles.css, certification-delivery-page, certification-revoke-page, admin-shell, public-validation-page, certifications-list-page) | `archive/2026-07-15-p6-05-css-accesibilidad/` | P7-01 (CI frontend) |
+| 2026-07-16 | P7-01 | DONE | 9/9 tareas; gates previos de `test:ci` y `environment.guard.spec.ts` | 6/6 requirements (REQ-CI-001 a REQ-CI-006); 14/14 escenarios; 636/636 SUCCESS Front; `npm run test:ci`, `npx tsc --noEmit -p tsconfig.app.json`, `npm run build`, `npm run build -- --configuration production-staging` y `node scripts/ci-mock-guard.mjs` exit `0`; 0 blockers y 2 warnings no bloqueantes (CSS budget) | N/A | `apps/frontend-angular/scripts/ci-mock-guard.mjs` (nuevo), `.github/workflows/backend-tests.yml`, `openspec/config.yaml` | `archive/2026-07-16-p7-01-frontend-ci/`; spec canónica `frontend-ci-quality-gates` | P7-02 (backend CI) / P7-04 (seguridad/docs); branch protection manual de `frontend-tests` pendiente |
 
 ## 4.4 Regla para la IA
 
@@ -1365,6 +1366,8 @@ ci/preproduction-quality-gates
 
 ### P7-01 — Frontend CI
 
+**Estado (2026-07-16)**: DONE. Spec canónica `openspec/specs/frontend-ci-quality-gates/spec.md`. Verify archivado en `openspec/changes/archive/2026-07-16-p7-01-frontend-ci/verify-report.md` con **PASS** 6/6 requirements, 636/636 tests, 0 blockers.
+
 GitHub Actions:
 
 ```txt
@@ -1751,10 +1754,10 @@ El proyecto solo puede considerarse candidato a producción cuando:
 Ejecutar únicamente:
 
 ```txt
-P7-01 — Frontend CI
+P7-02 — Backend CI
 ```
 
-Alcance: incorporar gate automático de build + tests frontend en GitHub Actions (rama `ci/preproduction-quality-gates`) para impedir que un modelo económico o un merge rápido reintroduzca errores conocidos. P7-01 parte de los cierres verificables de P6 completo (P6-01 entrega manual, P6-02 reenvío, P6-03 cleanup, P6-04 validación pública refinada, P6-05 CSS/a11y polish).
+Alcance: extender `.github/workflows/backend-tests.yml` (o workflow dedicado backend) con `composer validate --strict`, `composer audit`, `php -l` y la suite PHP procedimental/unitaria del backend. P7-02 parte de los cierres verificables de P5 completo (P5-01 auth PHP, P5-02 frontend HTTP, P5-03 environments, P5-04 login real) y de P6 completo (P6-01 a P6-05), y se apoya en los gates `frontend-tests` ya activos de P7-01. Branch protection del check `frontend-tests` debe quedar configurada manualmente en GitHub como prerrequisito operativo.
 
 Luego: P7-04 y P8-02 a P8-05. P9 no bloquea esta secuencia.
 
@@ -1791,3 +1794,4 @@ Fuente oficial:
 | 1.4 | 2026-07-15 | Cierre de P6-02 (reenvío/regeneración): P6 sigue `DONE`; tablero, sección 4.3, sección 11, aserción Python e historial actualizados; spec canónica `pdf-regeneration` creada; doc frontend `00-angular20-port-v0.md` actualizada con el cierre P6-02 | Marcos / SDD documental |
 | 1.5 | 2026-07-15 | Cierre de P6-04 (validación pública refinada): P6 sigue `DONE`; tablero, sección 4.3, sección 11, aserción Python e historial actualizados; spec canónica `frontend-public-validation` ampliada con los 4 nuevos requirements (folio+sidebar, membrete, cuerpo editorial, sin QR decorativo); doc frontend `00-angular20-port-v0.md` actualizada con el cierre P6-04 | Marcos / SDD documental |
 | 1.6 | 2026-07-15 | Cierre de P6-05 (CSS y accesibilidad): P6 sigue `DONE` con 5/5 ciclos archivados; tablero, sección 4.3, sección 11, aserción Python e historial actualizados; doc frontend `00-angular20-port-v0.md` actualizada con el cierre P6-05; sección 11 apunta a P7-01 | Marcos / SDD documental |
+| 1.7 | 2026-07-16 | Cierre de P7-01 (Frontend CI): P7 sigue `PARTIAL` (P7-02/P7-04 pendientes); tablero, sección 4.3, sección 7 (P7-01 marcado DONE), sección 11, aserción Python e historial actualizados; spec canónica `frontend-ci-quality-gates` creada (6 requirements); doc deploy `00-cpanel-certificados.md` actualizada con la sección "Quality gates de CI (frontend)"; sección 11 apunta a P7-02 (Backend CI) | Marcos / SDD documental |

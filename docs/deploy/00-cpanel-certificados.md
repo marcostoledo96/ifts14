@@ -302,6 +302,23 @@ No usar base real, certificados reales, DNI reales, logs productivos ni capturas
 | Backup y rollback manual | `Backup manual y rollback` |
 | Validación posterior con datos ficticios | `Validación con datos ficticios` |
 
+## Quality gates de CI (frontend)
+
+El job `frontend-tests` de `.github/workflows/backend-tests.yml` ejecuta 6 pasos en cada PR contra frontend, en este orden:
+
+1. `npm ci`.
+2. `npm run test:ci` (Karma headless + guarda `no-focused-tests.mjs`).
+3. `npx tsc --noEmit -p tsconfig.app.json` (TypeScript estricto).
+4. `npm run build` (build AOT de producción, `baseHref=/certificados/`).
+5. `npm run build -- --configuration production-staging` (build AOT de staging, `baseHref=/certificados_staging/`).
+6. `node scripts/ci-mock-guard.mjs` (verifica `useRealApi === true` en `environment.ts`).
+
+Contrato vigente: el job solo se marca como `success` si los pasos 2, 3 y 4 pasan (contrato de 3 pasos núcleo). Un fallo en cualquier paso impide el merge. Spec canónica: `openspec/specs/frontend-ci-quality-gates/spec.md`. Detalle del ciclo en `openspec/changes/archive/2026-07-16-p7-01-frontend-ci/`.
+
+**Branch protection**: la regla `Require status checks to pass before merging` para el check `frontend-tests` debe configurarse manualmente en GitHub (Settings → Branches → Branch protection rules). El script de CI no la aplica; queda como tarea operativa de Marcos o Matías.
+
+**ESLint**: diferido a un ciclo posterior. No es parte de los gates vigentes.
+
 ## Estado de capacidad pública
 
 Rate limiting y fault-injection ya fueron implementados y verificados en el ciclo `backend-public-endpoint-hardening` (archivado en `openspec/changes/archive/2026-06-26-backend-public-endpoint-hardening/`):

@@ -44,8 +44,8 @@ testing:
       available: true
       tool: "php -l (lint sintáctico via Docker, ver scripts/php-docker-lint.sh)"
     type_checker:
-      available: false
-      tool: "—"
+      available: true
+      tool: "npx tsc --noEmit -p tsconfig.app.json"
     formatter:
       available: false
       tool: "—"
