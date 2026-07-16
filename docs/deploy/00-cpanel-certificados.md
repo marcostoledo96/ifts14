@@ -1,6 +1,27 @@
 # Deploy cPanel — /certificados/
 
-> **Estado P5-01:** staging candidato PASS; producción no activada ni validada. Las referencias históricas a `X-Admin-Key` HTTP y `STOP DESPLIEGUE` se conservan como antecedente, no como autorización actual.
+> **Estado P8-01:** staging aislado creado y validado. P8-01 DONE. PHP 8.4.22 (ea-php84, CGI/FastCGI), MariaDB 10.6.27, migraciones 001–010 aplicadas. Producción `/certificados/` permanece en PHP 8.1 sin tocar. Las referencias históricas a `X-Admin-Key` HTTP y `STOP DESPLIEGUE` se conservan como antecedente, no como autorización actual.
+
+## Entorno real de staging (P8-01)
+
+| Recurso | Valor |
+|---|---|
+| Subdominio | `certificados-qa.ifts14.com.ar` |
+| Document root | `/public_html/certificados_qa/` |
+| Backend | `/certificados_staging/api/` |
+| PHP | 8.4.22 (ea-php84, CGI/FastCGI) |
+| MariaDB | 10.6.27 (`ifts14c8_cert_stg`) |
+| Config externa | `/home/ifts14c8/ifts14_config/` (0700) |
+| Sesiones | files, strict_mode=1, use_only_cookies=1, use_trans_sid=0 |
+
+### Lecciones del entorno
+
+1. **SetEnv NO funciona.** `mod_env` no está habilitado → usar `.user.ini` + `auto_prepend_file`.
+2. **No hay Terminal ni SSH.** Todo se prepara local y se sube.
+3. **Composer no instalado.** Generar `vendor/` localmente (`composer install --no-dev --prefer-dist --classmap-authoritative`) y subir como ZIP.
+4. **Dominio principal usa PHP 8.1.** No cambiarlo globalmente.
+5. **PHP-FPM no disponible.** CGI/FastCGI funciona correctamente.
+6. **Nunca compartir:** contraseñas, hashes, tokens, DNI, rutas privadas, IPs, credenciales DB.
 
 ## Objetivo
 
