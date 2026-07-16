@@ -37,6 +37,22 @@ jobs:
             composer:2 \
             composer install --no-dev --no-interaction --prefer-dist
 
+      - name: Composer validate
+        run: |
+          docker run --rm \
+            -v "$PWD":/workspace \
+            -w /workspace/apps/backend-php \
+            composer:2 \
+            composer validate --strict
+
+      - name: Composer audit
+        run: |
+          docker run --rm \
+            -v "$PWD":/workspace \
+            -w /workspace/apps/backend-php \
+            composer:2 \
+            composer audit
+
       - name: Unit tests (sin base de datos)
         run: |
           docker run --rm -v "$PWD/apps/backend-php":/app -w /app ifts14-php84 sh -lc '
@@ -49,7 +65,9 @@ jobs:
             php tests/EntregaManualTest.php &&
             php tests/AdminCertificateServiceTest.php &&
             php tests/HttpContractTest.php &&
-            php tests/PdfResilienceTest.php
+            php tests/PdfResilienceTest.php &&
+            php tests/AdminMasterDataServiceTest.php &&
+            php tests/SessionHttpTest.php
           '
 
       - name: E2E con MariaDB
@@ -73,11 +91,20 @@ jobs:
               php apps/backend-php/tests/ReadinessTest.php &&
               php apps/backend-php/tests/CertificateRevisionMigrationTest.php &&
               php apps/backend-php/tests/AttendanceRevisionTest.php &&
-              php apps/backend-php/tests/CourseDateRevisionTest.php
+              php apps/backend-php/tests/CourseDateRevisionTest.php &&
+              php apps/backend-php/tests/QrImageTest.php &&
+              php apps/backend-php/tests/RegenerarPdfTest.php &&
+              php apps/backend-php/tests/fault-injection-audit.php
             '
 
       - name: Privacy headers
         run: bash scripts/test-privacy-headers.sh
+
+      - name: PHP lint
+        run: |
+          docker run --rm -v "$PWD/apps/backend-php":/app -w /app ifts14-php84 sh -lc '
+            find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \; | grep -v "^No syntax errors"
+          '
 
   frontend-tests:
     runs-on: ubuntu-latest

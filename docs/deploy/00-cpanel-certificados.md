@@ -319,6 +319,23 @@ Contrato vigente: el job solo se marca como `success` si los pasos 2, 3 y 4 pasa
 
 **ESLint**: diferido a un ciclo posterior. No es parte de los gates vigentes.
 
+## Quality gates de CI (backend)
+
+El job `php-tests` de `.github/workflows/backend-tests.yml` ejecuta los quality gates de backend en cada PR contra código PHP, en este orden (resumen operativo; detalles del paso exacto en el YAML):
+
+1. Build de la imagen PHP 8.4 (`docker build -t ifts14-php84 -f docker/php84/Dockerfile .`).
+2. `composer install` desde `composer:2` con `--no-dev --no-interaction --prefer-dist`.
+3. `composer validate --strict` — falla si `composer.json` o `composer.lock` no son válidos.
+4. `composer audit` — falla si hay advisories de seguridad en dependencias.
+5. Unit tests (sin DB): 12/12 tests PHP procedimentales.
+6. E2E con MariaDB 10.6: 11/11 tests PHP procedimentales.
+7. `php -l` sobre todo `apps/backend-php/**/*.php` (excluyendo `vendor/`) — falla ante cualquier error de sintaxis.
+8. `scripts/test-privacy-headers.sh` (verifica `Referrer-Policy`, `X-Robots-Tag`, etc.).
+
+Contrato vigente: el job se marca como `success` solo si composer validate, composer audit, los 12 unit tests, los 11 E2E con MariaDB, `php -l` y la guarda de privacy headers pasan. Un fallo en cualquier paso impide el merge. Spec canónica: `openspec/specs/backend-ci-quality-gates/spec.md`. Detalle del ciclo en `openspec/changes/archive/2026-07-16-p7-02-backend-ci/`.
+
+PHPUnit/Pest, cobertura de código y reestructuración del workflow se difieren a ciclos posteriores y no forman parte de estos gates.
+
 ## Estado de capacidad pública
 
 Rate limiting y fault-injection ya fueron implementados y verificados en el ciclo `backend-public-endpoint-hardening` (archivado en `openspec/changes/archive/2026-06-26-backend-public-endpoint-hardening/`):
