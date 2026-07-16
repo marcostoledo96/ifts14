@@ -43,6 +43,14 @@ testing:
     linter:
       available: true
       tool: "php -l (lint sintáctico via Docker, ver scripts/php-docker-lint.sh)"
+      backend:
+        available: true
+        tool: "php -l"
+        command: "find apps/backend-php -name '*.php' -not -path '*/vendor/*' -exec php -l {} \\;"
+        ci_step: "PHP lint (en backend-tests.yml, job php-tests)"
+      frontend:
+        available: true
+        tool: "npx tsc --noEmit -p tsconfig.app.json"
     type_checker:
       available: true
       tool: "npx tsc --noEmit -p tsconfig.app.json"
