@@ -3,7 +3,7 @@
   <aside class="sidebar-desktop" aria-label="Navegación admin">
     <app-sidebar-admin [active]="rutaActual()" (cerrarSesion)="cerrarSesion()" />
   </aside>
-  <div class="content">
+  <div class="content" [attr.inert]="menuAbierto() ? '' : null">
     <header class="topbar" role="banner">
       <div class="topbar-row">
         <button

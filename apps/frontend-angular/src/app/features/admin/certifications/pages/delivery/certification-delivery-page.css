@@ -427,7 +427,6 @@
 
 .btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-ring) 50%, transparent);
   box-shadow: var(--focus-ring);
   outline-offset: 2px;
 }
@@ -436,7 +435,7 @@
   transform: translateY(1px);
 }
 
-@media (prefers-reduced-motion) {
+@media (prefers-reduced-motion: reduce) {
   .btn:active {
     transform: none;
   }

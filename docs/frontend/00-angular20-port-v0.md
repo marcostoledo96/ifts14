@@ -603,3 +603,21 @@ Verificación: archive `openspec/changes/archive/2026-07-15-p6-04-validacion-pub
 Spec canónica ampliada: `openspec/specs/frontend-public-validation/spec.md` agrega 4 nuevos requirements al capability existente (folio con sidebar, membrete IFTS 14, cuerpo editorial en estados no válidos, sin QR decorativo) preservando los scenarios originales de la pantalla pública.
 
 Límites explícitos (P6-04): no cambia el backend, no rota token/QR, no agrega dependencias, no introduce QR decorativo falso, no toca la UI admin, no agrega diferenciación pública entre revocado/vencido/inexistente (sigue como `not-verifiable` único, D1-03), no modifica la ruta ni el token. Próximo ciclo: P6-05 (CSS y accesibilidad).
+
+## Cierre P6-05 — CSS y accesibilidad
+
+El ciclo `p6-05-css-accesibilidad` (archive `openspec/changes/archive/2026-07-15-p6-05-css-accesibilidad/`) aplicó un polish de CSS y accesibilidad sobre la UI activa de admin y validación pública, manteniendo paridad visual con `muestra_pagina/` y sin nuevas dependencias. 10 fixes quirúrgicos de 1–5 líneas cada uno:
+
+- `styles.css`: declaración de custom properties faltantes en `:root` (`--color-secondary`, `--color-accent`, `--color-primary-foreground`, `--radius-xl`) y exclusión de `.focus-visible` del reset de animaciones para que el indicador de foco siga visible cuando el usuario activa `prefers-reduced-motion`.
+- `certification-delivery-page.css`: corrección de la media query `prefers-reduced-motion` (`prefers-reduced-motion: reduce`) y eliminación del `box-shadow` duplicado en `.btn:focus-visible`.
+- `certification-revoke-page.html` / `.css`: movimiento del `z-index: 60` inline del botón de revocación a la clase CSS `.dialog-card` con z-index consistente, evitando solapamientos con el dialog overlay.
+- `certification-revoke-page.ts` / `certification-delivery-page.ts`: focus trap de teclado (Tab / Shift+Tab) dentro de los diálogos para mantener el foco en su contenido cerrable.
+- `admin-shell.html`: atributo `inert` en `.content` cuando `menuAbierto()` está activo, dejando el contenido fuera del tab order y de lectores de pantalla mientras el drawer mobile está abierto.
+- `public-validation-page.css`: `overflow-x: auto` en la tabla de fechas para que la lista de muchas fechas no rompa el layout en mobile.
+- `certifications-list-page.css`: reformateo del CSS minificado con saltos de línea para que el diff futuro sea legible.
+
+Verificación: archive `openspec/changes/archive/2026-07-15-p6-05-css-accesibilidad/verify-report.md` — **PASS**, 0 blockers y 0 warnings, 626/626 tests SUCCESS en Karma + ChromeHeadless (`npm run test:ci` exit `0`), TypeScript compila limpio.
+
+P6 cierra con 5/5 ciclos archivados (P6-01 a P6-05). Este ciclo no introdujo delta de spec canónica nueva: los cambios son mejoras de implementación que no alteran el contrato observable de las specs existentes (`frontend-public-validation`, `admin-certificate-delivery-frontend`, `admin-certificate-revocation`, `frontend-angular-shell`).
+
+Límites explícitos (P6-05): no agrega dependencias nuevas, no rota token/QR, no cambia el backend, no introduce un sistema de diseño distinto del vigente, no modifica la ruta ni el token, no toca la lógica de los flujos 4–22, no agrega diferenciación pública entre estados (D1-03), no reescribe `muestra_pagina/`. Próximo ciclo: P7-01 (CI frontend).
