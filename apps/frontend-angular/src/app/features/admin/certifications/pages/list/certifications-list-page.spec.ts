@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { CERTIFICATIONS_QA_ENABLED, CertificationsListPage } from './certifications-list-page';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
-import { Certificacion, CertificacionesFiltros } from '../../certifications.models';
+import { Certificacion, CertificacionesFiltros, EntregaManualDto } from '../../certifications.models';
 import { CertificationsService } from '../../certifications.service';
 
 describe('CertificationsListPage', () => {
@@ -225,6 +225,7 @@ describe('CertificationsListPage', () => {
     const service: CertificationsService = {
       listar: listarSpy,
       obtener: () => Promise.resolve({} as any),
+      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
     };
@@ -267,6 +268,7 @@ describe('CertificationsListPage', () => {
           else resolveSecond = resolve;
         }),
       obtener: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: () => Promise.reject(new Error('N/A')),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
     };

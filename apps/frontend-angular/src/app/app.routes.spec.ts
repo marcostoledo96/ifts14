@@ -847,10 +847,10 @@ describe('app.routes', () => {
     expect(el.querySelector('.auditoria-timeline')).not.toBeNull();
     // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink.
     // F6-01 delta: Revocar pasa a routerLink.
-    // Quedan 2 botones disabled: Copiar link, Entrega manual.
+    // P6-01 delta: Entrega manual pasa a routerLink.
+    // Quedan 1 botón disabled: Copiar link.
     const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
-    expect(disabledBtns.length).toBeGreaterThanOrEqual(2);
-    expect(el.textContent).toContain('F5-04');
+    expect(disabledBtns.length).toBeGreaterThanOrEqual(1);
     expect(el.textContent).toContain('F6-03');
   });
 

@@ -6,11 +6,13 @@ import {
   Certificacion,
   CertificacionDetalle,
   CertificacionesFiltros,
+  EntregaManualDto,
 } from './certifications.models';
 
 export interface CertificationsService {
   listar(filtros?: CertificacionesFiltros): Promise<readonly Certificacion[]>;
   obtener(id: number): Promise<CertificacionDetalle>;
+  obtenerEntregaManual(id: number): Promise<EntregaManualDto>;
   contar(): Promise<number>;
   revocar(id: number, motivo: string): Promise<void>;
 }

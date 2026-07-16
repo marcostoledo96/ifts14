@@ -109,6 +109,57 @@ describe('HttpCertificationsService', () => {
     expect(result.publicValidationUrl).toBe('/admin/certificados/7/pdf');
   });
 
+  it('obtenerEntregaManual hace GET a /admin/certificados/:id/entrega-manual y mapea el DTO', async () => {
+    const p = service.obtenerEntregaManual(7);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados/7/entrega-manual`);
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      data: {
+        certificadoId: 7,
+        publicValidationUrl: 'https://ifts14.edu.ar/certificados/validar/token-demo-123',
+        pdfDownloadUrl: '/admin/certificados/7/pdf',
+        tokenPrefix: 'prefijo_demo',
+        pdfAvailable: true,
+        pdfStatus: 'valid',
+      },
+      meta: { requestId: 'r-entrega' },
+    });
+    const result = await p;
+    expect(result.certificadoId).toBe(7);
+    expect(result.publicValidationUrl).toContain('ifts14.edu.ar');
+    expect(result.pdfStatus).toBe('valid');
+    expect(result.pdfAvailable).toBeTrue();
+  });
+
+  it('obtenerEntregaManual mapea pdfStatus outdated correctamente', async () => {
+    const p = service.obtenerEntregaManual(4);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados/4/entrega-manual`);
+    req.flush({
+      data: {
+        certificadoId: 4,
+        publicValidationUrl: 'https://ifts14.edu.ar/certificados/validar/token-4',
+        pdfDownloadUrl: '/admin/certificados/4/pdf',
+        tokenPrefix: 'prefijo_demo_g4h',
+        pdfAvailable: false,
+        pdfStatus: 'outdated',
+      },
+      meta: { requestId: 'r-outdated' },
+    });
+    const result = await p;
+    expect(result.pdfStatus).toBe('outdated');
+    expect(result.pdfAvailable).toBeFalse();
+  });
+
+  it('obtenerEntregaManual 4xx rechaza con error', async () => {
+    const p = service.obtenerEntregaManual(99);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados/99/entrega-manual`);
+    req.flush(
+      { error: { code: 'CERTIFICATE_NOT_FOUND', message: 'No encontrado', details: [] }, meta: { requestId: 'r404' } },
+      { status: 404, statusText: 'Not Found' },
+    );
+    await expectAsync(p).toBeRejected();
+  });
+
   it('contar devuelve la longitud del listado', async () => {
     const p = service.contar();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
