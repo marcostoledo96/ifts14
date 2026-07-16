@@ -336,6 +336,20 @@ Contrato vigente: el job se marca como `success` solo si composer validate, comp
 
 PHPUnit/Pest, cobertura de código y reestructuración del workflow se difieren a ciclos posteriores y no forman parte de estos gates.
 
+## Quality gates de CI (MariaDB)
+
+El job `php-tests` de `.github/workflows/backend-tests.yml` ejecuta los quality gates de MariaDB 10.6 contra el service container del workflow, en este orden (resumen operativo; detalles del paso exacto en el YAML):
+
+1. `mariadb-client` instalado vía `apt-get` en el runner Ubuntu (la imagen PHP 8.4 `ifts14-php84` no incluye el cliente).
+2. `database-setup` (paso nuevo) — aplica las 10 migraciones `001.sql`–`010.sql` en orden numérico vía `mariadb` CLI contra el service container en `127.0.0.1:3306`. Falla con código distinto de `0` ante cualquier error de SQL o de conexión.
+3. `Schema contract` (paso nuevo) — ejecuta `apps/backend-php/tests/DatabaseSchemaContractTest.php` (201 líneas) dentro del contenedor PHP 8.4 con las variables de entorno del service container. El test valida 10 tablas, columnas (vía substring sobre `INFORMATION_SCHEMA.COLUMNS`), enums (post-006/009) y versiones registradas en `cert_schema_migrations` (007–010). Falla con `exit(1)` si la DB no está disponible.
+4. `E2E con MariaDB` — encadena 11/11 tests PHP con `&&`: `SnapshotEmission, HttpEmissionE2e, AdminMasterDataHttp, AdminCertificadosConsultaHttp, Readiness, CertificateRevisionMigration, AttendanceRevision, CourseDateRevision, QrImage, RegenerarPdf, fault-injection-audit`. Ningún test puede hacer SKIP silencioso: 7/7 con guarda de DB usan `fwrite(STDERR, "FATAL: ..."); exit(1);` cuando falta `IFTS14_TEST_DB_DSN` o `ALLOW_RESET≠1`.
+5. `Upgrade test` (paso nuevo) — `scripts/test-database-upgrade.sh` (53 líneas, sintaxis validada con `bash -n`). Crea dos contenedores MariaDB descartables, aplica `schema_003_historical.sql` y `schema_003_current.sql`, converge a través de 006–010 y compara con `diff`; sale con `0` solo si ambos convergen a la misma estructura exacta.
+
+Contrato vigente: el job se marca como `success` solo si el paso `database-setup` aplica 10/10 migraciones, el schema contract valida la estructura esperada, los 11 tests E2E pasan sin SKIP y el upgrade test confirma la convergencia de variantes históricas. Un fallo en cualquier paso impide el merge. Spec canónica: `openspec/specs/mariadb-ci-quality-gates/spec.md`. Detalle del ciclo en `openspec/changes/archive/2026-07-16-p7-03-mariadb-ci/`.
+
+PHPUnit/Pest, cobertura de código y refactor de los tests E2E a un framework se difieren a ciclos posteriores y no forman parte de estos gates.
+
 ## Estado de capacidad pública
 
 Rate limiting y fault-injection ya fueron implementados y verificados en el ciclo `backend-public-endpoint-hardening` (archivado en `openspec/changes/archive/2026-06-26-backend-public-endpoint-hardening/`):
