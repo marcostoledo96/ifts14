@@ -3,7 +3,7 @@ import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { AdminShell } from './admin-shell';
 import { SidebarAdmin } from './sidebar-admin';
-import { MOCK_SESSION, InMemoryMockSession } from './mock-session';
+import { ADMIN_AUTH, FakeAdminAuthService } from './admin-auth.service';
 
 describe('AdminShell', () => {
   async function render() {
@@ -11,7 +11,7 @@ describe('AdminShell', () => {
       imports: [AdminShell],
       providers: [
         provideRouter([]),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(AdminShell);
@@ -29,7 +29,7 @@ describe('AdminShell', () => {
           { path: 'admin/cursos/:id', component: AdminShell },
           { path: '**', redirectTo: 'admin/dashboard' },
         ]),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
     const router = TestBed.inject(Router);
@@ -56,10 +56,10 @@ describe('AdminShell', () => {
     expect(el.querySelector('app-admin-dashboard-page')).toBeNull();
   });
 
-  it('muestra badge Sesión mock en topbar', async () => {
+  it('muestra badge Sesión activa en topbar', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Sesión mock');
+    expect(el.textContent).toContain('Sesión activa');
   });
 
   it('incluye skip link hacia #contenido', async () => {
@@ -68,20 +68,13 @@ describe('AdminShell', () => {
     expect(el.querySelector('a.skip-link')?.getAttribute('href')).toBe('#contenido');
   });
 
-  // --- Navegación mobile (Codex PR #34) ---
-  // AdminShell debe exponer un control de navegación en viewports pequeños
-  // que permita acceder a las secciones y al logout.
-
   it('expone control de navegación mobile (botón menú)', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const btn = el.querySelector('.menu-btn') as HTMLButtonElement | null;
     expect(btn).not.toBeNull();
     expect(btn?.getAttribute('aria-label')).toContain('navegación');
-    // Drawer condicional: aria-controls solo apunta a un elemento existente
-    // cuando el drawer está en el DOM. Cerrado => null (sin target roto).
     expect(btn?.getAttribute('aria-controls')).toBeNull();
-    // aria-expanded refleja el estado del drawer (cerrado al inicio).
     expect(btn?.getAttribute('aria-expanded')).toBe('false');
   });
 
@@ -94,19 +87,11 @@ describe('AdminShell', () => {
     expect(f.componentInstance.menuAbierto()).toBe(false);
   });
 
-  // --- Drawer condicional (CRITICAL a11y PR #34) ---
-  // El drawer (y su SidebarAdmin con nav/logout) NO debe existir en el DOM
-  // cuando está cerrado: un panel oculto solo con transform deja links/botones
-  // focusables expuestos a teclado y screen readers. Render condicional es la
-  // única garantía real de remoción del árbol de accesibilidad.
-
   it('drawer mobile, overlay, nav y logout están AUSENTES cuando el menú está cerrado', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('.drawer-overlay')).toBeNull();
     expect(el.querySelector('.drawer-mobile')).toBeNull();
-    // El sidebar desktop sigue existiendo (otra landmark), pero el drawer
-    // mobile no: no debe contener una segunda instancia de SidebarAdmin.
     const drawers = el.querySelectorAll('.drawer-mobile app-sidebar-admin');
     expect(drawers.length).toBe(0);
   });
@@ -125,7 +110,6 @@ describe('AdminShell', () => {
     expect(logoutBtn?.textContent).toContain('Cerrar sesión');
     const btn = el.querySelector('.menu-btn') as HTMLButtonElement | null;
     expect(btn?.getAttribute('aria-expanded')).toBe('true');
-    // Cuando el drawer existe en el DOM, aria-controls apunta a su id.
     expect(btn?.getAttribute('aria-controls')).toBe('admin-drawer');
   });
 
@@ -152,23 +136,17 @@ describe('AdminShell', () => {
     expect(logoutBtn?.textContent).toContain('Cerrar sesión');
   });
 
-  it('cerrar sesión llama a signOut y navega a /admin/login', async () => {
+  it('cerrar sesión llama logout y navega a /admin/login', async () => {
     const f = await render();
-    const session = TestBed.inject(MOCK_SESSION);
-    session.signIn();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
     const router = TestBed.inject(Router);
-    // ponytail: stub navigate para evitar NG04002 del harness con provideRouter([])
-    const navSpy = spyOn(router, 'navigate').and.returnValue(
-      Promise.resolve(true),
-    );
-    f.componentInstance.cerrarSesion();
-    expect(session.hasSession()).toBe(false);
+    const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    const logoutSpy = spyOn(auth, 'logout').and.callThrough();
+    await f.componentInstance.cerrarSesion();
+    expect(logoutSpy).toHaveBeenCalled();
     expect(navSpy).toHaveBeenCalledWith(['/admin/login']);
   });
-
-  // --- Bind de ruta activa (gate correctivo F2-04) ---
-  // AdminShell expone la ruta actual del router y la pasa como [active] a
-  // SidebarAdmin para que marque la sección vigente.
 
   it('rutaActual refleja la URL inicial del router', async () => {
     const f = await renderWithRoutes('/admin/cursos');
@@ -190,7 +168,6 @@ describe('AdminShell', () => {
     await f.whenStable();
     f.detectChanges();
     const el = f.nativeElement as HTMLElement;
-    // isActive usa startsWith('/admin/cursos') → /admin/cursos/1 entra.
     const cursosLink = el.querySelector('.sidebar-desktop a.active') as HTMLAnchorElement | null;
     expect(cursosLink).not.toBeNull();
     expect(cursosLink?.textContent).toContain('Cursos');

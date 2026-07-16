@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
 import { App } from './app';
 import { routes } from './app.routes';
-import { MOCK_SESSION, InMemoryMockSession } from './features/admin/mock-session';
+import { ADMIN_AUTH, FakeAdminAuthService } from './features/admin/admin-auth.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -10,7 +11,8 @@ describe('App', () => {
       imports: [App],
       providers: [
         provideRouter(routes),
-        { provide: MOCK_SESSION, useClass: InMemoryMockSession },
+        provideHttpClient(),
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
       ],
     }).compileComponents();
   });

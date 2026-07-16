@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AdminAuthCredentials } from './admin-auth.service';
 
 interface LoginFormValue {
   readonly usuario: string;
@@ -14,7 +15,7 @@ interface LoginFormValue {
   styleUrl: './login-form.css',
 })
 export class LoginForm {
-  readonly accesoSimulado = output<void>();
+  readonly accesoSimulado = output<AdminAuthCredentials>();
 
   // Señales locales reactivas para el estado del formulario.
   readonly usuario = signal('');
@@ -50,7 +51,10 @@ export class LoginForm {
       return;
     }
     this.errorMsg.set('');
-    this.accesoSimulado.emit();
+    this.accesoSimulado.emit({ username: value.usuario, password: value.clave });
+    // REQ-AUTH-008: limpiar credenciales del formulario tras el envío.
+    this.clave.set('');
+    this.usuario.set('');
   }
 
   onUsuario(event: Event): void {

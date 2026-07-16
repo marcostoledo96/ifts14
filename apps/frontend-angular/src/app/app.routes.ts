@@ -32,11 +32,10 @@ export const routes: Routes = [
         (m) => m.PublicValidationPage,
       ),
   },
-  // Rutas admin F2-03/F2-04: sesión mock en memoria. NO usar la clave admin
-  // temporal en bundle ni storage/cookies/red. Ver spec admin-foundation.
+  // Rutas admin P5-04: autenticación real contra backend PHP vía cookies.
   {
     path: 'admin/login',
-    title: 'Admin · Login (mock) — IFTS 14',
+    title: 'Admin · Login — IFTS 14',
     loadComponent: () =>
       import('./features/admin/login-page').then((m) => m.LoginPage),
   },

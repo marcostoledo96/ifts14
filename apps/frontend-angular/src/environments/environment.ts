@@ -1,8 +1,8 @@
 // Entorno de producción por defecto.
-// useRealApi=false → ValidationService usa MockValidationSource.
+// useRealApi=true → todos los servicios usan la API PHP real.
 // apiBaseUrl apunta a la API PHP pública en cPanel.
-// En producción el modo real no se habilita desde este archivo.
+// El guarda environment.guard.spec.ts valida que useRealApi sea true en CI.
 export const environment = {
-  useRealApi: false,
+  useRealApi: true,
   apiBaseUrl: '/certificados/api',
 };

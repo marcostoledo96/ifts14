@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { MOCK_SESSION } from './mock-session';
+import { ADMIN_AUTH, AdminAuthCredentials } from './admin-auth.service';
 import { LoginForm } from './login-form';
 
 @Component({
@@ -11,11 +11,23 @@ import { LoginForm } from './login-form';
   styleUrl: './login-page.css',
 })
 export class LoginPage {
-  private readonly session = inject(MOCK_SESSION);
+  private readonly auth = inject(ADMIN_AUTH);
   private readonly router = inject(Router);
 
-  onAccesoSimulado(): void {
-    this.session.signIn();
-    void this.router.navigate(['/admin/dashboard']);
+  readonly errorMsg = signal('');
+
+  async onAccesoSimulado(credentials: AdminAuthCredentials): Promise<void> {
+    this.errorMsg.set('');
+    try {
+      await this.auth.login(credentials);
+      void this.router.navigate(['/admin/dashboard']);
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status;
+      if (status === 429) {
+        this.errorMsg.set('Demasiados intentos. Aguardá unos minutos e intentá nuevamente.');
+      } else {
+        this.errorMsg.set('Credenciales inválidas. Verificá tu ID institucional y clave.');
+      }
+    }
   }
 }
