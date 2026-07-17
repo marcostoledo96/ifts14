@@ -129,7 +129,13 @@ jobs:
       - name: PHP lint
         run: |
           docker run --rm -v "$PWD/apps/backend-php":/app -w /app ifts14-php84 sh -lc '
-            find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \; | grep -v "^No syntax errors"
+            set -e
+            errors=$(find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \; 2>&1 | grep -v "^No syntax errors" || true)
+            if [ -n "$errors" ]; then
+              printf "%s\n" "$errors"
+              exit 1
+            fi
+            echo "OK php -l: sin errores de sintaxis"
           '
 
   frontend-tests:
