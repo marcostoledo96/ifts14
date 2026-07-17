@@ -1,17 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { CoursesListPage } from './courses-list-page';
+import { COURSES_QA_ENABLED, CoursesListPage } from './courses-list-page';
 import { Curso } from './courses.models';
 import { COURSES_SOURCE, CoursesService } from './courses.service';
 import { InMemoryCoursesService } from './in-memory-courses.service';
 
 describe('CoursesListPage', () => {
-  async function render(source: CoursesService = new InMemoryCoursesService()) {
+  async function render(
+    source: CoursesService = new InMemoryCoursesService(),
+    qaEnabled?: boolean,
+  ) {
     await TestBed.configureTestingModule({
       imports: [CoursesListPage],
       providers: [
         provideRouter([]),
         { provide: COURSES_SOURCE, useValue: source },
+        ...(qaEnabled === undefined ? [] : [{ provide: COURSES_QA_ENABLED, useValue: qaEnabled }]),
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(CoursesListPage);
@@ -156,7 +160,7 @@ describe('CoursesListPage', () => {
     expect(cards.length).toBe(1);
   });
 
-  it('filtrar sin matches muestra mensaje de vacío con icono', async () => {
+  it('filtrar sin matches muestra vacío v0 con título e icono', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const input = el.querySelector('input[type="search"]') as HTMLInputElement;
@@ -165,11 +169,13 @@ describe('CoursesListPage', () => {
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
-    expect(el.textContent).toContain('No hay cursos que coincidan');
+    expect(el.querySelector('[data-state="no-results"] .estado-title')?.textContent).toContain(
+      'Ningún curso coincide',
+    );
     expect(el.querySelector('[data-state="no-results"] .estado-icon')).not.toBeNull();
   });
 
-  it('muestra error seguro con icono y reintenta la carga', async () => {
+  it('muestra error v0 con título, icono y reintenta la carga', async () => {
     const source = jasmine.createSpyObj<CoursesService>('CoursesService', [
       'listar', 'obtener', 'crear', 'actualizarEstado', 'listarFechas', 'guardarFecha', 'reemplazarFechas',
     ]);
@@ -179,6 +185,9 @@ describe('CoursesListPage', () => {
     );
     const f = await render(source);
     const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="alert"] .estado-title')?.textContent).toContain(
+      'No pudimos cargar los cursos',
+    );
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('No se pudo cargar');
     expect(el.querySelector('[role="alert"] .estado-icon')).not.toBeNull();
     const retry = el.querySelector('[role="alert"] button') as HTMLButtonElement;
@@ -188,9 +197,41 @@ describe('CoursesListPage', () => {
     await f.whenStable();
     f.detectChanges();
     expect(source.listar).toHaveBeenCalledTimes(2);
-    expect(el.textContent).toContain('Todavía no hay cursos cargados');
+    expect(el.querySelector('[data-state="empty-total"] .estado-title')?.textContent).toContain(
+      'Todavía no hay cursos cargados',
+    );
     expect(el.querySelector('[data-state="empty-total"] a[routerLink="/admin/cursos/nuevo"]')?.textContent)
       .toContain('Crear primer curso');
+  });
+
+  it('expone Vista QA en desarrollo y fuerza skeleton/vacío/error', async () => {
+    const f = await render(new InMemoryCoursesService(), true);
+    const el = f.nativeElement as HTMLElement;
+    const page = f.componentInstance;
+    expect(el.querySelector('.vista-qa')).not.toBeNull();
+    expect(el.textContent).toContain('Con datos');
+    expect(el.textContent).toContain('Sin cursos');
+
+    page.onVistaQA('cargando');
+    f.detectChanges();
+    expect(el.querySelector('.tabla-skeleton[aria-busy="true"]')).not.toBeNull();
+
+    page.onVistaQA('vacio-total');
+    f.detectChanges();
+    expect(el.querySelector('[data-state="empty-total"]')).not.toBeNull();
+
+    page.onVistaQA('error');
+    f.detectChanges();
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it('ignora onVistaQA cuando QA está deshabilitado', async () => {
+    const f = await render(new InMemoryCoursesService(), false);
+    const page = f.componentInstance;
+    page.onVistaQA('cargando');
+    f.detectChanges();
+    expect(page.vistaQA()).toBe('datos');
+    expect((f.nativeElement as HTMLElement).querySelector('.vista-qa')).toBeNull();
   });
 
   it('conserva el último filtro cuando dos cargas terminan en orden inverso', async () => {

@@ -17,14 +17,21 @@
 
   <section class="filtros" aria-label="Buscar y filtrar cursos">
     <div class="filtros-main">
-      <label class="filtro-search">
+      <label class="filtro-search" for="buscar-curso">
         <span class="filtro-label">Filtrar por nombre o código</span>
         <span class="search-wrap">
           <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <circle cx="11" cy="11" r="7"/>
             <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
           </svg>
-          <input type="search" [value]="q()" (input)="onSearch($event)" placeholder="Ej. Curso de gestión…" aria-label="Buscar curso por código o nombre" />
+          <input
+            id="buscar-curso"
+            type="search"
+            [value]="q()"
+            (input)="onSearch($event)"
+            placeholder="Ej. Desarrollo Web…"
+            aria-label="Buscar curso por código o nombre"
+          />
         </span>
       </label>
       <div class="filtro-estado">
@@ -52,61 +59,119 @@
         </div>
       </div>
     </div>
-    <div class="results-summary">
-      <p aria-live="polite">
-        <span class="count-mono">{{ cursos().length }}</span>
-        {{ cursos().length === 1 ? 'curso' : 'cursos' }}
-        {{ hayFiltrosActivos() ? 'coinciden con los filtros' : 'en el archivo' }}.
-      </p>
-      @if (hayFiltrosActivos()) {
-        <button class="clear-filters" type="button" (click)="onLimpiarFiltros()">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
-          </svg>
-          Limpiar filtros
+    @if (mostrarResumen()) {
+      <div class="results-summary">
+        <p aria-live="polite">
+          <span class="count-mono">{{ cursos().length }}</span>
+          {{ cursos().length === 1 ? 'curso' : 'cursos' }}
+          {{ hayFiltrosActivos() ? 'coinciden con el filtro' : 'en el archivo' }}
+        </p>
+        @if (hayFiltrosActivos()) {
+          <button class="clear-filters" type="button" (click)="onLimpiarFiltros()">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+            </svg>
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    }
+  </section>
+
+  @if (qaEnabled) {
+    <div class="vista-qa" aria-label="Vista de revisión QA">
+      <span class="vista-qa-label">Vista</span>
+      @for (view of vistasQa; track view) {
+        <button
+          type="button"
+          class="vista-qa-btn"
+          [attr.aria-pressed]="vistaQA() === view"
+          (click)="onVistaQA(view)"
+        >
+          {{ vistaQaLabel[view] }}
         </button>
       }
     </div>
-  </section>
+  }
 
-  @if (cargando()) {
-    <div class="estado-panel" aria-busy="true">
-      <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round"/>
-      </svg>
-      <p>Cargando cursos…</p>
+  @if (mostrandoCarga()) {
+    <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando cursos">
+      <div class="skeleton-head">
+        <span class="skeleton-bar skeleton-bar--lg"></span>
+      </div>
+      <ul class="skeleton-rows">
+        @for (_ of [1, 2, 3, 4]; track $index) {
+          <li class="skeleton-row">
+            <span class="skeleton-accent" aria-hidden="true"></span>
+            <span class="skeleton-body">
+              <span class="skeleton-bar skeleton-bar--md skeleton-pulse"></span>
+              <span class="skeleton-bar skeleton-bar--sm skeleton-pulse"></span>
+            </span>
+            <span class="skeleton-bar skeleton-bar--xs skeleton-pulse skeleton-hide-sm"></span>
+            <span class="skeleton-bar skeleton-bar--xs skeleton-pulse skeleton-hide-sm"></span>
+            <span class="skeleton-bar skeleton-bar--badge skeleton-pulse"></span>
+          </li>
+        }
+      </ul>
     </div>
-  } @else if (error()) {
+  } @else if (mostrandoError()) {
     <div class="estado-panel estado-error" role="alert">
-      <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke-linejoin="round"/>
-        <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
-      </svg>
-      <p>{{ error() }}</p>
-      <button type="button" (click)="onReintentar()">Reintentar</button>
+      <span class="estado-icon-wrap estado-icon-wrap--error" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke-linejoin="round"/>
+          <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">No pudimos cargar los cursos</h2>
+      <p>{{ error() || 'Hubo un problema de conexión con el archivo académico. Revisá la red e intentá nuevamente.' }}</p>
+      <button type="button" class="btn-secondary" (click)="onReintentar()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke-linecap="round"/>
+          <path d="M21 3v5h-5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" stroke-linecap="round"/>
+          <path d="M8 16H3v5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Reintentar
+      </button>
     </div>
   } @else if (vacioTotal()) {
     <div class="estado-panel" data-state="empty-total" aria-live="polite">
-      <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M4 20h16a2 2 0 0 0 2-2V8l-6-4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" stroke-linejoin="round"/>
-        <path d="M22 8H12M12 4v16" stroke-linecap="round"/>
-      </svg>
-      <p>Todavía no hay cursos cargados.</p>
-      <a class="btn-primary" routerLink="/admin/cursos/nuevo">Crear primer curso</a>
+      <span class="estado-icon-wrap estado-icon-wrap--empty" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 20h16a2 2 0 0 0 2-2V8l-6-4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" stroke-linejoin="round"/>
+          <path d="M22 8H12M12 4v16" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Todavía no hay cursos cargados</h2>
+      <p>Creá el primer curso para empezar a registrar fechas de cursada, asistencias y certificados.</p>
+      <a class="btn-primary" routerLink="/admin/cursos/nuevo">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M5 12h14M12 5v14" stroke-linecap="round"/>
+        </svg>
+        Crear primer curso
+      </a>
     </div>
   } @else if (sinCoincidencias()) {
     <div class="estado-panel" data-state="no-results" aria-live="polite">
-      <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"/>
-        <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
-      </svg>
-      <p>No hay cursos que coincidan con los filtros.</p>
-      <button class="clear-filters" type="button" (click)="onLimpiarFiltros()">Limpiar filtros</button>
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Ningún curso coincide</h2>
+      <p>Probá con otro nombre o ajustá los filtros de estado y fechas.</p>
+      <button class="btn-secondary" type="button" (click)="onLimpiarFiltros()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+        </svg>
+        Limpiar filtros
+      </button>
     </div>
   } @else {
     <div class="courses-table-wrap">
       <table>
-        <caption>Listado de cursos del Instituto</caption>
+        <caption class="sr-only">Listado de cursos del Instituto</caption>
         <thead>
           <tr>
             <th scope="col">Nombre del curso</th>
@@ -119,20 +184,20 @@
         </thead>
         <tbody>
           @for (c of cursos(); track c.id) {
-            <tr class="curso-row">
+            <tr class="curso-row" [class.curso-row--muted]="esInactivoVisual(c.estado)">
               <td>
                 <span class="row-accent row-accent--{{ c.estado }}" aria-hidden="true"></span>
                 <strong>{{ c.nombre }}</strong>
                 <span class="course-code">{{ c.codigo }} · {{ c.cuatrimestre }}</span>
               </td>
               <td>
-                <span class="metrica">
+                <span class="metrica" [class.metrica--muted]="c.cantidadFechas === 0 || esInactivoVisual(c.estado)">
                   <span class="metrica-valor">{{ c.cantidadFechas }}</span>
                   <span class="metrica-unidad">{{ c.cantidadFechas === 1 ? 'fecha' : 'fechas' }}</span>
                 </span>
               </td>
               <td>
-                <span class="metrica" title="Dato disponible con integración real">
+                <span class="metrica" [class.metrica--muted]="esInactivoVisual(c.estado)" title="Dato disponible con integración real">
                   <span class="metrica-valor">{{ formatoMetrica(c.alumnosPresentes) }}</span>
                   @if (c.alumnosPresentes == null) {
                     <span class="sr-only">Dato disponible con integración real</span>
@@ -142,7 +207,7 @@
                 </span>
               </td>
               <td>
-                <span class="metrica" title="Dato disponible con integración real">
+                <span class="metrica" [class.metrica--muted]="esInactivoVisual(c.estado)" title="Dato disponible con integración real">
                   <span class="metrica-valor">{{ formatoMetrica(c.certificaciones) }}</span>
                   @if (c.certificaciones == null) {
                     <span class="sr-only">Dato disponible con integración real</span>
@@ -177,7 +242,7 @@
     </div>
     <ul class="cards-mobile">
       @for (c of cursos(); track c.id) {
-        <li class="card-curso">
+        <li class="card-curso" [class.card-curso--muted]="esInactivoVisual(c.estado)">
           <span class="card-accent card-accent--{{ c.estado }}" aria-hidden="true"></span>
           <div class="card-body">
             <header>
