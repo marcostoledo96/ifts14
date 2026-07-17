@@ -12,7 +12,7 @@ Pulido visual de `/admin/certificaciones/:id` (`certification-preview-page.*`) h
 - Kickers mono y ficha densificada
 - QR decorativo + note de validación
 - CTA PDF primary ink; Entrega secondary
-- Firmas “Firma digital verificada”
+- Firmas con sello institucional (sin afirmar “firma digital verificada”)
 - Copiar/Compartir (C12) sin cambios de lógica
 
 ## Referencias

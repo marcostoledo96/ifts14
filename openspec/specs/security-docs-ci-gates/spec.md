@@ -69,8 +69,8 @@ El script `scripts/ci-openspec-orphan-check.sh` (REQ-SEC-005) previene futuras r
 
 Dos correcciones documentales MUST aplicarse para eliminar términos residuales ligados a estados no sustentados:
 
-1. `openspec/specs/frontend-http-services/spec.md` línea 174: la frase que contiene `pendiente-entrega` MUST reemplazarse por una referencia a `no_emitido` (alineado con D1-11).
-2. `public-validation-page.html` línea 256: la frase "último entregado por el instituto" MUST reemplazarse por "el emitido por el instituto" (alineado con D1-11; sin afirmación de entrega manual).
+1. `openspec/specs/frontend-http-services/spec.md` línea 174: la frase residual de estado de entrega MUST reemplazarse por una referencia a `no_emitido` (alineado con D1-11; no usar el término legacy de entrega pendiente).
+2. `public-validation-page.html`: el copy del QR MUST decir "el emitido por el instituto" (alineado con D1-11; sin afirmación de entrega manual).
 
 El script `scripts/ci-obsolete-terms.sh` (REQ-SEC-004) previene que estos términos regresen en commits futuros.
 
