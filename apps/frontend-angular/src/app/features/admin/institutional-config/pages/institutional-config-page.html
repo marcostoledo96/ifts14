@@ -146,7 +146,7 @@
         </nav>
 
         <div class="config-sections">
-          <!-- 01 Identidad -->
+          <!-- 01 Identidad: nombre → logos → texto institucional (orden v0) -->
           <section id="identidad" class="cfg-section" aria-labelledby="identidad-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
@@ -166,7 +166,7 @@
                   <h2 id="identidad-titulo" class="cfg-section-title">Identidad institucional</h2>
                 </div>
                 <p class="cfg-section-desc">
-                  Nombre que encabeza cada certificado y el PDF.
+                  Nombre y logos que encabezan cada certificado y el PDF.
                 </p>
               </div>
             </header>
@@ -186,18 +186,92 @@
                 <p class="cfg-ayuda">Aparece como encabezado principal del certificado.</p>
               </div>
 
-              <div class="honest-block" role="note">
-                <p class="honest-title">Logos y sellos</p>
-                <p class="honest-text">
-                  La carga de logos institucionales no está disponible: no hay API
-                  de archivos en esta versión. Los sellos visuales del PDF siguen el
-                  diseño fijo del sistema.
+              <div class="logos-block">
+                <div class="logos-head">
+                  <span class="cfg-label">Logos y sellos</span>
+                  @if (logosPendientes > 0) {
+                    <span class="logos-badge">{{ logosPendientes }} sin cargar</span>
+                  }
+                </div>
+                <p class="cfg-ayuda">
+                  Formato recomendado SVG o PNG con fondo transparente. Se ubican en el
+                  encabezado según el diseño del certificado. La carga de archivos no está
+                  disponible en esta versión.
+                </p>
+                <ul class="logos-grid">
+                  @for (logo of logos; track logo.id) {
+                    <li>
+                      <div class="logo-card" [class.logo-card--ok]="logo.cargado">
+                        <div class="logo-preview" aria-hidden="true">
+                          @if (logo.cargado) {
+                            <span class="logo-status logo-status--ok">
+                              <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                                <path
+                                  d="M20 6 9 17l-5-5"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                />
+                              </svg>
+                              <span>Cargado</span>
+                            </span>
+                          } @else {
+                            <span class="logo-status">
+                              <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                                <rect
+                                  x="3"
+                                  y="5"
+                                  width="18"
+                                  height="14"
+                                  rx="2"
+                                  stroke="currentColor"
+                                  stroke-width="1.5"
+                                />
+                                <circle cx="9" cy="11" r="1.5" fill="currentColor" />
+                                <path
+                                  d="m21 16-4.5-4.5L9 19"
+                                  stroke="currentColor"
+                                  stroke-width="1.5"
+                                  stroke-linecap="round"
+                                />
+                              </svg>
+                              <span>Sin logo</span>
+                            </span>
+                          }
+                        </div>
+                        <p class="logo-name">{{ logo.nombre }}</p>
+                        <p class="logo-detail">{{ logo.detalle }}</p>
+                        <button type="button" class="btn-ghost" disabled>
+                          {{ logo.cargado ? 'Reemplazar' : 'Subir logo' }}
+                        </button>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              </div>
+
+              <div class="campo">
+                <label class="cfg-label" for="texto-institucional">
+                  Texto institucional base
+                  <span class="cfg-opcional">(opcional)</span>
+                </label>
+                <textarea
+                  id="texto-institucional"
+                  rows="3"
+                  [value]="demo.textoInstitucional"
+                  disabled
+                  aria-disabled="true"
+                ></textarea>
+                <p class="cfg-ayuda">
+                  Descripción breve del instituto. No forma parte del contrato persistido;
+                  se muestra acá solo como referencia visual.
                 </p>
               </div>
             </div>
           </section>
 
-          <!-- 02 Certificados -->
+          <!-- 02 Certificados: título → texto base → formato/link → QR → sello -->
           <section id="certificados" class="cfg-section" aria-labelledby="certificados-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
@@ -218,11 +292,26 @@
                   <h2 id="certificados-titulo" class="cfg-section-title">Certificados</h2>
                 </div>
                 <p class="cfg-section-desc">
-                  Texto base que estructura el cuerpo de cada documento emitido.
+                  Textos base y numeración que estructuran cada documento emitido.
                 </p>
               </div>
             </header>
             <div class="cfg-section-body">
+              <div class="campo">
+                <label class="cfg-label" for="titulo-cert">Título del certificado</label>
+                <input
+                  id="titulo-cert"
+                  type="text"
+                  [value]="demo.tituloCert"
+                  disabled
+                  aria-disabled="true"
+                />
+                <p class="cfg-ayuda">
+                  Encabezado del documento. No editable: no forma parte del contrato
+                  persistido.
+                </p>
+              </div>
+
               <div class="campo">
                 <label class="cfg-label" for="certificate-text">
                   Texto base del certificado
@@ -235,18 +324,79 @@
                   [attr.maxlength]="limits.certificateText"
                 ></textarea>
                 <p class="cfg-ayuda">
-                  Cuerpo del certificado. Los datos del alumno y del curso se
-                  completan automáticamente en cada emisión.
+                  Cuerpo del certificado. Los datos del alumno y del curso se completan
+                  automáticamente en cada emisión.
                 </p>
               </div>
 
-              <div class="honest-block" role="note">
-                <p class="honest-title">Título, numeración, QR y sello</p>
-                <p class="honest-text">
-                  El título del documento, el formato de número, el link base del QR
-                  y el toggle de sello institucional no se editan acá: no forman
-                  parte del contrato de configuración persistido.
-                </p>
+              <div class="campo-grid">
+                <div class="campo">
+                  <label class="cfg-label" for="formato-numero">Formato de número</label>
+                  <div class="input-affix">
+                    <span class="input-affix-icon" aria-hidden="true">#</span>
+                    <input
+                      id="formato-numero"
+                      type="text"
+                      class="input-mono"
+                      [value]="demo.formatoNumero"
+                      disabled
+                      aria-disabled="true"
+                    />
+                  </div>
+                  <p class="cfg-ayuda">
+                    Variables
+                    <code>{{ '{' }}CURSO{{ '}' }}</code>,
+                    <code>{{ '{' }}AÑO{{ '}' }}</code> y
+                    <code>{{ '{' }}SEC{{ '}' }}</code>. Solo referencia visual.
+                  </p>
+                </div>
+                <div class="campo">
+                  <label class="cfg-label" for="link-validacion">Link base de validación</label>
+                  <div class="input-prefix">
+                    <span class="input-prefix-label">https://</span>
+                    <input
+                      id="link-validacion"
+                      type="text"
+                      class="input-mono"
+                      [value]="demo.linkValidacion"
+                      disabled
+                      aria-disabled="true"
+                    />
+                  </div>
+                  <p class="cfg-ayuda">Se antepone al ID único del certificado en el QR.</p>
+                </div>
+              </div>
+
+              <div class="campo">
+                <label class="cfg-label" for="texto-qr">Texto de validación QR</label>
+                <textarea
+                  id="texto-qr"
+                  rows="2"
+                  [value]="demo.textoQr"
+                  disabled
+                  aria-disabled="true"
+                ></textarea>
+                <p class="cfg-ayuda">Leyenda impresa junto al código QR. Solo referencia visual.</p>
+              </div>
+
+              <div class="sello-row">
+                <div class="sello-copy">
+                  <p class="sello-title">Incluir sello institucional</p>
+                  <p class="cfg-ayuda">
+                    Estampa el escudo del instituto sobre el documento. No configurable
+                    desde esta pantalla.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="sello-switch"
+                  role="switch"
+                  aria-checked="true"
+                  aria-label="Incluir sello institucional"
+                  disabled
+                >
+                  <span class="sello-knob" aria-hidden="true"></span>
+                </button>
               </div>
             </div>
           </section>
@@ -282,7 +432,7 @@
                 </p>
               </div>
             </header>
-            <div class="cfg-section-body">
+            <div class="cfg-section-body cfg-section-body--autoridades">
               <div class="autoridades-grid">
                 <fieldset class="autoridad-card">
                   <legend class="autoridad-legend">
@@ -297,9 +447,9 @@
                       [value]="rectorName()"
                       (input)="onInput('rectorName', $event)"
                       [attr.maxlength]="limits.name"
-                      placeholder="Nombre y apellido"
+                      placeholder="ej. Persona Ficticia Rectora"
                     />
-                    <p class="cfg-ayuda">Tal como figurará en el certificado.</p>
+                    <p class="cfg-ayuda">Nombre y apellido tal como firmará el certificado.</p>
                   </div>
                   <div class="campo">
                     <label class="cfg-label" for="rector-role">Cargo formal</label>
@@ -311,15 +461,15 @@
                       [attr.maxlength]="limits.role"
                     />
                   </div>
-                  <div class="firma-disabled" role="note">
+                  <div class="firma-block">
                     <span class="cfg-label">Firma digital</span>
-                    <p class="honest-text">
-                      La carga de imagen de firma no está disponible (sin API de
-                      archivos). En el PDF se muestra el bloque tipográfico.
+                    <div class="firma-row firma-row--empty">
+                      <span class="firma-status">Sin firma cargada</span>
+                      <button type="button" class="btn-ghost" disabled>Subir firma</button>
+                    </div>
+                    <p class="cfg-ayuda">
+                      Sin API de archivos: en el PDF se muestra el bloque tipográfico.
                     </p>
-                    <button type="button" class="btn-ghost" disabled>
-                      Subir firma
-                    </button>
                   </div>
                 </fieldset>
 
@@ -336,9 +486,9 @@
                       [value]="advisorName()"
                       (input)="onInput('advisorName', $event)"
                       [attr.maxlength]="limits.name"
-                      placeholder="Nombre y apellido"
+                      placeholder="ej. Persona Ficticia Asesora"
                     />
-                    <p class="cfg-ayuda">Tal como figurará en el certificado.</p>
+                    <p class="cfg-ayuda">Nombre y apellido tal como firmará el certificado.</p>
                   </div>
                   <div class="campo">
                     <label class="cfg-label" for="advisor-role">Cargo formal</label>
@@ -350,15 +500,15 @@
                       [attr.maxlength]="limits.role"
                     />
                   </div>
-                  <div class="firma-disabled" role="note">
+                  <div class="firma-block">
                     <span class="cfg-label">Firma digital</span>
-                    <p class="honest-text">
-                      La carga de imagen de firma no está disponible (sin API de
-                      archivos). En el PDF se muestra el bloque tipográfico.
+                    <div class="firma-row firma-row--ok">
+                      <span class="firma-status firma-status--ok">Firma cargada</span>
+                      <button type="button" class="btn-ghost" disabled>Reemplazar</button>
+                    </div>
+                    <p class="cfg-ayuda">
+                      Estado de muestra. La carga real no está disponible sin API de archivos.
                     </p>
-                    <button type="button" class="btn-ghost" disabled>
-                      Subir firma
-                    </button>
                   </div>
                 </fieldset>
               </div>
@@ -367,6 +517,7 @@
                 <p class="preview-hint">Vista previa en el PDF</p>
                 <div class="preview-firmas">
                   <p class="firma">
+                    <span class="firma-pending" aria-hidden="true">Firma pendiente</span>
                     <span class="firma-nombre">{{ previewRector() }}</span>
                     <span class="firma-cargo">{{ rectorRole() || '[Cargo]' }}</span>
                   </p>
@@ -376,14 +527,14 @@
                   </p>
                 </div>
                 <p class="preview-foot">
-                  Representación aproximada. Los firmantes provienen de esta
-                  configuración global y no se editan al emitir cada certificado.
+                  Representación aproximada. Los firmantes provienen de esta configuración
+                  global y no se editan al emitir cada certificado.
                 </p>
               </div>
             </div>
           </section>
 
-          <!-- 04 Contacto -->
+          <!-- 04 Contacto: email presentacional → nota entrega manual -->
           <section id="contacto" class="cfg-section" aria-labelledby="contacto-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
@@ -403,11 +554,30 @@
                   <h2 id="contacto-titulo" class="cfg-section-title">Contacto institucional</h2>
                 </div>
                 <p class="cfg-section-desc">
-                  Referencia de contacto. No es un sistema de envío.
+                  Dato de contacto que figura como referencia. No es un sistema de envío.
                 </p>
               </div>
             </header>
             <div class="cfg-section-body">
+              <div class="campo">
+                <label class="cfg-label" for="email-contacto">
+                  Email de contacto institucional
+                </label>
+                <div class="input-affix">
+                  <span class="input-affix-icon" aria-hidden="true">@</span>
+                  <input
+                    id="email-contacto"
+                    type="email"
+                    [value]="demo.emailContacto"
+                    disabled
+                    aria-disabled="true"
+                  />
+                </div>
+                <p class="cfg-ayuda">
+                  Se muestra como referencia. El sistema no envía correos automáticamente.
+                </p>
+              </div>
+
               <div class="honest-block static-info" role="note">
                 <p class="honest-title">La entrega de certificados es manual</p>
                 <ul class="honest-list">
@@ -416,19 +586,18 @@
                     «reenviar» desde esta pantalla.
                   </li>
                   <li>
-                    La entrega se hace copiando el link de validación o descargando
-                    el PDF.
+                    La entrega se hace copiando el link de validación o descargando el PDF.
                   </li>
                   <li>
-                    Ante entregas manuales repetidas del mismo certificado, el código
-                    QR permanece igual.
+                    Ante entregas manuales repetidas del mismo certificado, el código QR
+                    permanece igual.
                   </li>
                 </ul>
               </div>
             </div>
           </section>
 
-          <!-- 05 Validación -->
+          <!-- 05 Validación: textos presentacionales deshabilitados -->
           <section id="validacion" class="cfg-section" aria-labelledby="validacion-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
@@ -453,12 +622,78 @@
               </div>
             </header>
             <div class="cfg-section-body">
+              <div class="campo">
+                <label class="cfg-label" for="texto-validacion">Texto aclaratorio</label>
+                <textarea
+                  id="texto-validacion"
+                  rows="2"
+                  [value]="demo.textoValidacion"
+                  disabled
+                  aria-disabled="true"
+                ></textarea>
+                <p class="cfg-ayuda">
+                  Introducción en la página pública. No se edita desde esta pantalla.
+                </p>
+              </div>
+
+              <div class="campo">
+                <label class="cfg-label" for="sitio-instituto">Enlace al sitio del instituto</label>
+                <div class="input-affix">
+                  <span class="input-affix-icon" aria-hidden="true">↗</span>
+                  <input
+                    id="sitio-instituto"
+                    type="text"
+                    class="input-mono"
+                    [value]="demo.sitioInstituto"
+                    disabled
+                    aria-disabled="true"
+                  />
+                </div>
+                <p class="cfg-ayuda">Referencia oficial en la validación pública.</p>
+              </div>
+
+              <div class="msg-estados">
+                <span class="cfg-label">Mensajes de estado</span>
+                <div class="msg-card msg-card--valido">
+                  <span class="msg-chip msg-chip--valido">Certificado válido</span>
+                  <textarea
+                    id="msg-valido"
+                    rows="2"
+                    [value]="demo.msgValido"
+                    disabled
+                    aria-disabled="true"
+                    aria-label="Mensaje para Certificado válido"
+                  ></textarea>
+                </div>
+                <div class="msg-card msg-card--revocado">
+                  <span class="msg-chip msg-chip--revocado">Certificado revocado</span>
+                  <textarea
+                    id="msg-revocado"
+                    rows="2"
+                    [value]="demo.msgRevocado"
+                    disabled
+                    aria-disabled="true"
+                    aria-label="Mensaje para Certificado revocado"
+                  ></textarea>
+                </div>
+                <div class="msg-card">
+                  <span class="msg-chip">Token no encontrado</span>
+                  <textarea
+                    id="msg-no-encontrado"
+                    rows="2"
+                    [value]="demo.msgNoEncontrado"
+                    disabled
+                    aria-disabled="true"
+                    aria-label="Mensaje para Token no encontrado"
+                  ></textarea>
+                </div>
+              </div>
+
               <div class="honest-block static-info" role="note">
                 <p class="honest-title">Mensajes fijos en la aplicación</p>
                 <p class="honest-text">
-                  Los textos de la página pública de validación (válido, revocado, no
-                  encontrado) y el enlace al sitio del instituto no se editan desde
-                  esta pantalla. Ante cambios, contactar al equipo técnico.
+                  Estos textos no se editan desde esta pantalla. Ante cambios, contactar al
+                  equipo técnico.
                 </p>
               </div>
             </div>
@@ -478,14 +713,14 @@
             <span class="sticky-idle-dot" aria-hidden="true"></span>
             <p class="sticky-idle">Sin cambios pendientes.</p>
           }
+          <p class="sticky-meta">
+            @if (updatedAt(); as fecha) {
+              Última actualización: {{ fecha }}
+            } @else {
+              Sin guardados previos
+            }
+          </p>
         </div>
-        <p class="sticky-meta">
-          @if (updatedAt(); as fecha) {
-            Última actualización: {{ fecha }}
-          } @else {
-            Sin guardados previos
-          }
-        </p>
         <div class="sticky-actions">
           <button
             type="button"
