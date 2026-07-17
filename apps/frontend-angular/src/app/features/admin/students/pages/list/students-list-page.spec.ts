@@ -59,32 +59,45 @@ describe('StudentsListPage', () => {
     expect(cta?.querySelector('svg.btn-icon')).not.toBeNull();
     expect(root.querySelector('.search-wrap .search-icon')).not.toBeNull();
     expect(root.querySelector('.chips .chip-dot')).not.toBeNull();
+    // Honesto: sin legajo inventado (API no lo expone).
     expect(root.textContent).not.toContain('LEG-');
     expect(root.querySelector('th')?.textContent).not.toContain('Legajo');
   });
 
-  it('busca solo por nombre o documento enmascarado, filtra contacto y pagina de a cinco', async () => {
+  it('busca por nombre, apellido o documento; filtra chips v0 y pagina de a cinco', async () => {
     const f = await render();
     const page = f.componentInstance;
     const search = (f.nativeElement as HTMLElement).querySelector<HTMLInputElement>('#buscar-alumno');
     const label = (f.nativeElement as HTMLElement).querySelector<HTMLLabelElement>('label[for="buscar-alumno"]');
-    expect(label?.textContent?.trim()).toBe('Buscar por nombre o documento enmascarado');
-    expect(search?.placeholder).toBe('Nombre o XX****XX');
-    expect(label?.textContent).not.toContain('apellido');
-    expect(search?.placeholder).not.toContain('apellido');
+    expect(label?.textContent?.trim()).toBe('Buscar alumno');
+    expect(search?.placeholder).toContain('Nombre, apellido o documento');
     expect(page.itemsVisibles().length).toBe(5);
+
     page.onSearch({ target: { value: 'Persona 7' } } as unknown as Event);
     expect(page.resultadosFiltrados().length).toBe(1);
+
     page.onSearch({ target: { value: alumnos[6].dniMostrar } } as unknown as Event);
     expect(page.resultadosFiltrados()).toEqual([alumnos[6]]);
+
+    // Apellido (paridad v0): todos comparten "Ficticia".
     page.onSearch({ target: { value: 'Ficticia' } } as unknown as Event);
-    expect(page.resultadosFiltrados()).toEqual([]);
+    expect(page.resultadosFiltrados().length).toBe(7);
+
     page.onLimpiar();
     page.onPagina(2);
     expect(page.itemsVisibles()).toEqual(alumnos.slice(5));
     page.onContacto('sin-email');
     expect(page.paginaSegura()).toBe(1);
     expect(page.resultadosFiltrados().every((a) => a.tieneEmail === false)).toBeTrue();
+  });
+
+  it('chips v0: Con/Sin certificaciones y Sin email (sin Contacto disponible)', async () => {
+    const f = await render();
+    const chips = Array.from(
+      (f.nativeElement as HTMLElement).querySelectorAll('.chips .chip'),
+    ).map((n) => n.textContent?.replace(/\s+/g, ' ').trim());
+    expect(chips).toEqual(['Con certificaciones', 'Sin certificaciones', 'Sin email']);
+    expect(chips.join(' ')).not.toContain('Contacto disponible');
   });
 
   it('vacía la búsqueda visible y restaura los resultados al limpiar filtros', async () => {
@@ -105,14 +118,16 @@ describe('StudentsListPage', () => {
     expect(page.itemsVisibles()).toEqual(alumnos.slice(0, 5));
   });
 
-  it('combina búsqueda y contacto, y no encuentra email ni legajo', async () => {
+  it('combina búsqueda y Sin email; no encuentra email ni legajo inventados', async () => {
     const f = await render();
     const page = f.componentInstance;
     page.onSearch({ target: { value: 'Persona' } } as unknown as Event);
-    page.onContacto('con-email');
+    page.onContacto('sin-email');
     f.detectChanges();
-    expect(page.resultadosFiltrados()).toEqual(alumnos.filter((alumno) => alumno.tieneEmail === true));
-    expect((f.nativeElement as HTMLElement).querySelector('button[aria-pressed="true"]')?.textContent).toContain('Contacto disponible');
+    expect(page.resultadosFiltrados().every((a) => a.tieneEmail === false)).toBeTrue();
+    expect(
+      (f.nativeElement as HTMLElement).querySelector('button[aria-pressed="true"]')?.textContent,
+    ).toContain('Sin email');
 
     for (const query of ['persona@example.test', 'LEG-0007']) {
       page.onSearch({ target: { value: query } } as unknown as Event);
@@ -155,7 +170,7 @@ describe('StudentsListPage', () => {
     const page = f.componentInstance;
     page.onPagina(99);
     expect(page.paginaSegura()).toBe(2);
-    page.onContacto('con-email');
+    page.onContacto('sin-email');
     expect(page.pagina()).toBe(1);
     page.onPagina(99);
     expect(page.paginaSegura()).toBe(1);
@@ -167,23 +182,27 @@ describe('StudentsListPage', () => {
     expect(page.pagina()).toBe(1);
   });
 
-  it('presenta carga, error con retry, vacío y sin resultados como estados distintos', async () => {
+  it('presenta carga skeleton, error, vacío y sin resultados como estados v0', async () => {
     let resolve!: (value: readonly Alumno[]) => void;
     const pending = stubSource({
       listar: () => new Promise((done) => { resolve = done; }),
     });
     const loading = await render(pending);
     const loadingRoot = loading.nativeElement as HTMLElement;
-    expect(loadingRoot.querySelector('[aria-busy="true"]')?.textContent).toContain('Cargando');
-    expect(loadingRoot.querySelector('[aria-busy="true"] svg')).not.toBeNull();
+    expect(loadingRoot.querySelector('.tabla-skeleton[aria-busy="true"]')).not.toBeNull();
     expect(loadingRoot.querySelector('[role="alert"]')).toBeNull();
     resolve([]);
     await loading.whenStable();
     loading.detectChanges();
-    const emptyStatus = loadingRoot.querySelector('[data-state="empty-total"] [role="status"]');
-    expect(emptyStatus?.textContent?.trim()).toBe('No hay alumnos cargados para mostrar.');
-    expect(loadingRoot.querySelector('[data-state="empty-total"] a')?.getAttribute('href')).toContain('/admin/alumnos/nuevo');
-    expect(loadingRoot.querySelector('[data-state="empty-total"] svg')).not.toBeNull();
+    expect(loadingRoot.querySelector('[data-state="empty-total"] .estado-title')?.textContent).toContain(
+      'Todavía no hay alumnos cargados',
+    );
+    expect(loadingRoot.querySelector('[data-state="empty-total"] a')?.getAttribute('href')).toContain(
+      '/admin/alumnos/nuevo',
+    );
+    expect(loadingRoot.querySelector('[data-state="empty-total"]')?.textContent).toContain(
+      'Registrar primer alumno',
+    );
 
     let calls = 0;
     const retrying = stubSource({
@@ -193,8 +212,10 @@ describe('StudentsListPage', () => {
     await error.whenStable();
     error.detectChanges();
     const errorRoot = error.nativeElement as HTMLElement;
+    expect(errorRoot.querySelector('[role="alert"] .estado-title')?.textContent).toContain(
+      'No pudimos cargar el registro',
+    );
     expect(errorRoot.querySelector('[role="alert"]')?.textContent).toContain('Reintentar');
-    expect(errorRoot.querySelector('[role="alert"] svg')).not.toBeNull();
     (errorRoot.querySelector('[role="alert"] button') as HTMLButtonElement).click();
     await error.whenStable();
     error.detectChanges();
@@ -203,23 +224,47 @@ describe('StudentsListPage', () => {
 
     error.componentInstance.onSearch({ target: { value: 'nadie' } } as unknown as Event);
     error.detectChanges();
-    const noResultsStatus = errorRoot.querySelector('[data-state="no-results"] [role="status"]');
-    expect(noResultsStatus?.textContent?.trim()).toBe('Sin coincidencias: no hay alumnos para los filtros aplicados.');
-    expect(errorRoot.querySelector('[data-state="no-results"] svg')).not.toBeNull();
-    expect(errorRoot.textContent).not.toContain('No hay alumnos cargados para mostrar');
+    expect(errorRoot.querySelector('[data-state="no-results"] .estado-title')?.textContent).toContain(
+      'Sin coincidencias',
+    );
+    expect(errorRoot.textContent).not.toContain('Todavía no hay alumnos cargados');
   });
 
-  it('renderiza tabla desktop, tarjetas mobile y un único resumen live', async () => {
+  it('Vista QA humanizada y skeleton/vacío/error forzables', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const page = f.componentInstance;
+    expect(el.querySelector('.vista-qa')).not.toBeNull();
+    expect(el.textContent).toContain('Con datos');
+    expect(el.textContent).toContain('Sin registros');
+
+    page.onForzarEstado('cargando');
+    f.detectChanges();
+    expect(el.querySelector('.tabla-skeleton')).not.toBeNull();
+
+    page.onForzarEstado('vacio-total');
+    f.detectChanges();
+    expect(el.querySelector('[data-state="empty-total"]')).not.toBeNull();
+
+    page.onForzarEstado('error');
+    f.detectChanges();
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it('renderiza tabla desktop, tarjetas mobile, caption sr-only y pager numerado', async () => {
     const f = await render();
     const root = f.nativeElement as HTMLElement;
     const heading = root.querySelector('h1#students-title');
     expect(heading).not.toBeNull();
     expect(heading?.textContent?.trim()).toBe('Alumnos');
-    expect(root.querySelector('table caption')?.textContent?.trim()).toBe('Alumnos');
+    const caption = root.querySelector('table caption');
+    expect(caption?.classList.contains('sr-only')).toBeTrue();
+    expect(caption?.textContent?.trim()).toContain('Registro de alumnos');
     expect(root.querySelectorAll('table th[scope="col"]').length).toBe(6);
     expect(root.querySelectorAll('tbody tr').length).toBe(5);
     expect(root.querySelectorAll('ul.alumnos-cards > li').length).toBe(5);
-    expect(root.querySelectorAll('output[aria-live="polite"][aria-atomic="true"]').length).toBe(1);
+    expect(root.querySelector('.results-summary')?.textContent).toContain('en el registro');
+    expect(root.querySelector('.pager-num[aria-current="page"]')?.textContent?.trim()).toBe('1');
   });
 
   it('asocia Documento con el valor enmascarado en cada tarjeta mobile', async () => {
@@ -238,6 +283,7 @@ describe('StudentsListPage', () => {
     f.detectChanges();
     expect(f.componentInstance.vistaQA()).toBe('datos');
     const root = f.nativeElement as HTMLElement;
+    expect(root.querySelector('.vista-qa')).toBeNull();
 
     for (const actions of [
       [...root.querySelectorAll<HTMLElement>('table .detalle-accion')],
