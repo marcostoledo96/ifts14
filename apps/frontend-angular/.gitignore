@@ -41,13 +41,14 @@ __screenshots__/
 # Playwright e2e
 /e2e/test-results/
 /e2e/playwright-report/
-/e2e/artifacts/results.json
-/e2e/artifacts/findings.json
-/e2e/artifacts/run.log
-/e2e/artifacts/screenshots/
+/e2e/artifacts/
 /blob-report/
 /playwright/.cache/
 .verify-tmp/
+
+# Restos accidentales de pnpm (este app usa package-lock.json / npm)
+/pnpm-lock.yaml
+/pnpm-workspace.yaml
 
 # System files
 .DS_Store
