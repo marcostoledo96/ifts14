@@ -41,10 +41,12 @@ describe('AdminShell', () => {
     return fixture;
   }
 
-  it('renderiza banner único (role=banner) sin duplicar main ni contentinfo del root', async () => {
+  it('renderiza banner móvil (role=banner) sin duplicar main ni contentinfo del root', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelectorAll('[role="banner"]').length).toBe(1);
+    expect(el.querySelector('.mobile-nav')).not.toBeNull();
+    expect(el.querySelector('.topbar')).toBeNull();
     expect(el.querySelectorAll('[role="main"]').length).toBe(1);
     expect(el.querySelectorAll('[role="contentinfo"]').length).toBe(1);
   });
@@ -56,53 +58,18 @@ describe('AdminShell', () => {
     expect(el.querySelector('app-admin-dashboard-page')).toBeNull();
   });
 
-  it('NO muestra badge Sesión activa ni títulos Admin legacy en topbar', async () => {
+  it('NO muestra search, sync, ayuda, notificaciones ni avatar en el chrome', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const topbar = el.querySelector('.topbar') as HTMLElement;
-    expect(topbar.textContent).not.toContain('Sesión activa');
-    expect(topbar.textContent).not.toContain('IFTS N.° 14 — Admin');
-    expect(topbar.textContent).not.toContain('Panel administrativo');
-  });
-
-  it('muestra search editable con placeholder v0 e icono SVG', async () => {
-    const f = await render();
-    const el = f.nativeElement as HTMLElement;
-    const search = el.querySelector('.topbar-search input[type="search"]') as HTMLInputElement | null;
-    expect(search).not.toBeNull();
-    expect(search?.readOnly).toBe(false);
-    expect(search?.disabled).toBe(false);
-    expect(search?.placeholder).toContain('Buscar curso, alumno o certificado');
-    expect(el.querySelector('.topbar-search svg')).not.toBeNull();
-  });
-
-  it('muestra sync estático Sincronizado 10:42 (hora mock)', async () => {
-    const f = await render();
-    const el = f.nativeElement as HTMLElement;
-    const sync = el.querySelector('.topbar-sync') as HTMLElement | null;
-    expect(sync).not.toBeNull();
-    expect(sync?.textContent?.replace(/\s+/g, ' ').trim()).toContain('Sincronizado 10:42');
-  });
-
-  it('muestra botones Ayuda y Notificaciones presentacionales con dot', async () => {
-    const f = await render();
-    const el = f.nativeElement as HTMLElement;
-    const help = el.querySelector('[aria-label="Ayuda"]') as HTMLButtonElement | null;
-    const bell = el.querySelector('[aria-label="Notificaciones"]') as HTMLButtonElement | null;
-    expect(help).not.toBeNull();
-    expect(bell).not.toBeNull();
-    expect(help?.tagName).toBe('BUTTON');
-    expect(bell?.tagName).toBe('BUTTON');
-    expect(bell?.querySelector('.topbar-bell-dot')).not.toBeNull();
-  });
-
-  it('muestra avatar monograma AD sin MP ni PII', async () => {
-    const f = await render();
-    const el = f.nativeElement as HTMLElement;
-    const avatar = el.querySelector('.topbar-avatar') as HTMLElement | null;
-    expect(avatar).not.toBeNull();
-    expect(avatar?.textContent?.trim()).toBe('AD');
-    expect(el.querySelector('.topbar')?.textContent).not.toContain('MP');
+    expect(el.querySelector('.topbar-search')).toBeNull();
+    expect(el.querySelector('input[type="search"]')).toBeNull();
+    expect(el.querySelector('.topbar-sync')).toBeNull();
+    expect(el.textContent).not.toContain('Sincronizado');
+    expect(el.querySelector('[aria-label="Ayuda"]')).toBeNull();
+    expect(el.querySelector('[aria-label="Notificaciones"]')).toBeNull();
+    expect(el.querySelector('.topbar-avatar')).toBeNull();
+    expect(el.textContent).not.toContain('Sesión activa');
+    expect(el.textContent).not.toContain('IFTS N.° 14 — Admin');
   });
 
   it('incluye skip link hacia #contenido', async () => {
