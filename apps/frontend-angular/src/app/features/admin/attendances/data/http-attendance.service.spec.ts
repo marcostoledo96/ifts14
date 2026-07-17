@@ -66,6 +66,46 @@ describe('HttpAttendanceService', () => {
     expect(result[0].cursoFechaId).toBe(200);
   });
 
+  it('listarAsistenciasPorPar hace GET con cursoId y alumnoId', async () => {
+    const p = service.listarAsistenciasPorPar(5, 10);
+    const req = httpMock.expectOne(
+      `${environment.apiBaseUrl}/admin/asistencias?cursoId=5&alumnoId=10`,
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      data: {
+        items: [
+          { id: 1, alumnoId: 10, cursoId: 5, cursoFechaId: 200, fecha: '2026-03-01', fechaEstado: 'realizada', registradoEn: '2026-03-01T10:00:00Z' },
+          { id: 2, alumnoId: 10, cursoId: 5, cursoFechaId: 201, fecha: '2026-03-08', fechaEstado: 'programada', registradoEn: '2026-03-08T10:00:00Z' },
+        ],
+      },
+      meta: { requestId: 'r-par' },
+    });
+    const result = await p;
+    expect(result.length).toBe(2);
+    expect(result.every((a) => a.alumnoId === 10 && a.cursoId === 5)).toBeTrue();
+  });
+
+  it('listarAsistenciasPorAlumno hace GET solo con alumnoId', async () => {
+    const p = service.listarAsistenciasPorAlumno(10);
+    const req = httpMock.expectOne(
+      `${environment.apiBaseUrl}/admin/asistencias?alumnoId=10`,
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      data: {
+        items: [
+          { id: 1, alumnoId: 10, cursoId: 5, cursoFechaId: 200, fecha: '2026-03-01', fechaEstado: 'realizada', registradoEn: '2026-03-01T10:00:00Z' },
+          { id: 2, alumnoId: 10, cursoId: 7, cursoFechaId: 300, fecha: '2026-03-08', fechaEstado: 'realizada', registradoEn: '2026-03-08T10:00:00Z' },
+        ],
+      },
+      meta: { requestId: 'r-alumno' },
+    });
+    const result = await p;
+    expect(result.length).toBe(2);
+    expect(result.every((a) => a.alumnoId === 10)).toBeTrue();
+  });
+
   it('marcar: DELETE existing + POST present, all-or-nothing', async () => {
     const p = service.marcar(5, 200, [
       { alumnoId: 10, presente: true },

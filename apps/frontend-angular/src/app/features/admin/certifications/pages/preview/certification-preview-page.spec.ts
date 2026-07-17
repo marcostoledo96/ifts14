@@ -9,14 +9,95 @@ import {
 } from '../../certifications.models';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
 import { URL_PUBLICA_MAX } from '../../in-memory-certifications.service';
+import {
+  INSTITUTIONAL_CONFIG_SOURCE,
+  InstitutionalConfig,
+  InstitutionalConfigService,
+} from '../../../institutional-config/institutional-config.service';
+import { InMemoryInstitutionalConfigService } from '../../../institutional-config/in-memory-institutional-config.service';
+
+const CANONICA_CERT1 =
+  'https://ifts14.edu.ar/certificados/validar/prefijo_demo_a1b-completo';
+
+function detalleFixture(
+  overrides: Partial<CertificacionDetalle> & { id: number },
+): CertificacionDetalle {
+  return {
+    numero: `IFTS14-CERT-${String(overrides.id).padStart(4, '0')}`,
+    nombreAlumno: 'Alumno Demo Uno',
+    cursoNombre: 'Curso Demo',
+    estado: 'vigente',
+    documentMasked: '12****34',
+    tokenPrefix: 'prefijo_demo_a1b',
+    emitidoEn: '2026-03-01',
+    venceEn: '2027-03-01',
+    publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
+    attendedDates: ['2026-03-02'],
+    auditEvents: [],
+    ...overrides,
+  };
+}
+
+function entregaFixture(id: number, url = CANONICA_CERT1): EntregaManualDto {
+  return {
+    certificadoId: id,
+    publicValidationUrl: url,
+    pdfDownloadUrl: `${id}/pdf`,
+    tokenPrefix: 'prefijo_demo_a1b',
+    pdfAvailable: true,
+    pdfStatus: 'valid',
+  };
+}
+
+function mockClipboard(writeText: jasmine.Spy): () => void {
+  const original = navigator.clipboard;
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText } as unknown as Clipboard,
+  });
+  return () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: original,
+    });
+  };
+}
+
+function configFixture(
+  overrides: Partial<InstitutionalConfig> = {},
+): InstitutionalConfig {
+  return {
+    institutionName: 'IFTS N.° 14',
+    certificateText: 'Texto demo',
+    rectorName: 'Rectora Real',
+    rectorRole: 'Rector/a',
+    advisorName: 'Asesor Real',
+    advisorRole: 'Asesor/a pedagógico/a',
+    updatedAt: '2026-01-01T00:00:00Z',
+    ...overrides,
+  };
+}
 
 describe('CertificationPreviewPage', () => {
-  async function render(id: string) {
+  async function render(
+    id: string,
+    opts?: {
+      certs?: CertificationsService;
+      config?: InstitutionalConfigService;
+    },
+  ) {
     await TestBed.configureTestingModule({
       imports: [CertificationPreviewPage],
       providers: [
         provideRouter([]),
-        { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+        {
+          provide: CERTIFICATIONS_SOURCE,
+          useValue: opts?.certs ?? new InMemoryCertificationsService(),
+        },
+        {
+          provide: INSTITUTIONAL_CONFIG_SOURCE,
+          useValue: opts?.config ?? new InMemoryInstitutionalConfigService(),
+        },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(CertificationPreviewPage);
@@ -70,35 +151,196 @@ describe('CertificationPreviewPage', () => {
     expect(urlText).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
   });
 
-  // --- Acciones deshabilitadas con handoff explícito ---
+  // --- REQ-CPREV: Copiar / Compartir habilitados ---
 
-  it('CTAs de PDF, copiar link, entrega, regenerar y revocar están deshabilitados', async () => {
+  it('REQ-CPREV-003: Copiar y Compartir quedan habilitados con URL canónica (sin F6-03)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
-    // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink (no
-    // disabled). F6-01 delta: Revocar pasa a routerLink.
-    // P6-01 delta: Entrega manual pasa a routerLink.
-    // Solo queda Copiar link disabled.
-    expect(disabledBtns.length).toBeGreaterThanOrEqual(1);
+    expect(el.textContent).not.toContain('F6-03');
+    const acciones = el.querySelector('.acciones-panel');
+    const copiar = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Copiar link'),
+    );
+    const compartir = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Compartir'),
+    );
+    expect(copiar).toBeTruthy();
+    expect(compartir).toBeTruthy();
+    expect((copiar as HTMLButtonElement).disabled).toBeFalse();
+    expect((compartir as HTMLButtonElement).disabled).toBeFalse();
   });
 
-  it('CTAs deshabilitados mencionan handoff a F6-03', async () => {
+  it('REQ-CPREV-002: Copiar usa URL de entrega-manual, no la truncada de detalle', async () => {
+    const writeText = jasmine.createSpy('writeText').and.resolveTo(undefined);
+    const restoreClipboard = mockClipboard(writeText);
+
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtener: (id) => Promise.resolve(detalleFixture({ id })),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id, CANONICA_CERT1)),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
+    };
+
+    const f = await render('1', { certs: fakeCerts });
+    const el = f.nativeElement as HTMLElement;
+    const decorativa = el.querySelector('.validacion-panel .public-url')?.textContent?.trim();
+    expect(decorativa).not.toBe(CANONICA_CERT1);
+
+    await f.componentInstance.copiarLink();
+    f.detectChanges();
+    expect(writeText).toHaveBeenCalledWith(CANONICA_CERT1);
+    expect(f.componentInstance.copiado()).toBeTrue();
+    expect(el.textContent).toContain('Link copiado');
+    restoreClipboard();
+  });
+
+  it('REQ-CPREV-003: revocado deshabilita Copiar y Compartir', async () => {
+    const f = await render('5');
+    const el = f.nativeElement as HTMLElement;
+    const acciones = el.querySelector('.acciones-panel');
+    const copiar = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Copiar link'),
+    );
+    const compartir = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Compartir'),
+    );
+    expect((copiar as HTMLButtonElement).disabled).toBeTrue();
+    expect((compartir as HTMLButtonElement).disabled).toBeTrue();
+    expect(copiar?.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('REQ-CPREV-001: entrega-manual falla → expediente OK y CTAs deshabilitados', async () => {
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtener: (id) => Promise.resolve(detalleFixture({ id })),
+      obtenerEntregaManual: () => Promise.reject(new Error('entrega falló')),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
+    };
+    const f = await render('1', { certs: fakeCerts });
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('#cert-title')?.textContent).toContain('Alumno Demo Uno');
+    const acciones = el.querySelector('.acciones-panel');
+    const copiar = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Copiar link'),
+    );
+    const compartir = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Compartir'),
+    );
+    expect((copiar as HTMLButtonElement).disabled).toBeTrue();
+    expect((compartir as HTMLButtonElement).disabled).toBeTrue();
+  });
+
+  it('REQ-CPREV-004: AbortError de Web Share no dispara clipboard ni error', async () => {
+    const writeText = jasmine.createSpy('writeText').and.resolveTo(undefined);
+    const restoreClipboard = mockClipboard(writeText);
+    const abort = Object.assign(new Error('cancel'), { name: 'AbortError' });
+    const shareSpy = jasmine.createSpy('share').and.rejectWith(abort);
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      writable: true,
+      value: shareSpy,
+    });
+
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    const text = el.textContent || '';
-    // F4-02 PDF, F6-01 Revocación y F5-04 entrega ya no son handoffs visibles.
-    // Queda F6-03 link.
-    expect(text).toContain('F6-03');
+    await f.componentInstance.compartir();
+    f.detectChanges();
+    expect(shareSpy).toHaveBeenCalled();
+    expect(writeText).not.toHaveBeenCalled();
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(f.componentInstance.copiado()).toBeFalse();
+    restoreClipboard();
   });
 
-  // --- F4-02 delta: enlaces PDF habilitados ---
+  it('REQ-CPREV-004: sin Web Share, Compartir cae a clipboard canónico', async () => {
+    const writeText = jasmine.createSpy('writeText').and.resolveTo(undefined);
+    const restoreClipboard = mockClipboard(writeText);
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtener: (id) => Promise.resolve(detalleFixture({ id })),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id, CANONICA_CERT1)),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
+    };
+
+    const f = await render('1', { certs: fakeCerts });
+    await f.componentInstance.compartir();
+    expect(writeText).toHaveBeenCalledWith(CANONICA_CERT1);
+    expect(f.componentInstance.copiado()).toBeTrue();
+    restoreClipboard();
+  });
+
+  it('REQ-CPREV-005: muestra autoridades reales desde config', async () => {
+    const config: InstitutionalConfigService = {
+      obtener: () => Promise.resolve(configFixture()),
+      guardar: () => Promise.reject(new Error('N/A')),
+    };
+    const f = await render('1', { config });
+    const el = f.nativeElement as HTMLElement;
+    const autoridades = el.querySelector('.doc-autoridades');
+    expect(autoridades?.textContent).toContain('Rectora Real');
+    expect(autoridades?.textContent).toContain('Asesor Real');
+    expect(autoridades?.textContent).not.toContain('Autoridad Demo');
+    expect(autoridades?.textContent).not.toContain('Configuración institucional pendiente');
+  });
+
+  it('REQ-CPREV-006: config fallida muestra pendiente y no bloquea Copiar', async () => {
+    const config: InstitutionalConfigService = {
+      obtener: () => Promise.reject(new Error('config fail')),
+      guardar: () => Promise.reject(new Error('N/A')),
+    };
+    const f = await render('1', { config });
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Configuración institucional pendiente');
+    const copiar = Array.from(el.querySelectorAll('.acciones-panel button')).find((b) =>
+      b.textContent?.includes('Copiar link'),
+    );
+    expect((copiar as HTMLButtonElement).disabled).toBeFalse();
+  });
+
+  it('REQ-CPREV-006: ambos nombres vacíos → pendiente; CTAs siguen habilitados', async () => {
+    const config: InstitutionalConfigService = {
+      obtener: () =>
+        Promise.resolve(
+          configFixture({ rectorName: '  ', advisorName: '', rectorRole: 'Rector/a' }),
+        ),
+      guardar: () => Promise.reject(new Error('N/A')),
+    };
+    const f = await render('1', { config });
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Configuración institucional pendiente');
+    const compartir = Array.from(el.querySelectorAll('.acciones-panel button')).find((b) =>
+      b.textContent?.includes('Compartir'),
+    );
+    expect((compartir as HTMLButtonElement).disabled).toBeFalse();
+  });
+
+  // --- F4-02 / P6-01 / F6-01: enlaces funcionales ---
 
   it('F4-02: "Descargar PDF" es un enlace (routerLink) a :id/pdf, no disabled', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const acciones = el.querySelector('.acciones-panel');
-    // Buscar el enlace de Descargar PDF: debe ser un <a> con href hacia /pdf.
     const links = acciones?.querySelectorAll('a') || [];
     const descargarLink = Array.from(links).find((a) =>
       a.textContent?.includes('Descargar PDF'),
@@ -117,19 +359,6 @@ describe('CertificationPreviewPage', () => {
     expect(regenerarBtn).toBeTruthy();
     expect(regenerarBtn?.getAttribute('disabled')).toBeNull();
     expect(regenerarBtn?.getAttribute('aria-disabled')).toBe('false');
-  });
-
-  it('F4-02: "Copiar link" sigue disabled con handoff F6-03', async () => {
-    const f = await render('1');
-    const el = f.nativeElement as HTMLElement;
-    const text = el.textContent || '';
-    expect(text).toContain('F6-03');
-    // El botón de copiar link en acciones sigue disabled.
-    const acciones = el.querySelector('.acciones-panel');
-    const copiarBtns = Array.from(acciones?.querySelectorAll('button[disabled]') || []).filter(
-      (b) => b.textContent?.includes('Copiar link'),
-    );
-    expect(copiarBtns.length).toBeGreaterThanOrEqual(1);
   });
 
   it('P6-01: "Entrega manual" es un enlace (routerLink) a :id/entrega, no disabled', async () => {
@@ -154,7 +383,11 @@ describe('CertificationPreviewPage', () => {
     expect(revocarLink?.getAttribute('disabled')).toBeNull();
   });
 
-  for (const [id, estado] of [['3', 'borrador'], ['4', 'vencido'], ['5', 'revocado']]) {
+  for (const [id, estado] of [
+    ['3', 'borrador'],
+    ['4', 'vencido'],
+    ['5', 'revocado'],
+  ]) {
     it(`no permite navegar a revocación cuando el certificado está ${estado}`, async () => {
       const f = await render(id);
       const riesgo = (f.nativeElement as HTMLElement).querySelector('.riesgo-panel');
@@ -170,12 +403,13 @@ describe('CertificationPreviewPage', () => {
     });
   }
 
-  it('acciones deshabilitadas tienen aria-disabled="true" y cursor not-allowed', async () => {
-    const f = await render('1');
+  it('botones deshabilitados en acciones tienen aria-disabled="true"', async () => {
+    const f = await render('5');
     const el = f.nativeElement as HTMLElement;
     const acciones = el.querySelector('.acciones-panel');
     expect(acciones).not.toBeNull();
     const btns = acciones?.querySelectorAll('button[disabled]') || [];
+    expect(btns.length).toBeGreaterThanOrEqual(2);
     for (const b of Array.from(btns)) {
       expect(b.getAttribute('aria-disabled')).toBe('true');
     }
@@ -190,7 +424,6 @@ describe('CertificationPreviewPage', () => {
     expect(breadcrumb).not.toBeNull();
     const link = breadcrumb?.querySelector('a[routerLink="/admin/certificaciones"]');
     expect(link).not.toBeNull();
-    // Número visual del expediente derivado del id.
     expect(breadcrumb?.textContent).toMatch(/IFTS14-CERT-/);
   });
 
@@ -200,7 +433,6 @@ describe('CertificationPreviewPage', () => {
     const header = el.querySelector('.expediente-header');
     expect(header).not.toBeNull();
     expect(header?.querySelector('.kicker')?.textContent).toContain('Expediente');
-    // Paridad v0: h1 es el nombre del alumno, el curso va en el subtítulo.
     expect(header?.querySelector('h1')?.textContent).toContain('Alumno Demo Uno');
     expect(header?.querySelector('.subtitle')?.textContent).toContain('Curso de introducción');
     expect(header?.querySelector('.estado-badge')).not.toBeNull();
@@ -232,7 +464,6 @@ describe('CertificationPreviewPage', () => {
     expect(doc?.querySelector('.doc-header')).not.toBeNull();
     expect(doc?.querySelector('.doc-declaracion')).not.toBeNull();
     expect(doc?.querySelector('.doc-asistencia')).not.toBeNull();
-    // Tabla con fechas asistidas.
     const rows = doc?.querySelectorAll('.doc-asistencia tbody tr') || [];
     expect(rows.length).toBe(3);
   });
@@ -242,7 +473,8 @@ describe('CertificationPreviewPage', () => {
     const el = f.nativeElement as HTMLElement;
     const autoridades = el.querySelector('.doc-autoridades');
     expect(autoridades).not.toBeNull();
-    expect(autoridades?.textContent).toContain('Autoridad firmante');
+    expect(autoridades?.textContent).toContain('Firma digital verificada');
+    expect(autoridades?.textContent).not.toContain('Autoridad Demo');
   });
 
   it('QR decorativo visible sin datos personales', async () => {
@@ -251,6 +483,66 @@ describe('CertificationPreviewPage', () => {
     const qr = el.querySelector('.qr-decorativo');
     expect(qr).not.toBeNull();
     expect(qr?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  // --- REQ-PAR-EXP: densidad visual P-12 ---
+
+  it('REQ-PAR-EXP-001: kicker mono y ficha densificada con kickers de grupo', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const kicker = el.querySelector('.kicker') as HTMLElement | null;
+    expect(kicker?.textContent?.trim()).toBe('Expediente de certificación');
+    expect(getComputedStyle(kicker!).fontFamily).toMatch(/mono/i);
+    const ficha = el.querySelector('.ficha-expediente');
+    expect(ficha?.querySelector('.group-kicker')?.textContent).toContain('Alumno');
+    expect(ficha?.textContent).toContain('jornadas presentes');
+    expect(ficha?.textContent).toContain('Trazabilidad administrativa');
+    const fila = ficha?.querySelector('.fila-dato') as HTMLElement | null;
+    expect(fila).not.toBeNull();
+    const padL = parseFloat(getComputedStyle(fila!).paddingLeft);
+    expect(padL).toBeGreaterThanOrEqual(14);
+  });
+
+  it('REQ-PAR-EXP-002: QR decorativo 64 celdas y note footer muted', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const qr = el.querySelector('.validacion-panel .qr-decorativo');
+    expect(qr?.getAttribute('aria-hidden')).toBe('true');
+    expect(qr?.querySelectorAll('.qr-cell').length).toBe(64);
+    const note = el.querySelector('.validacion-panel .panel-note-footer');
+    expect(note?.textContent).toContain('no contiene datos personales');
+  });
+
+  it('REQ-PAR-EXP-003: PDF primary ink; Entrega secondary; Copiar/Compartir intactos', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('F6-03');
+    const acciones = el.querySelector('.acciones-panel');
+    const pdf = acciones?.querySelector('a.btn-pdf');
+    expect(pdf?.textContent?.trim()).toBe('Descargar PDF');
+    const entrega = Array.from(acciones?.querySelectorAll('a.btn-accion') || []).find((a) =>
+      a.textContent?.includes('Entrega manual'),
+    );
+    expect(entrega).toBeTruthy();
+    expect(entrega?.classList.contains('btn-pdf')).toBeFalse();
+    const copiar = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Copiar link'),
+    );
+    const compartir = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Compartir'),
+    );
+    expect((copiar as HTMLButtonElement).disabled).toBeFalse();
+    expect((compartir as HTMLButtonElement).disabled).toBeFalse();
+  });
+
+  it('REQ-PAR-EXP-004: documento sin radius; firmas con SVG y copy v0', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const doc = el.querySelector('.documento-replica') as HTMLElement;
+    expect(getComputedStyle(doc).borderRadius).toMatch(/^0px$/);
+    const firmas = el.querySelector('.doc-autoridades');
+    expect(firmas?.querySelectorAll('svg.doc-firma-icon').length).toBe(2);
+    expect(firmas?.textContent).toContain('Firma digital verificada');
   });
 
   it('zona de riesgo visible con enlace activo de revocación', async () => {
@@ -319,13 +611,14 @@ describe('CertificationPreviewPage', () => {
   it('no expone token completo en el DOM', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    expect(el.textContent).not.toMatch(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    );
   });
 
   it('no expone DNI completo (7-8 dígitos) en el DOM', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    // documentMasked es XX****XX: nunca 7-8 dígitos contiguos.
     expect(el.textContent).not.toMatch(/\b\d{7,8}\b/);
   });
 
@@ -349,7 +642,6 @@ describe('CertificationPreviewPage', () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     expect(f.componentInstance.detalle()?.id).toBe(1);
-    // Paridad v0: h1 (#cert-title) muestra el nombre del alumno.
     expect(el.querySelector('#cert-title')?.textContent).toContain('Alumno Demo Uno');
     f.componentRef.setInput('id', '2');
     f.detectChanges();
@@ -359,7 +651,6 @@ describe('CertificationPreviewPage', () => {
     expect(f.componentInstance.detalle()?.cursoNombre).toBe(
       'Curso de herramientas administrativas',
     );
-    // DOM: muestra contenido de cert 2, ya no muestra contenido de cert 1.
     expect(el.querySelector('#cert-title')?.textContent).toContain('Alumno Demo Dos');
     expect(el.textContent).not.toContain('Curso de introducción a la gestión');
     expect(el.textContent).not.toContain('Alumno Demo Uno');
@@ -370,7 +661,6 @@ describe('CertificationPreviewPage', () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     expect(f.componentInstance.detalle()?.id).toBe(1);
-    // Paridad v0: h1 muestra el nombre del alumno.
     expect(el.querySelector('#cert-title')?.textContent).toContain('Alumno Demo Uno');
     f.componentRef.setInput('id', 'abc');
     f.detectChanges();
@@ -378,7 +668,6 @@ describe('CertificationPreviewPage', () => {
     f.detectChanges();
     expect(f.componentInstance.detalle()).toBeNull();
     expect(f.componentInstance.error()).toContain('no encontrada');
-    // DOM: muestra "Certificación no encontrada" y no retiene contenido de cert 1.
     expect(el.querySelector('.estado-error')?.textContent).toContain(
       'Certificación no encontrada',
     );
@@ -387,11 +676,6 @@ describe('CertificationPreviewPage', () => {
     expect(el.textContent).not.toContain('Alumno Demo Uno');
   });
 
-  // CRITICAL: el guard `loadGen` descarta cargas stale cuando el id cambia
-  // antes de que obtener() resuelva. Sin este guard, la promise de la carga
-  // anterior resuelve DESPUÉS de la nueva y sobrescribe la pantalla vigente
-  // con el certificado viejo. Este fake permite resolver manualmente las
-  // promises fuera de orden para verificar el guard de forma determinística.
   it('route reuse: carga stale no sobrescribe pantalla vigente (out-of-order)', async () => {
     const pending = new Map<number, { resolve: (v: unknown) => void }>();
 
@@ -399,7 +683,10 @@ describe('CertificationPreviewPage', () => {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
-      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id)),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
       regenerarPdf: () => Promise.resolve({ regenerado: false }),
       obtener: (id: number) =>
         new Promise<CertificacionDetalle>((resolve) => {
@@ -407,71 +694,62 @@ describe('CertificationPreviewPage', () => {
         }),
     };
 
+    // No usar render(): whenStable colgaría mientras obtener() sigue pendiente.
     await TestBed.configureTestingModule({
       imports: [CertificationPreviewPage],
       providers: [
         provideRouter([]),
         { provide: CERTIFICATIONS_SOURCE, useValue: fakeCerts },
+        {
+          provide: INSTITUTIONAL_CONFIG_SOURCE,
+          useValue: new InMemoryInstitutionalConfigService(),
+        },
       ],
     }).compileComponents();
-
     const fixture = TestBed.createComponent(CertificationPreviewPage);
     fixture.componentRef.setInput('id', '1');
     fixture.detectChanges();
-    // obtener(1) pendiente.
     expect(pending.has(1)).toBe(true);
 
-    // Cambiar a cert 2 sin resolver la carga de 1 todavía.
     fixture.componentRef.setInput('id', '2');
     fixture.detectChanges();
     expect(pending.has(2)).toBe(true);
 
-    // Resolver cert 2 PRIMERO (orden correcto de llegada).
-    pending.get(2)!.resolve({
-      id: 2,
-      nombreAlumno: 'Alumno Demo Dos',
-      cursoNombre: 'Curso de herramientas administrativas',
-      estado: 'vigente',
-      documentMasked: '34****56',
-      tokenPrefix: 'prefijo_demo_c2d',
-      emitidoEn: '2026-04-05',
-      venceEn: '2027-04-05',
-      publicValidationUrl: 'https://ifrm/validar/prefijo_demo_c2d…',
-      attendedDates: ['2026-04-05', '2026-04-12'],
-      auditEvents: [{ at: '2026-04-05', accion: 'emision', detalle: 'Emisión mock.' }],
-    });
+    pending.get(2)!.resolve(
+      detalleFixture({
+        id: 2,
+        nombreAlumno: 'Alumno Demo Dos',
+        cursoNombre: 'Curso de herramientas administrativas',
+        tokenPrefix: 'prefijo_demo_c2d',
+        publicValidationUrl: 'https://ifrm/validar/prefijo_demo_c2d…',
+        attendedDates: ['2026-04-05', '2026-04-12'],
+        auditEvents: [{ at: '2026-04-05', accion: 'emision', detalle: 'Emisión mock.' }],
+      }),
+    );
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
     expect(fixture.componentInstance.detalle()?.id).toBe(2);
 
-    // Ahora resolver cert 1 TARDE (carga stale). loadGen debe descartarla.
-    pending.get(1)!.resolve({
-      id: 1,
-      nombreAlumno: 'Alumno Demo Uno',
-      cursoNombre: 'Curso de introducción a la gestión',
-      estado: 'vigente',
-      documentMasked: '12****34',
-      tokenPrefix: 'prefijo_demo_a1b',
-      emitidoEn: '2026-03-01',
-      venceEn: '2027-03-01',
-      publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
-      attendedDates: ['2026-03-02', '2026-03-09', '2026-03-16'],
-      auditEvents: [{ at: '2026-03-01', accion: 'emision', detalle: 'Emisión mock.' }],
-    });
+    pending.get(1)!.resolve(
+      detalleFixture({
+        id: 1,
+        nombreAlumno: 'Alumno Demo Uno',
+        cursoNombre: 'Curso de introducción a la gestión',
+        attendedDates: ['2026-03-02', '2026-03-09', '2026-03-16'],
+        auditEvents: [{ at: '2026-03-01', accion: 'emision', detalle: 'Emisión mock.' }],
+      }),
+    );
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // La pantalla sigue mostrando cert 2; la carga stale de 1 se descartó.
     expect(fixture.componentInstance.detalle()?.id).toBe(2);
     expect(fixture.componentInstance.detalle()?.cursoNombre).toBe(
       'Curso de herramientas administrativas',
     );
 
-    // DOM: muestra contenido de cert 2 (id vigente), sin contenido stale de cert 1.
     const el = fixture.nativeElement as HTMLElement;
-    // Paridad v0: h1 (#cert-title) muestra el nombre del alumno.
     expect(el.querySelector('#cert-title')?.textContent).toContain('Alumno Demo Dos');
     expect(el.textContent).toContain('Alumno Demo Dos');
     expect(el.textContent).toContain('prefijo_demo_c2d');
@@ -480,25 +758,23 @@ describe('CertificationPreviewPage', () => {
     expect(el.textContent).not.toContain('prefijo_demo_a1b');
   });
 
-  // --- Handoffs explícitos por acción ---
+  // --- Handoffs cerrados ---
 
   it('handoff de PDF F4-02 ejecutado: CTAs PDF son enlaces (sin handoff visible)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const acciones = el.querySelector('.acciones-panel');
-    // F4-02: "Descargar PDF" es enlace. P6-02: "Regenerar PDF" pasó a botón
-    // funcional. Solo queda 1 enlace PDF (Descargar).
-    const pdfLinks = Array.from(acciones?.querySelectorAll('a') || []).filter(
-      (a) => a.textContent?.includes('PDF'),
+    const pdfLinks = Array.from(acciones?.querySelectorAll('a') || []).filter((a) =>
+      a.textContent?.includes('PDF'),
     );
     expect(pdfLinks.length).toBe(1);
   });
 
-  it('handoff de link/validación menciona F6-03 explícitamente', async () => {
+  it('REQ-CPREV-007: panel de validación ya no menciona F6-03', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const validacion = el.querySelector('.validacion-panel');
-    expect(validacion?.textContent).toContain('F6-03');
+    expect(validacion?.textContent).not.toContain('F6-03');
   });
 
   it('handoff de revocación F6-01 ejecutado: CTA es enlace a /revocar', async () => {
@@ -507,7 +783,6 @@ describe('CertificationPreviewPage', () => {
     const riesgo = el.querySelector('.riesgo-panel');
     const revocarLink = riesgo?.querySelector('a.btn-revocar');
     expect(revocarLink).not.toBeNull();
-    // Ya no muestra el handoff de F6-01.
     expect(riesgo?.textContent).not.toContain('F6-01');
   });
 
@@ -525,7 +800,6 @@ describe('CertificationPreviewPage', () => {
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
-    // El resultado ok debe mostrar "PDF regenerado correctamente".
     const ok = el.querySelector('.regeneracion-ok');
     expect(ok).not.toBeNull();
     expect(ok?.textContent).toContain('regenerado');
@@ -536,39 +810,16 @@ describe('CertificationPreviewPage', () => {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
-      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
-      obtener: (id: number) =>
-        Promise.resolve({
-          id,
-          numero: 'IFTS14-CERT-0001',
-          nombreAlumno: 'Alumno Demo Uno',
-          cursoNombre: 'Curso Demo',
-          estado: 'vigente' as const,
-          documentMasked: '12****34',
-          tokenPrefix: 'prefijo_demo_a1b',
-          emitidoEn: '2026-03-01',
-          venceEn: '2027-03-01',
-          publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
-          attendedDates: ['2026-03-02'],
-          auditEvents: [],
-        }),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id)),
+      obtener: (id) => Promise.resolve(detalleFixture({ id })),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
       regenerarPdf: () =>
         Promise.resolve({ regenerado: false, mensaje: 'El PDF ya está actualizado.' }),
     };
 
-    await TestBed.configureTestingModule({
-      imports: [CertificationPreviewPage],
-      providers: [
-        provideRouter([]),
-        { provide: CERTIFICATIONS_SOURCE, useValue: fakeCerts },
-      ],
-    }).compileComponents();
-    const fixture = TestBed.createComponent(CertificationPreviewPage);
-    fixture.componentRef.setInput('id', '1');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
+    const fixture = await render('1', { certs: fakeCerts });
     const el = fixture.nativeElement as HTMLElement;
     const regenerarBtn = Array.from(
       el.querySelectorAll('.acciones-panel button') || [],
@@ -588,38 +839,15 @@ describe('CertificationPreviewPage', () => {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
-      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
-      obtener: (id: number) =>
-        Promise.resolve({
-          id,
-          numero: 'IFTS14-CERT-0001',
-          nombreAlumno: 'Alumno Demo Uno',
-          cursoNombre: 'Curso Demo',
-          estado: 'vigente' as const,
-          documentMasked: '12****34',
-          tokenPrefix: 'prefijo_demo_a1b',
-          emitidoEn: '2026-03-01',
-          venceEn: '2027-03-01',
-          publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
-          attendedDates: ['2026-03-02'],
-          auditEvents: [],
-        }),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id)),
+      obtener: (id) => Promise.resolve(detalleFixture({ id })),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
       regenerarPdf: () => Promise.reject(new Error('Error de servidor')),
     };
 
-    await TestBed.configureTestingModule({
-      imports: [CertificationPreviewPage],
-      providers: [
-        provideRouter([]),
-        { provide: CERTIFICATIONS_SOURCE, useValue: fakeCerts },
-      ],
-    }).compileComponents();
-    const fixture = TestBed.createComponent(CertificationPreviewPage);
-    fixture.componentRef.setInput('id', '1');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
+    const fixture = await render('1', { certs: fakeCerts });
     const el = fixture.nativeElement as HTMLElement;
     const regenerarBtn = Array.from(
       el.querySelectorAll('.acciones-panel button') || [],
@@ -643,46 +871,21 @@ describe('CertificationPreviewPage', () => {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
-      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
-      obtener: (id: number) =>
-        Promise.resolve({
-          id,
-          numero: 'IFTS14-CERT-0001',
-          nombreAlumno: 'Alumno Demo Uno',
-          cursoNombre: 'Curso Demo',
-          estado: 'vigente' as const,
-          documentMasked: '12****34',
-          tokenPrefix: 'prefijo_demo_a1b',
-          emitidoEn: '2026-03-01',
-          venceEn: '2027-03-01',
-          publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
-          attendedDates: ['2026-03-02'],
-          auditEvents: [],
-        }),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id)),
+      obtener: (id) => Promise.resolve(detalleFixture({ id })),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
       regenerarPdf: () => pending,
     };
 
-    await TestBed.configureTestingModule({
-      imports: [CertificationPreviewPage],
-      providers: [
-        provideRouter([]),
-        { provide: CERTIFICATIONS_SOURCE, useValue: fakeCerts },
-      ],
-    }).compileComponents();
-    const fixture = TestBed.createComponent(CertificationPreviewPage);
-    fixture.componentRef.setInput('id', '1');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
+    const fixture = await render('1', { certs: fakeCerts });
     const el = fixture.nativeElement as HTMLElement;
     const regenerarBtn = Array.from(
       el.querySelectorAll('.acciones-panel button') || [],
     ).find((b) => b.textContent?.includes('Regenerar PDF'));
     (regenerarBtn as HTMLElement | undefined)?.click();
     fixture.detectChanges();
-    // Mientras la promise está pendiente, el botón muestra "Regenerando…"
-    // y está disabled.
     const loadingBtn = Array.from(
       el.querySelectorAll('.acciones-panel button') || [],
     ).find((b) => b.textContent?.includes('Regenerando'));
@@ -690,7 +893,6 @@ describe('CertificationPreviewPage', () => {
     expect(loadingBtn?.getAttribute('disabled')).toBe('');
     expect(loadingBtn?.getAttribute('aria-disabled')).toBe('true');
 
-    // Resolver para limpiar el estado.
     resolveRegen({ regenerado: true, publicValidationUrl: 'https://demo/validar/x' });
     fixture.detectChanges();
     await fixture.whenStable();

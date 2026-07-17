@@ -340,6 +340,14 @@
   flex-shrink: 0;
 }
 
+.btn-qr-inline {
+  margin-top: 0.75rem;
+  height: 2.25rem;
+  width: 100%;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
 /* Aclaraciones */
 .aclaraciones {
   margin: 0;
@@ -387,6 +395,13 @@
   font-size: 0.78125rem; /* 12.5px */
   font-weight: 500;
   color: var(--color-valid);
+}
+
+.status-error {
+  margin: 0;
+  font-size: 0.78125rem;
+  font-weight: 500;
+  color: var(--color-danger, #dc2626);
 }
 
 .icon-check {

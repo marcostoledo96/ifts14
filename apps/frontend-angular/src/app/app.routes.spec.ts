@@ -21,6 +21,9 @@ import { StudentsListPage } from './features/admin/students/pages/list/students-
 import { StudentDetailPage } from './features/admin/students/pages/detail/student-detail-page';
 import { STUDENTS_SOURCE } from './features/admin/students/students.service';
 import { InMemoryStudentsService } from './features/admin/students/in-memory-students.service';
+import { INSTITUTIONAL_CONFIG_SOURCE } from './features/admin/institutional-config/institutional-config.service';
+import { InMemoryInstitutionalConfigService } from './features/admin/institutional-config/in-memory-institutional-config.service';
+import { InstitutionalConfigPage } from './features/admin/institutional-config/pages/institutional-config-page';
 import { provideHttpClient } from '@angular/common/http';
 
 
@@ -263,15 +266,47 @@ describe('app.routes', () => {
     return adminRoute?.children || [];
   }
 
-  it('admin/alumnos registra el listado y la ruta de detalle', async () => {
+  it('admin/alumnos registra el listado, nuevo y la ruta de detalle', async () => {
     const children = adminChildren();
     const alumnos = children.find((route) => route.path === 'alumnos');
     expect(alumnos?.loadComponent).toBeDefined();
     expect(await (alumnos!.loadComponent as () => Promise<unknown>)()).toBe(StudentsListPage);
 
+    const nuevo = children.find((route) => route.path === 'alumnos/nuevo');
+    expect(nuevo?.loadComponent).toBeDefined();
+    const { StudentEditorPage } = await import('./features/admin/students/pages/new/student-editor-page');
+    expect(await (nuevo!.loadComponent as () => Promise<unknown>)()).toBe(StudentEditorPage);
+
     const detalle = children.find((route) => route.path === 'alumnos/:id');
     expect(detalle?.loadComponent).toBeDefined();
     expect(await (detalle!.loadComponent as () => Promise<unknown>)()).toBe(StudentDetailPage);
+  });
+
+  it('orden seguro: alumnos/nuevo ANTES que alumnos/:id', () => {
+    const children = adminChildren();
+    const idxNuevo = children.findIndex((c) => c.path === 'alumnos/nuevo');
+    const idxId = children.findIndex((c) => c.path === 'alumnos/:id');
+    expect(idxNuevo).toBeGreaterThanOrEqual(0);
+    expect(idxId).toBeGreaterThanOrEqual(0);
+    expect(idxNuevo).toBeLessThan(idxId);
+  });
+
+  it('navegación real /admin/alumnos/nuevo con sesión carga StudentEditorPage', async () => {
+    await setupHarnessWithSession();
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/alumnos/nuevo');
+    expect(router.url).toBe('/admin/alumnos/nuevo');
+  });
+
+  it('runtime: /admin/alumnos/nuevo instancia StudentEditorPage via route injector', async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/alumnos/nuevo');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-student-editor-page');
+    expect(cmp).not.toBeNull();
+    expect(cmp?.textContent).toContain('Nuevo alumno');
   });
 
   it('runtime: /admin/alumnos usa STUDENTS_SOURCE del route injector', async () => {
@@ -470,6 +505,7 @@ describe('app.routes', () => {
             { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
             { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
             { provide: STUDENTS_SOURCE, useClass: InMemoryStudentsService },
+            { provide: INSTITUTIONAL_CONFIG_SOURCE, useClass: InMemoryInstitutionalConfigService },
           ],
         };
       }
@@ -572,10 +608,11 @@ describe('app.routes', () => {
     const cmp = harness.routeNativeElement?.querySelector('app-course-editor-page');
     expect(cmp).not.toBeNull();
     const text = cmp?.textContent || '';
-    // El editor en modo edit muestra "Fechas de <nombre>" y carga las fechas.
-    expect(text).toContain('Curso de introducción a la gestión');
-    const fechaFieldsets = cmp?.querySelectorAll('.fecha-fieldset') || [];
-    expect(fechaFieldsets.length).toBe(3);
+    // Editor v0: título "Editar curso", badge de código y filas de fechas.
+    expect(text).toContain('Editar curso');
+    expect(text).toContain('CUR-001');
+    const fechaRows = cmp?.querySelectorAll('.fecha-row') || [];
+    expect(fechaRows.length).toBe(3);
   });
 
   it("runtime: /admin/cursos/abc (id inválido) NO revienta y muestra estado de error/not found", async () => {
@@ -741,6 +778,46 @@ describe('app.routes', () => {
     expect(paths).toContain('certificaciones/:id');
   });
 
+  it("admin children define certificaciones/nueva", () => {
+    const children = adminChildren();
+    const paths = children.map((c) => c.path);
+    expect(paths).toContain('certificaciones/nueva');
+  });
+
+  it("orden seguro: certificaciones/nueva ANTES que certificaciones/:id", () => {
+    const children = adminChildren();
+    const idxNueva = children.findIndex((c) => c.path === 'certificaciones/nueva');
+    const idxId = children.findIndex((c) => c.path === 'certificaciones/:id');
+    expect(idxNueva).toBeGreaterThanOrEqual(0);
+    expect(idxId).toBeGreaterThanOrEqual(0);
+    expect(idxNueva).toBeLessThan(idxId);
+  });
+
+  it("navegación real /admin/certificaciones/nueva con sesión carga CertificationNewPage", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
+      ],
+    }).compileComponents();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/certificaciones/nueva');
+    expect(router.url).toBe('/admin/certificaciones/nueva');
+  });
+
+  it("runtime: /admin/certificaciones/nueva instancia CertificationNewPage via route injector", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/certificaciones/nueva');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-certification-new-page');
+    expect(cmp).not.toBeNull();
+    expect(cmp?.textContent).toContain('Nueva certificación');
+  });
+
   it("orden seguro: certificaciones/:id ANTES que certificaciones (listado)", () => {
     const children = adminChildren();
     const idxId = children.findIndex((c) => c.path === 'certificaciones/:id');
@@ -848,10 +925,18 @@ describe('app.routes', () => {
     // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink.
     // F6-01 delta: Revocar pasa a routerLink.
     // P6-01 delta: Entrega manual pasa a routerLink.
-    // Quedan 1 botón disabled: Copiar link.
-    const disabledBtns = el.querySelectorAll('button[disabled][aria-disabled="true"]');
-    expect(disabledBtns.length).toBeGreaterThanOrEqual(1);
-    expect(el.textContent).toContain('F6-03');
+    // Ciclo 12: Copiar link y Compartir habilitados (sin handoff F6-03).
+    const copiar = Array.from(el.querySelectorAll('.acciones-panel button')).find((b) =>
+      b.textContent?.includes('Copiar link'),
+    );
+    const compartir = Array.from(el.querySelectorAll('.acciones-panel button')).find((b) =>
+      b.textContent?.includes('Compartir'),
+    );
+    expect(copiar).toBeTruthy();
+    expect(compartir).toBeTruthy();
+    expect((copiar as HTMLButtonElement).disabled).toBeFalse();
+    expect((compartir as HTMLButtonElement).disabled).toBeFalse();
+    expect(el.textContent).not.toContain('F6-03');
   });
 
   it("runtime: /admin/certificaciones/abc (id inválido) NO revienta y muestra estado de no encontrado", async () => {
@@ -1013,5 +1098,90 @@ describe('app.routes', () => {
     const harness = await RouterTestingHarness.create('/admin/certificaciones/1/revocar');
     const cmp = harness.routeNativeElement?.querySelector('app-certification-revoke-page');
     expect(cmp).not.toBeNull();
+  });
+
+  // --- Ruta admin/configuracion (ciclo configuración institucional) ---
+
+  it("admin children define configuracion", () => {
+    const children = adminChildren();
+    const paths = children.map((c) => c.path);
+    expect(paths).toContain('configuracion');
+  });
+
+  it("loadComponent de configuracion devuelve InstitutionalConfigPage", async () => {
+    const children = adminChildren();
+    const r = children.find((c) => c.path === 'configuracion');
+    expect(r?.loadComponent).toBeDefined();
+    const cmp = await (r!.loadComponent as () => Promise<unknown>)();
+    expect(cmp).toBe(InstitutionalConfigPage);
+  });
+
+  it("navegación real /admin/configuracion sin sesión termina en /admin/login", async () => {
+    await setupRouter('/admin/configuracion');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("navegación real /admin/configuracion con sesión carga la página", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
+      ],
+    }).compileComponents();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/configuracion');
+    expect(router.url).toBe('/admin/configuracion');
+  });
+
+  it("runtime: /admin/configuracion instancia InstitutionalConfigPage via route injector con seed", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/configuracion');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-institutional-config-page');
+    expect(cmp).not.toBeNull();
+    const nameInput = cmp?.querySelector('#institution-name') as HTMLInputElement | null;
+    expect(nameInput?.value).toContain('IFTS');
+  });
+
+  it("regresión: sin INSTITUTIONAL_CONFIG_SOURCE en la ruta admin, /admin/configuracion revienta en runtime", async () => {
+    const adminRoute = routes.find(
+      (x) => x.path === 'admin' && x.children !== undefined,
+    )!;
+    const stripped: Routes = [
+      ...routes.filter((x) => x !== adminRoute),
+      {
+        ...adminRoute,
+        providers: adminRoute.providers?.filter(
+          (provider) =>
+            !('provide' in provider) || provider.provide !== INSTITUTIONAL_CONFIG_SOURCE,
+        ),
+        children: adminRoute.children,
+      },
+    ];
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(stripped),
+        provideHttpClient(),
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
+      ],
+    }).compileComponents();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
+    await expectAsync(RouterTestingHarness.create('/admin/configuracion')).toBeRejected();
+  });
+
+  it("rutas públicas intactas tras agregar admin/configuracion", async () => {
+    await setupRouter('/');
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/');
+    expect(router.url).toBe('/');
+    await router.navigateByUrl('/validar/demo-valido');
+    expect(router.url).toContain('/validar/');
   });
 });

@@ -2,11 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, si
 import { Router } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EntregaManualDto } from '../../certifications.models';
-import { environment } from '../../../../../../environments/environment';
 
-// P6-01: Entrega manual funcional.
+// P6-01 + Ciclo 13: Entrega manual funcional.
 // Consume GET /admin/certificados/{id}/entrega-manual → EntregaManualDto.
-// QR descargable vía Blob desde qr.png. Clipboard con fallback. PDF outdated detectado.
+// QR vía CertificationsService.descargarQrPng (HttpClient / mock). Clipboard con fallback.
 @Component({
   selector: 'app-certification-delivery-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,6 +30,7 @@ export class CertificationDeliveryPage {
   readonly descargado = signal(false);
   readonly descargando = signal(false);
   readonly qrDescargando = signal(false);
+  readonly qrError = signal('');
   readonly regenerarMsg = signal('');
 
   // T5: ref al diálogo para focus trap
@@ -58,9 +58,25 @@ export class CertificationDeliveryPage {
   });
 
   readonly numeroExpediente = computed(() => {
+    const d = this.detalle();
+    if (d?.numero?.trim()) return d.numero.trim();
     const id = this.certId();
     if (id === null) return '';
     return `IFTS14-CERT-${String(id).padStart(4, '0')}`;
+  });
+
+  /** Filename semántico Ciclo 13: cert-{codigo}-qr.png */
+  readonly qrFilename = computed(() => {
+    const raw = this.numeroExpediente() || 'certificado';
+    const safe = raw.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'certificado';
+    return `cert-${safe}-qr.png`;
+  });
+
+  /** Filename PDF: cert-{codigo}.pdf */
+  readonly pdfFilename = computed(() => {
+    const raw = this.numeroExpediente() || 'certificado';
+    const safe = raw.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'certificado';
+    return `cert-${safe}.pdf`;
   });
 
   // Regla D0: el DNI ya viene enmascarado del DTO
@@ -93,6 +109,7 @@ export class CertificationDeliveryPage {
     this.detalle.set(null);
     this.entrega.set(null);
     this.error.set('');
+    this.qrError.set('');
     this.cargando.set(true);
     if (cid === null) {
       if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
@@ -188,39 +205,46 @@ export class CertificationDeliveryPage {
     const cid = this.certId();
     if (cid === null) return;
     this.qrDescargando.set(true);
+    this.qrError.set('');
     try {
-      const url = `${environment.apiBaseUrl}/admin/certificados/${cid}/qr.png`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`QR no disponible: ${res.status}`);
-      const blob = await res.blob();
+      const blob = await this.certs.descargarQrPng(cid);
       const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objUrl;
-      a.download = `${this.numeroExpediente()}-qr.png`;
+      a.download = this.qrFilename();
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(objUrl);
     } catch (e) {
-      this.error.set((e as Error).message);
+      this.qrError.set((e as Error).message || 'No se pudo descargar el QR.');
     } finally {
       this.qrDescargando.set(false);
     }
   }
 
   async descargarPdf(): Promise<void> {
+    const cid = this.certId();
+    if (cid === null || this.descargando()) return;
     this.descargando.set(true);
-    // Simula demora
-    await new Promise((r) => setTimeout(r, 700));
-
-    // Abrir el PDF (F4-02) en una pestaña nueva
-    const url = this.router.serializeUrl(
-      this.router.createUrlTree(['/admin/certificaciones', this.id(), 'pdf'])
-    );
-    window.open(url, '_blank');
-
-    this.descargando.set(false);
-    this.descargado.set(true);
+    this.qrError.set('');
+    try {
+      const blob = await this.certs.descargarPdf(cid);
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = this.pdfFilename();
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objUrl);
+      this.descargado.set(true);
+    } catch (e) {
+      this.qrError.set((e as Error).message || 'No se pudo descargar el PDF.');
+      this.descargado.set(false);
+    } finally {
+      this.descargando.set(false);
+    }
   }
 
   // MVP: no hay endpoint POST /regenerar; mostrar mensaje informativo.

@@ -27,21 +27,23 @@ El sistema DEBE exponer `/admin/login`, `/admin`, `/admin/dashboard`, `/admin/cu
 
 ### Requirement: Login y shell explícitamente simulados
 
-El sistema DEBE presentar login, shell y dashboard simulados; NO DEBE prometer auth real. El dashboard DEBE enlazar Cursos, Asistencias, Certificaciones y Alumnos con conteos ficticios.
-(Previously: el dashboard no enlazaba Alumnos.)
+El sistema DEBE presentar login y shell administrativos; el dashboard DEBE ser mesa de trabajo (acciones, pendientes, actividad, resumen) según `admin-dashboard-workbench`. NO DEBE usar la grilla legacy de cuatro cards con conteos ficticios. El login DEBE comunicar acceso institucional con auth real (sesión cookie) y aviso de auditoría; NO DEBE presentar copy de «acceso simulado».
+(Previously: exigía mensaje «Acceso simulado — la autenticación real se define en una fase posterior»; el dashboard enlazaba Cursos/Asistencias/Certificaciones/Alumnos con conteos ficticios en cuatro cards.)
 
-#### Scenario: Mensaje visible de simulación
+#### Scenario: Aviso de auditoría en login
 
 - **Given** una persona ve el login administrativo
 - **When** revisa el formulario
-- **Then** DEBE ver “Acceso simulado — la autenticación real se define en una fase posterior”.
+- **Then** DEBE ver «Todas las acciones administrativas quedan registradas.»
+- **And** NO DEBE ver «Acceso simulado — la autenticación real se define en una fase posterior».
 
-#### Scenario: Dashboard con Alumnos navegable
+#### Scenario: Dashboard mesa de trabajo
 
-- **Given** existe una sesión mock activa
+- **Given** existe una sesión admin activa
 - **When** se abre `/admin/dashboard`
-- **Then** DEBE mostrarse un dashboard sin datos reales.
-- **And** DEBE enlazar Alumnos, Cursos, Asistencias y Certificaciones.
+- **Then** DEBE mostrarse “Panel de certificaciones” con acciones principales navegables.
+- **And** el resumen operativo DEBE derivar métricas de seams existentes o mostrar “—” ante fallo.
+- **And** bandeja y actividad DEBEN ser honestas (sin conteos/eventos inventados).
 
 ### Requirement: Sesión mock solo en memoria
 
@@ -63,8 +65,8 @@ El sistema DEBE usar una sesión mock en memoria para habilitar la navegación v
 
 ### Requirement: Shell accesible, responsive y alineado a F1-02
 
-El sistema DEBE construir shell accesible/responsive, con foco, tokens F1-02 y estado activo para `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` y `/admin/alumnos`.
-(Previously: el estado activo no contemplaba Alumnos.)
+El sistema DEBE shell accesible/responsive, con foco, tokens F1-02 y estado activo para `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` y `/admin/alumnos`. Chrome DEBE seguir `admin-shell-chrome`. NO DEBE anclar “Sesión activa”, “Secciones” ni títulos Admin en topbar.
+(Previously: shell accesible/tokens/activo sin chrome v0 ni prohibir badge/heading legacy.)
 
 #### Scenario: Navegación accesible
 
@@ -76,9 +78,16 @@ El sistema DEBE construir shell accesible/responsive, con foco, tokens F1-02 y e
 #### Scenario: Sin dependencias visuales nuevas
 
 - **Given** F1-02 dejó tokens CSS y SVG inline como base visual
-- **When** se integra Alumnos al shell
+- **When** se actualiza el shell
 - **Then** DEBE reutilizar esos tokens.
 - **And** NO DEBE incorporar Tailwind, shadcn, lucide, CVA ni copia literal React/Next.
+
+#### Scenario: Chrome v0 sin legacy
+
+- **Given** shell renderizado
+- **When** se inspeccionan topbar y sidebar
+- **Then** cumple `admin-shell-chrome`
+- **And** NO DEBE “Sesión activa” ni “Secciones”
 
 ### Requirement: Documentación y límites de handoff
 

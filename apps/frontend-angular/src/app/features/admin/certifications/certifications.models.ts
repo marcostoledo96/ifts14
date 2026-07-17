@@ -36,6 +36,30 @@ export interface CertificacionesFiltros {
   readonly estado?: EstadoCertificado;
   readonly curso?: string;
   readonly q?: string; // texto libre sobre nombre/curso/alumno
+  readonly cursoId?: number;
+  readonly alumnoId?: number;
+}
+
+/** Body exacto de POST /admin/certificados. */
+export interface EmitirCertificacionPayload {
+  readonly alumnoId: number;
+  readonly cursoId: number;
+  readonly issuedAt: string; // YYYY-MM-DD
+  readonly expiresAt: string | null;
+}
+
+/** data de respuesta 201 de emisión. */
+export interface EmisionResult {
+  readonly id: number;
+  readonly certificateCode: string;
+  readonly status: string;
+  readonly student: { readonly displayName: string; readonly documentMasked: string };
+  readonly course: { readonly name: string };
+  readonly issuedAt: string;
+  readonly expiresAt: string | null;
+  readonly tokenPrefix: string;
+  readonly publicValidationUrl: string;
+  readonly pdfDownloadUrl: string;
 }
 
 // DTO de entrega manual: respuesta de GET /admin/certificados/{id}/entrega-manual.

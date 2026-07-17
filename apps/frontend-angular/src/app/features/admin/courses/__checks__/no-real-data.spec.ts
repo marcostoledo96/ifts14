@@ -75,6 +75,8 @@ describe('no-real-data en seed de cursos', () => {
         Promise.resolve([
           { cursoId, cursoFechaId: fechaId, dni: '12345678', email: 'persona@example.test', token: 'secret-token', uuid: '00000000-0000-0000-0000-000000000000' },
         ] as never),
+      listarAsistenciasPorPar: () => Promise.resolve([]),
+      listarAsistenciasPorAlumno: () => Promise.resolve([]),
       listarAlumnos: () => Promise.resolve([]),
       marcar: () => Promise.resolve([]),
       anular: () => Promise.resolve(),

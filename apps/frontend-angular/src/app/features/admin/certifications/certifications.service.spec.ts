@@ -208,4 +208,59 @@ describe('InMemoryCertificationsService', () => {
     // arrancan esperando el mismo conteo seed.
     expect(count).toBeGreaterThanOrEqual(3);
   });
+
+  it('emitir crea certificado vigente y permite handoff por id', async () => {
+    const svc = setup();
+    const before = await svc.contar();
+    const result = await svc.emitir({
+      alumnoId: 46,
+      cursoId: 4,
+      issuedAt: '2026-07-16',
+      expiresAt: null,
+    });
+    expect(result.id).toBeGreaterThan(0);
+    expect(result.status).toBe('vigente');
+    expect(result.expiresAt).toBeNull();
+    expect(await svc.contar()).toBe(before + 1);
+    const det = await svc.obtener(result.id);
+    expect(det.estado).toBe('vigente');
+  });
+
+  it('emitir 409 si ya hay vigente del mismo par', async () => {
+    const svc = setup();
+    const payload = { alumnoId: 50, cursoId: 9, issuedAt: '2026-07-16', expiresAt: null };
+    await svc.emitir(payload);
+    await expectAsync(svc.emitir(payload)).toBeRejected();
+  });
+
+  it('listar por cursoId/alumnoId solo ve pares emitidos en mock', async () => {
+    const svc = setup();
+    await svc.emitir({ alumnoId: 7, cursoId: 3, issuedAt: '2026-07-16', expiresAt: null });
+    const list = await svc.listar({ estado: 'vigente', cursoId: 3, alumnoId: 7 });
+    expect(list.length).toBe(1);
+    const vacío = await svc.listar({ estado: 'vigente', cursoId: 3, alumnoId: 999 });
+    expect(vacío.length).toBe(0);
+  });
+
+  it('descargarQrPng devuelve Blob PNG para id seed', async () => {
+    const blob = await setup().descargarQrPng(1);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.type).toBe('image/png');
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
+  it('descargarQrPng rechaza id inexistente', async () => {
+    await expectAsync(setup().descargarQrPng(999)).toBeRejected();
+  });
+
+  it('descargarPdf devuelve Blob PDF para id seed', async () => {
+    const blob = await setup().descargarPdf(1);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.type).toBe('application/pdf');
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
+  it('descargarPdf rechaza id inexistente', async () => {
+    await expectAsync(setup().descargarPdf(999)).toBeRejected();
+  });
 });

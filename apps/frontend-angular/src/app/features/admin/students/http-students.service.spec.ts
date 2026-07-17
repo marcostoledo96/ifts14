@@ -47,7 +47,37 @@ describe('HttpStudentsService', () => {
     expect(result[1].apellido).toBe('García');
     expect(result[1].nombre).toBe('María Luz');
     expect(result[0].dniMostrar).toBe('12****78');
-    expect(result[0].tieneEmail).toBe(false);
+    expect(result[0].tieneEmail).toBeNull();
+    expect(result[0].cursosConAsistencia).toBeNull();
+    expect(result[0].certificacionesValidas).toBeNull();
+  });
+
+  it('crear hace POST a /admin/alumnos con body exacto y mapea 201', async () => {
+    const p = service.crear({ apellidoNombre: 'Nuevo Alumno', dni: '30111222' });
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ apellidoNombre: 'Nuevo Alumno', dni: '30111222' });
+    expect(Object.keys(req.request.body).sort()).toEqual(['apellidoNombre', 'dni']);
+    req.flush({
+      data: { id: 42, apellidoNombre: 'Nuevo Alumno', dniMostrar: '30****22', estado: 'activo' },
+      meta: { requestId: 'r-create' },
+    });
+    const created = await p;
+    expect(created.id).toBe(42);
+    expect(created.apellido).toBe('Nuevo');
+    expect(created.nombre).toBe('Alumno');
+    expect(created.dniMostrar).toBe('30****22');
+    expect(created.tieneEmail).toBeNull();
+  });
+
+  it('crear propaga 409 sin inventar campos', async () => {
+    const p = service.crear({ apellidoNombre: 'Dup', dni: '30111222' });
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
+    req.flush(
+      { error: { code: 'CONFLICT', message: 'Duplicado', details: [] }, meta: { requestId: 'r409' } },
+      { status: 409, statusText: 'Conflict' },
+    );
+    await expectAsync(p).toBeRejected();
   });
 
   it('apellidoNombre sin espacio → apellido lleno, nombre vacío', async () => {

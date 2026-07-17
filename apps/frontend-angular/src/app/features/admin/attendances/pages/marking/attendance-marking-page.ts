@@ -9,7 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { COURSES_SOURCE } from '../../../courses/courses.service';
 import { CursoDetalle } from '../../../courses/courses.models';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
@@ -31,6 +31,7 @@ export class AttendanceMarkingPage {
 
   private readonly courses = inject(COURSES_SOURCE);
   private readonly attendance = inject(ATTENDANCE_SOURCE);
+  private readonly router = inject(Router);
 
   readonly detalle = signal<CursoDetalle | null>(null);
   readonly alumnos = signal<readonly AsistenciaAlumno[]>([]);
@@ -73,6 +74,25 @@ export class AttendanceMarkingPage {
 
   // Contador de marcados en edición.
   readonly marcadosCount = computed(() => this.seleccion().size);
+
+  // Diferencias respecto de la baseline guardada (resumen "cambios sin guardar").
+  readonly agregados = computed(() => {
+    const base = this.baseline();
+    let n = 0;
+    for (const id of this.seleccion()) if (!base.has(id)) n++;
+    return n;
+  });
+  readonly quitados = computed(() => {
+    const sel = this.seleccion();
+    let n = 0;
+    for (const id of this.baseline()) if (!sel.has(id)) n++;
+    return n;
+  });
+  readonly cambios = computed(() => this.agregados() + this.quitados());
+  readonly dirty = computed(() => this.cambios() > 0);
+
+  // Fechas del curso para el selector inline (orden natural del detalle).
+  readonly fechasOrdenadas = computed(() => this.detalle()?.fechas ?? []);
 
   // Alumnos filtrados por búsqueda (nombre o dniMostrar).
   readonly alumnosFiltrados = computed<readonly AsistenciaAlumno[]>(() => {
@@ -150,18 +170,44 @@ export class AttendanceMarkingPage {
     this.q.set((event.target as HTMLInputElement).value);
   }
 
-  togglePresente(alumnoId: number, event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
+  togglePresente(alumnoId: number): void {
     this.seleccion.update((set) => {
       const next = new Set(set);
-      if (checked) next.add(alumnoId);
-      else next.delete(alumnoId);
+      if (next.has(alumnoId)) next.delete(alumnoId);
+      else next.add(alumnoId);
       return next;
     });
   }
 
   estaMarcado(alumnoId: number): boolean {
     return this.seleccion().has(alumnoId);
+  }
+
+  // Cambio de fecha vía selector inline. Navega al mismo patrón de ruta para
+  // reutilizar el componente (el effect() recarga y resetea baseline/selección).
+  // Si hay cambios sin guardar, confirma el descarte; al cancelar, revierte el
+  // <select> a la fecha vigente y no navega.
+  onFechaSeleccionada(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const nuevoId = select.value;
+    const cid = this.courseId();
+    if (cid === null || nuevoId === this.fechaId()) return;
+    if (
+      this.dirty() &&
+      !window.confirm(
+        'Hay cambios sin guardar que se descartarán al cambiar de fecha. ¿Continuar?',
+      )
+    ) {
+      select.value = this.fechaId(); // revertir selección visual
+      return;
+    }
+    void this.router.navigate([
+      '/admin/cursos',
+      cid,
+      'fechas',
+      Number(nuevoId),
+      'asistencias',
+    ]);
   }
 
   async guardar(): Promise<void> {

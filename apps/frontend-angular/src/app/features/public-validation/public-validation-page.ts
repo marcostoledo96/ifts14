@@ -8,7 +8,10 @@ import {
   signal,
 } from '@angular/core';
 import { ValidationService } from '../../shared/certificates/validation.service';
-import { studentDocumentDisplay, ValidationViewState } from '../../shared/certificates/dto';
+import {
+  studentDocumentDisplay,
+  ValidationViewState,
+} from '../../shared/certificates/dto';
 import { BandaEstado } from '../../shared/ui/banda-estado';
 import { CampoDato } from '../../shared/ui/campo-dato';
 
@@ -51,10 +54,26 @@ export class PublicValidationPage {
   // Timestamp de consulta del cliente (no viene del backend). Se actualiza al reintentar.
   readonly consulta = signal(new Date());
   readonly consultaTimestamp = computed(() => this.formatConsulta(this.consulta()));
+  readonly consultaHora = computed(() => this.formatHora(this.consulta()));
+
+  readonly requestId = computed(() => {
+    const v = this.view();
+    if (!v) return '';
+    if (v.kind === 'valid') return v.requestId;
+    return v.requestId ?? '';
+  });
 
   reintentar(): void {
     this.consulta.set(new Date());
     this.verification.reload();
+  }
+
+  isRevoked(v: ValidationViewState): boolean {
+    return v.kind === 'not-verifiable' && v.reason === 'CERTIFICATE_REVOKED';
+  }
+
+  seqLabel(index: number): string {
+    return String(index + 1).padStart(3, '0');
   }
 
   private formatConsulta(fecha: Date): string {
@@ -65,5 +84,12 @@ export class PublicValidationPage {
     const hh = String(fecha.getHours()).padStart(2, '0');
     const min = String(fecha.getMinutes()).padStart(2, '0');
     return `${dd}/${mm}/${yyyy} · ${hh}:${min} ART`;
+  }
+
+  private formatHora(fecha: Date): string {
+    const hh = String(fecha.getHours()).padStart(2, '0');
+    const min = String(fecha.getMinutes()).padStart(2, '0');
+    const ss = String(fecha.getSeconds()).padStart(2, '0');
+    return `${hh}:${min}:${ss} ART`;
   }
 }

@@ -8,6 +8,8 @@ import {
   Certificacion,
   CertificacionDetalle,
   CertificacionesFiltros,
+  EmisionResult,
+  EmitirCertificacionPayload,
   EntregaManualDto,
   EstadoCertificado,
   PdfStatus,
@@ -136,6 +138,13 @@ export function truncarUrl(url: string): string {
 @Injectable({ providedIn: 'root' })
 export class InMemoryCertificationsService implements CertificationsService {
   private readonly certificados: CertificacionDetalle[] = clone(seed());
+  private nextId = 100;
+  /** Pares alumnoId:cursoId con certificado vigente (para 409 mock). */
+  private readonly vigentesPorPar = new Map<string, number>();
+
+  private pairKey(alumnoId: number, cursoId: number): string {
+    return `${alumnoId}:${cursoId}`;
+  }
 
   listar(filtros?: CertificacionesFiltros): Promise<readonly Certificacion[]> {
     let list: Certificacion[] = this.certificados.map(
@@ -146,6 +155,16 @@ export class InMemoryCertificationsService implements CertificationsService {
     }
     if (filtros?.curso) {
       list = list.filter((c) => c.cursoNombre === filtros.curso);
+    }
+    if (filtros?.cursoId != null || filtros?.alumnoId != null) {
+      const ids = new Set<number>();
+      for (const [key, certId] of this.vigentesPorPar) {
+        const [a, c] = key.split(':').map(Number);
+        if (filtros.alumnoId != null && a !== filtros.alumnoId) continue;
+        if (filtros.cursoId != null && c !== filtros.cursoId) continue;
+        ids.add(certId);
+      }
+      list = list.filter((c) => ids.has(c.id));
     }
     if (filtros?.q) {
       const q = filtros.q.trim().toLowerCase();
@@ -190,6 +209,32 @@ export class InMemoryCertificationsService implements CertificationsService {
       pdfAvailable: found.estado !== 'borrador',
       pdfStatus,
     });
+  }
+
+  descargarQrPng(id: number): Promise<Blob> {
+    const found = this.certificados.find((c) => c.id === id);
+    if (!found) {
+      return Promise.reject(new Error(`Certificación no encontrada: ${id}`));
+    }
+    // PNG 1x1 mínimo válido para tests/mock (sin red).
+    const png = Uint8Array.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+      0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+      0x42, 0x60, 0x82,
+    ]);
+    return Promise.resolve(new Blob([png], { type: 'image/png' }));
+  }
+
+  descargarPdf(id: number): Promise<Blob> {
+    const found = this.certificados.find((c) => c.id === id);
+    if (!found) {
+      return Promise.reject(new Error(`Certificación no encontrada: ${id}`));
+    }
+    // PDF mínimo válido para tests/mock (sin red).
+    const pdf = '%PDF-1.1\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n';
+    return Promise.resolve(new Blob([pdf], { type: 'application/pdf' }));
   }
 
   contar(): Promise<number> {
@@ -240,8 +285,57 @@ export class InMemoryCertificationsService implements CertificationsService {
         ];
         
         this.certificados[index] = found;
+        for (const [key, certId] of this.vigentesPorPar) {
+          if (certId === id) this.vigentesPorPar.delete(key);
+        }
         resolve();
       }, 900);
+    });
+  }
+
+  emitir(payload: EmitirCertificacionPayload): Promise<EmisionResult> {
+    const key = this.pairKey(payload.alumnoId, payload.cursoId);
+    if (this.vigentesPorPar.has(key)) {
+      return Promise.reject(
+        Object.assign(new Error('Ya existe un certificado vigente para este alumno y curso.'), {
+          status: 409,
+          error: { code: 'CERTIFICATE_ALREADY_EXISTS' },
+        }),
+      );
+    }
+    const id = this.nextId++;
+    const code = `IFTS14-CERT-${String(id).padStart(4, '0')}`;
+    const tokenPrefix = `prefijo_demo_${id.toString(36).padStart(3, '0').slice(-3)}`;
+    const displayName = `Alumno Demo ${id}`;
+    const documentMasked = '11****99';
+    const courseName = `Curso mock ${payload.cursoId}`;
+    const detalle: CertificacionDetalle = {
+      id,
+      numero: code,
+      nombreAlumno: displayName,
+      cursoNombre: courseName,
+      estado: 'vigente',
+      documentMasked,
+      tokenPrefix,
+      emitidoEn: payload.issuedAt,
+      venceEn: payload.expiresAt,
+      publicValidationUrl: truncarUrl(`https://ifrm/validar/${tokenPrefix}…`),
+      attendedDates: [],
+      auditEvents: [{ at: payload.issuedAt, accion: 'emision', detalle: 'Emisión mock.' }],
+    };
+    this.certificados.push(detalle);
+    this.vigentesPorPar.set(key, id);
+    return Promise.resolve({
+      id,
+      certificateCode: code,
+      status: 'vigente',
+      student: { displayName, documentMasked },
+      course: { name: courseName },
+      issuedAt: payload.issuedAt,
+      expiresAt: payload.expiresAt,
+      tokenPrefix,
+      publicValidationUrl: `https://ifts14.edu.ar/certificados/validar/${tokenPrefix}-completo`,
+      pdfDownloadUrl: `/admin/certificados/${id}/pdf`,
     });
   }
 }

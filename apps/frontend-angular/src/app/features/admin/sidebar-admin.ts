@@ -1,44 +1,56 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+/** Identificadores de iconos Lucide-like (SVG inline multi-path en template). */
+export type NavIconId =
+  | 'layout-grid'
+  | 'book-open'
+  | 'users'
+  | 'calendar-check'
+  | 'qr-code'
+  | 'settings'
+  | 'log-out';
+
 interface NavItem {
   readonly label: string;
-  // Ruta Angular definida. `null` = placeholder hasta que F2-04..F2-06
-  // definan la ruta; se renderiza como botón deshabilitado (sin navegación).
+  // Ruta Angular definida. `null` = placeholder hasta que exista ruta;
+  // se renderiza como botón deshabilitado (sin navegación).
   readonly route: string | null;
-  readonly icon: string; // SVG path data inline
+  readonly iconId: NavIconId;
 }
 
-// Solo /admin/dashboard, /admin/cursos, /admin/asistencias y
-// /admin/certificaciones están habilitados hoy (F2-06). El resto queda como
-// placeholder deshabilitado para evitar hrefs absolutos que escapen el base
-// href /certificados/ y recarguen la app perdiendo la sesión mock en memoria.
 const ITEMS: readonly NavItem[] = [
-  { label: 'Inicio', route: '/admin/dashboard', icon: 'M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10' },
-  { label: 'Cursos', route: '/admin/cursos', icon: 'M4 6h16M4 12h16M4 18h10' },
-  { label: 'Alumnos', route: '/admin/alumnos', icon: 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 20a8 8 0 0 1 16 0' },
-  { label: 'Asistencias', route: '/admin/asistencias', icon: 'M5 3v18M9 3v18M5 8h4M5 14h4M19 5l-2 14-4-2' },
-  { label: 'Certificaciones', route: '/admin/certificaciones', icon: 'M5 3h9l5 5v13H5zM14 3v5h5M8 13h8M8 17h5' },
+  { label: 'Inicio', route: '/admin/dashboard', iconId: 'layout-grid' },
+  { label: 'Cursos', route: '/admin/cursos', iconId: 'book-open' },
+  { label: 'Alumnos', route: '/admin/alumnos', iconId: 'users' },
+  { label: 'Asistencias', route: '/admin/asistencias', iconId: 'calendar-check' },
+  { label: 'Certificaciones', route: '/admin/certificaciones', iconId: 'qr-code' },
 ];
+
+const CONFIG_ITEM: NavItem = {
+  label: 'Configuración',
+  route: '/admin/configuracion',
+  iconId: 'settings',
+};
 
 @Component({
   selector: 'app-sidebar-admin',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, NgTemplateOutlet],
   templateUrl: './sidebar-admin.html',
   styleUrl: './sidebar-admin.css',
 })
 export class SidebarAdmin {
   readonly active = input<string>('/admin/dashboard');
   readonly items = ITEMS;
+  readonly configItem = CONFIG_ITEM;
   readonly cerrarSesion = output<void>();
 
   // Inicio usa igualdad exacta; Cursos, Asistencias y Certificaciones usan
-  // prefijo para que sus rutas hijas (nuevo, editar, detalle, marcado por
-  // fecha, previsualización) también queden activos en la navegación. La
-  // ruta de marcado /admin/cursos/:id/fechas/:fechaId/asistencias pertenece a
-  // Asistencias (no a Cursos): debe verificarse antes del prefijo
-  // /admin/cursos para que el match de Asistencias gane.
+  // prefijo para que sus rutas hijas también queden activos. La ruta de
+  // marcado /admin/cursos/:id/fechas/:fechaId/asistencias pertenece a
+  // Asistencias (no a Cursos): debe verificarse antes del prefijo /admin/cursos.
   isActive(item: NavItem): boolean {
     if (item.route === null) return false;
     const active = this.active().split(/[?#]/, 1)[0];
@@ -47,14 +59,14 @@ export class SidebarAdmin {
       active.startsWith('/admin/asistencias/') ||
       /^\/admin\/cursos\/[^/]+\/fechas\/[^/]+\/asistencias$/.test(active);
     if (isAttendanceRoute) {
-      // Asistencias engloba /admin/asistencias y el marcado por fecha.
       return item.route === '/admin/asistencias';
     }
     if (
       item.route === '/admin/cursos' ||
       item.route === '/admin/asistencias' ||
       item.route === '/admin/certificaciones' ||
-      item.route === '/admin/alumnos'
+      item.route === '/admin/alumnos' ||
+      item.route === '/admin/configuracion'
     ) {
       return active.startsWith(item.route);
     }

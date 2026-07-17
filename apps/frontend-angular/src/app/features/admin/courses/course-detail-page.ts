@@ -108,6 +108,14 @@ export class CourseDetailPage {
     }
   }
 
+  /** Primera fecha usable para CTA “Cargar asistencias” (honesto: deep-link real). */
+  primeraFechaAsistencia(detalle: CursoDetalle): number | null {
+    const f = detalle.fechas.find(
+      (fecha) => fecha.estado !== 'cancelada' && this.asistenciaDisponible(fecha.id),
+    );
+    return f?.id ?? null;
+  }
+
   presentesPorFecha(fechaId: number): AttendanceMetric {
     return this.metricas().get(fechaId) ?? { status: 'unavailable', reason: 'missing-seam' };
   }

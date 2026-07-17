@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Definir el flujo público de validación por token con estados ficticios, alineado al contrato backend y sin exposición de datos sensibles. La pantalla pública muestra DNI completo visible y fechas asistidas del curso para certificados vigentes, según decisión institucional documentada.
+Definir el flujo público de validación por token con estados ficticios, alineado al contrato backend y sin exposición de datos sensibles. La pantalla pública muestra DNI completo visible y fechas asistidas del curso para certificados vigentes, según decisión institucional documentada. Paridad visual P-15 con `muestra_pagina/components/validacion/*`.
 
 ## Requirements
 
@@ -14,7 +14,7 @@ El sistema DEBE exponer una pantalla pública para `/certificados/validar/:token
 
 - **Dado** un token de mock marcado como vigente
 - **Cuando** se abre la ruta pública de validación
-- **Entonces** la pantalla DEBE mostrar certificado verificable, curso, fecha, DNI completo y fechas asistidas.
+- **Entonces** la pantalla DEBE mostrar certificación válida, curso, fecha, DNI completo y fechas asistidas.
 - **Y** NO DEBE mostrar token completo ni datos reales.
 
 #### Scenario: Certificado legado con documentMasked
@@ -24,24 +24,25 @@ El sistema DEBE exponer una pantalla pública para `/certificados/validar/:token
 - **Entonces** la pantalla DEBE mostrar el documento enmascarado y omitir el bloque de fechas asistidas.
 - **Y** NO DEBE colapsar a error técnico por ausencia de `documentNumber`.
 
-#### Scenario: Certificado revocado no verificable
+#### Scenario: Certificado revocado con código explícito
 
-- **Dado** un token de mock marcado como revocado
+- **Dado** un error `CERTIFICATE_REVOKED` (mock o futuro contrato)
 - **Cuando** se valida públicamente
-- **Entonces** la pantalla DEBE informar que el certificado no es verificable.
-- **Y** NO DEBE revelar detalles operativos más allá del estado público.
+- **Entonces** la pantalla DEBE mostrar chrome de certificación revocada (sello REVOCADO) sin inventar alumno/curso.
+- **Y** NO DEBE revelar el código de error crudo `CERTIFICATE_REVOKED`.
 
-#### Scenario: Certificado no encontrado no verificable
+#### Scenario: Certificado no encontrado
 
-- **Dado** un token de mock inexistente
+- **Dado** un token de mock inexistente (`CERTIFICATE_NOT_FOUND`)
 - **Cuando** se valida públicamente
-- **Entonces** la pantalla DEBE informar que el certificado no es verificable, igual que ante un `404 CERTIFICATE_NOT_FOUND`.
+- **Entonces** la pantalla DEBE mostrar certificación no encontrada / SIN REGISTRO.
+- **Nota:** el backend PHP actual filtra revocados como no encontrados; en ese caso la UI muestra no encontrada.
 
 #### Scenario: Error técnico distinguible
 
 - **Dado** una falla técnica simulada
 - **Cuando** la validación no puede completarse
-- **Entonces** la pantalla DEBE mostrar un error técnico seguro, distinto del estado no verificable.
+- **Entonces** la pantalla DEBE mostrar un error técnico documental seguro, distinto del estado no verificable.
 - **Y** NO DEBE exponer stack traces, rutas internas ni detalles de infraestructura.
 
 ### Requirement: Flujo público sin credenciales ni datos adicionales
@@ -56,70 +57,78 @@ La validación pública NO DEBE pedir DNI completo, login, clave administrativa 
 
 ### Requirement: Confirmación pública D0 sin cambio visual
 
-La validación pública DEBE confirmar el contrato D0 vigente sin cambiar la UI: certificados vigentes muestran DNI completo sólo en la pantalla pública y fechas asistidas; certificados inexistentes, revocados, vencidos o inválidos por formato se presentan como no verificables cuando corresponda.
+La validación pública DEBE confirmar el contrato D0 vigente: certificados vigentes muestran DNI completo sólo en la pantalla pública y fechas asistidas; certificados inexistentes, vencidos o inválidos por formato se presentan como no encontrados cuando corresponda; revocados con código explícito muestran chrome revocada.
 
 #### Scenario: Certificado D0 verificable
 
 - **Dado** una respuesta pública D0 de la API PHP con `documentNumber` y `attendedDates`
 - **Cuando** Angular mapea el resultado de validación
-- **Entonces** DEBE mostrar certificado verificable, DNI completo público y fechas asistidas.
+- **Entonces** DEBE mostrar certificación válida, DNI completo público y fechas asistidas.
 - **Y** NO DEBE mostrar token completo ni datos administrativos.
 
-#### Scenario: No verificable por 404
+#### Scenario: No encontrado por 404
 
 - **Dado** una respuesta `404 CERTIFICATE_NOT_FOUND` para un token ficticio
 - **Cuando** Angular mapea el error
-- **Entonces** DEBE mostrar estado no verificable, no error técnico.
-- **Y** NO DEBE revelar si el token no existe, está revocado o está vencido.
+- **Entonces** DEBE mostrar estado no encontrada, no error técnico.
+- **Y** NO DEBE revelar códigos de error crudos.
 
 ### Requirement: Layout folio con sidebar (validación pública refinada)
 
-La pantalla pública DEBE renderizar un layout grid de 2 columnas para certificados vigentes: contenido principal (folio, alumno, DNI completo, curso, tabla de fechas asistidas, fecha de emisión, código de certificado) y sidebar con trazabilidad (folio del certificado, timestamp de consulta del cliente, sello oficial decorativo). En mobile, el sidebar DEBE apilar debajo del contenido principal.
+La pantalla pública DEBE renderizar un layout grid de 2 columnas para certificados vigentes: contenido principal (folio, alumno, DNI completo, curso, TIPO, tabla de fechas asistidas, fecha de emisión, código de certificado) y sidebar con trazabilidad (código, timestamp de consulta del cliente, sello oficial decorativo). En mobile, el sidebar DEBE apilar debajo del contenido principal. El ancho del contenedor DEBE usar `--layout-page-max` (56rem) para paridad con v0 `max-w-4xl`.
 
 #### Scenario: Certificado vigente en desktop
 
 - **Dado** una respuesta `valid` con datos completos
 - **Cuando** se renderiza la página con viewport desktop
 - **Entonces** la pantalla DEBE mostrar grid de 2 columnas (principal + sidebar).
-- **Y** el sidebar DEBE incluir folio, timestamp de consulta (cliente) y sello oficial decorativo marcado `aria-hidden`.
+- **Y** el sidebar DEBE incluir código, timestamp de consulta (cliente) y sello oficial decorativo marcado `aria-hidden`.
+- **Y** el PieControl DEBE mostrar monograma `14` y `ESTADO DE REGISTRO: VÁLIDO`.
 
 #### Scenario: Certificado vigente en mobile
 
 - **Dado** una respuesta `valid` con datos completos
-- **Cuando** se renderiza la página con viewport mobile
+- **Cuando** se renderiza la página con viewport mobile (≤390px)
 - **Entonces** el sidebar DEBE apilar debajo del contenido principal sin perder legibilidad.
+- **Y** el N.° de certificado DEBE aparecer en la línea de consulta del membrete.
 
-### Requirement: Membrete institucional IFTS 14
+### Requirement: Membrete institucional del folio
 
-La pantalla pública DEBE mostrar el membrete institucional "IFTS N.° 14 — Bedelía" en cualquier estado de validación, alineado con la identidad institucional vigente.
+El folio vigente y el de revocada DEBEN usar el eyebrow `ACTA DE VALIDACIÓN ACADÉMICA`. El estado no encontrada DEBE usar `PORTAL DE VALIDACIÓN`. El header de página (`HeaderInstitucional`) ya identifica IFTS N.° 14.
 
-#### Scenario: Membrete visible en página válida
+#### Scenario: Membrete ACTA en página válida
 
 - **Dado** una respuesta `valid`
 - **Cuando** se renderiza la página
-- **Entonces** el header DEBE incluir el membrete "IFTS N.° 14 — Bedelía".
+- **Entonces** el folio DEBE incluir `ACTA DE VALIDACIÓN ACADÉMICA`.
 
-#### Scenario: Membrete visible en página no verificable
+#### Scenario: Membrete portal en no encontrada
 
-- **Dado** una respuesta `not-verifiable` o `technical-error`
+- **Dado** una respuesta `not-verifiable` genérica
 - **Cuando** se renderiza la página
-- **Entonces** el header DEBE incluir el membrete "IFTS N.° 14 — Bedelía".
+- **Entonces** el folio DEBE incluir `PORTAL DE VALIDACIÓN`.
 
 ### Requirement: Estados no válidos con cuerpo editorial
 
-La pantalla pública DEBE mostrar, para los estados `not-verifiable` y `technical-error`, tanto la banda de estado como un cuerpo editorial explicativo que oriente al visitante sin exponer detalles operativos, de infraestructura ni trazas técnicas.
+La pantalla pública DEBE mostrar, para `not-verifiable` (no encontrada / revocada) y error técnico, banda de estado embebida y cuerpo editorial alineado a v0, sin exponer detalles operativos, de infraestructura ni trazas técnicas.
 
-#### Scenario: Cuerpo editorial en estado no verificable
+#### Scenario: Cuerpo editorial en no encontrada
 
-- **Dado** una respuesta `not-verifiable`
+- **Dado** una respuesta `not-verifiable` no-revocada
 - **Cuando** se renderiza la página
-- **Entonces** la pantalla DEBE mostrar la banda de estado Y un cuerpo editorial explicativo.
+- **Entonces** la pantalla DEBE mostrar banda ámbar, sugerencias numeradas y sello SIN REGISTRO.
+
+#### Scenario: Cuerpo editorial en revocada
+
+- **Dado** `reason === CERTIFICATE_REVOKED`
+- **Cuando** se renderiza la página
+- **Entonces** la pantalla DEBE mostrar banda destructive, sello REVOCADO y PieControl REVOCADO sin inventar alumno/curso.
 
 #### Scenario: Cuerpo editorial en error técnico
 
 - **Dado** una respuesta `technical-error`
 - **Cuando** se renderiza la página
-- **Entonces** la pantalla DEBE mostrar la banda de estado Y un cuerpo editorial explicativo.
+- **Entonces** la pantalla DEBE mostrar chrome documental de error con Reintentar.
 - **Y** NO DEBE exponer stack traces, rutas internas ni detalles de infraestructura.
 
 ### Requirement: Sin QR decorativo en la página pública

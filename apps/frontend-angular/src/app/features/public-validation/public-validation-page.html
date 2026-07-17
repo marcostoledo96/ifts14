@@ -4,47 +4,98 @@
   @if (isLoading()) {
     <app-banda-estado kind="loading" title="Verificando…" />
   } @else if (isTechnicalError()) {
-    <app-banda-estado
-      kind="error"
-      title="No se pudo completar la verificación. Intente nuevamente."
-    />
     <article class="folio folio-error" aria-labelledby="error-title">
-      <header class="membrete membrete-error">
-        <p class="membrete-eyebrow">SISTEMA DE GESTIÓN ACADÉMICA</p>
-        <h2 id="error-title" class="membrete-titulo">No pudimos completar la validación</h2>
-        <p class="membrete-bajada">
+      <header class="error-head">
+        <div class="error-head-row">
+          <div>
+            <p class="error-eyebrow">SISTEMA DE GESTIÓN ACADÉMICA</p>
+            <p class="error-code">SERVICIO TEMPORALMENTE NO DISPONIBLE</p>
+          </div>
+          <div class="error-signal" aria-hidden="true">
+            <span class="error-bar error-bar-1"></span>
+            <span class="error-bar error-bar-2"></span>
+            <span class="error-bar error-bar-3"></span>
+          </div>
+        </div>
+        <h2 id="error-title" class="error-titulo">No pudimos completar la validación</h2>
+        <p class="error-bajada">
           El servidor de credenciales digitales está experimentando una demora técnica temporal.
           Intentá nuevamente más tarde.
         </p>
-        <div class="membrete-consulta">
-          <span class="membrete-consulta-label">CONSULTA</span>
-          <span class="membrete-consulta-valor">{{ consultaTimestamp() }}</span>
-        </div>
       </header>
 
-      <div class="cuerpo cuerpo-error">
-        <p class="cuerpo-nota">
+      <div class="error-evento">
+        <div class="error-evento-head">
+          <span>CAMPO</span>
+          <span>REGISTRO DE EVENTO</span>
+        </div>
+        <dl class="error-filas">
+          <div class="error-fila">
+            <dt>HORA DE CONSULTA</dt>
+            <dd>{{ consultaHora() }}</dd>
+          </div>
+          @if (requestId()) {
+            <div class="error-fila">
+              <dt>ID DE TRANSACCIÓN</dt>
+              <dd>{{ requestId() }}</dd>
+            </div>
+          }
+          <div class="error-fila">
+            <dt>ORIGEN DEL ERROR</dt>
+            <dd class="error-fila-destacado">INTERRUPCIÓN TEMPORAL DEL SERVICIO</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="error-acciones">
+        <div class="folio-acciones">
+          <button type="button" class="btn-primario" (click)="reintentar()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M3 12a9 9 0 1 0 2.6-6.4M3 4v4h4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Reintentar validación
+          </button>
+          <a class="btn-secundario" href="/certificados/" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M19 12H5M11 6l-6 6 6 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Volver al sitio del instituto
+          </a>
+        </div>
+        <p class="aside-nota aside-nota-italic">
           Este aviso no indica la invalidez del documento presentado, sino una interrupción temporal
           en el enlace de comunicación con la base de datos de títulos oficiales.
         </p>
       </div>
 
-      <footer class="folio-pie">
-        <button type="button" class="btn-primario" (click)="reintentar()">
-          Reintentar validación
-        </button>
-        <a class="btn-secundario" href="/certificados/" rel="noopener">Volver al sitio del instituto</a>
+      <footer class="pie-control">
+        <div class="pie-left">
+          <span class="pie-mono" aria-hidden="true">14</span>
+          <p class="pie-leyenda">IFTS N.° 14 · GCBA</p>
+        </div>
+        <p class="pie-derecha">STATUS: SERVICE_UNAVAILABLE</p>
       </footer>
     </article>
   } @else if (view(); as v) {
     @switch (v.kind) {
       @case ('valid') {
-        <app-banda-estado kind="valid" title="Certificado verificable" />
         <article class="folio" aria-labelledby="valid-title">
           <header class="membrete">
             <div class="membrete-fila">
               <div class="membrete-texto">
-                <p class="membrete-eyebrow">IFTS N.° 14 — Bedelía</p>
+                <p class="membrete-eyebrow">ACTA DE VALIDACIÓN ACADÉMICA</p>
                 <h2 id="valid-title" class="membrete-titulo">Certificación válida</h2>
                 <p class="membrete-bajada">
                   Esta certificación fue emitida por el Instituto de Formación Técnica Superior N.° 14
@@ -57,10 +108,22 @@
               </div>
             </div>
             <div class="membrete-consulta">
-              <span class="membrete-consulta-label">CONSULTA</span>
-              <span class="membrete-consulta-valor">{{ consultaTimestamp() }}</span>
+              <p>
+                CONSULTA
+                <span class="membrete-consulta-valor">{{ consultaTimestamp() }}</span>
+              </p>
+              <p class="membrete-consulta-mobile">
+                N.°
+                <span class="membrete-consulta-valor">{{ v.certificate.certificateCode }}</span>
+              </p>
             </div>
           </header>
+
+          <app-banda-estado
+            kind="valid"
+            title="Documento verificado — certificación oficial válida"
+            stateLabel="ESTADO: VÁLIDO"
+          />
 
           <div class="folio-grid">
             <main class="folio-main">
@@ -69,11 +132,15 @@
                   <span class="seccion-numero" aria-hidden="true">I.</span>
                   <h3 class="seccion-rotulo">DATOS DEL ALUMNO</h3>
                 </div>
-                <dl>
-                  <dt appCampoDato>Alumno/a</dt>
-                  <dd appCampoDato variant="highlight">{{ v.certificate.student.displayName }}</dd>
-                  <dt appCampoDato>DNI</dt>
-                  <dd appCampoDato variant="mono">{{ documentDisplay(v.certificate.student) }}</dd>
+                <dl class="dl-alumno">
+                  <div>
+                    <dt appCampoDato>Alumno/a</dt>
+                    <dd appCampoDato variant="highlight">{{ v.certificate.student.displayName }}</dd>
+                  </div>
+                  <div>
+                    <dt appCampoDato>DNI</dt>
+                    <dd appCampoDato variant="mono">{{ documentDisplay(v.certificate.student) }}</dd>
+                  </div>
                 </dl>
               </section>
 
@@ -85,10 +152,20 @@
                 <dl>
                   <dt appCampoDato>Curso</dt>
                   <dd appCampoDato variant="highlight">{{ v.certificate.course.name }}</dd>
-                  <dt appCampoDato>N.° de certificado</dt>
-                  <dd appCampoDato variant="mono">{{ v.certificate.certificateCode }}</dd>
-                  <dt appCampoDato>Fecha de emisión</dt>
-                  <dd appCampoDato variant="mono">{{ v.certificate.course.issuedAt }}</dd>
+                </dl>
+                <dl class="dl-curso-meta">
+                  <div>
+                    <dt appCampoDato>Tipo</dt>
+                    <dd appCampoDato>Certificado de curso</dd>
+                  </div>
+                  <div>
+                    <dt appCampoDato>N.° de certificado</dt>
+                    <dd appCampoDato variant="mono">{{ v.certificate.certificateCode }}</dd>
+                  </div>
+                  <div>
+                    <dt appCampoDato>Fecha de emisión</dt>
+                    <dd appCampoDato variant="mono">{{ v.certificate.course.issuedAt }}</dd>
+                  </div>
                 </dl>
               </section>
 
@@ -99,50 +176,50 @@
                     <h3 class="seccion-rotulo">REGISTRO DE ASISTENCIA</h3>
                   </div>
                   <div class="tabla-asistencias-wrap">
-                  <table class="tabla-asistencias">
-                    <thead>
-                      <tr>
-                        <th scope="col">SEQ</th>
-                        <th scope="col">FECHA REGISTRADA</th>
-                        <th scope="col">PRESENTE</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (fecha of v.certificate.course.attendedDates; track fecha; let i = $index) {
+                    <table class="tabla-asistencias">
+                      <thead>
                         <tr>
-                          <td>{{ i + 1 }}</td>
-                          <td>{{ fecha }}</td>
-                          <td>
-                            <span class="presente">
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                aria-hidden="true"
-                              >
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="var(--color-valid)"
-                                  stroke-width="1.5"
-                                />
-                                <path
-                                  d="M7.5 12.5l3 3 6-6.5"
-                                  stroke="var(--color-valid)"
-                                  stroke-width="1.75"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                />
-                              </svg>
-                              <span class="presente-texto">Sí</span>
-                            </span>
-                          </td>
+                          <th scope="col">SEQ</th>
+                          <th scope="col">FECHA REGISTRADA</th>
+                          <th scope="col">PRESENTE</th>
                         </tr>
-                      }
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        @for (fecha of v.certificate.course.attendedDates; track fecha; let i = $index) {
+                          <tr>
+                            <td>{{ seqLabel(i) }}</td>
+                            <td>{{ fecha }}</td>
+                            <td>
+                              <span class="presente">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  aria-hidden="true"
+                                >
+                                  <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="var(--color-valid)"
+                                    stroke-width="1.5"
+                                  />
+                                  <path
+                                    d="M7.5 12.5l3 3 6-6.5"
+                                    stroke="var(--color-valid)"
+                                    stroke-width="1.75"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                  />
+                                </svg>
+                                <span class="presente-texto">SÍ</span>
+                              </span>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
                   </div>
                   <p class="tabla-pie">
                     Fechas del curso en las que se registró la presencia del alumno.
@@ -174,7 +251,7 @@
                   />
                   <circle cx="56" cy="56" r="45" stroke="var(--color-valid)" stroke-width="1" />
                   <defs>
-                    <path id="sello-arco" d="M 56 20 a 36 36 0 1 1 -0.01 0" fill="none" />
+                    <path id="sello-arco-valido" d="M 56 20 a 36 36 0 1 1 -0.01 0" fill="none" />
                   </defs>
                   <text
                     font-size="6.4"
@@ -182,7 +259,7 @@
                     fill="var(--color-valid)"
                     style="font-family: var(--font-mono)"
                   >
-                    <textPath href="#sello-arco" start-offset="0">
+                    <textPath href="#sello-arco-valido" startOffset="0">
                       INSTITUTO DE FORMACIÓN TÉCNICA SUPERIOR N.° 14 · GCBA ·
                     </textPath>
                   </text>
@@ -210,7 +287,7 @@
 
               <dl class="aside-dl">
                 <div>
-                  <dt class="aside-label">CÓDIGO DE VALIDACIÓN</dt>
+                  <dt class="aside-label">CÓDIGO DE CERTIFICADO</dt>
                   <dd class="aside-valor">{{ v.certificate.certificateCode }}</dd>
                 </div>
                 <div>
@@ -220,58 +297,356 @@
               </dl>
 
               <p class="aside-nota">
-                El certificado es verificable en el sistema central del IFTS 14.
+                El QR no contiene datos personales; solo permite consultar la validación oficial.
               </p>
             </aside>
           </div>
 
-          <footer class="folio-pie">
-            <a class="btn-secundario" href="/certificados/" rel="noopener">Volver al sitio del instituto</a>
+          <footer class="pie-control">
+            <div class="pie-left">
+              <span class="pie-mono" aria-hidden="true">14</span>
+              <p class="pie-leyenda">
+                DOCUMENTO ELECTRÓNICO · SISTEMA CENTRAL DE CERTIFICADOS IFTS 14
+              </p>
+            </div>
+            <p class="pie-derecha">ESTADO DE REGISTRO: VÁLIDO</p>
           </footer>
         </article>
       }
       @case ('not-verifiable') {
-        <app-banda-estado kind="not-verifiable" title="El certificado no es verificable." />
-        <article class="folio folio-no-verificable" aria-labelledby="nv-title">
-          <header class="membrete membrete-nv">
-            <p class="membrete-eyebrow">IFTS N.° 14 — Bedelía</p>
-            <h2 id="nv-title" class="membrete-titulo">Certificación no encontrada</h2>
-            <p class="membrete-bajada">
-              No encontramos una certificación válida asociada a esta consulta en los registros
-              académicos oficiales.
-            </p>
-            <div class="membrete-consulta">
-              <span class="membrete-consulta-label">CONSULTA</span>
-              <span class="membrete-consulta-valor">{{ consultaTimestamp() }}</span>
-            </div>
-          </header>
-
-          <div class="cuerpo cuerpo-nv">
-            <section class="seccion">
-              <div class="seccion-titulo">
-                <span class="seccion-numero" aria-hidden="true">I.</span>
-                <h3 class="seccion-rotulo">QUÉ PODÉS HACER</h3>
+        @if (isRevoked(v)) {
+          <article class="folio folio-revocada" aria-labelledby="rev-title">
+            <header class="membrete">
+              <div class="membrete-fila">
+                <div class="membrete-texto">
+                  <p class="membrete-eyebrow">ACTA DE VALIDACIÓN ACADÉMICA</p>
+                  <h2 id="rev-title" class="membrete-titulo">Certificación revocada</h2>
+                  <p class="membrete-bajada">
+                    Esta certificación fue emitida por el Instituto de Formación Técnica Superior
+                    N.° 14, pero la institución revocó su validez.
+                  </p>
+                </div>
               </div>
-              <ol class="sugerencias">
-                <li>Verificá que el enlace o QR sea el emitido por el instituto.</li>
-                <li>Las certificaciones nuevas pueden tardar hasta 48 hs en impactar en el sistema público.</li>
-                <li>Si el problema persiste, comunicate con Bedelía del IFTS N.° 14.</li>
-              </ol>
-            </section>
+              <div class="membrete-consulta">
+                <p>
+                  CONSULTA
+                  <span class="membrete-consulta-valor">{{ consultaTimestamp() }}</span>
+                </p>
+              </div>
+            </header>
 
-            <p class="cuerpo-nota">
-              Este resultado no invalida el certificado en papel o PDF: indica que la consulta no
-              coincide con ningún registro publicado.
-            </p>
-          </div>
+            <app-banda-estado
+              kind="revoked"
+              title="Este documento no debe considerarse válido"
+              description="El certificado existió y fue emitido oficialmente, pero se encuentra revocado. Carece de validez legal y académica."
+              stateLabel="ESTADO: REVOCADO"
+            />
 
-          <footer class="folio-pie">
-            <button type="button" class="btn-primario" (click)="reintentar()">
-              Reintentar búsqueda
-            </button>
-            <a class="btn-secundario" href="/certificados/" rel="noopener">Volver al sitio del instituto</a>
-          </footer>
-        </article>
+            <div class="folio-grid">
+              <main class="folio-main">
+                <section class="seccion">
+                  <div class="seccion-titulo">
+                    <span class="seccion-numero" aria-hidden="true">I.</span>
+                    <h3 class="seccion-rotulo">ESTADO DEL REGISTRO</h3>
+                  </div>
+                  <p class="cuerpo-lead">
+                    La consulta corresponde a una certificación revocada. No se muestran datos del
+                    alumno ni del curso en este estado.
+                  </p>
+                  <p class="aside-nota aside-nota-destructive">
+                    La revocación es definitiva. Ante cualquier duda, comunicate con la institución
+                    emisora.
+                  </p>
+                </section>
+              </main>
+
+              <aside class="folio-aside" aria-label="Trazabilidad y verificación">
+                <p class="aside-eyebrow">II. TRAZABILIDAD Y VERIFICACIÓN</p>
+
+                <div class="sello">
+                  <svg
+                    width="112"
+                    height="112"
+                    viewBox="0 0 112 112"
+                    fill="none"
+                    aria-hidden="true"
+                    class="sello-svg"
+                  >
+                    <circle
+                      cx="56"
+                      cy="56"
+                      r="53"
+                      stroke="var(--color-destructive)"
+                      stroke-width="1.5"
+                      stroke-dasharray="2.5 3.5"
+                      opacity="0.9"
+                    />
+                    <circle
+                      cx="56"
+                      cy="56"
+                      r="45"
+                      stroke="var(--color-destructive)"
+                      stroke-width="1"
+                    />
+                    <defs>
+                      <path
+                        id="sello-arco-revocado"
+                        d="M 56 20 a 36 36 0 1 1 -0.01 0"
+                        fill="none"
+                      />
+                    </defs>
+                    <text
+                      font-size="6.4"
+                      letter-spacing="1.6"
+                      fill="var(--color-destructive)"
+                      style="font-family: var(--font-mono)"
+                    >
+                      <textPath href="#sello-arco-revocado" startOffset="0">
+                        INSTITUTO DE FORMACIÓN TÉCNICA SUPERIOR N.° 14 · GCBA ·
+                      </textPath>
+                    </text>
+                    <path
+                      d="M48 48l16 16M64 48L48 64"
+                      stroke="var(--color-destructive)"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                    />
+                    <text
+                      x="56"
+                      y="79"
+                      text-anchor="middle"
+                      font-size="7"
+                      letter-spacing="1.4"
+                      font-weight="600"
+                      fill="var(--color-destructive)"
+                      style="font-family: var(--font-mono)"
+                    >
+                      REVOCADO
+                    </text>
+                  </svg>
+                </div>
+
+                <dl class="aside-dl">
+                  <div>
+                    <dt class="aside-label">ESTADO DEL REGISTRO</dt>
+                    <dd class="aside-valor aside-valor-revocado">
+                      <span class="estado-dot estado-dot-revocado" aria-hidden="true"></span>
+                      REVOCADO
+                    </dd>
+                  </div>
+                </dl>
+
+                <p class="aside-nota">
+                  El QR no contiene datos personales; solo permite consultar la validación oficial.
+                </p>
+
+                <div class="aside-acciones">
+                  <a class="btn-secundario" href="/certificados/" rel="noopener">
+                    Volver al sitio del instituto
+                  </a>
+                </div>
+              </aside>
+            </div>
+
+            <footer class="pie-control">
+              <div class="pie-left">
+                <span class="pie-mono" aria-hidden="true">14</span>
+                <p class="pie-leyenda">
+                  DOCUMENTO ELECTRÓNICO · SISTEMA CENTRAL DE CERTIFICADOS IFTS 14
+                </p>
+              </div>
+              <p class="pie-derecha">ESTADO DE REGISTRO: REVOCADO</p>
+            </footer>
+          </article>
+        } @else {
+          <article class="folio folio-no-verificable" aria-labelledby="nv-title">
+            <header class="membrete">
+              <div class="membrete-fila">
+                <div class="membrete-texto">
+                  <p class="membrete-eyebrow">PORTAL DE VALIDACIÓN</p>
+                  <h2 id="nv-title" class="membrete-titulo">Certificación no encontrada</h2>
+                  <p class="membrete-bajada">
+                    No encontramos una certificación válida asociada a esta consulta en los registros
+                    académicos oficiales.
+                  </p>
+                </div>
+              </div>
+              <div class="membrete-consulta">
+                <p>
+                  CONSULTA
+                  <span class="membrete-consulta-valor">{{ consultaTimestamp() }}</span>
+                </p>
+              </div>
+            </header>
+
+            <app-banda-estado
+              kind="not-verifiable"
+              title="Sin registro para esta consulta"
+              description="El enlace puede ser incorrecto, estar incompleto o no corresponder a una certificación del instituto."
+              stateLabel="ESTADO: SIN REGISTRO"
+            />
+
+            <div class="folio-grid">
+              <main class="folio-main">
+                <section class="seccion">
+                  <div class="seccion-titulo">
+                    <span class="seccion-numero" aria-hidden="true">I.</span>
+                    <h3 class="seccion-rotulo">REGISTRO DE LA CONSULTA</h3>
+                  </div>
+                  <dl class="dl-consulta">
+                    <div>
+                      <dt class="aside-label">FECHA Y HORA DE CONSULTA</dt>
+                      <dd class="aside-valor">{{ consultaTimestamp() }}</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section class="seccion">
+                  <div class="seccion-titulo">
+                    <span class="seccion-numero" aria-hidden="true">II.</span>
+                    <h3 class="seccion-rotulo">QUÉ PODÉS HACER</h3>
+                  </div>
+                  <ul class="sugerencias">
+                    <li>
+                      <span class="sugerencia-num" aria-hidden="true">01</span>
+                      <p>Verificá que el enlace o QR sea el último entregado por el instituto.</p>
+                    </li>
+                    <li>
+                      <span class="sugerencia-num" aria-hidden="true">02</span>
+                      <p>
+                        Las certificaciones nuevas pueden tardar hasta 48 hs en impactar en el
+                        sistema público.
+                      </p>
+                    </li>
+                    <li>
+                      <span class="sugerencia-num" aria-hidden="true">03</span>
+                      <p>Si el problema persiste, comunicate con Bedelía del IFTS N.° 14.</p>
+                    </li>
+                  </ul>
+
+                  <div class="folio-acciones">
+                    <button type="button" class="btn-primario" (click)="reintentar()">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          d="M3 12a9 9 0 1 0 2.6-6.4M3 4v4h4"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      Reintentar búsqueda
+                    </button>
+                    <a class="btn-secundario" href="/certificados/" rel="noopener">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path
+                          d="M19 12H5M11 6l-6 6 6 6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      Volver al sitio del instituto
+                    </a>
+                  </div>
+                </section>
+              </main>
+
+              <aside class="folio-aside" aria-label="Trazabilidad y verificación">
+                <p class="aside-eyebrow">III. TRAZABILIDAD Y VERIFICACIÓN</p>
+
+                <div class="sello">
+                  <svg
+                    width="112"
+                    height="112"
+                    viewBox="0 0 112 112"
+                    fill="none"
+                    aria-hidden="true"
+                    class="sello-svg"
+                  >
+                    <circle
+                      cx="56"
+                      cy="56"
+                      r="53"
+                      stroke="var(--color-muted-foreground)"
+                      stroke-width="1.5"
+                      stroke-dasharray="2.5 3.5"
+                      opacity="0.9"
+                    />
+                    <circle
+                      cx="56"
+                      cy="56"
+                      r="45"
+                      stroke="var(--color-muted-foreground)"
+                      stroke-width="1"
+                    />
+                    <defs>
+                      <path
+                        id="sello-arco-sin-registro"
+                        d="M 56 20 a 36 36 0 1 1 -0.01 0"
+                        fill="none"
+                      />
+                    </defs>
+                    <text
+                      font-size="6.4"
+                      letter-spacing="1.6"
+                      fill="var(--color-muted-foreground)"
+                      style="font-family: var(--font-mono)"
+                    >
+                      <textPath href="#sello-arco-sin-registro" startOffset="0">
+                        INSTITUTO DE FORMACIÓN TÉCNICA SUPERIOR N.° 14 · GCBA ·
+                      </textPath>
+                    </text>
+                    <path
+                      d="M46 56h20"
+                      stroke="var(--color-muted-foreground)"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                    />
+                    <text
+                      x="56"
+                      y="80"
+                      text-anchor="middle"
+                      font-size="6.2"
+                      letter-spacing="1.4"
+                      font-weight="600"
+                      fill="var(--color-muted-foreground)"
+                      style="font-family: var(--font-mono)"
+                    >
+                      SIN REGISTRO
+                    </text>
+                  </svg>
+                </div>
+
+                <dl class="aside-dl">
+                  <div>
+                    <dt class="aside-label">ESTADO DEL REGISTRO</dt>
+                    <dd class="aside-valor aside-valor-muted">
+                      <span class="estado-dot estado-dot-muted" aria-hidden="true"></span>
+                      SIN REGISTRO
+                    </dd>
+                  </div>
+                </dl>
+
+                <p class="aside-nota">
+                  Este resultado no invalida el certificado en papel o PDF: indica que la consulta no
+                  coincide con ningún registro publicado.
+                </p>
+              </aside>
+            </div>
+
+            <footer class="pie-control">
+              <div class="pie-left">
+                <span class="pie-mono" aria-hidden="true">14</span>
+                <p class="pie-leyenda">
+                  DOCUMENTO ELECTRÓNICO · SISTEMA CENTRAL DE CERTIFICADOS IFTS 14
+                </p>
+              </div>
+              <p class="pie-derecha">ESTADO DE REGISTRO: SIN REGISTRO</p>
+            </footer>
+          </article>
+        }
       }
     }
   }

@@ -42,6 +42,8 @@ function courses(obtener: (id: number) => Promise<CursoDetalle>): CoursesService
 function attendance(listarAsistencias: AttendanceService['listarAsistencias']): AttendanceService {
   return {
     listarAsistencias,
+    listarAsistenciasPorPar: () => Promise.resolve([]),
+    listarAsistenciasPorAlumno: () => Promise.resolve([]),
     listarAlumnos: () => Promise.resolve([]),
     marcar: () => Promise.resolve([]),
     anular: () => Promise.resolve(),
@@ -136,7 +138,7 @@ describe('CourseDetailPage', () => {
     expect(el.querySelector('.curso-ficha .acento')).not.toBeNull();
     expect(el.querySelector('h1')?.textContent).toContain('Curso demo 1');
     expect(el.querySelector('table caption')?.textContent).toContain('Fechas de cursada');
-    expect(el.querySelectorAll('th[scope="col"]').length).toBe(4);
+    expect(el.querySelectorAll('th[scope="col"]').length).toBe(3);
     expect(el.querySelectorAll('ul.fechas-cards li').length).toBe(1);
   });
 
@@ -158,7 +160,7 @@ describe('CourseDetailPage', () => {
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Pendiente');
     expect(el.textContent).toContain('2 presentes');
-    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]').length).toBe(2);
+    expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/11/asistencias"], .fechas-cards a[href*="/fechas/11/asistencias"]').length).toBe(2);
     expect(el.querySelectorAll('a[href*="/fechas/13/asistencias"]').length).toBe(0);
   });
 
@@ -185,10 +187,10 @@ describe('CourseDetailPage', () => {
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('1 presente');
     expect(el.textContent).toContain('Pendiente');
-    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]').length).toBe(2);
-    expect(el.querySelectorAll('a[href*="/fechas/12/asistencias"]').length).toBe(2);
-    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]')[0]?.textContent).toContain('Ver');
-    expect(el.querySelectorAll('a[href*="/fechas/12/asistencias"]')[0]?.textContent).toContain('Cargar');
+    expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/11/asistencias"], .fechas-cards a[href*="/fechas/11/asistencias"]').length).toBe(2);
+    expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/12/asistencias"], .fechas-cards a[href*="/fechas/12/asistencias"]').length).toBe(2);
+    expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/11/asistencias"]')[0]?.textContent).toContain('Ver');
+    expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/12/asistencias"]')[0]?.textContent).toContain('Cargar');
   });
 
   it('expone carga, error, vacío y un único anuncio live con rol implícito status', async () => {
@@ -201,9 +203,25 @@ describe('CourseDetailPage', () => {
     expect(liveRoles).toEqual(['status']);
     expect(el.querySelectorAll('[role="alert"]').length).toBe(0);
     expect(el.textContent).toContain('Agregar fecha');
-    expect((el.querySelector('a.btn-primary') as HTMLAnchorElement).getAttribute('href')).toContain(
+    expect(el.textContent).toContain('Editar curso');
+    expect(el.textContent).toContain('Cargar asistencias');
+    expect((el.querySelector('[data-testid="cta-editar-curso"]') as HTMLAnchorElement).getAttribute('href')).toContain(
       '/admin/cursos/1/editar',
     );
+    expect(
+      (el.querySelector('[data-testid="cta-cargar-asistencias"]') as HTMLAnchorElement).getAttribute('href'),
+    ).toContain('/admin/asistencias');
+  });
+
+  it('enlaza Cargar asistencias a la primera fecha disponible', async () => {
+    const f = await render(
+      courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12)]))),
+      '1',
+      attendance(() => Promise.resolve([])),
+    );
+    const el = f.nativeElement as HTMLElement;
+    const cta = el.querySelector('[data-testid="cta-cargar-asistencias"]') as HTMLAnchorElement;
+    expect(cta.getAttribute('href')).toContain('/admin/cursos/1/fechas/11/asistencias');
   });
 
   it('mantiene aria-busy durante la carga', async () => {

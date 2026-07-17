@@ -18,22 +18,75 @@
             <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <span class="monograma" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <rect x="2" y="2" width="6" height="6" fill="currentColor" />
-            <rect x="12" y="2" width="6" height="6" fill="var(--color-circuit)" />
-            <rect x="2" y="12" width="6" height="6" fill="var(--color-circuit)" />
-            <rect x="12" y="12" width="6" height="6" fill="currentColor" />
+
+        <label class="topbar-search">
+          <svg
+            class="topbar-search-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
           </svg>
-        </span>
-        <div class="topbar-titles">
-          <p class="topbar-title">IFTS N.° 14 — Admin</p>
-          <p class="topbar-subtitle">Panel administrativo</p>
+          <span class="sr-only">Buscar curso, alumno o certificado</span>
+          <input
+            type="search"
+            name="admin-search"
+            placeholder="Buscar curso, alumno o certificado…"
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="topbar-actions">
+          <span class="topbar-sync">
+            <span class="topbar-sync-dot" aria-hidden="true"></span>
+            <span class="topbar-sync-label">Sincronizado 10:42</span>
+          </span>
+          <button type="button" class="topbar-icon-btn" aria-label="Ayuda">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <path d="M12 17h.01" />
+            </svg>
+          </button>
+          <button type="button" class="topbar-icon-btn topbar-bell" aria-label="Notificaciones">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+              <path
+                d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"
+              />
+            </svg>
+            <span class="topbar-bell-dot" aria-hidden="true"></span>
+          </button>
+          <span class="topbar-avatar" aria-hidden="true">AD</span>
         </div>
-        <span class="badge-mock">
-          <span class="badge-dot" aria-hidden="true"></span>
-          Sesión activa
-        </span>
       </div>
     </header>
     <main id="contenido" role="main">

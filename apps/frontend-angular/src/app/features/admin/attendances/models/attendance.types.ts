@@ -31,6 +31,10 @@ export interface AsistenciaMarcado {
 export interface AttendanceService {
   listarAlumnos(cursoId: number): Promise<readonly AsistenciaAlumno[]>;
   listarAsistencias(cursoId: number, fechaId: number): Promise<readonly Asistencia[]>;
+  /** Asistencias del par curso+alumno (backend filtra por query). */
+  listarAsistenciasPorPar(cursoId: number, alumnoId: number): Promise<readonly Asistencia[]>;
+  /** Asistencias de un alumno (GET /admin/asistencias?alumnoId=). */
+  listarAsistenciasPorAlumno(alumnoId: number): Promise<readonly Asistencia[]>;
   marcar(
     cursoId: number,
     fechaId: number,

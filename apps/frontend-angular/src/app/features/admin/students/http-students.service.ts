@@ -1,12 +1,13 @@
 // Fuente HTTP de alumnos. Implementa StudentsService contra la API PHP admin.
 // GET /admin/alumnos → envelope { data: { items: AlumnoDto[] } }.
+// POST /admin/alumnos → body { apellidoNombre, dni, estado? }.
 // Mapeo: apellidoNombre se divide en apellido+nombre (primer espacio).
-// tieneEmail default false (backend no expone email). ingreso y cursos default null/[].
+// tieneEmail / cursos / certs → null (backend no los expone).
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { Alumno, AlumnoDetalle } from './students.models';
+import { Alumno, AlumnoDetalle, AlumnoDraft } from './students.models';
 import { StudentsService } from './students.service';
 
 interface AlumnoDto {
@@ -59,6 +60,21 @@ export class HttpStudentsService implements StudentsService {
     }
   }
 
+  async crear(draft: AlumnoDraft): Promise<AlumnoDetalle> {
+    const url = `${environment.apiBaseUrl}/admin/alumnos`;
+    const body: { apellidoNombre: string; dni: string; estado?: string } = {
+      apellidoNombre: draft.apellidoNombre,
+      dni: draft.dni,
+    };
+    if (draft.estado !== undefined) {
+      body.estado = draft.estado;
+    }
+    const envelope = await firstValueFrom(
+      this.http.post<ApiEnvelope<AlumnoDto>>(url, body),
+    );
+    return this.toAlumnoDetalle(envelope.data);
+  }
+
   private splitApellidoNombre(apellidoNombre: string): { apellido: string; nombre: string } {
     const trimmed = apellidoNombre.trim();
     const idx = trimmed.indexOf(' ');
@@ -75,24 +91,17 @@ export class HttpStudentsService implements StudentsService {
       apellido,
       nombre,
       dniMostrar: dto.dniMostrar,
-      // ponytail: backend no expone email; default false hasta que lo agregue.
-      tieneEmail: false,
-      cursosConAsistencia: 0,
-      certificacionesValidas: 0,
+      estado: dto.estado === 'inactivo' ? 'inactivo' : 'activo',
+      // Honest placeholders: API no expone estos campos.
+      tieneEmail: null,
+      cursosConAsistencia: null,
+      certificacionesValidas: null,
     };
   }
 
   private toAlumnoDetalle(dto: AlumnoDto): AlumnoDetalle {
-    const { apellido, nombre } = this.splitApellidoNombre(dto.apellidoNombre);
     return {
-      id: dto.id,
-      apellido,
-      nombre,
-      dniMostrar: dto.dniMostrar,
-      tieneEmail: false,
-      cursosConAsistencia: 0,
-      certificacionesValidas: 0,
-      // ponytail: backend sin campo ingreso ni asociación curso-alumno.
+      ...this.toAlumno(dto),
       ingreso: '',
       cursos: [],
     };

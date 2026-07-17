@@ -30,12 +30,13 @@
   --color-border: #d9e0e8;
   --color-ring: #1565c0;
 
-  /* Tipografía */
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Tipografía — stack intencional sin deps (Geist de v0 no se porta) */
+  --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --tracking-caps: 0.18em;
   --tracking-caps-tight: 0.12em;
   --tracking-caps-membrete: 0.22em;
+  --tracking-section: 0.16em;
 
   /* Paleta secundaria — centraliza tokens usados por componentes */
   --color-secondary: #1e3a5f;

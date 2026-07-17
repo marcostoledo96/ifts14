@@ -47,4 +47,15 @@ describe('BandaEstado', () => {
     expect(el.querySelector('.banda-valid')).not.toBeNull();
     expect(el.textContent).toContain('ESTADO: VÁLIDO');
   });
+
+  it('distingue revoked (destructive) de not-verifiable (warning)', async () => {
+    const revoked = await render('revoked', 'Revocado');
+    expect((revoked.nativeElement as HTMLElement).querySelector('.banda-revoked')).not.toBeNull();
+    expect((revoked.nativeElement as HTMLElement).querySelector('.banda-not-verifiable')).toBeNull();
+
+    TestBed.resetTestingModule();
+    const nv = await render('not-verifiable', 'Sin registro');
+    expect((nv.nativeElement as HTMLElement).querySelector('.banda-not-verifiable')).not.toBeNull();
+    expect((nv.nativeElement as HTMLElement).querySelector('.banda-revoked')).toBeNull();
+  });
 });

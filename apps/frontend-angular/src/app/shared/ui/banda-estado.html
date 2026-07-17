@@ -1,7 +1,8 @@
 <section
   class="banda"
   [class.banda-valid]="kind() === 'valid'"
-  [class.banda-revoked]="kind() === 'revoked' || kind() === 'not-verifiable'"
+  [class.banda-revoked]="kind() === 'revoked'"
+  [class.banda-not-verifiable]="kind() === 'not-verifiable'"
   [class.banda-error]="kind() === 'error'"
   [class.banda-loading]="kind() === 'loading'"
   [attr.role]="isAlert() ? 'alert' : 'status'"
@@ -10,11 +11,67 @@
 >
   <span class="banda-icon" aria-hidden="true">
     @switch (kind()) {
-      @case ('valid') { ✓ }
-      @case ('revoked') { ◆ }
-      @case ('not-verifiable') { ◆ }
-      @case ('error') { ! }
-      @case ('loading') { … }
+      @case ('valid') {
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" fill="currentColor" />
+          <path
+            d="M7.5 12.5l3 3 6-6.5"
+            stroke="#fff"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      }
+      @case ('revoked') {
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M8.6 3h6.8L21 8.6v6.8L15.4 21H8.6L3 15.4V8.6L8.6 3Z"
+            fill="currentColor"
+          />
+          <path
+            d="M12 7.5v5M12 16h.01"
+            stroke="#fff"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      }
+      @case ('not-verifiable') {
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+          <path
+            d="m20 20-3.5-3.5M8.5 11h5"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      }
+      @case ('error') {
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" fill="currentColor" />
+          <path
+            d="M12 8v5M12 16h.01"
+            stroke="#fff"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      }
+      @case ('loading') {
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-dasharray="4 4"
+            opacity="0.85"
+          />
+        </svg>
+      }
     }
   </span>
   <div class="banda-content">

@@ -1,6 +1,6 @@
 <section aria-labelledby="curso-title">
   <p class="volver">
-    <a routerLink="/admin/cursos">← Volver al listado</a>
+    <a routerLink="/admin/cursos">← Volver a cursos</a>
   </p>
 
   <output class="resumen" aria-live="polite" aria-atomic="true">{{ resumen() }}</output>
@@ -13,28 +13,66 @@
 
   @if (detalle(); as d) {
     <article class="curso-ficha">
-      <aside class="acento" aria-hidden="true"></aside>
+      <aside class="acento" [class.acento--inactivo]="d.estado !== 'activo'" aria-hidden="true"></aside>
       <div class="curso-contenido">
         <header class="curso-header">
-          <div>
-            <p class="kicker">Curso</p>
-            <p class="codigo">{{ d.codigo }}</p>
+          <div class="curso-identidad">
+            <div class="curso-badges">
+              <p class="codigo">{{ d.codigo }}</p>
+              <p class="banda-estado estado-{{ d.estado }}">{{ d.estado }}</p>
+            </div>
             <h1 id="curso-title" class="title">{{ d.nombre }}</h1>
           </div>
-          <p class="banda-estado estado-{{ d.estado }}">Estado: {{ d.estado }}</p>
+          <a
+            class="btn-secondary"
+            [routerLink]="['/admin/cursos', d.id, 'editar']"
+            data-testid="cta-editar-curso"
+          >
+            Editar curso
+          </a>
         </header>
+
+        <hr class="curso-divider" />
+
+        <div class="asistencias-head">
+          <div>
+            <h2 id="asistencias-titulo" class="subtitle">Registro de asistencias</h2>
+            <p class="asistencias-meta">
+              <span class="mono">{{ d.fechas.length }}</span>
+              {{ d.fechas.length === 1 ? 'fecha cargada' : 'fechas cargadas' }}
+            </p>
+          </div>
+          <div class="asistencias-ctas">
+            <a class="btn-secondary" [routerLink]="['/admin/cursos', d.id, 'editar']">Agregar fecha</a>
+            @if (primeraFechaAsistencia(d); as fechaId) {
+              <a
+                class="btn-primary"
+                [routerLink]="['/admin/cursos', d.id, 'fechas', fechaId, 'asistencias']"
+                data-testid="cta-cargar-asistencias"
+              >
+                Cargar asistencias
+              </a>
+            } @else {
+              <a
+                class="btn-primary"
+                routerLink="/admin/asistencias"
+                data-testid="cta-cargar-asistencias"
+                title="Sin fechas disponibles en este curso; abrir hub de asistencias"
+              >
+                Cargar asistencias
+              </a>
+            }
+          </div>
+        </div>
+
         <dl class="curso-meta">
           <dt>Creado</dt><dd>{{ d.createdAt | date: 'short' }}</dd>
           <dt>Actualizado</dt><dd>{{ d.updatedAt | date: 'short' }}</dd>
         </dl>
-        <div class="acciones">
-          <a class="btn-primary" [routerLink]="['/admin/cursos', d.id, 'editar']">Editar fechas</a>
-        </div>
       </div>
     </article>
 
-    <section aria-labelledby="fechas-title" class="fechas">
-      <h2 id="fechas-title" class="subtitle">Registro de asistencias</h2>
+    <section aria-labelledby="asistencias-titulo" class="fechas">
       @if (d.fechas.length === 0) {
         <div class="vacio">
           <p>Este curso no tiene fechas programadas.</p>
@@ -43,16 +81,73 @@
       } @else {
         <table class="fechas-tabla">
           <caption>Fechas de cursada y estado de carga</caption>
-          <thead><tr><th scope="col">Fecha</th><th scope="col">Estado</th><th scope="col">Conteo</th><th scope="col">Acción</th></tr></thead>
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Asistencias cargadas</th>
+              <th scope="col">Acción</th>
+            </tr>
+          </thead>
           <tbody>
-          @for (f of d.fechas; track f.id) {
-            <tr><td class="fecha">{{ f.fecha }}</td><td><span class="fecha-estado estado-{{ f.estado }}">{{ f.estado }}</span></td><td>{{ estadoAsistencia(f.id) }} @if (conteoAsistencia(f.id) === null && asistenciaDisponible(f.id)) { — }</td><td>@if (f.estado !== 'cancelada' && asistenciaDisponible(f.id)) { <a class="fecha-asistencia" [routerLink]="['/admin/cursos', d.id, 'fechas', f.id, 'asistencias']" [attr.aria-label]="accionPorFecha(f.id) + ' asistencia de la fecha ' + f.fecha">{{ accionPorFecha(f.id) }}</a> } @else if (f.estado !== 'cancelada') { <span class="fecha-asistencia-no-disponible" aria-label="Acción de asistencia no disponible">No disponible</span> } @else { <span class="fecha-asistencia-cancelada">Sin acción</span> }</td></tr>
-          }
+            @for (f of d.fechas; track f.id) {
+              <tr>
+                <td class="fecha">{{ f.fecha }}</td>
+                <td>
+                  <span class="fecha-estado estado-{{ f.estado }}">{{ f.estado }}</span>
+                  ·
+                  {{ estadoAsistencia(f.id) }}
+                  @if (conteoAsistencia(f.id) === null && asistenciaDisponible(f.id)) {
+                    —
+                  }
+                </td>
+                <td>
+                  @if (f.estado !== 'cancelada' && asistenciaDisponible(f.id)) {
+                    <a
+                      class="fecha-asistencia"
+                      [routerLink]="['/admin/cursos', d.id, 'fechas', f.id, 'asistencias']"
+                      [attr.aria-label]="accionPorFecha(f.id) + ' asistencia de la fecha ' + f.fecha"
+                    >
+                      {{ accionPorFecha(f.id) }}
+                    </a>
+                  } @else if (f.estado !== 'cancelada') {
+                    <span class="fecha-asistencia-no-disponible" aria-label="Acción de asistencia no disponible"
+                      >No disponible</span
+                    >
+                  } @else {
+                    <span class="fecha-asistencia-cancelada">Sin acción</span>
+                  }
+                </td>
+              </tr>
+            }
           </tbody>
         </table>
         <ul class="fechas-cards">
           @for (f of d.fechas; track f.id) {
-            <li><span class="fecha">{{ f.fecha }}</span><span class="fecha-estado estado-{{ f.estado }}">{{ f.estado }}</span><span>{{ estadoAsistencia(f.id) }} @if (conteoAsistencia(f.id) === null && asistenciaDisponible(f.id)) { — }</span>@if (f.estado !== 'cancelada' && asistenciaDisponible(f.id)) { <a class="fecha-asistencia" [routerLink]="['/admin/cursos', d.id, 'fechas', f.id, 'asistencias']" [attr.aria-label]="accionPorFecha(f.id) + ' asistencia de la fecha ' + f.fecha">{{ accionPorFecha(f.id) }}</a> } @else if (f.estado !== 'cancelada') { <span class="fecha-asistencia-no-disponible" aria-label="Acción de asistencia no disponible">No disponible</span> } @else { <span class="fecha-asistencia-cancelada">Sin acción</span> }</li>
+            <li>
+              <span class="fecha">{{ f.fecha }}</span>
+              <span class="fecha-estado estado-{{ f.estado }}">{{ f.estado }}</span>
+              <span>
+                {{ estadoAsistencia(f.id) }}
+                @if (conteoAsistencia(f.id) === null && asistenciaDisponible(f.id)) {
+                  —
+                }
+              </span>
+              @if (f.estado !== 'cancelada' && asistenciaDisponible(f.id)) {
+                <a
+                  class="fecha-asistencia"
+                  [routerLink]="['/admin/cursos', d.id, 'fechas', f.id, 'asistencias']"
+                  [attr.aria-label]="accionPorFecha(f.id) + ' asistencia de la fecha ' + f.fecha"
+                >
+                  {{ accionPorFecha(f.id) }}
+                </a>
+              } @else if (f.estado !== 'cancelada') {
+                <span class="fecha-asistencia-no-disponible" aria-label="Acción de asistencia no disponible"
+                  >No disponible</span
+                >
+              } @else {
+                <span class="fecha-asistencia-cancelada">Sin acción</span>
+              }
+            </li>
           }
         </ul>
       }

@@ -17,17 +17,24 @@ describe('LoginPage', () => {
     return fixture;
   }
 
-  it('muestra subtítulo de acceso administrativo', async () => {
+  it('muestra Panel de certificaciones y acceso autorizado', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Acceso administrativo');
+    expect(el.textContent).toContain('Panel de certificaciones');
+    expect(el.textContent).toContain('Acceso exclusivo para personal autorizado');
+    expect(el.textContent).not.toContain('Acceso simulado');
   });
 
-  it('tiene role=main y un aside informativo', async () => {
+  it('tiene role=main, aside institucional, protocolo visual y footer restringido', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('main[role="main"]')).not.toBeNull();
     expect(el.querySelector('aside[aria-label]')).not.toBeNull();
+    expect(el.textContent).toContain('Bedelía Digital');
+    expect(el.textContent).toContain('SHA-256 / SSL');
+    expect(el.textContent).toContain('Acceso restringido');
+    expect(el.querySelector('.aside-texture')).not.toBeNull();
+    expect(el.querySelector('.main-texture')).not.toBeNull();
   });
 
   it('incluye skip link hacia #contenido', async () => {
@@ -43,14 +50,35 @@ describe('LoginPage', () => {
     const creds: AdminAuthCredentials = { username: 'admin', password: 'clave123' };
     await f.componentInstance.onAccesoSimulado(creds);
     expect(navSpy).toHaveBeenCalledWith(['/admin/dashboard']);
+    expect(f.componentInstance.loading()).toBe(false);
   });
 
-  it('login con error 401 muestra mensaje de credenciales inválidas', async () => {
+  it('activa loading durante el login asíncrono', async () => {
+    const f = await render();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    let resolveLogin!: () => void;
+    spyOn(auth, 'login').and.returnValue(
+      new Promise<void>((resolve) => {
+        resolveLogin = resolve;
+      }),
+    );
+    const pending = f.componentInstance.onAccesoSimulado({
+      username: 'admin',
+      password: 'clave123',
+    });
+    expect(f.componentInstance.loading()).toBe(true);
+    resolveLogin();
+    await pending;
+    expect(f.componentInstance.loading()).toBe(false);
+  });
+
+  it('login con error 401 muestra mensaje de credenciales no autorizadas', async () => {
     const f = await render();
     const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
     spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 401 }));
     await f.componentInstance.onAccesoSimulado({ username: 'bad', password: 'wrong' });
-    expect(f.componentInstance.errorMsg()).toContain('Credenciales inválidas');
+    expect(f.componentInstance.errorMsg()).toContain('no coinciden con un registro autorizado');
+    expect(f.componentInstance.loading()).toBe(false);
   });
 
   it('login con error 429 muestra mensaje de rate limit', async () => {
@@ -65,5 +93,12 @@ describe('LoginPage', () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();
     await render();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('no contiene credenciales demo de la referencia React', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('usuario.demo@example.invalid');
+    expect(el.innerHTML).not.toContain('usuario.demo');
   });
 });

@@ -9,6 +9,13 @@ import {
 
 type VistaQa = 'datos' | 'cargando' | 'error' | 'vacio-total';
 
+const ESTADO_LABEL: Record<EstadoCertificado, string> = {
+  borrador: 'Borrador',
+  vigente: 'Válida',
+  revocado: 'Revocado',
+  vencido: 'Vencido',
+};
+
 export const CERTIFICATIONS_QA_ENABLED = new InjectionToken<boolean>('CERTIFICATIONS_QA_ENABLED', {
   factory: isDevMode,
 });
@@ -27,6 +34,7 @@ export class CertificationsListPage {
   private loadGeneration = 0;
 
   readonly estados: readonly EstadoCertificado[] = ['borrador', 'vigente', 'revocado', 'vencido'];
+  readonly estadoLabel = ESTADO_LABEL;
   readonly q = signal('');
   readonly estado = signal<EstadoCertificado | 'todos'>('todos');
   readonly curso = signal('todos');
@@ -63,6 +71,10 @@ export class CertificationsListPage {
   readonly sinCoincidencias = computed(() => !this.cargando() && !this.error() && this.vistaQA() === 'datos' && this.hayFiltrosActivos() && this.resultadosFiltrados().length === 0);
 
   constructor() { void this.recargar(); }
+
+  etiquetaEstado(estado: EstadoCertificado): string {
+    return ESTADO_LABEL[estado];
+  }
 
   async recargar(): Promise<void> {
     const generation = ++this.loadGeneration;
