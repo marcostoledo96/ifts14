@@ -4,15 +4,24 @@ import { COURSES_SOURCE } from '../../../courses/courses.service';
 import { Curso, CursoFecha } from '../../../courses/courses.models';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
 
+type EstadoFiltro = 'todas' | 'programada' | 'realizada';
+
 interface FilaAsistencia {
   readonly curso: Curso;
   readonly fecha: CursoFecha;
-  // Conteos demostrativos por fecha (derivados del mock en memoria).
+  /** Conteos demostrativos por fecha (derivados del mock en memoria). */
   readonly presentes: number;
   readonly total: number;
 }
 
-// Lista de cursos/fechas asistibles. Sin HTTP/storage. Datos demo en memoria.
+const fmtFecha = new Intl.DateTimeFormat('es-AR', {
+  weekday: 'short',
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
+
+/** Hub de fechas asistibles → marcado. Sin HTTP/storage. */
 @Component({
   selector: 'app-attendances-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,21 +34,51 @@ export class AttendancesListPage {
   private readonly attendance = inject(ATTENDANCE_SOURCE);
 
   readonly q = signal('');
+  readonly estado = signal<EstadoFiltro>('todas');
   readonly filas = signal<readonly FilaAsistencia[]>([]);
   readonly cargando = signal(true);
   readonly error = signal('');
+  readonly skeletonRows = [0, 1, 2, 3, 4] as const;
 
-  // Filtrado local por nombre de curso o fecha.
+  readonly estados: readonly EstadoFiltro[] = ['todas', 'programada', 'realizada'];
+  readonly estadoChipLabel: Record<EstadoFiltro, string> = {
+    todas: 'Todas',
+    programada: 'Programadas',
+    realizada: 'Realizadas',
+  };
+
   readonly filtradas = computed<readonly FilaAsistencia[]>(() => {
     const texto = this.q().trim().toLowerCase();
-    if (!texto) return this.filas();
-    return this.filas().filter(
-      (f) =>
+    const est = this.estado();
+    return this.filas().filter((f) => {
+      if (est !== 'todas' && f.fecha.estado !== est) return false;
+      if (!texto) return true;
+      return (
         f.curso.nombre.toLowerCase().includes(texto) ||
         f.curso.codigo.toLowerCase().includes(texto) ||
-        f.fecha.fecha.includes(texto),
-    );
+        f.fecha.fecha.includes(texto) ||
+        (f.fecha.descripcion?.toLowerCase().includes(texto) ?? false)
+      );
+    });
   });
+
+  readonly hayFiltrosActivos = computed(
+    () => this.q().trim().length > 0 || this.estado() !== 'todas',
+  );
+
+  readonly mostrarResumen = computed(() => !this.cargando() && !this.error());
+
+  readonly vacioTotal = computed(
+    () => !this.cargando() && !this.error() && this.filas().length === 0,
+  );
+
+  readonly vacioFiltro = computed(
+    () =>
+      !this.cargando() &&
+      !this.error() &&
+      this.filas().length > 0 &&
+      this.filtradas().length === 0,
+  );
 
   constructor() {
     void this.cargar();
@@ -53,20 +92,15 @@ export class AttendancesListPage {
       const filas: FilaAsistencia[] = [];
       for (const c of list) {
         const det = await this.courses.obtener(c.id);
-        // Filtrar fechas asistibles antes de cargar alumnos: un curso sin
-        // fechas marcables (nuevo o solo canceladas) no genera error y no
-        // llama listarAlumnos (que rechaza para cursoId sin seed).
         const asistibles = det.fechas.filter((f) => f.estado !== 'cancelada');
         if (asistibles.length === 0) continue;
         const alumnos = await this.attendance.listarAlumnos(c.id);
         const total = alumnos.length;
         for (const f of asistibles) {
-          // Conteo demostrativo: presentes ya registrados para esta fecha.
           const asistencias = await this.attendance.listarAsistencias(c.id, f.id);
           filas.push({ curso: c, fecha: f, presentes: asistencias.length, total });
         }
       }
-      // Orden: estado prioritario (programada > realizada), luego por curso/fecha.
       filas.sort((a, b) => {
         const prio = (e: string) => (e === 'programada' ? 0 : e === 'realizada' ? 1 : 2);
         const pe = prio(a.fecha.estado) - prio(b.fecha.estado);
@@ -75,18 +109,41 @@ export class AttendancesListPage {
       });
       this.filas.set(filas);
     } catch (e) {
-      this.error.set((e as Error).message);
+      this.error.set((e as Error).message || 'No se pudo cargar el registro de asistencias.');
     } finally {
       this.cargando.set(false);
     }
   }
 
   onSearch(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.q.set(value);
+    this.q.set((event.target as HTMLInputElement).value);
   }
 
-  // Enlace al marcado de la fecha.
+  onEstado(e: EstadoFiltro): void {
+    this.estado.set(this.estado() === e ? 'todas' : e);
+  }
+
+  onLimpiarFiltros(): void {
+    this.q.set('');
+    this.estado.set('todas');
+  }
+
+  onReintentar(): void {
+    void this.cargar();
+  }
+
+  formatFecha(iso: string): string {
+    const [y, m, d] = iso.split('-').map(Number);
+    if (!y || !m || !d) return iso;
+    return fmtFecha.format(new Date(y, m - 1, d));
+  }
+
+  etiquetaEstado(estado: string): string {
+    if (estado === 'programada') return 'Programada';
+    if (estado === 'realizada') return 'Realizada';
+    return estado;
+  }
+
   linkMarcado(fila: FilaAsistencia): unknown[] {
     return ['/admin/cursos', fila.curso.id, 'fechas', fila.fecha.id, 'asistencias'];
   }
