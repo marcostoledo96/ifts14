@@ -1,7 +1,7 @@
 # Archive report — frontend-nueva-certificacion
 
-**Fecha**: 2026-07-16  
-**Veredicto verify**: verified (686/686, tsc 0, build 0)  
+**Fecha**: 2026-07-16
+**Veredicto verify**: verified (686/686, tsc 0, build 0)
 **Destino**: `openspec/changes/archive/2026-07-16-frontend-nueva-certificacion/`
 
 ## Acciones

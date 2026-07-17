@@ -25,7 +25,7 @@ La referencia v0 no plantea un wizard de varios pasos: es una pantalla única de
 
 ### Contrato backend real de emisión
 
-**Endpoint:** `POST /admin/certificados`  
+**Endpoint:** `POST /admin/certificados`
 **Éxito:** HTTP `201`, envelope `{ data, meta: { requestId } }`.
 
 Body aceptado:

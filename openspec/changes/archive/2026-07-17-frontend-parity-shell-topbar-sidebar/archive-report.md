@@ -1,6 +1,6 @@
 # Archive report: frontend-parity-shell-topbar-sidebar
 
-**Archived**: 2026-07-17  
+**Archived**: 2026-07-17
 **Verify**: PASS WITH WARNINGS (749/749, tsc 0, build 0)
 
 ## Summary

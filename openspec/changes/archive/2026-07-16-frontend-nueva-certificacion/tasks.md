@@ -11,10 +11,10 @@
 | Delivery strategy | single-cycle apply (orquestador) |
 | Chain strategy | size-exception (apply completo) |
 
-Decision needed before apply: No  
-Chained PRs recommended: Yes  
-Chain strategy: size-exception  
-400-line budget risk: High  
+Decision needed before apply: No
+Chained PRs recommended: Yes
+Chain strategy: size-exception
+400-line budget risk: High
 
 ### Suggested Work Units
 

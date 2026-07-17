@@ -1,6 +1,6 @@
 # Verify global paridad P-01…P-17
 
-**Fecha:** 2026-07-17  
+**Fecha:** 2026-07-17
 **Resultado:** PASS WITH WARNINGS
 
 ## Gates

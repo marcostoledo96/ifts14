@@ -1,9 +1,9 @@
 # Verify — frontend-alumnos-list-polish (Ciclo 7: Lista alumnos + Nuevo alumno)
 
-**Fecha:** 2026-07-16  
-**Change:** `sdd/frontend-alumnos-list-polish/` (mirror: `openspec/changes/frontend-alumnos-list-polish/`)  
-**cwd:** `apps/frontend-angular/`  
-**Modo:** Standard (proposal + spec + design + tasks + apply-progress)  
+**Fecha:** 2026-07-16
+**Change:** `sdd/frontend-alumnos-list-polish/` (mirror: `openspec/changes/frontend-alumnos-list-polish/`)
+**cwd:** `apps/frontend-angular/`
+**Modo:** Standard (proposal + spec + design + tasks + apply-progress)
 **Veredicto:** **PASS WITH WARNINGS**
 
 ```yaml
@@ -63,7 +63,7 @@ Warnings de presupuesto CSS **preexistentes** (páginas ajenas al ciclo o detail
 | Phase 3 — editor + ruta | 3.1, 3.2, 3.3, 3.4 | ✅ `[x]` |
 | Phase 4 — tracking | 4.1, 4.2 | ✅ `[x]` |
 
-**11/11 tareas completadas.** Sin incompletas que bloqueen archive.  
+**11/11 tareas completadas.** Sin incompletas que bloqueen archive.
 Apply-progress: `ready_for_verify` → este verify cierra el gate.
 
 ---

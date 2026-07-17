@@ -16,10 +16,10 @@ build_output_hash: sha256:0fdcc79fe3c63281d838d9fa9f322a967d4e86a050308c64ce2e24
 
 # Verify — frontend-admin-shell-sidebar (Ciclo 5: Admin shell + sidebar)
 
-**Fecha:** 2026-07-16  
-**Change:** `sdd/frontend-admin-shell-sidebar/`  
-**cwd:** `apps/frontend-angular/`  
-**Modo:** Standard (proposal + spec + design + tasks + apply-progress)  
+**Fecha:** 2026-07-16
+**Change:** `sdd/frontend-admin-shell-sidebar/`
+**cwd:** `apps/frontend-angular/`
+**Modo:** Standard (proposal + spec + design + tasks + apply-progress)
 **Veredicto:** **PASS WITH WARNINGS**
 
 ---
@@ -62,7 +62,7 @@ TSC_EXIT:0
 
 ### Detalle gate 3 (`build`)
 
-Build OK. Lazy chunk `admin-shell` generado (`chunk-TUEA647P.js`, 15.38 kB raw).  
+Build OK. Lazy chunk `admin-shell` generado (`chunk-TUEA647P.js`, 15.38 kB raw).
 Warnings de presupuesto CSS **preexistentes** y ajenos a este ciclo (`student-detail-page.css`, `certification-revoke-page.css`, `certification-pdf-preview-page.css`, `certification-preview-page.css`).
 
 `build_output_hash`: `sha256:0fdcc79fe3c63281d838d9fa9f322a967d4e86a050308c64ce2e24fa431fb532`
@@ -105,7 +105,7 @@ Fuente: `sdd/frontend-admin-shell-sidebar/spec.md` + `openspec/specs/admin-shell
 | **foundation** | Sin deps visuales nuevas | tokens F1-02 + SVG inline; sin Tailwind/lucide en deps | ✅ **COMPLIANT** |
 | **foundation** | Chrome v0 sin legacy | shell + sidebar asserts combinados | ✅ **COMPLIANT** |
 
-**Cobertura:** 11/16 escenarios **COMPLIANT**, 5/16 **PARTIAL**, 0 **FAILING**/ **UNTESTED**.  
+**Cobertura:** 11/16 escenarios **COMPLIANT**, 5/16 **PARTIAL**, 0 **FAILING**/ **UNTESTED**.
 Requisitos REQ-SHELL-01…08: **8/8** implementados (ninguno ausente).
 
 ### Locks / anti-patrones verificados

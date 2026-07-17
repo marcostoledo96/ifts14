@@ -1,6 +1,6 @@
 # Apply progress: frontend-parity-configuracion-layout
 
-**Mode**: Standard  
+**Mode**: Standard
 **Status**: 4/4 phases complete — Ready for verify/archive
 
 ## Completed

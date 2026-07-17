@@ -2,7 +2,7 @@
 
 ## Estado
 
-Cerrado y archivado en `openspec/changes/archive/2026-07-16-frontend-alumnos-list-polish/`.  
+Cerrado y archivado en `openspec/changes/archive/2026-07-16-frontend-alumnos-list-polish/`.
 Verify: PASS WITH WARNINGS — `test:ci` 710/710, `tsc` exit 0, `build` exit 0 (2026-07-16).
 
 ## Alcance implementado

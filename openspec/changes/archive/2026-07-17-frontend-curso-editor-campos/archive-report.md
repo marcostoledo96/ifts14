@@ -1,7 +1,7 @@
 # Archive report — frontend-curso-editor-campos
 
-**Fecha**: 2026-07-17  
-**Veredicto**: PASS WITH WARNINGS (726/726, tsc 0, build 0)  
+**Fecha**: 2026-07-17
+**Veredicto**: PASS WITH WARNINGS (726/726, tsc 0, build 0)
 **Destino**: `openspec/changes/archive/2026-07-17-frontend-curso-editor-campos/`
 
 ## Acciones

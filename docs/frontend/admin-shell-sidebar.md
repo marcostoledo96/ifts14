@@ -2,7 +2,7 @@
 
 ## Estado
 
-Cerrado y archivado en `openspec/changes/archive/2026-07-17-frontend-parity-shell-topbar-sidebar/`.  
+Cerrado y archivado en `openspec/changes/archive/2026-07-17-frontend-parity-shell-topbar-sidebar/`.
 Verify: PASS WITH WARNINGS — `test:ci` 749/749, `tsc` exit 0, `build` exit 0 (2026-07-17).
 
 ## Alcance implementado (P-01)

@@ -1,6 +1,6 @@
 # Archive report: frontend-parity-configuracion-layout
 
-**Archived**: 2026-07-17  
+**Archived**: 2026-07-17
 **Verify**: PASS WITH WARNINGS (772/772, tsc 0, build 0)
 
 ## Summary

@@ -3,9 +3,9 @@
 > **Cómo usar:** pegá este documento completo como primer mensaje de una **nueva sesión**.
 > Objetivo: que el frontend Angular 20 quede **calco visual y de interacción** de `muestra_pagina/` (export v0/Next), sin portar React literalmente, respetando contratos backend reales (D0 + honestidad de campos).
 
-**Fecha del audit:** 2026-07-17  
-**Repo:** `/home/marcos/Escritorio/ifts14`  
-**Ámbito:** `apps/frontend-angular/` vs `muestra_pagina/`  
+**Fecha del audit:** 2026-07-17
+**Repo:** `/home/marcos/Escritorio/ifts14`
+**Ámbito:** `apps/frontend-angular/` vs `muestra_pagina/`
 **Metodología:** Gentle AI SDD — un ciclo por pantalla/sección; verify `test:ci` + `tsc` + `build` por ciclo.
 
 ---
@@ -100,7 +100,7 @@ Sos el agente de implementación frontend del IFTS 14. Tu trabajo es cerrar la *
 
 ### P0-3 — Sidebar iconografía
 
-v0 usa Lucide: `LayoutGrid`, `BookOpen`, `Users`, `CalendarCheck`, `QrCode`, `Settings`, `LogOut`.  
+v0 usa Lucide: `LayoutGrid`, `BookOpen`, `Users`, `CalendarCheck`, `QrCode`, `Settings`, `LogOut`.
 Angular usa paths SVG genéricos (Inicio parece “home”, no grid). **Calcar path/stroke Lucide.**
 
 ### P0-4 — Nueva certificación: no es calco
@@ -115,7 +115,7 @@ Angular es un formulario corto de emisión. **Ciclo dedicado de paridad visual**
 
 ### P0-5 — Configuración institucional: mitad del diseño faltante
 
-v0 secciones: Identidad, Certificados, Autoridades y firmas, Contacto, Validación pública + **logos/sellos upload + firmas digitales upload**.  
+v0 secciones: Identidad, Certificados, Autoridades y firmas, Contacto, Validación pública + **logos/sellos upload + firmas digitales upload**.
 Backend DTO real solo tiene: `institutionName`, `certificateText`, `rectorName/Role`, `advisorName/Role`, `updatedAt`.
 
 **Decisión de plan:**
@@ -128,19 +128,19 @@ v0 `curso-detalle.tsx` (~344 líneas) vs Angular (~61). Faltan paneles, tablas d
 
 ### P0-7 — Tipografía / tokens
 
-Angular `styles.css` usa `system-ui`/Roboto stack. v0/Stitch apunta a tipografía más intencional + Tailwind tokens (`tracking-[0.16em]`, `rounded-sm`, grid paper).  
+Angular `styles.css` usa `system-ui`/Roboto stack. v0/Stitch apunta a tipografía más intencional + Tailwind tokens (`tracking-[0.16em]`, `rounded-sm`, grid paper).
 Plan: alinear tokens CSS variables a `muestra_pagina/app/globals.css` (colores ya cercanos: ink `#0b1f33`, circuit `#00a8c6`).
 
 ### P0-8 — Detalle de curso: CTA primario ausente
 
-v0: botón primary **Cargar asistencias** (+ **Editar curso**).  
-Angular: solo **Editar fechas** / **Agregar fecha**; marcado por fila.  
+v0: botón primary **Cargar asistencias** (+ **Editar curso**).
+Angular: solo **Editar fechas** / **Agregar fecha**; marcado por fila.
 Calcar CTA **Cargar asistencias** hacia la ruta Angular real (`/admin/cursos/:id/fechas/:fechaId/asistencias` o hub `/admin/asistencias` filtrado) y alinear label **Editar curso**.
 
 ### P0-9 — PDF preview: falta **Descargar PDF**
 
-v0: **Imprimir** + **Descargar PDF** (primary).  
-Angular: solo **Imprimir** + volver.  
+v0: **Imprimir** + **Descargar PDF** (primary).
+Angular: solo **Imprimir** + volver.
 Restaurar CTA si hay seam de descarga; si no, Imprimir + omisión documentada (no fake blob).
 
 ### Extra Angular (no borrar sin decisión)
@@ -306,7 +306,7 @@ Antes de codear, la nueva sesión debe:
 
 ## 10. Contexto de ciclos ya cerrados (no rehacer de cero)
 
-Los ciclos 1–13 funcionales ya archivados (config, emisión, dashboard mesa, login polish, shell, listas, alumno, curso editor, asistencias, cert list, preview, QR delivery).  
+Los ciclos 1–13 funcionales ya archivados (config, emisión, dashboard mesa, login polish, shell, listas, alumno, curso editor, asistencias, cert list, preview, QR delivery).
 **Este plan NO los invalida:** es una **capa de paridad visual/UX** encima, corrigiendo desvíos respecto de `muestra_pagina`.
 
 Docs útiles:

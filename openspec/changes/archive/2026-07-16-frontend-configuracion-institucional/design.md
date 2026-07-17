@@ -52,8 +52,8 @@ Page: snapshot ← obtener()
 | `.../sidebar-admin.ts` (+ html/spec) | Modify | Ítem Configuración → `/admin/configuracion`; `isActive` exacto/prefix. |
 | `app.routes.spec.ts` / `sidebar-admin.spec.ts` | Modify | Cubrir ruta e ítem activo. |
 
-Path exacto de página:  
-`apps/frontend-angular/src/app/features/admin/institutional-config/pages/institutional-config-page.{ts,html,css,spec.ts}`  
+Path exacto de página:
+`apps/frontend-angular/src/app/features/admin/institutional-config/pages/institutional-config-page.{ts,html,css,spec.ts}`
 Clase: `InstitutionalConfigPage`, selector `app-institutional-config-page`.
 
 ## Interfaces / Contracts
@@ -83,7 +83,7 @@ Estado página (signals): `form` (campos editables), `snapshot`, `updatedAt`, `c
 
 ## Integración rutas + sidebar
 
-- Route child bajo `path: 'admin'` + `AdminShell`:  
+- Route child bajo `path: 'admin'` + `AdminShell`:
   `{ path: 'configuracion', title: 'Admin · Institutional configuration — IFTS 14', loadComponent: () => import('.../institutional-config-page').then(m => m.InstitutionalConfigPage) }`
 - Sidebar: agregar `{ label: 'Configuración', route: '/admin/configuracion', icon: … }` (pie o lista; preferir cerca de logout como v0 React).
 - `isActive`: igualdad o `startsWith('/admin/configuracion')`.

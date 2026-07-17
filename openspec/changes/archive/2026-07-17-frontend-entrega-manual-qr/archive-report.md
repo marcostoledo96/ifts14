@@ -1,7 +1,7 @@
 # Archive report — frontend-entrega-manual-qr
 
-**Fecha**: 2026-07-17  
-**Veredicto**: PASS WITH WARNINGS (747/747, tsc 0, build 0)  
+**Fecha**: 2026-07-17
+**Veredicto**: PASS WITH WARNINGS (747/747, tsc 0, build 0)
 **Destino**: `openspec/changes/archive/2026-07-17-frontend-entrega-manual-qr/`
 
 ## Entregado

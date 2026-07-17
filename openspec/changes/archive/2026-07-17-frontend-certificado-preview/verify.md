@@ -19,9 +19,9 @@ typecheck_output_hash: sha256:ff63851439f41c4bd0169f582040e068eea30757f1f0e32317
 
 # Verify — frontend-certificado-preview (Ciclo 12)
 
-**Fecha:** 2026-07-17  
-**Change:** `openspec/changes/frontend-certificado-preview/`  
-**cwd:** `apps/frontend-angular/`  
+**Fecha:** 2026-07-17
+**Change:** `openspec/changes/frontend-certificado-preview/`
+**cwd:** `apps/frontend-angular/`
 **Veredicto:** **PASS WITH WARNINGS**
 
 ## Re-verify tras apply-fix

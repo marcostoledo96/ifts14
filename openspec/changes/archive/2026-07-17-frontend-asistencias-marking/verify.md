@@ -16,10 +16,10 @@ build_output_hash: sha256:a35ced061bed1e9c19b06088cc6c47b17e2e6ca183fcee456ab224
 
 # Verify — frontend-asistencias-marking (Ciclo 10: Marcado de asistencias)
 
-**Fecha:** 2026-07-17  
-**Change:** `openspec/changes/frontend-asistencias-marking/`  
-**cwd:** `apps/frontend-angular/`  
-**Modo:** Standard (proposal + spec + design + tasks + apply-progress)  
+**Fecha:** 2026-07-17
+**Change:** `openspec/changes/frontend-asistencias-marking/`
+**cwd:** `apps/frontend-angular/`
+**Modo:** Standard (proposal + spec + design + tasks + apply-progress)
 **Veredicto:** **PASS WITH WARNINGS**
 
 ---

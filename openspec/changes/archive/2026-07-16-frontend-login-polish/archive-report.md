@@ -1,7 +1,7 @@
 # Archive report — frontend-login-polish
 
-**Fecha**: 2026-07-16  
-**Veredicto**: PASS WITH WARNINGS (`test:ci` 691/691, `tsc` 0, `build` 0)  
+**Fecha**: 2026-07-16
+**Veredicto**: PASS WITH WARNINGS (`test:ci` 691/691, `tsc` 0, `build` 0)
 **Destino**: `openspec/changes/archive/2026-07-16-frontend-login-polish/`
 
 ## Acciones

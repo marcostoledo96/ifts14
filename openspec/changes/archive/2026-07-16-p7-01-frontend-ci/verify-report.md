@@ -121,7 +121,7 @@ Design artifact not present in this change. The spec served as the design docume
 
 **CRITICAL**: None
 
-**WARNING**: 
+**WARNING**:
 - **4 CSS budget warnings** in both production and staging builds (certification-pdf-preview-page.css: 13.70 kB, certification-preview-page.css: 15.65 kB, certification-revoke-page.css: 9.77 kB, student-detail-page.css: 8.56 kB). These are non-blocking (Angular exits 0) and were pre-existing before this change. Diferido a ciclo de optimización de budgets.
 - **Staging build not previously verified**: noted in apply-progress.md as untested; now verified exit 0.
 

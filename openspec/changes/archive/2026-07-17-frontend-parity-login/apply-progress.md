@@ -1,6 +1,6 @@
 # Apply progress: frontend-parity-login
 
-**Mode**: Compressed  
+**Mode**: Compressed
 **Status**: 9/9 tasks complete — Ready for verify
 
 ## Completed

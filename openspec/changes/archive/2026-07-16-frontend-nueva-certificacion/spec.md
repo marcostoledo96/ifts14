@@ -6,8 +6,8 @@ Pantalla `/admin/certificaciones/nueva`: seleccionar alumno/curso activos, previ
 
 ## Contrato
 
-Body: `{ alumnoId, cursoId, issuedAt: "YYYY-MM-DD", expiresAt: string | null }`.  
-`201` → `data`: `id`, `certificateCode`, `status`, `student`, `course`, `issuedAt`, `expiresAt`, `tokenPrefix`, `publicValidationUrl`, `pdfDownloadUrl`.  
+Body: `{ alumnoId, cursoId, issuedAt: "YYYY-MM-DD", expiresAt: string | null }`.
+`201` → `data`: `id`, `certificateCode`, `status`, `student`, `course`, `issuedAt`, `expiresAt`, `tokenPrefix`, `publicValidationUrl`, `pdfDownloadUrl`.
 Errores: `400 VALIDATION_ERROR`, `409 CERTIFICATE_ALREADY_EXISTS`, `500`/`CONFIGURATION_ERROR`.
 
 ## Non-goals

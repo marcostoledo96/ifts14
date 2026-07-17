@@ -1,7 +1,7 @@
 # Apply progress — frontend-nueva-certificacion
 
-**Estado:** apply completo — listo para `sdd-verify`  
-**Estrategia:** single-cycle apply / size-exception  
+**Estado:** apply completo — listo para `sdd-verify`
+**Estrategia:** single-cycle apply / size-exception
 **Fecha:** 2026-07-16
 
 ## Checklist de tareas
@@ -49,7 +49,7 @@ cd apps/frontend-angular && npm run test:ci -- \
   --include='**/app.routes.spec.ts'
 ```
 
-**Resultado:** 202 SUCCESS  
+**Resultado:** 202 SUCCESS
 
 Verify formal (tsc app, build, suite completa, paridad visual) → `sdd-verify`.
 

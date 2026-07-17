@@ -1,7 +1,7 @@
 # Archive report — frontend-cursos-list-polish
 
-**Fecha**: 2026-07-16  
-**Veredicto**: PASS WITH WARNINGS (696/696, tsc 0, build 0)  
+**Fecha**: 2026-07-16
+**Veredicto**: PASS WITH WARNINGS (696/696, tsc 0, build 0)
 **Destino**: `openspec/changes/archive/2026-07-16-frontend-cursos-list-polish/`
 
 ## Acciones

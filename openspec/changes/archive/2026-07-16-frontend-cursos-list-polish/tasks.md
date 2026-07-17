@@ -10,9 +10,9 @@
 | Delivery strategy | single-cycle apply (orquestador) |
 | Chain strategy | N/A |
 
-Decision needed before apply: No  
-Chained PRs recommended: No  
-400-line budget risk: Medium  
+Decision needed before apply: No
+Chained PRs recommended: No
+400-line budget risk: Medium
 
 ### Suggested Work Units
 

@@ -16,10 +16,10 @@ build_output_hash: sha256:e8b6bb91d4b6bedf42048cb3a7b409e6d2f9229ca6aadecd5493fe
 
 # Verification Report — frontend-login-polish
 
-**Change**: `frontend-login-polish` (Ciclo 4: Login UI polish)  
-**Version**: N/A (ciclo local `sdd/frontend-login-polish/`)  
-**Mode**: Standard (`strict_tdd: false`)  
-**Cwd**: `apps/frontend-angular/`  
+**Change**: `frontend-login-polish` (Ciclo 4: Login UI polish)
+**Version**: N/A (ciclo local `sdd/frontend-login-polish/`)
+**Mode**: Standard (`strict_tdd: false`)
+**Cwd**: `apps/frontend-angular/`
 **Fecha**: 2026-07-16
 
 ## Completeness

@@ -3,7 +3,7 @@
 ## Estado
 
 - Base funcional archivada en `openspec/changes/archive/2026-07-16-frontend-configuracion-institucional/`.
-- Paridad de layout **P-14** archivada en `openspec/changes/archive/2026-07-17-frontend-parity-configuracion-layout/`.  
+- Paridad de layout **P-14** archivada en `openspec/changes/archive/2026-07-17-frontend-parity-configuracion-layout/`.
   Verify P-14: `test:ci` 772/772, `tsc --noEmit` exit 0, `npm run build` exit 0 (PASS WITH WARNINGS: budget CSS página 9.99 kB > 8 kB).
 
 ## Alcance implementado

@@ -2,7 +2,7 @@
 
 ## Estado
 
-Cerrado y archivado en `openspec/changes/archive/2026-07-17-frontend-asistencias-marking/`.  
+Cerrado y archivado en `openspec/changes/archive/2026-07-17-frontend-asistencias-marking/`.
 Verify: PASS WITH WARNINGS — `test:ci` 734/734, `tsc` exit 0, `build` exit 0 (2026-07-17).
 
 ## Alcance implementado

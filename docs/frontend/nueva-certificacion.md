@@ -3,7 +3,7 @@
 ## Estado
 
 - Emisión: archivada en `openspec/changes/archive/2026-07-16-frontend-nueva-certificacion/`.
-- Paridad visual P-11: archivada en `openspec/changes/archive/2026-07-17-frontend-parity-nueva-certificacion/`.  
+- Paridad visual P-11: archivada en `openspec/changes/archive/2026-07-17-frontend-parity-nueva-certificacion/`.
   Verify focalizado: **15/15 SUCCESS** (`certification-new-page.spec.ts`, CHROME_BIN wrapper, 2026-07-17).
 
 ## Alcance implementado

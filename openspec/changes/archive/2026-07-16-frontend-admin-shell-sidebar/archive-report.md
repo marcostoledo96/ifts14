@@ -1,7 +1,7 @@
 # Archive report — frontend-admin-shell-sidebar
 
-**Fecha**: 2026-07-16  
-**Veredicto**: PASS WITH WARNINGS (695/695, tsc 0, build 0)  
+**Fecha**: 2026-07-16
+**Veredicto**: PASS WITH WARNINGS (695/695, tsc 0, build 0)
 **Destino**: `openspec/changes/archive/2026-07-16-frontend-admin-shell-sidebar/`
 
 ## Acciones

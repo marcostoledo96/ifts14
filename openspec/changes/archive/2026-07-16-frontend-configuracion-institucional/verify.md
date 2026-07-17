@@ -1,7 +1,7 @@
 # Verify: Configuración institucional (frontend)
 
-**Change**: `frontend-configuracion-institucional`  
-**Fecha**: 2026-07-16  
+**Change**: `frontend-configuracion-institucional`
+**Fecha**: 2026-07-16
 **Veredicto**: **verified**
 
 ## Gates técnicos

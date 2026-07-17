@@ -1,6 +1,6 @@
 # Verify: frontend-parity-shell-topbar-sidebar (P-01)
 
-**Date**: 2026-07-17  
+**Date**: 2026-07-17
 **Result**: PASS WITH WARNINGS
 
 ## Gates

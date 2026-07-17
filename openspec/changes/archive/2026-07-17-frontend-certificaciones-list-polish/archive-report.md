@@ -1,7 +1,7 @@
 # Archive report — frontend-certificaciones-list-polish
 
-**Fecha**: 2026-07-17  
-**Veredicto**: PASS WITH WARNINGS (736/736, tsc 0, build 0)  
+**Fecha**: 2026-07-17
+**Veredicto**: PASS WITH WARNINGS (736/736, tsc 0, build 0)
 **Destino**: `openspec/changes/archive/2026-07-17-frontend-certificaciones-list-polish/`
 
 ## Entregado

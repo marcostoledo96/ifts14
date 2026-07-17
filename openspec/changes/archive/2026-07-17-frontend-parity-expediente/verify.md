@@ -1,6 +1,6 @@
 # Verify: frontend-parity-expediente (P-12)
 
-**Fecha**: 2026-07-17  
+**Fecha**: 2026-07-17
 **Veredicto**: PASS WITH WARNINGS
 
 ## Gates
