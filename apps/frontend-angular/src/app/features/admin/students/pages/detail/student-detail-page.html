@@ -53,16 +53,18 @@
 
               <div class="dato-item">
                 <dt class="sr-only">Contacto</dt>
-                @if (a.tieneEmail) {
+                @if (a.tieneEmail === true) {
                   <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                   </svg>
                   <dd>Contacto disponible</dd>
-                } @else {
+                } @else if (a.tieneEmail === false) {
                   <svg class="icon text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                   <dd class="warning-badge">Sin email registrado</dd>
+                } @else {
+                  <dd>Sin dato de contacto en API</dd>
                 }
               </div>
 
@@ -81,20 +83,18 @@
 
           <!-- Acciones -->
           <div class="ficha-acciones">
-            <!-- Habilitadas -->
-            <button
+            <a
               class="btn btn-primary"
-              disabled
-              aria-disabled="true"
-              title="Disponible en fase posterior"
+              [routerLink]="['/admin/certificaciones/nueva']"
+              [queryParams]="{ alumno: a.id }"
+              data-testid="cta-nueva-certificacion"
             >
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
               Nueva certificación
-            </button>
+            </a>
 
-            <!-- Deshabilitadas (Placeholders de handoff con explicaciones claras) -->
             <div class="action-wrapper">
               <button
                 type="button"
@@ -108,23 +108,23 @@
                 </svg>
                 Compartir por canal externo
               </button>
-              <small id="motivo-compartir" class="action-motivo">Disponible en F5-04 (Entrega manual)</small>
+              <small id="motivo-compartir" class="action-motivo">La entrega se gestiona desde el expediente de cada certificación</small>
             </div>
 
             <div class="action-wrapper">
               <button
                 type="button"
-                class="btn btn-border btn-disabled"
-                disabled
-                aria-disabled="true"
-                aria-describedby="motivo-asistencias"
+                class="btn btn-border"
+                [attr.aria-expanded]="mostrarAsistencias()"
+                aria-controls="asistencias-alumno"
+                (click)="onToggleAsistencias()"
+                data-testid="cta-ver-asistencias"
               >
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Ver asistencias
               </button>
-              <small id="motivo-asistencias" class="action-motivo">Disponible en F2-05 (Asistencias)</small>
             </div>
 
             <div class="action-wrapper">
@@ -140,7 +140,7 @@
                 </svg>
                 Editar datos
               </button>
-              <small id="motivo-editar" class="action-motivo">Disponible en fase posterior</small>
+              <small id="motivo-editar" class="action-motivo">Sin API de actualización de datos personales</small>
             </div>
           </div>
         </div>
@@ -155,7 +155,7 @@
               <span>CURSOS CON ASISTENCIA</span>
             </div>
             <p class="item-value">
-              <span class="num">{{ a.cursosConAsistencia }}</span>
+              <span class="num">{{ a.cursosConAsistencia == null ? '—' : a.cursosConAsistencia }}</span>
               <span class="label">registrados</span>
             </p>
           </div>
@@ -168,7 +168,7 @@
               <span class="text-valid">CERTIFICACIONES VÁLIDAS</span>
             </div>
             <p class="item-value">
-              <span class="num text-valid">{{ a.certificacionesValidas }}</span>
+              <span class="num text-valid">{{ a.certificacionesValidas == null ? '—' : a.certificacionesValidas }}</span>
               <span class="label">emitidas</span>
             </p>
           </div>
@@ -209,9 +209,8 @@
           </p>
           <button
             type="button"
-            class="btn btn-border btn-disabled mt-4"
-            disabled
-            aria-disabled="true"
+            class="btn btn-border mt-4"
+            (click)="onToggleAsistencias()"
           >
             Ver asistencias
           </button>
@@ -278,14 +277,14 @@
                         Ver certificación
                       </a>
                     } @else if (curso.estadoCert === 'pendiente') {
-                      <button
-                        class="btn-text text-tech-blue font-medium opacity-50 cursor-not-allowed"
-                        disabled
-                        aria-disabled="true"
-                        title="Disponible en fase posterior"
+                      <a
+                        [routerLink]="['/admin/certificaciones/nueva']"
+                        [queryParams]="queryEmitir(a.id, curso)"
+                        class="btn-text text-tech-blue font-medium"
+                        data-testid="emitir-certificacion"
                       >
                         Emitir certificación
-                      </button>
+                      </a>
                     } @else {
                       <span class="text-muted text-xs">Disponible al finalizar</span>
                     }
@@ -334,14 +333,13 @@
                     Ver certificación
                   </a>
                 } @else if (curso.estadoCert === 'pendiente') {
-                  <button
-                    class="btn btn-primary w-full text-center opacity-50 cursor-not-allowed"
-                    disabled
-                    aria-disabled="true"
-                    title="Disponible en fase posterior"
+                  <a
+                    [routerLink]="['/admin/certificaciones/nueva']"
+                    [queryParams]="queryEmitir(a.id, curso)"
+                    class="btn btn-primary w-full text-center"
                   >
                     Emitir certificación
-                  </button>
+                  </a>
                 } @else {
                   <span class="disabled-placeholder">Disponible al finalizar</span>
                 }
@@ -351,5 +349,44 @@
         </ul>
       }
     </section>
+
+    @if (mostrarAsistencias()) {
+      <section
+        id="asistencias-alumno"
+        class="asistencias-seccion"
+        aria-labelledby="asistencias-titulo"
+      >
+        <div class="cursos-header">
+          <h2 id="asistencias-titulo">Asistencias registradas</h2>
+          <p class="kicker">Listado de solo lectura filtrado por este alumno.</p>
+        </div>
+
+        @if (cargandoAsistencias()) {
+          <p class="state" aria-busy="true" aria-live="polite">Cargando asistencias…</p>
+        } @else if (errorAsistencias()) {
+          <div class="state error" role="alert">
+            <p>{{ errorAsistencias() }}</p>
+            <button type="button" class="btn btn-secondary" (click)="onReintentarAsistencias()">
+              Reintentar
+            </button>
+          </div>
+        } @else if (asistencias().length === 0) {
+          <div class="estado-vacio">
+            <p class="vacio-title">Sin asistencias registradas</p>
+            <p class="vacio-desc">Cuando se marquen presentes, aparecerán acá.</p>
+          </div>
+        } @else {
+          <ul class="asistencias-lista">
+            @for (row of asistencias(); track row.id) {
+              <li class="asistencia-item">
+                <span class="mono">{{ row.fecha }}</span>
+                <span class="text-muted">{{ etiquetaCursoAsistencia(row.cursoId) }}</span>
+                <span class="badge badge-neutral">{{ row.fechaEstado }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
   }
 </div>

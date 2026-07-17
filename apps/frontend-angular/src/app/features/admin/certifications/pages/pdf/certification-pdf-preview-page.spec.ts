@@ -139,6 +139,34 @@ describe('CertificationPdfPreviewPage', () => {
     expect(feedback?.getAttribute('aria-live')).toBe('polite');
   });
 
+  it('REQ-PAR-PDF-001: muestra Descargar PDF y descarga vía seam Blob', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    const btn = Array.from(el.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Descargar PDF'),
+    ) as HTMLButtonElement;
+    expect(btn).toBeTruthy();
+    expect(btn.classList.contains('btn-descargar-pdf')).toBeTrue();
+
+    const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
+    const pdfSpy = spyOn(svc, 'descargarPdf').and.resolveTo(
+      new Blob(['%PDF'], { type: 'application/pdf' }),
+    );
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:pdf');
+    spyOn(URL, 'revokeObjectURL');
+    let downloadedName = '';
+    spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) {
+      downloadedName = this.download;
+    });
+
+    await f.componentInstance.descargarPdf();
+    f.detectChanges();
+
+    expect(pdfSpy).toHaveBeenCalledWith(1);
+    expect(downloadedName).toBe('cert-IFTS14-CERT-0001.pdf');
+    expect(f.componentInstance.downloadFeedback()).toContain('PDF');
+  });
+
   it('live region de impresión tiene role="status" y aria-live="polite"', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
@@ -383,7 +411,10 @@ describe('CertificationPdfPreviewPage', () => {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
       obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
       regenerarPdf: () => Promise.resolve({ regenerado: false }),
       obtener: (id: number) =>
         new Promise<CertificacionDetalle>((resolve) => {

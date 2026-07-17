@@ -20,6 +20,18 @@
   left: 0;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .layout {
   display: flex;
   min-height: 100vh;
@@ -29,8 +41,7 @@
   display: none;
   width: 16rem;
   flex: 0 0 16rem;
-  border-right: 1px solid var(--color-border);
-  background: var(--color-card);
+  background: var(--color-ink);
 }
 
 .content {
@@ -46,6 +57,7 @@
   z-index: 20;
   background: color-mix(in srgb, var(--color-card) 90%, transparent);
   border-bottom: 1px solid var(--color-border);
+  backdrop-filter: blur(8px);
 }
 
 .topbar-row {
@@ -55,55 +67,121 @@
   padding: var(--space-3) var(--space-4);
 }
 
-.monograma {
-  flex: 0 0 2.5rem;
-  width: 2.5rem;
-  height: 2.5rem;
-  display: inline-flex;
+.topbar-search {
+  display: none;
+  position: relative;
+  flex: 1;
+  max-width: 28rem;
   align-items: center;
-  justify-content: center;
-  background: var(--color-ink);
-  color: var(--color-ink-foreground);
 }
 
-.topbar-titles {
-  min-width: 0;
+.topbar-search-icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--color-muted-foreground);
+  pointer-events: none;
 }
 
-.topbar-title {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  font-weight: 600;
+.topbar-search input {
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 var(--space-3) 0 2.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
   color: var(--color-foreground);
+  font-size: 0.875rem;
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
-.topbar-subtitle {
-  margin: var(--space-1) 0 0;
+.topbar-search input::placeholder {
+  color: var(--color-muted-foreground);
+}
+
+.topbar-search input:focus {
+  outline: none;
+  border-color: var(--color-ring);
+  box-shadow: var(--focus-ring);
+}
+
+.topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.topbar-sync {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  margin-right: var(--space-1);
+}
+
+.topbar-sync-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--color-valid);
+}
+
+.topbar-sync-label {
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--color-muted-foreground);
 }
 
-.badge-mock {
-  margin-left: auto;
+.topbar-icon-btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  background: var(--color-warning-soft);
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: var(--tracking-caps-tight);
-  text-transform: uppercase;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--color-muted-foreground);
+  cursor: pointer;
 }
 
-.badge-dot {
-  width: 0.375rem;
-  height: 0.375rem;
+.topbar-icon-btn:hover {
+  background: var(--color-secondary, color-mix(in srgb, var(--color-foreground) 6%, transparent));
+  color: var(--color-foreground);
+}
+
+.topbar-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.topbar-bell {
+  position: relative;
+}
+
+.topbar-bell-dot {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: 50%;
-  background: var(--color-warning);
+  background: var(--color-warning, #c9a227);
+  box-shadow: 0 0 0 2px var(--color-card);
+}
+
+.topbar-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-ink-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 main#contenido {
@@ -123,12 +201,23 @@ footer {
   text-align: center;
 }
 
+@media (min-width: 40rem) {
+  .topbar-search {
+    display: flex;
+  }
+}
+
+@media (min-width: 48rem) {
+  .topbar-sync {
+    display: inline-flex;
+  }
+}
+
 @media (min-width: 64rem) {
   .sidebar-desktop {
     display: block;
   }
 
-  /* En desktop el menú hamburguesa y el drawer quedan ocultos. */
   .menu-btn {
     display: none;
   }
@@ -147,8 +236,8 @@ footer {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-card);
@@ -176,14 +265,11 @@ footer {
   z-index: 50;
   width: 16rem;
   max-width: 80vw;
-  background: var(--color-card);
-  border-right: 1px solid var(--color-border);
+  background: var(--color-ink);
   overflow-y: auto;
 }
 
-/* --- Print: ocultar chrome admin para impresión limpia del contenido.
-     Estable vía CSS (no depende de click/DOM workaround). Cualquier
-     impresión (window.print, emulateMedia('print'), page.pdf) aplica. --- */
+/* --- Print: ocultar chrome admin para impresión limpia del contenido. --- */
 @media print {
   :host {
     min-height: auto !important;
@@ -200,7 +286,6 @@ footer {
     display: none !important;
   }
 
-  /* El contenido ocupa toda la página sin layout flex. */
   .layout {
     display: block !important;
     min-height: auto !important;

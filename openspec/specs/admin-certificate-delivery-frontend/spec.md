@@ -19,9 +19,11 @@ Delta spec — funcionalidad real de entrega manual desde el panel admin.
 
 **Given** la página de entrega manual cargada
 **When** el admin hace clic en "Descargar QR"
-**Then** el frontend DEBE solicitar `GET /admin/certificados/{id}/qr.png`
+**Then** el frontend DEBE solicitar el PNG vía `CertificationsService.descargarQrPng(id)` (`GET /admin/certificados/{id}/qr.png` con HttpClient/sesión)
 **And** DEBE crear un Blob con el response y disparar descarga
-**And** el filename DEBE ser `{codigoCertificado}-qr.png` (ej: `CERT-001-qr.png`)
+**And** el filename DEBE ser `cert-{codigo}-qr.png` (codigo = `detalle.numero` sanitizado; ej: `cert-IFTS14-CERT-0001-qr.png`)
+**And** si falla, DEBE mostrar error inline sin reemplazar el diálogo completo
+**And** el botón DEBE tener `aria-label` descriptivo e icono de descarga
 
 ### REQ-DEL-003: Fallback clipboard para copiar link
 
@@ -68,3 +70,15 @@ Delta spec — funcionalidad real de entrega manual desde el panel admin.
 **When** se presiona Escape
 **Then** el diálogo DEBE cerrarse
 **And** el foco DEBE retornar al elemento que abrió el diálogo
+
+### REQ-DEL-008: Descargar PDF vía Blob (paridad P-13)
+
+**Prioridad**: HIGH
+
+**Given** la página de entrega manual cargada
+**When** el admin hace clic en "Descargar PDF"
+**Then** el frontend DEBE solicitar el PDF vía `CertificationsService.descargarPdf(id)` (`GET /admin/certificados/{id}/pdf` con HttpClient/sesión)
+**And** DEBE crear un Blob y disparar descarga con filename `cert-{codigo}.pdf`
+**And** el footer MUST mostrar Copiar link + Descargar PDF + Cancelar (paridad v0)
+**And** Descargar QR MUST permanecer disponible fuera del footer (junto al bloque QR)
+**And** MUST NOT inventar un blob sin respuesta del servicio

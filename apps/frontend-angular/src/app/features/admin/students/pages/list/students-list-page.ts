@@ -35,8 +35,12 @@ export class StudentsListPage {
     const q = this.q().trim().toLowerCase();
     return this.alumnos().filter((alumno) =>
       (!q || alumno.nombre.toLowerCase().includes(q) || alumno.dniMostrar.toLowerCase().includes(q)) &&
-      (this.contacto() === 'todos' || (this.contacto() === 'con-email') === alumno.tieneEmail) &&
-      (this.certificacion() === 'todos' || (this.certificacion() === 'con-cert') === (alumno.certificacionesValidas > 0)),
+      (this.contacto() === 'todos' ||
+        (this.contacto() === 'con-email' && alumno.tieneEmail === true) ||
+        (this.contacto() === 'sin-email' && alumno.tieneEmail === false)) &&
+      (this.certificacion() === 'todos' ||
+        (this.certificacion() === 'con-cert' && alumno.certificacionesValidas != null && alumno.certificacionesValidas > 0) ||
+        (this.certificacion() === 'sin-cert' && alumno.certificacionesValidas != null && alumno.certificacionesValidas === 0)),
     );
   });
   readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.resultadosFiltrados().length / STUDENTS_PAGE_SIZE)));
@@ -72,5 +76,26 @@ export class StudentsListPage {
   onLimpiar(): void { this.q.set(''); this.contacto.set('todos'); this.certificacion.set('todos'); this.pagina.set(1); }
   onForzarEstado(value: VistaQa): void { if (!this.qaEnabled) return; this.vistaQA.set(value); this.pagina.set(1); if (value === 'datos') void this.recargar(); }
   onReintentar(): void { if (this.qaEnabled && this.vistaQA() !== 'datos') { this.vistaQA.set('datos'); this.pagina.set(1); } void this.recargar(); }
-  etiquetaContacto(alumno: Alumno): string { return alumno.tieneEmail ? 'Contacto disponible' : 'Sin email'; }
+
+  etiquetaContacto(alumno: Alumno): string {
+    if (alumno.tieneEmail === true) return 'Contacto disponible';
+    if (alumno.tieneEmail === false) return 'Sin email';
+    return 'Sin dato';
+  }
+
+  mostrarWarningSinEmail(alumno: Alumno): boolean {
+    return alumno.tieneEmail === false;
+  }
+
+  formatoMetrica(value: number | null): string {
+    return value == null ? '—' : String(value);
+  }
+
+  mostrarShield(alumno: Alumno): boolean {
+    return alumno.certificacionesValidas != null;
+  }
+
+  mostrarBook(alumno: Alumno): boolean {
+    return alumno.cursosConAsistencia != null;
+  }
 }

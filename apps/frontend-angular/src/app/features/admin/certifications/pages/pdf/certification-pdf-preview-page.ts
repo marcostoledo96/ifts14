@@ -19,8 +19,8 @@ type EstadoPresentacion = {
   detalle: string;
 };
 
-// Vista previa imprimible mock-only. window.print() es la única API de
-// impresión; el QR/token son permanentes (D0).
+// Vista previa imprimible. Impresión nativa + descarga PDF vía seam API real
+// (GET /admin/certificados/{id}/pdf). QR/token permanentes (D0).
 @Component({
   selector: 'app-certification-pdf-preview-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,6 +36,8 @@ export class CertificationPdfPreviewPage {
   readonly error = signal('');
   readonly cargando = signal(true);
   readonly printFeedback = signal('');
+  readonly descargando = signal(false);
+  readonly downloadFeedback = signal('');
 
   // Id numérico validado. Replica el patrón de F4-01: rechaza "0x1", "1e0",
   // "0", vacío y no decimales que Number() coercería (design.md decisión 2).
@@ -51,6 +53,13 @@ export class CertificationPdfPreviewPage {
     const id = this.certId();
     if (id === null) return '';
     return `IFTS14-CERT-${String(id).padStart(4, '0')}`;
+  });
+
+  /** Filename semántico: cert-{codigo}.pdf */
+  readonly pdfFilename = computed(() => {
+    const raw = this.numeroExpediente() || 'certificado';
+    const safe = raw.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'certificado';
+    return `cert-${safe}.pdf`;
   });
 
   readonly emisionLarga = computed(() => {
@@ -101,6 +110,7 @@ export class CertificationPdfPreviewPage {
 
   // ponytail: generación de carga para descartar stale en route reuse.
   private loadGen = 0;
+  private downloadTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     effect(() => {
@@ -116,6 +126,7 @@ export class CertificationPdfPreviewPage {
     this.error.set('');
     this.cargando.set(true);
     this.printFeedback.set('');
+    this.downloadFeedback.set('');
     if (cid === null) {
       if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
       this.cargando.set(false);
@@ -149,6 +160,31 @@ export class CertificationPdfPreviewPage {
         this.printFeedback.set('No se pudo abrir el diálogo de impresión.');
       }
     });
+  }
+
+  async descargarPdf(): Promise<void> {
+    const cid = this.certId();
+    if (cid === null || this.descargando()) return;
+    this.descargando.set(true);
+    this.downloadFeedback.set('');
+    try {
+      const blob = await this.certs.descargarPdf(cid);
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = this.pdfFilename();
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objUrl);
+      this.downloadFeedback.set('Se generó el PDF del certificado para descarga.');
+      if (this.downloadTimer) clearTimeout(this.downloadTimer);
+      this.downloadTimer = setTimeout(() => this.downloadFeedback.set(''), 3000);
+    } catch (e) {
+      this.downloadFeedback.set((e as Error).message || 'No se pudo descargar el PDF.');
+    } finally {
+      this.descargando.set(false);
+    }
   }
 }
 

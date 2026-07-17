@@ -3,6 +3,20 @@ import { RouterLink } from '@angular/router';
 import { COURSES_SOURCE } from './courses.service';
 import { Curso, CursosFiltros, EstadoCurso } from './courses.models';
 
+const ESTADO_LABEL: Record<EstadoCurso, string> = {
+  borrador: 'Borrador',
+  activo: 'Activo',
+  cerrado: 'Cerrado',
+  archivado: 'Archivado',
+};
+
+const ESTADO_CHIP_LABEL: Record<EstadoCurso, string> = {
+  borrador: 'Borrador',
+  activo: 'Activos',
+  cerrado: 'Cerrados',
+  archivado: 'Archivados',
+};
+
 // Listado de cursos con filtros y datos demo. Sin HTTP/storage.
 @Component({
   selector: 'app-courses-list-page',
@@ -17,6 +31,7 @@ export class CoursesListPage {
   private loadGeneration = 0;
 
   readonly estados: readonly EstadoCurso[] = ['borrador', 'activo', 'cerrado', 'archivado'];
+  readonly estadoChipLabel = ESTADO_CHIP_LABEL;
 
   // Filtros locales. Inician sin filtro para mostrar todo el seed.
   readonly q = signal('');
@@ -40,6 +55,14 @@ export class CoursesListPage {
     void this.recargar();
   }
 
+  etiquetaEstado(estado: EstadoCurso): string {
+    return ESTADO_LABEL[estado];
+  }
+
+  formatoMetrica(valor: number | null | undefined): string {
+    return valor == null ? '—' : String(valor);
+  }
+
   async recargar(): Promise<void> {
     const generation = ++this.loadGeneration;
     this.cargando.set(true);
@@ -54,7 +77,7 @@ export class CoursesListPage {
       const list = await this.courses.listar(filtros);
       if (generation !== this.loadGeneration) return;
       this.cursos.set(list);
-    } catch (e) {
+    } catch {
       if (generation !== this.loadGeneration) return;
       this.error.set('No se pudo cargar el listado de cursos. Reintentá.');
     } finally {
@@ -69,9 +92,8 @@ export class CoursesListPage {
     void this.recargar();
   }
 
-  onEstado(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value as EstadoCurso | 'todos';
-    this.estado.set(value);
+  onEstado(value: EstadoCurso): void {
+    this.estado.update((current) => (current === value ? 'todos' : value));
     void this.recargar();
   }
 

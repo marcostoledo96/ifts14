@@ -14,6 +14,7 @@ import { InMemoryStudentsService } from './features/admin/students/in-memory-stu
 import { HttpStudentsService } from './features/admin/students/http-students.service';
 import { INSTITUTIONAL_CONFIG_SOURCE } from './features/admin/institutional-config/institutional-config.service';
 import { HttpInstitutionalConfigService } from './features/admin/institutional-config/http-institutional-config.service';
+import { InMemoryInstitutionalConfigService } from './features/admin/institutional-config/in-memory-institutional-config.service';
 import { environment } from '../environments/environment';
 
 export const routes: Routes = [
@@ -63,16 +64,31 @@ export const routes: Routes = [
       { provide: ATTENDANCE_SOURCE, useClass: environment.useRealApi ? HttpAttendanceService : AttendanceMockService },
       { provide: CERTIFICATIONS_SOURCE, useClass: environment.useRealApi ? HttpCertificationsService : InMemoryCertificationsService },
       { provide: STUDENTS_SOURCE, useClass: environment.useRealApi ? HttpStudentsService : InMemoryStudentsService },
-      { provide: INSTITUTIONAL_CONFIG_SOURCE, useClass: HttpInstitutionalConfigService },
+      { provide: INSTITUTIONAL_CONFIG_SOURCE, useClass: environment.useRealApi ? HttpInstitutionalConfigService : InMemoryInstitutionalConfigService },
     ],
     loadComponent: () =>
       import('./features/admin/admin-shell').then((m) => m.AdminShell),
     children: [
       {
         path: 'dashboard',
-        title: 'Admin · Dashboard (mock) — IFTS 14',
+        title: 'Admin · Panel de certificaciones — IFTS 14',
         loadComponent: () =>
           import('./features/admin/admin-dashboard-page').then((m) => m.AdminDashboardPage),
+      },
+      {
+        path: 'configuracion',
+        title: 'Admin · Configuración institucional — IFTS 14',
+        loadComponent: () =>
+          import('./features/admin/institutional-config/pages/institutional-config-page').then(
+            (m) => m.InstitutionalConfigPage,
+          ),
+      },
+      {
+        // Estático ANTES de alumnos/:id para que "nuevo" no caiga en detalle.
+        path: 'alumnos/nuevo',
+        title: 'Admin · Nuevo alumno — IFTS 14',
+        loadComponent: () =>
+          import('./features/admin/students/pages/new/student-editor-page').then((m) => m.StudentEditorPage),
       },
       {
         path: 'alumnos/:id',
@@ -125,6 +141,15 @@ export const routes: Routes = [
         path: 'cursos',
         loadComponent: () =>
           import('./features/admin/courses/courses-list-page').then((m) => m.CoursesListPage),
+      },
+      {
+        // Emisión: ruta estática ANTES de certificaciones/:id (first-wins).
+        path: 'certificaciones/nueva',
+        title: 'Admin · Nueva certificación — IFTS 14',
+        loadComponent: () =>
+          import(
+            './features/admin/certifications/pages/new/certification-new-page'
+          ).then((m) => m.CertificationNewPage),
       },
       {
         // F4-02: ruta PDF ANTES de certificaciones/:id para que :id no

@@ -1,19 +1,22 @@
-import { Alumno, AlumnoDetalle, CursoPresente } from './students.models';
+import { Alumno, AlumnoDetalle, AlumnoDraft, CursoPresente } from './students.models';
 import { StudentsService } from './students.service';
 
 interface SeedAlumnoRaw extends Alumno {
   readonly ingreso: string;
 }
 
-export const seed: readonly SeedAlumnoRaw[] = [
-  { id: 1, apellido: 'Ficticia', nombre: 'Persona Uno', dniMostrar: '00****01', tieneEmail: true, cursosConAsistencia: 4, certificacionesValidas: 2, ingreso: '2021' },
-  { id: 2, apellido: 'Ficticia', nombre: 'Persona Dos', dniMostrar: '00****02', tieneEmail: false, cursosConAsistencia: 1, certificacionesValidas: 0, ingreso: '2022' },
-  { id: 3, apellido: 'Demostración', nombre: 'Estudiante Tres', dniMostrar: '00****03', tieneEmail: true, cursosConAsistencia: 6, certificacionesValidas: 3, ingreso: '2021' },
-  { id: 4, apellido: 'Demostración', nombre: 'Estudiante Cuatro', dniMostrar: '00****04', tieneEmail: false, cursosConAsistencia: 3, certificacionesValidas: 1, ingreso: '2023' },
-  { id: 5, apellido: 'Ejemplo', nombre: 'Alumno Cinco', dniMostrar: '00****05', tieneEmail: true, cursosConAsistencia: 2, certificacionesValidas: 0, ingreso: '2022' },
-  { id: 6, apellido: 'Ejemplo', nombre: 'Alumno Seis', dniMostrar: '00****06', tieneEmail: false, cursosConAsistencia: 5, certificacionesValidas: 2, ingreso: '2021' },
-  { id: 7, apellido: 'Muestra', nombre: 'Alumno Siete', dniMostrar: '00****07', tieneEmail: true, cursosConAsistencia: 1, certificacionesValidas: 1, ingreso: '2024' },
+const initialSeed: readonly SeedAlumnoRaw[] = [
+  { id: 1, apellido: 'Ficticia', nombre: 'Persona Uno', dniMostrar: '00****01', estado: 'activo', tieneEmail: true, cursosConAsistencia: 4, certificacionesValidas: 2, ingreso: '2021' },
+  { id: 2, apellido: 'Ficticia', nombre: 'Persona Dos', dniMostrar: '00****02', estado: 'activo', tieneEmail: false, cursosConAsistencia: 1, certificacionesValidas: 0, ingreso: '2022' },
+  { id: 3, apellido: 'Demostración', nombre: 'Estudiante Tres', dniMostrar: '00****03', estado: 'activo', tieneEmail: true, cursosConAsistencia: 6, certificacionesValidas: 3, ingreso: '2021' },
+  { id: 4, apellido: 'Demostración', nombre: 'Estudiante Cuatro', dniMostrar: '00****04', estado: 'activo', tieneEmail: false, cursosConAsistencia: 3, certificacionesValidas: 1, ingreso: '2023' },
+  { id: 5, apellido: 'Ejemplo', nombre: 'Alumno Cinco', dniMostrar: '00****05', estado: 'inactivo', tieneEmail: true, cursosConAsistencia: 2, certificacionesValidas: 0, ingreso: '2022' },
+  { id: 6, apellido: 'Ejemplo', nombre: 'Alumno Seis', dniMostrar: '00****06', estado: 'activo', tieneEmail: false, cursosConAsistencia: 5, certificacionesValidas: 2, ingreso: '2021' },
+  { id: 7, apellido: 'Muestra', nombre: 'Alumno Siete', dniMostrar: '00****07', estado: 'activo', tieneEmail: true, cursosConAsistencia: 1, certificacionesValidas: 1, ingreso: '2024' },
 ];
+
+/** Exportado solo para tests de seed / privacy checks. */
+export const seed: readonly SeedAlumnoRaw[] = initialSeed;
 
 const CURSOS_MOCK_MAP: Record<number, CursoPresente[]> = {
   1: [
@@ -54,16 +57,39 @@ const CURSOS_MOCK_MAP: Record<number, CursoPresente[]> = {
   ],
 };
 
+function maskDni(dni: string): string {
+  const digits = dni.replace(/\D/g, '');
+  if (digits.length < 4) {
+    return '00****00';
+  }
+  return `${digits.slice(0, 2)}****${digits.slice(-2)}`;
+}
+
+function splitApellidoNombre(apellidoNombre: string): { apellido: string; nombre: string } {
+  const trimmed = apellidoNombre.trim();
+  const idx = trimmed.indexOf(' ');
+  if (idx === -1) {
+    return { apellido: trimmed, nombre: '' };
+  }
+  return { apellido: trimmed.slice(0, idx), nombre: trimmed.slice(idx + 1).trim() };
+}
+
 export class InMemoryStudentsService implements StudentsService {
+  private rows: SeedAlumnoRaw[] = initialSeed.map((r) => ({ ...r }));
+  private nextId = Math.max(...initialSeed.map((r) => r.id)) + 1;
+
   async listar(): Promise<readonly Alumno[]> {
-    return seed.map(({ id, apellido, nombre, dniMostrar, tieneEmail, cursosConAsistencia, certificacionesValidas }) => ({
-      id, apellido, nombre, dniMostrar, tieneEmail, cursosConAsistencia, certificacionesValidas
+    return this.rows.map(({ id, apellido, nombre, dniMostrar, estado, tieneEmail, cursosConAsistencia, certificacionesValidas }) => ({
+      id, apellido, nombre, dniMostrar, estado, tieneEmail, cursosConAsistencia, certificacionesValidas,
     }));
   }
-  async contar(): Promise<number> { return seed.length; }
+
+  async contar(): Promise<number> {
+    return this.rows.length;
+  }
 
   async obtener(id: number): Promise<AlumnoDetalle | null> {
-    const found = seed.find((alumno) => alumno.id === id);
+    const found = this.rows.find((alumno) => alumno.id === id);
     if (!found) return null;
     const cursos = CURSOS_MOCK_MAP[id] || [];
     return {
@@ -71,6 +97,7 @@ export class InMemoryStudentsService implements StudentsService {
       apellido: found.apellido,
       nombre: found.nombre,
       dniMostrar: found.dniMostrar,
+      estado: found.estado,
       tieneEmail: found.tieneEmail,
       cursosConAsistencia: found.cursosConAsistencia,
       certificacionesValidas: found.certificacionesValidas,
@@ -78,5 +105,31 @@ export class InMemoryStudentsService implements StudentsService {
       cursos: JSON.parse(JSON.stringify(cursos)) as CursoPresente[],
     };
   }
-}
 
+  async crear(draft: AlumnoDraft): Promise<AlumnoDetalle> {
+    const apellidoNombre = draft.apellidoNombre.trim();
+    const dni = draft.dni.trim();
+    if (!apellidoNombre || !dni) {
+      throw new Error('apellidoNombre y dni son requeridos');
+    }
+    const dniMostrar = maskDni(dni);
+    const { apellido, nombre } = splitApellidoNombre(apellidoNombre);
+    const id = this.nextId++;
+    const row: SeedAlumnoRaw = {
+      id,
+      apellido,
+      nombre,
+      dniMostrar,
+      estado: draft.estado ?? 'activo',
+      tieneEmail: false,
+      cursosConAsistencia: 0,
+      certificacionesValidas: 0,
+      ingreso: String(new Date().getFullYear()),
+    };
+    this.rows = [...this.rows, row];
+    return {
+      ...row,
+      cursos: [],
+    };
+  }
+}

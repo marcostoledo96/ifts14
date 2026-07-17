@@ -150,4 +150,23 @@ describe('CertificationRevokePage', () => {
       expect(navigateSpy).not.toHaveBeenCalled();
     }));
   }
+
+  it('Escape navega al expediente (REQ-PAR-REV-001)', fakeAsync(() => {
+    tick();
+    fixture.detectChanges();
+    const navigateSpy = spyOn(router, 'navigate');
+    component.volverAlExpediente();
+    expect(navigateSpy).toHaveBeenCalledWith(['/admin/certificaciones', '1']);
+  }));
+
+  it('panel de error de carga muestra alerta y enlace volver', fakeAsync(() => {
+    (fixture.componentRef as ComponentRef<CertificationRevokePage>).setInput('id', '999');
+    fixture.detectChanges();
+    tick();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.error-panel[role="alert"]')).toBeTruthy();
+    expect(el.textContent).toContain('Certificación no encontrada');
+    expect(el.querySelector('.btn-volver')?.textContent).toContain('Volver');
+  }));
 });

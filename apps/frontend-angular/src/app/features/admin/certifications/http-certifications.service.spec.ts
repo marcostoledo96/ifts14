@@ -59,13 +59,69 @@ describe('HttpCertificationsService', () => {
     expect(result[0].venceEn).toBeNull();
   });
 
-  it('filtro estado aplicado client-side', async () => {
-    const p = service.listar({ estado: 'revocado' });
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
-    req.flush({ data: { items: [listDto({ id: 1, status: 'vigente' }), listDto({ id: 2, status: 'revocado' })] }, meta: { requestId: 'r4' } });
+  it('listar envía query estado/cursoId/alumnoId cuando vienen', async () => {
+    const p = service.listar({ estado: 'vigente', cursoId: 10, alumnoId: 3 });
+    const req = httpMock.expectOne(
+      `${environment.apiBaseUrl}/admin/certificados?estado=vigente&cursoId=10&alumnoId=3`,
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({ data: { items: [listDto({ id: 2, status: 'vigente' })] }, meta: { requestId: 'r4' } });
     const result = await p;
     expect(result.length).toBe(1);
-    expect(result[0].estado).toBe('revocado');
+    expect(result[0].estado).toBe('vigente');
+  });
+
+  it('emitir hace POST a /admin/certificados con body exacto y mapea data', async () => {
+    const payload = { alumnoId: 3, cursoId: 10, issuedAt: '2026-07-16', expiresAt: null };
+    const p = service.emitir(payload);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush({
+      data: {
+        id: 99,
+        certificateCode: 'CERT-2026-0099',
+        status: 'vigente',
+        student: { displayName: 'Demo', documentMasked: '12****34' },
+        course: { name: 'Curso Demo' },
+        issuedAt: '2026-07-16',
+        expiresAt: null,
+        tokenPrefix: 'prefijo_demo_x9z',
+        publicValidationUrl: 'https://example/validar/x',
+        pdfDownloadUrl: '/admin/certificados/99/pdf',
+      },
+      meta: { requestId: 'r-emit' },
+    });
+    const result = await p;
+    expect(result.id).toBe(99);
+    expect(result.certificateCode).toBe('CERT-2026-0099');
+  });
+
+  it('emitir 409 rechaza con error', async () => {
+    const p = service.emitir({ alumnoId: 1, cursoId: 2, issuedAt: '2026-07-16', expiresAt: null });
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
+    req.flush(
+      { error: { code: 'CERTIFICATE_ALREADY_EXISTS', message: 'Ya existe', details: [] }, meta: { requestId: 'r409' } },
+      { status: 409, statusText: 'Conflict' },
+    );
+    await expectAsync(p).toBeRejected();
+  });
+
+  it('emitir 400 rechaza con error', async () => {
+    const p = service.emitir({ alumnoId: 1, cursoId: 2, issuedAt: '2099-01-01', expiresAt: null });
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
+    req.flush(
+      { error: { code: 'VALIDATION_ERROR', message: 'Fecha inválida', details: [] }, meta: { requestId: 'r400' } },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    await expectAsync(p).toBeRejected();
+  });
+
+  it('emitir 500 rechaza con error', async () => {
+    const p = service.emitir({ alumnoId: 1, cursoId: 2, issuedAt: '2026-07-16', expiresAt: null });
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados`);
+    req.flush('crash', { status: 500, statusText: 'Internal Server Error' });
+    await expectAsync(p).toBeRejected();
   });
 
   it('obtener hace GET a /admin/certificados/:id y devuelve detalle con auditoría', async () => {
@@ -139,6 +195,27 @@ describe('HttpCertificationsService', () => {
       { status: 404, statusText: 'Not Found' },
     );
     await expectAsync(p).toBeRejected();
+  });
+
+  it('descargarQrPng hace GET blob a /admin/certificados/:id/qr.png', async () => {
+    const p = service.descargarQrPng(7);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados/7/qr.png`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['png'], { type: 'image/png' }));
+    const blob = await p;
+    expect(blob).toBeInstanceOf(Blob);
+  });
+
+  it('descargarPdf hace GET blob a /admin/certificados/:id/pdf', async () => {
+    const p = service.descargarPdf(7);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/certificados/7/pdf`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['%PDF'], { type: 'application/pdf' }));
+    const blob = await p;
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.type).toBe('application/pdf');
   });
 
   it('contar devuelve la longitud del listado', async () => {

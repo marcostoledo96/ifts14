@@ -22,20 +22,30 @@
     </p>
 
     @if (fechaActual(); as f) {
-      <dl class="fecha-resumen">
-        <dt>Fecha</dt>
-        <dd>{{ f.fecha }}</dd>
-        <dt>Estado</dt>
-        <dd>{{ f.estado }}</dd>
-        @if (f.descripcion) {
-          <dt>Detalle</dt>
-          <dd>{{ f.descripcion }}</dd>
-        }
-      </dl>
+      <div class="controles">
+        <label class="control-campo">
+          <span class="control-label">Fecha de la clase</span>
+          <select
+            class="fecha-select"
+            [value]="fechaId()"
+            (change)="onFechaSeleccionada($event)"
+            aria-label="Seleccionar fecha de la clase"
+          >
+            @for (opt of fechasOrdenadas(); track opt.id) {
+              <option [value]="opt.id" [disabled]="opt.estado === 'cancelada'">
+                {{ opt.fecha }}{{ opt.descripcion ? ' — ' + opt.descripcion : '' }}
+                @if (opt.estado === 'cancelada') {
+                  (cancelada)
+                } @else if (opt.estado === 'realizada') {
+                  (realizada)
+                }
+              </option>
+            }
+          </select>
+        </label>
 
-      <div class="filtros">
-        <label class="filtro-search">
-          <span class="filtro-label">Buscar alumno</span>
+        <label class="control-campo filtro-search">
+          <span class="control-label">Buscar alumno</span>
           <input
             type="search"
             [value]="q()"
@@ -46,6 +56,33 @@
         </label>
       </div>
 
+      <dl class="resumen" aria-live="polite">
+        <div class="resumen-item">
+          <dt>Fecha</dt>
+          <dd>{{ f.fecha }}</dd>
+        </div>
+        <div class="resumen-item">
+          <dt>Presentes</dt>
+          <dd class="resumen-presentes">{{ marcadosCount() }}</dd>
+        </div>
+        <div class="resumen-item resumen-cambios" [class.tiene-cambios]="dirty()">
+          <dt>Cambios sin guardar</dt>
+          <dd>
+            @if (dirty()) {
+              {{ cambios() }}
+              @if (agregados() > 0) {
+                <span class="resumen-detalle">· {{ agregados() }} marcado(s)</span>
+              }
+              @if (quitados() > 0) {
+                <span class="resumen-detalle">· {{ quitados() }} quitado(s)</span>
+              }
+            } @else {
+              Sin cambios pendientes
+            }
+          </dd>
+        </div>
+      </dl>
+
       <fieldset class="alumnos-fieldset">
         <legend>Presentes ({{ marcadosCount() }})</legend>
 
@@ -55,19 +92,26 @@
           <ul class="alumnos-lista">
             @for (a of alumnosFiltrados(); track a.id) {
               <li class="alumno-row">
-                <label class="alumno-label">
-                  <input
-                    type="checkbox"
-                    [checked]="estaMarcado(a.id)"
-                    (change)="togglePresente(a.id, $event)"
-                    [attr.aria-label]="'Marcar presente a ' + a.apellidoNombre"
-                  />
+                <div class="alumno-datos">
                   <span class="alumno-nombre">{{ a.apellidoNombre }}</span>
                   <span class="alumno-dni">{{ a.dniMostrar }}</span>
                   @if (a.estado === 'inactivo') {
                     <span class="alumno-estado">inactivo</span>
                   }
-                </label>
+                </div>
+                <button
+                  type="button"
+                  class="toggle-presente"
+                  [class.presente]="estaMarcado(a.id)"
+                  [attr.aria-pressed]="estaMarcado(a.id)"
+                  (click)="togglePresente(a.id)"
+                  [attr.aria-label]="
+                    (estaMarcado(a.id) ? 'Quitar de presentes a ' : 'Marcar presente a ') +
+                    a.apellidoNombre
+                  "
+                >
+                  {{ estaMarcado(a.id) ? '✓ Presente' : '+ Marcar' }}
+                </button>
               </li>
             }
           </ul>
@@ -79,11 +123,16 @@
           type="button"
           class="btn-primary"
           (click)="guardar()"
-          [disabled]="guardando()"
+          [disabled]="!dirty() || guardando()"
         >
           {{ guardando() ? 'Guardando…' : 'Guardar' }}
         </button>
-        <button type="button" class="btn-secondary" (click)="descartar()">
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="descartar()"
+          [disabled]="!dirty()"
+        >
           Descartar
         </button>
       </div>

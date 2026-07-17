@@ -26,5 +26,20 @@ describe('InMemoryStudentsService', () => {
     const resultInvalido = await service.obtener(999);
     expect(resultInvalido).toBeNull();
   });
+
+  it('crear agrega alumno con dniMostrar enmascarado y sin email literal', async () => {
+    const service = new InMemoryStudentsService();
+    const created = await service.crear({ apellidoNombre: 'Prueba Alta', dni: '40111222' });
+    expect(created.id).toBeGreaterThan(7);
+    expect(created.apellido).toBe('Prueba');
+    expect(created.nombre).toBe('Alta');
+    expect(created.dniMostrar).toBe('40****22');
+    expect(created.estado).toBe('activo');
+    expect(JSON.stringify(created).toLowerCase()).not.toContain('40111222');
+    expect(JSON.stringify(created)).not.toMatch(/"email"\s*:/);
+    expect(JSON.stringify(created).toLowerCase()).not.toContain('@');
+    const list = await service.listar();
+    expect(list.some((a) => a.id === created.id)).toBeTrue();
+  });
 });
 

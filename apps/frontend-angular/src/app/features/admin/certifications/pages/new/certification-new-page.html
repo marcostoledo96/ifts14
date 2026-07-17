@@ -1,0 +1,441 @@
+<section aria-labelledby="cert-new-title" class="cert-new">
+  <div class="page-header">
+    <a routerLink="/admin/certificaciones" class="back-link">
+      <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <path d="M19 12H5" />
+        <path d="m12 19-7-7 7-7" />
+      </svg>
+      Certificaciones
+    </a>
+    <p class="kicker">Emisión documental</p>
+    <h1 id="cert-new-title" class="title">Nueva certificación</h1>
+    <p class="subtitle">
+      Seleccioná alumno y curso para revisar el certificado complementario antes de emitirlo.
+      La emisión es directa: no hay borrador ni aprobación posterior.
+    </p>
+  </div>
+
+  <p class="demo-banner" role="status">Datos de demostración — No persiste al recargar.</p>
+
+  @if (cargandoCatalogos()) {
+    <output class="loading-block" aria-busy="true">Cargando catálogos…</output>
+  } @else if (errorCatalogos()) {
+    <div class="estado-error" role="alert">
+      <p>{{ errorCatalogos() }}</p>
+      <button type="button" class="btn-retry" (click)="cargarCatalogos()">Reintentar</button>
+    </div>
+  } @else {
+    <!-- Selección -->
+    <section aria-label="Selección de alumno y curso" class="selection-grid">
+      <div class="field" #comboboxWrap>
+        <label class="filtro-label" id="label-alumno" for="buscar-alumno">Seleccionar alumno</label>
+
+        @if (alumnoSeleccionado() && !alumnoOpen()) {
+          <button
+            type="button"
+            class="alumno-chip"
+            (click)="abrirBusquedaAlumno()"
+            aria-label="Cambiar alumno seleccionado"
+          >
+            <span class="avatar" aria-hidden="true">{{ inicialesAlumno() }}</span>
+            <span class="chip-name">{{ etiquetaAlumno() }}</span>
+            <span class="chip-dni mono">{{ alumnoSeleccionado()!.dniMostrar }}</span>
+            <svg class="icon-sm chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+        } @else {
+          <div class="search-wrap">
+            <svg class="icon-sm search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              id="buscar-alumno"
+              type="text"
+              role="combobox"
+              [attr.aria-expanded]="alumnoOpen()"
+              aria-controls="lista-alumnos"
+              aria-autocomplete="list"
+              aria-labelledby="label-alumno"
+              autocomplete="off"
+              placeholder="Apellido, nombre o documento…"
+              [value]="alumnoQuery()"
+              (input)="onAlumnoQuery($event)"
+              (focus)="alumnoOpen.set(true)"
+              (keydown.escape)="alumnoOpen.set(false)"
+            />
+          </div>
+        }
+
+        @if (alumnoOpen()) {
+          <ul id="lista-alumnos" role="listbox" aria-label="Alumnos" class="alumno-list">
+            @if (alumnosFiltrados().length === 0) {
+              <li class="list-empty">Sin coincidencias.</li>
+            } @else {
+              @for (a of alumnosFiltrados(); track a.id) {
+                <li role="option" [attr.aria-selected]="a.id === alumnoId()">
+                  <button type="button" class="list-item" (click)="elegirAlumno(a)">
+                    <span class="avatar avatar-sm" aria-hidden="true">{{ inicialesDe(a) }}</span>
+                    <span class="list-meta">
+                      <span class="list-name">{{ a.apellido }}, {{ a.nombre }}</span>
+                      <span class="list-sub mono">
+                        {{ a.dniMostrar }}
+                        @if (a.tieneEmail === false) {
+                          <span class="sin-email-tag">sin email</span>
+                        }
+                      </span>
+                    </span>
+                    @if (a.id === alumnoId()) {
+                      <svg class="icon-sm check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    }
+                  </button>
+                </li>
+              }
+            }
+          </ul>
+        }
+      </div>
+
+      <label class="field">
+        <span class="filtro-label">Curso / asignatura</span>
+        <div class="select-wrap">
+          <select
+            [value]="cursoId() ?? ''"
+            (change)="onCurso($event)"
+            aria-label="Seleccionar curso activo"
+          >
+            <option value="">Elegí un curso…</option>
+            @for (c of cursos(); track c.id) {
+              <option [value]="c.id">{{ c.nombre }}</option>
+            }
+          </select>
+          <svg class="icon-sm chevron select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </div>
+      </label>
+
+      <div class="field">
+        <span class="filtro-label">Ciclo lectivo</span>
+        <div class="ciclo-box" aria-live="polite">{{ cicloLectivo() }}</div>
+      </div>
+    </section>
+
+    @if (avisoQuery()) {
+      <div class="aviso aviso-warn" role="status" data-testid="aviso-query">{{ avisoQuery() }}</div>
+    }
+
+    <div class="main-grid">
+      <!-- Preview documental -->
+      <div class="preview-col">
+        <div class="preview-meta">
+          <p class="filtro-label">Vista previa del certificado</p>
+          <p class="preview-hint">El PDF complementario final se genera al emitir.</p>
+        </div>
+
+        <article
+          class="cert-doc"
+          aria-label="Vista previa tipográfica del certificado"
+          [attr.aria-busy]="cargandoPar()"
+        >
+          <span class="sr-only" role="status" aria-live="polite">
+            @if (cargandoPar()) {
+              Cargando datos del certificado…
+            }
+          </span>
+
+          <header class="cert-band">
+            <div class="band-main">
+              <div class="mono-box" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" class="monograma">
+                  <rect x="2" y="2" width="6" height="6" fill="currentColor" />
+                  <rect x="12" y="2" width="6" height="6" fill="var(--color-circuit)" />
+                  <rect x="2" y="12" width="6" height="6" fill="var(--color-circuit)" />
+                  <rect x="12" y="12" width="6" height="6" fill="currentColor" />
+                </svg>
+              </div>
+              <div>
+                <p class="band-kicker">CERTIFICADO COMPLEMENTARIO</p>
+                <h2 class="band-title">
+                  {{ configInst()?.institutionName || 'Instituto de Formación Técnica Superior N.° 14' }}
+                </h2>
+                <p class="band-sub">Gobierno de la Ciudad Autónoma de Buenos Aires</p>
+              </div>
+            </div>
+            <div class="band-status">
+              <p class="filtro-label band-status-label">Estado</p>
+              <p class="band-status-value">
+                <span class="dot-prelim" aria-hidden="true"></span>
+                Emisión preliminar
+              </p>
+              <p class="band-status-note">Código y QR se asignan al emitir</p>
+            </div>
+          </header>
+
+          @if (cargandoPar()) {
+            <div class="skeleton" aria-hidden="true" data-testid="preview-skeleton">
+              <div class="sk-block sk-w-56"></div>
+              <div class="sk-block sk-w-72 sk-mt"></div>
+              <div class="sk-block sk-w-40 sk-mt"></div>
+              <div class="sk-block sk-w-full sk-mt-lg"></div>
+              <div class="sk-block sk-w-2-3 sk-mt-sm"></div>
+              <div class="sk-sep"></div>
+              <div class="sk-block sk-w-60"></div>
+              <div class="sk-row sk-mt"><div class="sk-block sk-flex"></div></div>
+              <div class="sk-row"><div class="sk-block sk-flex"></div></div>
+              <div class="sk-sep"></div>
+              <div class="sk-block sk-w-44"></div>
+              <div class="sk-firmas sk-mt">
+                <div><div class="sk-block sk-h-12"></div><div class="sk-block sk-w-40 sk-mt-sm"></div></div>
+                <div><div class="sk-block sk-h-12"></div><div class="sk-block sk-w-40 sk-mt-sm"></div></div>
+              </div>
+            </div>
+          } @else if (alumnoSeleccionado() && cursoSeleccionado()) {
+            <div class="cert-body">
+              <p class="decl-lead">
+                {{ configInst()?.certificateText || 'El IFTS N.° 14 certifica que el/la estudiante' }}
+              </p>
+              <p class="decl-name">{{ nombreCompleto() }}</p>
+              <p class="decl-dni">
+                Documento
+                <span class="mono emph">{{ alumnoSeleccionado()!.dniMostrar }}</span>
+              </p>
+              <p class="decl-curso">
+                cumplió con la asistencia registrada y auditada en el curso
+                <strong>{{ cursoSeleccionado()!.nombre }}</strong>, correspondiente al ciclo
+                {{ cicloLectivo() }}.
+              </p>
+            </div>
+
+            <div class="cert-section">
+              <div class="section-head">
+                <p class="section-title">I. REGISTRO DE ASISTENCIA AUDITADO</p>
+                @if (presentes().length > 0) {
+                  <p class="section-meta mono">{{ presentes().length }} jornadas</p>
+                }
+              </div>
+
+              @if (sinFechasRealizadas()) {
+                <p class="empty-dashed">El curso todavía no tiene fechas de cursada en estado realizada.</p>
+              } @else if (sinPresentes()) {
+                <p class="empty-dashed">El alumno no registra jornadas presentes en este curso.</p>
+              } @else {
+                <div class="table-wrap">
+                  <table class="asist-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">SEQ</th>
+                        <th scope="col">FECHA</th>
+                        <th scope="col">MÓDULO</th>
+                        <th scope="col" class="align-end">ESTADO</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of presentes(); track p.cursoFechaId; let i = $index) {
+                        <tr>
+                          <td class="mono muted">{{ seqPad(i) }}</td>
+                          <td class="mono">{{ fechaCorta(p.fecha) }}</td>
+                          <td>{{ p.descripcion || '—' }}</td>
+                          <td class="align-end">
+                            <span class="presente-badge">
+                              <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5" />
+                              </svg>
+                              Presente
+                            </span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+            <div class="cert-section">
+              <div class="section-head">
+                <p class="section-title">II. AUTORIDADES FIRMANTES</p>
+                <span class="lock-badge">
+                  <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect width="18" height="11" x="3" y="11" rx="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  Configuración institucional
+                </span>
+              </div>
+              <div class="firmas-grid">
+                <div>
+                  <div class="firma-line">
+                    <svg class="icon-md muted-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                      <path d="m9 12 2 2 4-4" />
+                    </svg>
+                    <span class="firma-placeholder">Representación tipográfica</span>
+                  </div>
+                  <p class="firma-nombre">{{ configInst()?.rectorName || '—' }}</p>
+                  <p class="firma-rol">{{ configInst()?.rectorRole || '' }}</p>
+                </div>
+                <div>
+                  <div class="firma-line">
+                    <svg class="icon-md muted-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+                      <path d="m9 12 2 2 4-4" />
+                    </svg>
+                    <span class="firma-placeholder">Representación tipográfica</span>
+                  </div>
+                  <p class="firma-nombre">{{ configInst()?.advisorName || '—' }}</p>
+                  <p class="firma-rol">{{ configInst()?.advisorRole || '' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="cert-trace">
+              <div class="qr-decor" aria-hidden="true">
+                @for (c of qrCells; track $index) {
+                  <span [class.on]="c === 1"></span>
+                }
+              </div>
+              <div class="trace-body">
+                <dl class="trace-dl">
+                  <div>
+                    <dt>N.° de certificado</dt>
+                    <dd class="mono">Se asigna al emitir</dd>
+                  </div>
+                  <div>
+                    <dt>Fecha de emisión</dt>
+                    <dd>Hoy (America/Argentina/Buenos_Aires) al confirmar</dd>
+                  </div>
+                </dl>
+                <p class="trace-note">
+                  El QR permanente se genera al emitir y no contiene datos personales.
+                  La entrega es manual (link de validación y/o PDF por canal externo).
+                </p>
+              </div>
+            </div>
+          } @else {
+            <div class="preview-empty">
+              <span class="empty-icon" aria-hidden="true">
+                <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </span>
+              <p class="empty-title">Seleccioná un alumno y un curso para ver el certificado</p>
+              <p class="empty-sub">
+                La vista previa se arma con los datos del alumno y las jornadas presentes del curso.
+              </p>
+            </div>
+          }
+        </article>
+      </div>
+
+      <!-- Aside acciones -->
+      <aside class="aside-col">
+        <section class="card-panel" aria-labelledby="resumen-title">
+          <header class="card-head">
+            <h2 id="resumen-title" class="card-title">Resumen de emisión</h2>
+          </header>
+          <dl class="resumen-dl">
+            <div>
+              <dt>Alumno</dt>
+              <dd>{{ etiquetaAlumno() }}</dd>
+            </div>
+            <div>
+              <dt>Curso</dt>
+              <dd>{{ cursoSeleccionado()?.nombre || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Jornadas presentes</dt>
+              <dd class="mono">
+                @if (cargandoPar()) {
+                  <span class="sk-inline" aria-hidden="true"></span>
+                } @else {
+                  {{ alumnoId() != null && cursoId() != null ? presentes().length : '—' }}
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Entrega</dt>
+              <dd>
+                @if (sinEmail()) {
+                  <span class="entrega-warn">Sin email</span>
+                } @else {
+                  Manual
+                }
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        @if (muestraAvisos()) {
+          <div class="avisos-stack">
+            @if (errorEmit()) {
+              <div class="aviso aviso-error" role="alert">{{ errorEmit() }}</div>
+            }
+            @if (errorPar()) {
+              <div class="aviso aviso-error" role="alert">{{ errorPar() }}</div>
+            }
+            @if (avisoDuplicado()) {
+              <div class="aviso aviso-error" role="status">
+                <p class="aviso-title">Puede existir una certificación vigente</p>
+                <p class="aviso-body">
+                  La emisión definitiva la confirma el servidor. Si hay duplicado, recibirás un error 409.
+                </p>
+              </div>
+            }
+            @if (sinFechasRealizadas()) {
+              <div class="aviso aviso-error" role="alert">
+                <p class="aviso-title">El curso no tiene fechas realizadas</p>
+                <p class="aviso-body">Cargá las jornadas del curso antes de certificar.</p>
+              </div>
+            }
+            @if (sinPresentes()) {
+              <div class="aviso aviso-error" role="alert">
+                <p class="aviso-title">Sin asistencias presentes</p>
+                <p class="aviso-body">
+                  El alumno no registra presentes en este curso, por lo que no corresponde emitir.
+                </p>
+              </div>
+            }
+            @if (sinEmail()) {
+              <div class="aviso aviso-warn" role="status">
+                <p class="aviso-title">Alumno sin email registrado</p>
+                <p class="aviso-body">
+                  La certificación se emite igual; la entrega será manual (link y PDF por canal externo).
+                </p>
+              </div>
+            }
+          </div>
+        }
+
+        <section class="card-panel card-actions">
+          <button
+            type="button"
+            class="btn-emitir"
+            [disabled]="!puedeEmitir()"
+            (click)="onEmitir()"
+          >
+            @if (cargandoPar() || emitiendo()) {
+              <span class="spinner" aria-hidden="true"></span>
+              {{ emitiendo() ? 'Emitiendo…' : 'Cargando…' }}
+            } @else {
+              <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="m22 2-7 20-4-9-9-4Z" />
+                <path d="M22 2 11 13" />
+              </svg>
+              Emitir certificación
+            }
+          </button>
+          <a routerLink="/admin/certificaciones" class="btn-cancelar">Cancelar</a>
+          <p class="cta-note">
+            Después de emitir se generan el QR permanente y el PDF complementario.
+            La entrega es manual: copiar el link de validación y/o descargar el PDF.
+          </p>
+        </section>
+      </aside>
+    </div>
+  }
+</section>

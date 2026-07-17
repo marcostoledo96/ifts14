@@ -15,9 +15,12 @@ export class LoginPage {
   private readonly router = inject(Router);
 
   readonly errorMsg = signal('');
+  readonly loading = signal(false);
+  readonly anioActual = new Date().getFullYear();
 
   async onAccesoSimulado(credentials: AdminAuthCredentials): Promise<void> {
     this.errorMsg.set('');
+    this.loading.set(true);
     try {
       await this.auth.login(credentials);
       void this.router.navigate(['/admin/dashboard']);
@@ -26,8 +29,12 @@ export class LoginPage {
       if (status === 429) {
         this.errorMsg.set('Demasiados intentos. Aguardá unos minutos e intentá nuevamente.');
       } else {
-        this.errorMsg.set('Credenciales inválidas. Verificá tu ID institucional y clave.');
+        this.errorMsg.set(
+          'Las credenciales no coinciden con un registro autorizado. Verificá los datos e intentá nuevamente.',
+        );
       }
+    } finally {
+      this.loading.set(false);
     }
   }
 }

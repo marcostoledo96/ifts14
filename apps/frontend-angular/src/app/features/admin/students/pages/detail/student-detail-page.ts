@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ATTENDANCE_SOURCE } from '../../../attendances/data/attendance.token';
+import { Asistencia, AttendanceService } from '../../../attendances/models/attendance.types';
 import { AlumnoDetalle, CursoPresente } from '../../students.models';
 import { STUDENTS_SOURCE } from '../../students.service';
 
@@ -15,11 +17,18 @@ import { STUDENTS_SOURCE } from '../../students.service';
 export class StudentDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly studentsService = inject(STUDENTS_SOURCE);
+  private readonly attendance = inject(ATTENDANCE_SOURCE) as AttendanceService;
 
   private loadGeneration = 0;
+  private asistenciasGeneration = 0;
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly alumno = signal<AlumnoDetalle | null>(null);
+
+  readonly mostrarAsistencias = signal(false);
+  readonly cargandoAsistencias = signal(false);
+  readonly errorAsistencias = signal('');
+  readonly asistencias = signal<readonly Asistencia[]>([]);
 
   readonly nombreCompleto = computed(() => {
     const a = this.alumno();
@@ -56,6 +65,9 @@ export class StudentDetailPage {
     this.cargando.set(true);
     this.error.set('');
     this.alumno.set(null);
+    this.mostrarAsistencias.set(false);
+    this.asistencias.set([]);
+    this.errorAsistencias.set('');
 
     try {
       const data = await this.studentsService.obtener(id);
@@ -86,6 +98,55 @@ export class StudentDetailPage {
         return fmtCorta.format(date);
       })
       .join(', ');
+  }
+
+  /** Query de emisión: curso solo si el id es numérico real. */
+  queryEmitir(alumnoId: number, curso: CursoPresente): { alumno: number; curso?: string } {
+    const q: { alumno: number; curso?: string } = { alumno: alumnoId };
+    if (/^\d+$/.test(curso.id)) {
+      q.curso = curso.id;
+    }
+    return q;
+  }
+
+  etiquetaCursoAsistencia(cursoId: number): string {
+    const a = this.alumno();
+    const match = a?.cursos.find((c) => c.id === String(cursoId));
+    if (match) return `${match.codigo} — ${match.nombre}`;
+    return `Curso #${cursoId}`;
+  }
+
+  async onToggleAsistencias(): Promise<void> {
+    if (this.mostrarAsistencias()) {
+      this.mostrarAsistencias.set(false);
+      return;
+    }
+    this.mostrarAsistencias.set(true);
+    await this.cargarAsistencias();
+  }
+
+  private async cargarAsistencias(): Promise<void> {
+    const alumno = this.alumno();
+    if (!alumno) return;
+    const generation = ++this.asistenciasGeneration;
+    this.cargandoAsistencias.set(true);
+    this.errorAsistencias.set('');
+    try {
+      const list = await this.attendance.listarAsistenciasPorAlumno(alumno.id);
+      if (generation !== this.asistenciasGeneration) return;
+      this.asistencias.set(list);
+    } catch {
+      if (generation !== this.asistenciasGeneration) return;
+      this.errorAsistencias.set('No se pudieron cargar las asistencias. Reintentá.');
+    } finally {
+      if (generation === this.asistenciasGeneration) {
+        this.cargandoAsistencias.set(false);
+      }
+    }
+  }
+
+  onReintentarAsistencias(): void {
+    void this.cargarAsistencias();
   }
 
   onReintentar(): void {

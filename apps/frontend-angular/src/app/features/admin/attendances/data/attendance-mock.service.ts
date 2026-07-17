@@ -98,6 +98,18 @@ export class AttendanceMockService implements AttendanceService {
     return Promise.resolve(clone(list));
   }
 
+  listarAsistenciasPorPar(cursoId: number, alumnoId: number): Promise<readonly Asistencia[]> {
+    const list = this.state.asistencias.filter(
+      (a) => a.cursoId === cursoId && a.alumnoId === alumnoId,
+    );
+    return Promise.resolve(clone(list));
+  }
+
+  listarAsistenciasPorAlumno(alumnoId: number): Promise<readonly Asistencia[]> {
+    const list = this.state.asistencias.filter((a) => a.alumnoId === alumnoId);
+    return Promise.resolve(clone(list));
+  }
+
   async marcar(
     cursoId: number,
     fechaId: number,

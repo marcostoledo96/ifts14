@@ -2,12 +2,23 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, si
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EstadoCertificado, RegenerarPdfResult } from '../../certifications.models';
+import {
+  INSTITUTIONAL_CONFIG_SOURCE,
+  InstitutionalConfig,
+} from '../../../institutional-config/institutional-config.service';
 
-// Expediente administrativo mock-only de una certificación. Sin HTTP/storage.
+type AutoridadesVista = {
+  rectorName: string;
+  rectorRole: string;
+  advisorName: string;
+  advisorRole: string;
+};
+
+// Expediente administrativo de una certificación.
 // Paridad visual con muestra_pagina/components/admin/expediente-certificacion.tsx
 // portada a Angular 20 con CSS local y tokens globales.
-// CTAs de PDF/copiar link/entrega/regenerar/revocación deshabilitados con
-// handoff explícito: F4-02 (PDF), F5-04 (entrega), F6-03 (link), F6-01 (revocación).
+// Copiar/Compartir usan URL canónica de obtenerEntregaManual(); autoridades
+// desde INSTITUTIONAL_CONFIG_SOURCE (REQ-CPREV-001…007).
 @Component({
   selector: 'app-certification-preview-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,10 +31,17 @@ export class CertificationPreviewPage {
   readonly id = input<string>('');
 
   private readonly certs = inject(CERTIFICATIONS_SOURCE);
+  private readonly config = inject(INSTITUTIONAL_CONFIG_SOURCE);
 
   readonly detalle = signal<CertificacionDetalle | null>(null);
   readonly error = signal('');
   readonly cargando = signal(true);
+
+  // URL canónica desde entrega-manual (nunca detalle.publicValidationUrl).
+  readonly entregaUrl = signal<string | null>(null);
+  readonly configPendiente = signal(false);
+  readonly autoridades = signal<AutoridadesVista | null>(null);
+  readonly copiado = signal(false);
 
   // Estado de regeneración de PDF.
   readonly regenerando = signal(false);
@@ -68,13 +86,9 @@ export class CertificationPreviewPage {
   readonly estadoRevocado = computed<boolean>(() => this.detalle()?.estado === 'revocado');
   readonly esRevocable = computed<boolean>(() => this.detalle()?.estado === 'vigente');
 
-  // Handoffs explícitos por acción (una sola fuente de verdad para la UI).
-  readonly handoffs = {
-    pdf: 'F4-02',
-    entrega: 'F5-04',
-    link: 'F6-03',
-    revocacion: 'F6-01',
-  } as const;
+  readonly puedeCopiarCompartir = computed(
+    () => !this.estadoRevocado() && !!this.entregaUrl()?.trim(),
+  );
 
   // QR decorativo: 64 celdas (8x8) sin datos personales. Patrón fijo de
   // muestra_pagina, portado como intención visual sin dependencias.
@@ -87,6 +101,7 @@ export class CertificationPreviewPage {
   // ponytail: generación de carga para descartar resultados stale cuando el
   // id cambia antes de que termine la carga anterior (route reuse).
   private loadGen = 0;
+  private copiaTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     // Reacciona a cambios de id() tras la ligadura inicial y cuando Angular
@@ -103,7 +118,11 @@ export class CertificationPreviewPage {
     const cid = this.certId();
     // Reset stale antes de cargar.
     this.detalle.set(null);
+    this.entregaUrl.set(null);
+    this.autoridades.set(null);
+    this.configPendiente.set(false);
     this.error.set('');
+    this.copiado.set(false);
     this.cargando.set(true);
     if (cid === null) {
       if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
@@ -111,14 +130,127 @@ export class CertificationPreviewPage {
       return;
     }
     try {
-      const det = await this.certs.obtener(cid);
-      if (gen !== this.loadGen) return; // carga stale, ignorar
-      this.detalle.set(det);
+      // Detalle hard; config y entrega-manual soft (REQ-CPREV-001).
+      const [detR, cfgR, entR] = await Promise.allSettled([
+        this.certs.obtener(cid),
+        this.config.obtener(),
+        this.certs.obtenerEntregaManual(cid),
+      ]);
+      if (gen !== this.loadGen) return;
+
+      if (detR.status === 'rejected') {
+        this.error.set((detR.reason as Error)?.message || 'Certificación no encontrada.');
+        return;
+      }
+      this.detalle.set(detR.value);
+      this.aplicarConfig(cfgR);
+      this.aplicarEntrega(entR);
     } catch (e) {
       if (gen === this.loadGen) this.error.set((e as Error).message);
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
     }
+  }
+
+  private aplicarConfig(cfgR: PromiseSettledResult<InstitutionalConfig>): void {
+    if (cfgR.status === 'rejected') {
+      this.configPendiente.set(true);
+      this.autoridades.set(null);
+      return;
+    }
+    const cfg = cfgR.value;
+    const rectorName = (cfg.rectorName ?? '').trim();
+    const advisorName = (cfg.advisorName ?? '').trim();
+    // Lock: pendiente si ambos nombres vacíos tras trim.
+    const pendiente = !rectorName && !advisorName;
+    this.configPendiente.set(pendiente);
+    if (pendiente) {
+      this.autoridades.set(null);
+      return;
+    }
+    this.autoridades.set({
+      rectorName: cfg.rectorName ?? '',
+      rectorRole: cfg.rectorRole ?? '',
+      advisorName: cfg.advisorName ?? '',
+      advisorRole: cfg.advisorRole ?? '',
+    });
+  }
+
+  private aplicarEntrega(
+    entR: PromiseSettledResult<{ publicValidationUrl?: string }>,
+  ): void {
+    if (entR.status === 'rejected') {
+      this.entregaUrl.set(null);
+      return;
+    }
+    const url = (entR.value.publicValidationUrl ?? '').trim();
+    this.entregaUrl.set(url || null);
+  }
+
+  async copiarLink(): Promise<void> {
+    if (!this.puedeCopiarCompartir()) return;
+    const url = this.entregaUrl()?.trim();
+    if (!url) return;
+    await this.escribirClipboard(url);
+    this.mostrarCopiado();
+  }
+
+  async compartir(): Promise<void> {
+    if (!this.puedeCopiarCompartir()) return;
+    const url = this.entregaUrl()?.trim();
+    if (!url) return;
+    const alumno = this.detalle()?.nombreAlumno;
+    const title = alumno ? `Certificado — ${alumno}` : 'Certificado IFTS 14';
+
+    const shareFn = navigator.share?.bind(navigator);
+    if (typeof shareFn === 'function') {
+      try {
+        await shareFn({ url, title });
+        return;
+      } catch (e) {
+        // AbortError = cancelación del usuario: silencio, sin clipboard.
+        if ((e as Error)?.name === 'AbortError') return;
+      }
+    }
+    await this.escribirClipboard(url);
+    this.mostrarCopiado();
+  }
+
+  private async escribirClipboard(url: string): Promise<void> {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        this.clipboardFallback(url);
+      }
+    } catch {
+      this.clipboardFallback(url);
+    }
+  }
+
+  // ponytail: execCommand deprecated pero funcional como fallback de clipboard.
+  private clipboardFallback(text: string): void {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'absolute';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+    } catch {
+      // ignorar: sin portapapeles disponible
+    }
+    document.body.removeChild(ta);
+  }
+
+  private mostrarCopiado(): void {
+    this.copiado.set(true);
+    if (this.copiaTimer) clearTimeout(this.copiaTimer);
+    this.copiaTimer = setTimeout(() => {
+      this.copiado.set(false);
+    }, 2600);
   }
 
   async regenerarPdf(): Promise<void> {

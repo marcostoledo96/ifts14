@@ -8,6 +8,8 @@ import { provideRouter } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../certifications.service';
 import { InMemoryCertificationsService, URL_PUBLICA_MAX } from '../in-memory-certifications.service';
 import { CertificationPreviewPage } from '../pages/preview/certification-preview-page';
+import { INSTITUTIONAL_CONFIG_SOURCE } from '../../institutional-config/institutional-config.service';
+import { InMemoryInstitutionalConfigService } from '../../institutional-config/in-memory-institutional-config.service';
 import { CertificationPdfPreviewPage } from '../pages/pdf/certification-pdf-preview-page';
 import { CertificationsListPage } from '../pages/list/certifications-list-page';
 import { CertificationRevokePage } from '../pages/revoke/certification-revoke-page';
@@ -111,6 +113,7 @@ describe('no-real-data en seed de certificaciones', () => {
       providers: [
         provideRouter([]),
         { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+        { provide: INSTITUTIONAL_CONFIG_SOURCE, useClass: InMemoryInstitutionalConfigService },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(CertificationPreviewPage);

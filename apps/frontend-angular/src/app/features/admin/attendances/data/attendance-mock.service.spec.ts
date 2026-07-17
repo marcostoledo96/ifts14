@@ -58,6 +58,21 @@ describe('AttendanceMockService', () => {
     expect(list.length).toBe(8);
   });
 
+  it('listarAsistenciasPorPar filtra por curso y alumno', async () => {
+    const svc = await setup();
+    // alumnoId seed curso 4: (4-1)*15 + 1 = 46
+    const list = await svc.listarAsistenciasPorPar(4, 46);
+    expect(list.length).toBeGreaterThanOrEqual(1);
+    expect(list.every((a) => a.cursoId === 4 && a.alumnoId === 46)).toBeTrue();
+  });
+
+  it('listarAsistenciasPorAlumno filtra solo por alumno', async () => {
+    const svc = await setup();
+    const list = await svc.listarAsistenciasPorAlumno(46);
+    expect(list.length).toBeGreaterThanOrEqual(1);
+    expect(list.every((a) => a.alumnoId === 46)).toBeTrue();
+  });
+
   it('marcar registra presentes en memoria', async () => {
     const svc = await setup();
     const alumnos = await svc.listarAlumnos(1);

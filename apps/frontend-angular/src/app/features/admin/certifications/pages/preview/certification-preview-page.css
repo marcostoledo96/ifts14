@@ -2,14 +2,12 @@
   display: block;
 }
 
-/* Expediente contenedor */
 .expediente {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
 }
 
-/* Breadcrumb */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -19,8 +17,17 @@
 }
 
 .breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   color: var(--color-muted-foreground);
   text-decoration: none;
+}
+
+.breadcrumb-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
 }
 
 .breadcrumb-link:hover {
@@ -43,11 +50,10 @@
   color: var(--color-foreground);
 }
 
-/* Encabezado del expediente */
 .expediente-header {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--space-4);
   align-items: flex-start;
   justify-content: space-between;
 }
@@ -57,16 +63,16 @@
 }
 
 .kicker {
-  margin: 0 0 var(--space-1);
+  margin: 0;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  letter-spacing: var(--tracking-caps-membrete);
+  letter-spacing: var(--tracking-section);
   text-transform: uppercase;
   color: var(--color-circuit);
 }
 
 .title {
-  margin: 0 0 var(--space-1);
+  margin: 0.25rem 0 0;
   font-size: 1.5rem;
   font-weight: 600;
   line-height: 1.2;
@@ -74,7 +80,7 @@
 }
 
 .subtitle {
-  margin: 0;
+  margin: 0.25rem 0 0;
   font-size: 0.875rem;
   color: var(--color-muted-foreground);
 }
@@ -83,13 +89,19 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
+  padding: 0.375rem var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-muted);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-foreground);
+}
+
+.estado-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
 }
 
 .estado-vigente {
@@ -114,7 +126,6 @@
   color: var(--color-muted-foreground);
 }
 
-/* Layout: dos columnas en desktop, una en mobile */
 .expediente-grid {
   display: grid;
   gap: var(--space-5);
@@ -135,7 +146,6 @@
   gap: var(--space-4);
 }
 
-/* Panel base */
 .panel {
   background: var(--color-card);
   border: 1px solid var(--color-border);
@@ -154,7 +164,7 @@
 
 .panel-title {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-foreground);
 }
@@ -167,18 +177,27 @@
   padding: var(--space-4);
 }
 
-/* Ficha del expediente */
 .group-kicker {
   margin: 0 0 var(--space-2);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  letter-spacing: var(--tracking-caps-tight);
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--color-circuit);
 }
 
-.group-kicker:not(:first-child) {
-  margin-top: var(--space-4);
+.group-kicker-muted {
+  color: var(--color-muted-foreground);
+  letter-spacing: var(--tracking-caps-tight);
+}
+
+.group-kicker-flush {
+  margin: 0;
+  padding: var(--space-3) var(--space-4) 0;
+}
+
+.group-kicker-ruled {
+  margin-top: 0;
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
 }
@@ -190,7 +209,7 @@
 }
 
 .fila-dato {
-  padding: var(--space-2) 0;
+  padding: 0.625rem var(--space-4);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -207,8 +226,7 @@
 }
 
 .fila-dato dd {
-  margin: 0;
-  margin-top: var(--space-1);
+  margin: 0.125rem 0 0;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--color-foreground);
@@ -219,11 +237,10 @@
   font-size: 0.8125rem;
 }
 
-/* Lista de asistencia */
 .asistencia-lista {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.375rem var(--space-4);
   display: flex;
   flex-direction: column;
 }
@@ -257,51 +274,32 @@
   font-weight: 600;
 }
 
-/* Acciones */
 .acciones-lista {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
-.btn-disabled {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-muted);
-  color: var(--color-muted-foreground);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* F4-02: enlaces PDF habilitados (routerLink a :id/pdf) */
 .btn-pdf {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   width: 100%;
+  min-height: 2.5rem;
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-tech-blue);
+  border: 1px solid var(--color-ink);
   border-radius: var(--radius-sm);
-  background: var(--color-tech-blue);
+  background: var(--color-ink);
   color: var(--color-ink-foreground);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
 }
 
 .btn-pdf:hover {
-  background: color-mix(in srgb, var(--color-tech-blue) 85%, black);
+  background: color-mix(in srgb, var(--color-ink) 90%, black);
 }
 
 .btn-pdf:focus-visible {
@@ -309,34 +307,43 @@
   outline-offset: 2px;
 }
 
-/* P6-02: botón Regenerar PDF (funcional, no routerLink) */
-.btn-regenerar {
+.btn-regenerar,
+.btn-accion {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   width: 100%;
+  min-height: 2.5rem;
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-card);
   color: var(--color-foreground);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
 }
 
-.btn-regenerar:hover:not(:disabled) {
+.btn-accion-compact {
+  width: auto;
+  margin-top: var(--space-2);
+}
+
+.btn-regenerar:hover:not(:disabled),
+.btn-accion:hover:not(:disabled) {
   background: var(--color-muted);
 }
 
-.btn-regenerar:focus-visible {
+.btn-regenerar:focus-visible,
+.btn-accion:focus-visible {
   outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
-.btn-regenerar:disabled {
+.btn-regenerar:disabled,
+.btn-accion:disabled {
   cursor: not-allowed;
   opacity: 0.7;
 }
@@ -373,16 +380,6 @@
   color: var(--color-muted-foreground);
 }
 
-.handoff {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  padding: 0 var(--space-1);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-card);
-  color: var(--color-muted-foreground);
-}
-
 .acciones-note {
   margin: var(--space-3) 0 0;
   font-size: 0.75rem;
@@ -390,7 +387,10 @@
   color: var(--color-muted-foreground);
 }
 
-/* Validación + QR */
+.qr-panel-body {
+  padding-bottom: var(--space-4);
+}
+
 .qr-layout {
   display: flex;
   gap: var(--space-4);
@@ -401,6 +401,7 @@
   flex: 0 0 6rem;
   width: 6rem;
   height: 6rem;
+  aspect-ratio: 1;
   background: var(--color-ink);
   padding: 0.375rem;
 }
@@ -443,15 +444,18 @@
 }
 
 .panel-note {
-  margin: var(--space-3) 0 0;
-  padding-top: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--color-border);
   font-size: 0.75rem;
   line-height: 1.5;
   color: var(--color-muted-foreground);
 }
 
-/* Zona de riesgo */
+.panel-note-footer {
+  background: color-mix(in srgb, var(--color-muted) 50%, transparent);
+}
+
 .riesgo-panel {
   border-color: color-mix(in srgb, var(--color-destructive) 35%, transparent);
 }
@@ -469,18 +473,27 @@
   justify-content: center;
   gap: var(--space-2);
   width: 100%;
+  min-height: 2.5rem;
   padding: var(--space-2) var(--space-4);
   border: 1px solid color-mix(in srgb, var(--color-destructive) 45%, transparent);
   border-radius: var(--radius-sm);
   background: var(--color-card);
   color: var(--color-destructive);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.btn-revocar:hover {
+  background: var(--color-destructive-soft);
+}
+
+button.btn-revocar:disabled {
   cursor: not-allowed;
   opacity: 0.7;
 }
 
-/* Documento columna */
 .doc-toolbar {
   display: flex;
   align-items: center;
@@ -497,11 +510,10 @@
 .documento-replica {
   border: 1px solid var(--color-border);
   background: var(--color-card);
-  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 0 0 var(--color-border);
   overflow: hidden;
 }
 
-/* Encabezado navy del documento */
 .doc-header {
   position: relative;
   overflow: hidden;
@@ -569,7 +581,7 @@
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  letter-spacing: var(--tracking-caps-membrete);
+  letter-spacing: 0.2em;
   color: var(--color-circuit);
 }
 
@@ -636,7 +648,6 @@
   background: var(--color-muted-foreground);
 }
 
-/* Banda revocada */
 .doc-revocado-banda {
   border-bottom: 1px solid color-mix(in srgb, var(--color-destructive) 30%, transparent);
   background: var(--color-destructive-soft);
@@ -649,7 +660,6 @@
   color: var(--color-destructive);
 }
 
-/* Declaración */
 .doc-declaracion {
   padding: var(--space-5) var(--space-4);
   text-align: center;
@@ -665,7 +675,7 @@
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  letter-spacing: var(--tracking-caps-membrete);
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: var(--color-muted-foreground);
 }
@@ -696,7 +706,6 @@
   font-weight: 600;
 }
 
-/* Asistencia table */
 .doc-asistencia {
   border-top: 1px solid var(--color-border);
   padding: var(--space-4);
@@ -713,7 +722,7 @@
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  letter-spacing: var(--tracking-caps-tight);
+  letter-spacing: 0.15em;
   color: var(--color-circuit);
 }
 
@@ -767,7 +776,6 @@
   color: var(--color-valid);
 }
 
-/* Autoridades */
 .doc-autoridades {
   border-top: 1px solid var(--color-border);
   padding: var(--space-4);
@@ -790,6 +798,16 @@
   background: var(--color-muted);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
+}
+
+.config-pendiente {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-muted);
+  font-size: 0.8125rem;
+  color: var(--color-muted-foreground);
 }
 
 .doc-firmas {
@@ -815,7 +833,9 @@
 }
 
 .doc-firma-icon {
-  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
   color: color-mix(in srgb, var(--color-tech-blue) 70%, transparent);
 }
 
@@ -839,7 +859,6 @@
   color: var(--color-muted-foreground);
 }
 
-/* Trazabilidad */
 .doc-trazabilidad {
   display: flex;
   flex-direction: column;
@@ -900,7 +919,6 @@
   color: var(--color-muted-foreground);
 }
 
-/* Auditoría timeline */
 .auditoria-timeline {
   list-style: none;
   margin: 0;
@@ -949,7 +967,6 @@
   color: var(--color-foreground);
 }
 
-/* Volver */
 .volver {
   margin: 0;
 }
@@ -975,7 +992,6 @@
   border-top: 1px solid var(--color-border);
 }
 
-/* Estado loading / error */
 .estado-linea {
   margin: var(--space-3) 0;
   color: var(--color-muted-foreground);

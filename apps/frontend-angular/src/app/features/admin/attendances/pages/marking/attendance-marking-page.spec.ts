@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { AttendanceMarkingPage } from './attendance-marking-page';
 import { COURSES_SOURCE, CoursesService } from '../../../courses/courses.service';
 import { InMemoryCoursesService } from '../../../courses/in-memory-courses.service';
@@ -39,6 +39,10 @@ describe('AttendanceMarkingPage', () => {
     fixture.detectChanges();
   }
 
+  function toggles(el: HTMLElement): HTMLButtonElement[] {
+    return Array.from(el.querySelectorAll('.toggle-presente')) as HTMLButtonElement[];
+  }
+
   it('carga curso, fecha y alumnos', async () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
@@ -48,10 +52,10 @@ describe('AttendanceMarkingPage', () => {
     expect(rows.length).toBeGreaterThanOrEqual(12);
   });
 
-  it('muestra resumen de fecha en dl', async () => {
+  it('muestra resumen de carga en dl', async () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
-    const dl = el.querySelector('.fecha-resumen');
+    const dl = el.querySelector('.resumen');
     expect(dl).not.toBeNull();
     expect(dl?.tagName).toBe('DL');
   });
@@ -66,15 +70,26 @@ describe('AttendanceMarkingPage', () => {
     }
   });
 
-  it('checkboxes nativos con label asociado', async () => {
+  it('marcado usa toggle accesible (button aria-pressed), no checkbox nativo', async () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
-    const checks = el.querySelectorAll('input[type="checkbox"]');
-    expect(checks.length).toBeGreaterThan(0);
-    checks.forEach((c) => {
-      // Cada checkbox está dentro de un <label>.
-      expect(c.parentElement?.tagName).toBe('LABEL');
+    expect(el.querySelectorAll('input[type="checkbox"]').length).toBe(0);
+    const btns = toggles(el);
+    expect(btns.length).toBeGreaterThan(0);
+    btns.forEach((b) => {
+      expect(b.getAttribute('aria-pressed')).toBe('false');
+      expect(b.textContent?.trim()).toContain('Marcar');
     });
+  });
+
+  it('toggle presente cambia aria-pressed y copy a «✓ Presente»', async () => {
+    const f = await render(1, 11);
+    const el = f.nativeElement as HTMLElement;
+    const first = toggles(el)[0];
+    first.click();
+    f.detectChanges();
+    expect(first.getAttribute('aria-pressed')).toBe('true');
+    expect(first.textContent).toContain('Presente');
   });
 
   it('contador de marcados refleja selección inicial (0 para fecha sin presentes)', async () => {
@@ -89,14 +104,32 @@ describe('AttendanceMarkingPage', () => {
     expect(el.textContent).toContain('Presentes (8)');
   });
 
-  it('toggle checkbox actualiza contador', async () => {
+  it('toggle actualiza contador', async () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
-    const firstCheck = el.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    firstCheck.checked = true;
-    firstCheck.dispatchEvent(new Event('change'));
+    toggles(el)[0].click();
     f.detectChanges();
     expect(el.textContent).toContain('Presentes (1)');
+  });
+
+  it('Guardar deshabilitado sin cambios y habilitado con cambios', async () => {
+    const f = await render(1, 11);
+    const el = f.nativeElement as HTMLElement;
+    const btn = el.querySelector('.btn-primary') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    toggles(el)[0].click();
+    f.detectChanges();
+    expect(btn.disabled).toBe(false);
+  });
+
+  it('resumen muestra cambios sin guardar', async () => {
+    const f = await render(1, 11);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Sin cambios pendientes');
+    toggles(el)[0].click();
+    f.detectChanges();
+    const cambios = el.querySelector('.resumen-cambios');
+    expect(cambios?.textContent).toContain('marcado');
   });
 
   it('guardar persiste presentes en memoria', async () => {
@@ -104,16 +137,10 @@ describe('AttendanceMarkingPage', () => {
     const svc = TestBed.inject(ATTENDANCE_SOURCE);
     const before = await svc.listarAsistencias(1, 11);
     expect(before.length).toBe(0);
-    // Marcar 3 primeros checkboxes.
-    const checks = Array.from(
-      (f.nativeElement as HTMLElement).querySelectorAll('input[type="checkbox"]'),
-    ) as HTMLInputElement[];
-    checks[0].checked = true;
-    checks[0].dispatchEvent(new Event('change'));
-    checks[1].checked = true;
-    checks[1].dispatchEvent(new Event('change'));
-    checks[2].checked = true;
-    checks[2].dispatchEvent(new Event('change'));
+    const btns = toggles(f.nativeElement as HTMLElement);
+    btns[0].click();
+    btns[1].click();
+    btns[2].click();
     f.detectChanges();
     const btn = (f.nativeElement as HTMLElement).querySelector('.btn-primary') as HTMLButtonElement;
     btn.click();
@@ -128,14 +155,13 @@ describe('AttendanceMarkingPage', () => {
   it('descartar restaura baseline', async () => {
     const f = await render(4, 41);
     const el = f.nativeElement as HTMLElement;
-    // Baseline = 8 presentes. Desmarcar uno.
-    const checks = Array.from(el.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
-    checks[0].checked = false;
-    checks[0].dispatchEvent(new Event('change'));
+    // Baseline = 8 presentes. Quitar uno.
+    toggles(el)[0].click();
     f.detectChanges();
     expect(el.textContent).toContain('Presentes (7)');
     // Descartar → vuelve a 8.
     const descartarBtn = el.querySelector('.btn-secondary') as HTMLButtonElement;
+    expect(descartarBtn.disabled).toBe(false);
     descartarBtn.click();
     f.detectChanges();
     expect(el.textContent).toContain('Presentes (8)');
@@ -159,6 +185,68 @@ describe('AttendanceMarkingPage', () => {
     f.detectChanges();
     const rows = el.querySelectorAll('.alumno-row');
     expect(rows.length).toBeLessThan(12);
+  });
+
+  it('no muestra aviso de impacto de certificados (non-goal)', async () => {
+    const f = await render(4, 41);
+    const el = f.nativeElement as HTMLElement;
+    toggles(el)[0].click();
+    f.detectChanges();
+    expect(el.textContent).not.toContain('certificado');
+    expect(el.textContent).not.toContain('entregar nuevamente');
+  });
+
+  // --- Selector de fecha inline ---
+
+  it('selector cambia fecha sin cambios: navega a la nueva ruta', async () => {
+    const f = await render(1, 11);
+    const el = f.nativeElement as HTMLElement;
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    const select = el.querySelector('.fecha-select') as HTMLSelectElement;
+    select.value = '12';
+    select.dispatchEvent(new Event('change'));
+    expect(navSpy).toHaveBeenCalledWith(['/admin/cursos', 1, 'fechas', 12, 'asistencias']);
+  });
+
+  it('selector con cambios pendientes: confirmar descarte navega', async () => {
+    const f = await render(1, 11);
+    const el = f.nativeElement as HTMLElement;
+    toggles(el)[0].click();
+    f.detectChanges();
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    const confirmSpy = spyOn(window, 'confirm').and.returnValue(true);
+    const select = el.querySelector('.fecha-select') as HTMLSelectElement;
+    select.value = '12';
+    select.dispatchEvent(new Event('change'));
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(navSpy).toHaveBeenCalledWith(['/admin/cursos', 1, 'fechas', 12, 'asistencias']);
+  });
+
+  it('selector con cambios pendientes: cancelar no navega y revierte el select', async () => {
+    const f = await render(1, 11);
+    const el = f.nativeElement as HTMLElement;
+    toggles(el)[0].click();
+    f.detectChanges();
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    spyOn(window, 'confirm').and.returnValue(false);
+    const select = el.querySelector('.fecha-select') as HTMLSelectElement;
+    select.value = '12';
+    select.dispatchEvent(new Event('change'));
+    expect(navSpy).not.toHaveBeenCalled();
+    expect(select.value).toBe('11');
+  });
+
+  it('fecha cancelada aparece deshabilitada en el selector', async () => {
+    const f = await render(5, 51);
+    const el = f.nativeElement as HTMLElement;
+    const select = el.querySelector('.fecha-select') as HTMLSelectElement;
+    const opciones = Array.from(select.querySelectorAll('option'));
+    const cancelada = opciones.find((o) => o.textContent?.includes('cancelada'));
+    expect(cancelada).toBeTruthy();
+    expect(cancelada?.disabled).toBe(true);
   });
 
   it('id inválido muestra error sin exponer datos', async () => {
@@ -245,6 +333,8 @@ describe('AttendanceMarkingPage', () => {
         new Promise<readonly Asistencia[]>((resolve) => {
           pending.set(`s-${cid}-${fid}`, { resolve: resolve as (v: unknown) => void });
         }),
+      listarAsistenciasPorPar: () => Promise.resolve([]),
+      listarAsistenciasPorAlumno: () => Promise.resolve([]),
       marcar: () => Promise.resolve([]),
       anular: () => Promise.resolve(),
     };
@@ -347,6 +437,8 @@ describe('AttendanceMarkingPage', () => {
         { id: 2, apellidoNombre: 'A2 B2', dniMostrar: '22****22', estado: 'activo' as const },
       ]),
       listarAsistencias: () => Promise.resolve([]),
+      listarAsistenciasPorPar: () => Promise.resolve([]),
+      listarAsistenciasPorAlumno: () => Promise.resolve([]),
       marcar: (cid: number, fid: number) =>
         new Promise<readonly Asistencia[]>((resolve, reject) => {
           pendingMarcar.set(`${cid}-${fid}`, { resolve, reject });
@@ -370,12 +462,11 @@ describe('AttendanceMarkingPage', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // Marcar un presente y disparar guardar().
-    const checks = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll('input[type="checkbox"]'),
-    ) as HTMLInputElement[];
-    checks[0].checked = true;
-    checks[0].dispatchEvent(new Event('change'));
+    // Marcar un presente (toggle) y disparar guardar().
+    const btns = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.toggle-presente'),
+    ) as HTMLButtonElement[];
+    btns[0].click();
     fixture.detectChanges();
     const btn = (fixture.nativeElement as HTMLElement).querySelector('.btn-primary') as HTMLButtonElement;
     btn.click();

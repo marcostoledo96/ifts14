@@ -38,6 +38,17 @@ testem.log
 /typings
 __screenshots__/
 
+# Playwright e2e
+/e2e/test-results/
+/e2e/playwright-report/
+/e2e/artifacts/results.json
+/e2e/artifacts/findings.json
+/e2e/artifacts/run.log
+/e2e/artifacts/screenshots/
+/blob-report/
+/playwright/.cache/
+.verify-tmp/
+
 # System files
 .DS_Store
 Thumbs.db

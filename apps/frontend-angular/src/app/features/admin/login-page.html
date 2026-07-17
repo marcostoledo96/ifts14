@@ -1,33 +1,88 @@
 <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
 <div class="login-layout">
   <aside class="login-aside" aria-label="Información institucional">
-    <span class="monograma" aria-hidden="true">
-      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <rect x="2" y="2" width="6" height="6" fill="currentColor" />
-        <rect x="12" y="2" width="6" height="6" fill="var(--color-circuit)" />
-        <rect x="2" y="12" width="6" height="6" fill="var(--color-circuit)" />
-        <rect x="12" y="12" width="6" height="6" fill="currentColor" />
-      </svg>
-    </span>
-    <p class="aside-kicker">IFTS N.° 14 — Panel administrativo</p>
-    <h1 class="aside-title">Acceso administrativo</h1>
-    <p class="aside-simulacion" role="note">
-      Acceso administrativo — autenticación con credenciales institucionales
-    </p>
+    <div class="aside-texture" aria-hidden="true"></div>
+    <div class="aside-brand">
+      <span class="monograma" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="6" height="6" fill="currentColor" />
+          <rect x="12" y="2" width="6" height="6" fill="var(--color-circuit)" />
+          <rect x="2" y="12" width="6" height="6" fill="var(--color-circuit)" />
+          <rect x="12" y="12" width="6" height="6" fill="currentColor" />
+        </svg>
+      </span>
+      <div class="brand-text">
+        <p class="aside-kicker">IFTS N.° 14</p>
+        <p class="aside-sub">Bedelía Digital</p>
+      </div>
+    </div>
+
+    <div class="aside-mensaje">
+      <div class="aside-accent" aria-hidden="true"></div>
+      <h1 class="aside-title">Sistema de gestión de certificaciones académicas</h1>
+      <p class="aside-lead">
+        Mesa de trabajo para administrar cursos, asistencias y la emisión de certificados
+        verificables del instituto.
+      </p>
+    </div>
+
     <dl class="estado-sistema">
-      <dt>Estado del sistema</dt>
-      <dd><span class="dot dot-valid" aria-hidden="true"></span> Operativo</dd>
-      <dt>Protocolo</dt>
-      <dd>Sesión con cookie HttpOnly + CSRF</dd>
+      <div class="estado-row">
+        <dt>Estado del sistema</dt>
+        <dd><span class="dot dot-valid" aria-hidden="true"></span> Activo</dd>
+      </div>
+      <div class="estado-row">
+        <dt>Protocolo</dt>
+        <dd>SHA-256 / SSL</dd>
+      </div>
     </dl>
   </aside>
+
   <main class="login-main" id="contenido" role="main">
-    <section class="card">
-      <h2 class="card-title">Iniciar sesión</h2>
-      @if (errorMsg()) {
-        <p class="error-login" role="alert" tabindex="-1">{{ errorMsg() }}</p>
-      }
-      <app-login-form (accesoSimulado)="onAccesoSimulado($event)" />
-    </section>
+    <div class="main-texture" aria-hidden="true"></div>
+    <div class="login-stack">
+      <section class="card">
+        <header class="card-header">
+          <h2 class="card-title">Panel de certificaciones</h2>
+          <p class="card-subtitle">Acceso exclusivo para personal autorizado.</p>
+          <div class="card-divider" aria-hidden="true"></div>
+        </header>
+        @if (errorMsg()) {
+          <p class="error-login" role="alert" tabindex="-1">
+            <svg
+              class="error-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"
+              />
+              <path d="M12 9v4" />
+              <path d="M12 17h.01" />
+            </svg>
+            <span>{{ errorMsg() }}</span>
+          </p>
+        }
+        <app-login-form
+          [loading]="loading()"
+          (accesoSimulado)="onAccesoSimulado($event)"
+        />
+      </section>
+
+      <footer class="login-footer">
+        <p class="footer-kicker">Acceso restringido · Bedelía IFTS N.° 14</p>
+        <p class="footer-copy">
+          © {{ anioActual }} · Instituto de Formación Técnica Superior N.° 14
+        </p>
+      </footer>
+    </div>
   </main>
 </div>

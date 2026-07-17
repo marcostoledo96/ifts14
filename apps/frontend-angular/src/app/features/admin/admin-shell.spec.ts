@@ -56,10 +56,53 @@ describe('AdminShell', () => {
     expect(el.querySelector('app-admin-dashboard-page')).toBeNull();
   });
 
-  it('muestra badge Sesión activa en topbar', async () => {
+  it('NO muestra badge Sesión activa ni títulos Admin legacy en topbar', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Sesión activa');
+    const topbar = el.querySelector('.topbar') as HTMLElement;
+    expect(topbar.textContent).not.toContain('Sesión activa');
+    expect(topbar.textContent).not.toContain('IFTS N.° 14 — Admin');
+    expect(topbar.textContent).not.toContain('Panel administrativo');
+  });
+
+  it('muestra search editable con placeholder v0 e icono SVG', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const search = el.querySelector('.topbar-search input[type="search"]') as HTMLInputElement | null;
+    expect(search).not.toBeNull();
+    expect(search?.readOnly).toBe(false);
+    expect(search?.disabled).toBe(false);
+    expect(search?.placeholder).toContain('Buscar curso, alumno o certificado');
+    expect(el.querySelector('.topbar-search svg')).not.toBeNull();
+  });
+
+  it('muestra sync estático Sincronizado 10:42 (hora mock)', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const sync = el.querySelector('.topbar-sync') as HTMLElement | null;
+    expect(sync).not.toBeNull();
+    expect(sync?.textContent?.replace(/\s+/g, ' ').trim()).toContain('Sincronizado 10:42');
+  });
+
+  it('muestra botones Ayuda y Notificaciones presentacionales con dot', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const help = el.querySelector('[aria-label="Ayuda"]') as HTMLButtonElement | null;
+    const bell = el.querySelector('[aria-label="Notificaciones"]') as HTMLButtonElement | null;
+    expect(help).not.toBeNull();
+    expect(bell).not.toBeNull();
+    expect(help?.tagName).toBe('BUTTON');
+    expect(bell?.tagName).toBe('BUTTON');
+    expect(bell?.querySelector('.topbar-bell-dot')).not.toBeNull();
+  });
+
+  it('muestra avatar monograma AD sin MP ni PII', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const avatar = el.querySelector('.topbar-avatar') as HTMLElement | null;
+    expect(avatar).not.toBeNull();
+    expect(avatar?.textContent?.trim()).toBe('AD');
+    expect(el.querySelector('.topbar')?.textContent).not.toContain('MP');
   });
 
   it('incluye skip link hacia #contenido', async () => {
@@ -96,7 +139,7 @@ describe('AdminShell', () => {
     expect(drawers.length).toBe(0);
   });
 
-  it('drawer mobile, overlay, nav y logout están PRESENTES cuando el menú está abierto', async () => {
+  it('drawer mobile, overlay, nav y logout quedan PRESENTES cuando el menú está abierto', async () => {
     const f = await render();
     f.componentInstance.abrirMenu();
     f.detectChanges();
