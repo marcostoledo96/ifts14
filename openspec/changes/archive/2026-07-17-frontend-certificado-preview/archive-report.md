@@ -1,7 +1,7 @@
 # Archive report — frontend-certificado-preview
 
-**Fecha**: 2026-07-17  
-**Veredicto**: PASS WITH WARNINGS (742/742, tsc 0, build 0)  
+**Fecha**: 2026-07-17
+**Veredicto**: PASS WITH WARNINGS (742/742, tsc 0, build 0)
 **Destino**: `openspec/changes/archive/2026-07-17-frontend-certificado-preview/`
 
 ## Entregado

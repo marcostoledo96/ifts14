@@ -1,9 +1,9 @@
 # Verify — frontend-cursos-list-polish (Ciclo 6: Lista de cursos UI polish)
 
-**Fecha:** 2026-07-16  
-**Change:** `sdd/frontend-cursos-list-polish/`  
-**cwd:** `apps/frontend-angular/`  
-**Modo:** Standard (proposal + spec + design + tasks + apply-progress)  
+**Fecha:** 2026-07-16
+**Change:** `sdd/frontend-cursos-list-polish/`
+**cwd:** `apps/frontend-angular/`
+**Modo:** Standard (proposal + spec + design + tasks + apply-progress)
 **Veredicto:** **PASS WITH WARNINGS**
 
 ```yaml

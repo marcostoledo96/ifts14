@@ -1,6 +1,6 @@
 # Verificación global — frontend IFTS14 (ciclos 1–13)
 
-**Fecha:** 2026-07-17  
+**Fecha:** 2026-07-17
 **Entorno:** `ng serve` development (`useRealApi=false`) + API PHP Docker (solo auth/login) en `:8080`
 
 ## Gates técnicos

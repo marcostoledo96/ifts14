@@ -1,8 +1,8 @@
 # Auditoría visual Playwright — evaluación humana
 
-Generado: 2026-07-17  
-Suite: `apps/frontend-angular/e2e/visual-audit.spec.ts`  
-Resultado automatizado: **56 PASS / 0 FAIL / 8 skipped** (smoke desktop-only en project mobile)  
+Generado: 2026-07-17
+Suite: `apps/frontend-angular/e2e/visual-audit.spec.ts`
+Resultado automatizado: **56 PASS / 0 FAIL / 8 skipped** (smoke desktop-only en project mobile)
 Capturas: `e2e/artifacts/screenshots/{desktop,mobile}/*.png` (24×2)
 
 ## Alcance
@@ -24,10 +24,10 @@ Auth: mock HTTP de sesión (sin PHP). Datos: mocks in-memory (`useRealApi: false
 
 ### P0 — corregir antes de QA móvil serio
 
-1. **Login mobile: card ~440–450px > 390**  
+1. **Login mobile: card ~440–450px > 390**
    El formulario/card se desborda horizontalmente (padding + min-width). Desktop OK.
 
-2. **Expediente mobile: columnas/panels ~498px**  
+2. **Expediente mobile: columnas/panels ~498px**
    `aside.control-col` / ficha no colapsan del todo a ancho útil; hay scroll horizontal.
 
 ### P1 — a11y (axe)

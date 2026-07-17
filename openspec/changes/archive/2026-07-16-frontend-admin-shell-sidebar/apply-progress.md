@@ -1,6 +1,6 @@
 # Apply progress: frontend-admin-shell-sidebar
 
-**Status**: apply complete — ready for verify  
+**Status**: apply complete — ready for verify
 **Date**: 2026-07-16
 
 ## Done

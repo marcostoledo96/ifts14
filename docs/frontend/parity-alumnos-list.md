@@ -2,7 +2,7 @@
 
 ## Estado
 
-Cerrado y archivado en `openspec/changes/archive/2026-07-17-frontend-parity-alumnos-list/`.  
+Cerrado y archivado en `openspec/changes/archive/2026-07-17-frontend-parity-alumnos-list/`.
 Verify: PASS WITH WARNINGS — `test:ci` 772/772, `tsc` 0, `build` 0 (CSS budget warn 8.23 kB).
 
 ## Alcance

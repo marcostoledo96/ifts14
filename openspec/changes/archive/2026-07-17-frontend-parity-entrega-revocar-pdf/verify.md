@@ -1,6 +1,6 @@
 # Verify: frontend-parity-entrega-revocar-pdf (P-13)
 
-**Date:** 2026-07-17  
+**Date:** 2026-07-17
 **Result:** PASS WITH WARNINGS
 
 ## Gates

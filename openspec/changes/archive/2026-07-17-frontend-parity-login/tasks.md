@@ -1,6 +1,6 @@
 # Tasks: frontend-parity-login (P-03)
 
-Decision needed before apply: No  
+Decision needed before apply: No
 400-line budget risk: Low
 
 ## Phase 1 — Layout / aside

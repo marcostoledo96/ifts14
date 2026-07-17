@@ -1,6 +1,6 @@
 # Apply progress: frontend-login-polish
 
-**Mode**: Standard (`strict_tdd: false`)  
+**Mode**: Standard (`strict_tdd: false`)
 **Status**: 9/9 tasks complete — Ready for verify
 
 ## Completed

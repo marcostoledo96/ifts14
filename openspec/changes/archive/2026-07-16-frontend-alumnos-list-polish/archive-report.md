@@ -1,7 +1,7 @@
 # Archive report — frontend-alumnos-list-polish
 
-**Fecha**: 2026-07-16  
-**Veredicto**: PASS WITH WARNINGS (710/710, tsc 0, build 0)  
+**Fecha**: 2026-07-16
+**Veredicto**: PASS WITH WARNINGS (710/710, tsc 0, build 0)
 **Destino**: `openspec/changes/archive/2026-07-16-frontend-alumnos-list-polish/`
 
 ## Acciones

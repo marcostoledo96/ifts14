@@ -1,8 +1,8 @@
 # Apply Progress: frontend-certificado-preview
 
-**Change**: frontend-certificado-preview  
-**Mode**: Standard (strict_tdd: false)  
-**Status**: 10/10 tasks complete — Ready for verify  
+**Change**: frontend-certificado-preview
+**Mode**: Standard (strict_tdd: false)
+**Status**: 10/10 tasks complete — Ready for verify
 **Date**: 2026-07-17
 
 ## Completed Tasks

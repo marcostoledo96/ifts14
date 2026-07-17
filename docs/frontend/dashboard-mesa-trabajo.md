@@ -2,7 +2,7 @@
 
 ## Estado
 
-Cerrado y archivado en `openspec/changes/archive/2026-07-16-frontend-dashboard/`.  
+Cerrado y archivado en `openspec/changes/archive/2026-07-16-frontend-dashboard/`.
 Verify: PASS WITH WARNINGS — `test:ci` 685/685, `tsc` exit 0, `build` exit 0 (2026-07-16).
 
 ## Alcance implementado

@@ -1,7 +1,7 @@
 # Archive report — frontend-alumno-detalle-acciones
 
-**Fecha**: 2026-07-17  
-**Veredicto**: PASS WITH WARNINGS (718/718, tsc 0, build 0)  
+**Fecha**: 2026-07-17
+**Veredicto**: PASS WITH WARNINGS (718/718, tsc 0, build 0)
 **Destino**: `openspec/changes/archive/2026-07-17-frontend-alumno-detalle-acciones/`
 
 ## Acciones

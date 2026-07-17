@@ -1,7 +1,7 @@
 # Apply progress: frontend-alumno-detalle-acciones
 
-**Mode**: Standard (strict_tdd: false)  
-**Workload**: size:exception — single cycle  
+**Mode**: Standard (strict_tdd: false)
+**Workload**: size:exception — single cycle
 **Status**: 12/12 tasks complete. Re-verify **PASS WITH WARNINGS**. Ready for archive (orchestrator).
 
 ## Completed

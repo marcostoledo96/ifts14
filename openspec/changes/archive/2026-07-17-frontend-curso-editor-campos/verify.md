@@ -1,7 +1,7 @@
 # Verify: Editor de curso (completar campos)
 
-**Change**: `frontend-curso-editor-campos`  
-**Fecha**: 2026-07-17  
+**Change**: `frontend-curso-editor-campos`
+**Fecha**: 2026-07-17
 **Veredicto**: **PASS WITH WARNINGS**
 
 ## Gates técnicos

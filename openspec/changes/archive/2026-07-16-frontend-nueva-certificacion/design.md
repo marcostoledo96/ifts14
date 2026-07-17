@@ -98,7 +98,7 @@ Patrón existente (`loadGeneration` / `loadGen` en list/preview):
 
 ## issuedAt Timezone
 
-**Choice**: calcular `YYYY-MM-DD` con `America/Argentina/Buenos_Aires` en el cliente (p.ej. `Intl`/`temporal` o formatador local fijo) al armar el payload.  
+**Choice**: calcular `YYYY-MM-DD` con `America/Argentina/Buenos_Aires` en el cliente (p.ej. `Intl`/`temporal` o formatador local fijo) al armar el payload.
 **Rationale**: alinea con `validatePayload` PHP (misma zona; rechaza futuro). No enviar hora; solo fecha. Tests fijan un clock o stub de “hoy”.
 
 ## Testing Strategy

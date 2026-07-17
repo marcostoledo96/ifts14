@@ -16,10 +16,10 @@ build_output_hash: sha256:b1d8629f80a068ccfb35101d9fdb4dff41103a11eb708f029f2971
 
 # Verify — frontend-certificaciones-list-polish (Ciclo 11: Lista certificaciones polish)
 
-**Fecha:** 2026-07-17  
-**Change:** `openspec/changes/frontend-certificaciones-list-polish/`  
-**cwd:** `apps/frontend-angular/`  
-**Modo:** Standard (strict_tdd: false) — proposal + spec + design + tasks + apply-progress  
+**Fecha:** 2026-07-17
+**Change:** `openspec/changes/frontend-certificaciones-list-polish/`
+**cwd:** `apps/frontend-angular/`
+**Modo:** Standard (strict_tdd: false) — proposal + spec + design + tasks + apply-progress
 **Veredicto:** **PASS WITH WARNINGS**
 
 ---
@@ -40,9 +40,9 @@ build_output_hash: sha256:b1d8629f80a068ccfb35101d9fdb4dff41103a11eb708f029f2971
 - Suite Karma/Jasmine: **736 SUCCESS**.
 - Entorno: `CHROME_BIN` → `.verify-tmp/chrome-wrapper.sh` (`google-chrome --no-sandbox --headless=new`).
 
-**Hashes:**  
-`test_output` sha256:`84b12ad8e4ccf9adf49a7440eb6cf485182ea53d8df7d22a84cc01842400e5f6`  
-`tsc_output` sha256:`ff63851439f41c4bd0169f582040e068eea30757f1f0e32317dee7f0f14672eb`  
+**Hashes:**
+`test_output` sha256:`84b12ad8e4ccf9adf49a7440eb6cf485182ea53d8df7d22a84cc01842400e5f6`
+`tsc_output` sha256:`ff63851439f41c4bd0169f582040e068eea30757f1f0e32317dee7f0f14672eb`
 `build_output` sha256:`b1d8629f80a068ccfb35101d9fdb4dff41103a11eb708f029f29712e74e18193`
 
 ### Detalle gate 3 (`build`)

@@ -1,6 +1,6 @@
 # Apply progress: frontend-parity-shell-topbar-sidebar
 
-**Mode**: Standard  
+**Mode**: Standard
 **Status**: 10/10 tasks — Ready for verify
 
 ## Completed

@@ -1,6 +1,6 @@
 # Apply progress: frontend-parity-nueva-certificacion
 
-**Mode**: Standard  
+**Mode**: Standard
 **Status**: Complete — Ready for verify
 
 ## Completed

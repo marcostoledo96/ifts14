@@ -1,7 +1,7 @@
 # Archive report — frontend-dashboard
 
-**Fecha**: 2026-07-16  
-**Veredicto**: PASS WITH WARNINGS (685/685, tsc 0, build 0; 2 PARTIAL de cobertura de test no bloqueantes)  
+**Fecha**: 2026-07-16
+**Veredicto**: PASS WITH WARNINGS (685/685, tsc 0, build 0; 2 PARTIAL de cobertura de test no bloqueantes)
 **Destino**: `openspec/changes/archive/2026-07-16-frontend-dashboard/`
 
 ## Acciones
