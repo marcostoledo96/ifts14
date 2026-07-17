@@ -6,38 +6,66 @@ import { STUDENTS_SOURCE } from './students/students.service';
 
 type Metric = number | null;
 
+export type PendienteTone = 'warning' | 'info' | 'destructive';
+
 export interface PendienteFila {
   readonly id: string;
   readonly label: string;
   readonly detalle: string;
+  readonly tone: PendienteTone;
+  readonly iconId: 'calendar-x' | 'mail-warning' | 'send' | 'refresh';
+  /** Página real donde revisar el pendiente. */
+  readonly route: string;
+  readonly sinFuente: string | null;
 }
 
-/** Filas estructurales de bandeja: sin conteos inventados (API de pendientes inexistente). */
+/** Filas de bandeja calcadas de v0. Solo `sin-fechas` tiene conteo real
+ *  (derivado de cantidadFechas); el resto no tiene fuente en la API. */
 export const DASHBOARD_PENDIENTES: readonly PendienteFila[] = [
   {
     id: 'sin-fechas',
     label: 'Cursos sin fechas asignadas',
-    detalle: 'Dato no disponible: falta fuente agregada en API.',
+    detalle: 'No se puede emitir certificado sin fecha de finalización.',
+    tone: 'warning',
+    iconId: 'calendar-x',
+    route: '/admin/cursos',
+    sinFuente: null,
   },
   {
     id: 'sin-email',
     label: 'Alumnos sin email registrado',
-    detalle: 'Dato no disponible: el backend no expone email.',
+    detalle: 'Sin canal de contacto registrado para la entrega manual.',
+    tone: 'warning',
+    iconId: 'mail-warning',
+    route: '/admin/alumnos',
+    sinFuente: 'Conteo no disponible: el backend no expone email.',
   },
   {
     id: 'sin-entrega',
     label: 'Certificaciones pendientes de entrega',
-    detalle: 'Dato no disponible: no hay estado de entrega.',
+    detalle: 'Emitidas y firmadas, aún no entregadas al alumno.',
+    tone: 'info',
+    iconId: 'send',
+    route: '/admin/certificaciones',
+    sinFuente: 'Conteo no disponible: no hay estado de entrega.',
   },
   {
     id: 're-entrega',
     label: 'Requieren nueva entrega por modificación',
-    detalle: 'Dato no disponible: no hay listado de PDF desactualizado.',
+    detalle: 'Datos editados luego de la emisión original.',
+    tone: 'destructive',
+    iconId: 'refresh',
+    route: '/admin/certificaciones',
+    sinFuente: 'Conteo no disponible: no hay listado de PDF desactualizado.',
   },
 ];
 
+/** Columnas de la tabla de actividad (paridad v0). Sin API de bitácora:
+ *  solo estructura + estado vacío, nunca eventos inventados. */
+export const ACTIVIDAD_COLUMNAS = ['Hora', 'ID', 'Tipo', 'Detalle', 'Autor'] as const;
+
 // Mesa de trabajo admin: acciones reales + resumen derivado de seams.
-// Bandeja/actividad: placeholders honestos (sin endpoints de métricas/actividad).
+// Bandeja con conteo real solo donde hay fuente; actividad sin eventos seed.
 @Component({
   selector: 'app-admin-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,8 +79,10 @@ export class AdminDashboardPage {
   private readonly certs = inject(CERTIFICATIONS_SOURCE, { optional: true });
 
   readonly pendientes = DASHBOARD_PENDIENTES;
+  readonly actividadColumnas = ACTIVIDAD_COLUMNAS;
 
   readonly cursosCargados = signal<Metric>(null);
+  readonly cursosSinFechas = signal<Metric>(null);
   readonly alumnosRegistrados = signal<Metric>(null);
   readonly certificacionesEmitidas = signal<Metric>(null);
   readonly certificacionesRevocadas = signal<Metric>(null);
@@ -83,8 +113,10 @@ export class AdminDashboardPage {
 
     if (cursosR.status === 'fulfilled') {
       this.cursosCargados.set(cursosR.value.length);
+      this.cursosSinFechas.set(cursosR.value.filter((c) => c.cantidadFechas === 0).length);
     } else {
       this.cursosCargados.set(null);
+      this.cursosSinFechas.set(null);
       huboError = true;
     }
 
@@ -113,5 +145,11 @@ export class AdminDashboardPage {
 
   formatoMetrica(value: Metric): string {
     return value === null ? '—' : String(value);
+  }
+
+  /** Badge por fila: solo `sin-fechas` tiene conteo real. */
+  badgePendiente(item: PendienteFila): string {
+    if (item.id !== 'sin-fechas') return '—';
+    return this.formatoMetrica(this.cursosSinFechas());
   }
 }

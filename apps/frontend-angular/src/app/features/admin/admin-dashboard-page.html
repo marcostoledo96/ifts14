@@ -94,18 +94,68 @@
   <section class="panel pendientes" aria-labelledby="pendientes-titulo">
     <div class="panel-head">
       <h2 id="pendientes-titulo" class="panel-title">Pendientes de resolución</h2>
-      <span class="panel-meta">Sin totales — fuente pendiente</span>
+      <span class="panel-meta" title="Total no disponible: varias fuentes sin API">— tareas</span>
     </div>
     <ul class="pendientes-list">
       @for (item of pendientes; track item.id) {
-        <li class="pendiente-row">
-          <span class="pendiente-body">
-            <span class="pendiente-label">
-              {{ item.label }}
-              <span class="pendiente-badge" aria-label="Conteo no disponible">—</span>
+        <li>
+          <a class="pendiente-row" [routerLink]="item.route">
+            <span
+              class="pendiente-icon"
+              [class.pendiente-icon--warning]="item.tone === 'warning'"
+              [class.pendiente-icon--info]="item.tone === 'info'"
+              [class.pendiente-icon--destructive]="item.tone === 'destructive'"
+              aria-hidden="true"
+            >
+              @switch (item.iconId) {
+                @case ('calendar-x') {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 2v4" /><path d="M16 2v4" />
+                    <rect width="18" height="18" x="3" y="4" rx="2" />
+                    <path d="M3 10h18" /><path d="m14 14-4 4" /><path d="m10 14 4 4" />
+                  </svg>
+                }
+                @case ('mail-warning') {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 10.5V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h12.5" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    <path d="M20 14v4" /><path d="M20 22v.01" />
+                  </svg>
+                }
+                @case ('send') {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z" />
+                    <path d="M6 12h16" />
+                  </svg>
+                }
+                @case ('refresh') {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                    <path d="M21 3v5h-5" />
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                    <path d="M8 16H3v5" />
+                  </svg>
+                }
+              }
             </span>
-            <span class="pendiente-detalle">{{ item.detalle }}</span>
-          </span>
+            <span class="pendiente-body">
+              <span class="pendiente-label">
+                {{ item.label }}
+                <span
+                  class="pendiente-badge"
+                  [attr.title]="item.sinFuente"
+                  [attr.aria-label]="item.sinFuente ?? 'Conteo de ' + item.label"
+                >{{ badgePendiente(item) }}</span>
+              </span>
+              <span class="pendiente-detalle">{{ item.detalle }}</span>
+            </span>
+            <span class="pendiente-revisar" aria-hidden="true">
+              <span class="pendiente-revisar-texto">Revisar</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </span>
+          </a>
         </li>
       }
     </ul>
@@ -114,10 +164,29 @@
   <section class="panel actividad" aria-labelledby="actividad-titulo">
     <div class="panel-head">
       <h2 id="actividad-titulo" class="panel-title">Actividad reciente</h2>
+      <span
+        class="panel-link panel-link--disabled"
+        title="El registro completo aún no está disponible (sin API de bitácora)"
+      >Ver registro completo</span>
     </div>
-    <p class="empty-actividad" role="status">
-      Sin registro de actividad disponible.
-    </p>
+    <div class="actividad-scroll">
+      <table class="actividad-table">
+        <thead>
+          <tr>
+            @for (col of actividadColumnas; track col) {
+              <th scope="col" [class.actividad-th--right]="col === 'Autor'">{{ col }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="empty-actividad" [attr.colspan]="actividadColumnas.length" role="status">
+              Sin registro de actividad disponible.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 
   <section class="resumen" aria-label="Resumen operativo">

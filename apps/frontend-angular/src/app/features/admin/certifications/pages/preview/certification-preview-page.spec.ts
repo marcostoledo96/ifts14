@@ -469,7 +469,12 @@ describe('CertificationPreviewPage', () => {
   });
 
   it('documento réplica muestra autoridades firmantes (solo lectura)', async () => {
-    const f = await render('1');
+    // Config explícita con nombres: el seed in-memory arranca sin autoridades.
+    const config: InstitutionalConfigService = {
+      obtener: () => Promise.resolve(configFixture()),
+      guardar: () => Promise.reject(new Error('N/A')),
+    };
+    const f = await render('1', { config });
     const el = f.nativeElement as HTMLElement;
     const autoridades = el.querySelector('.doc-autoridades');
     expect(autoridades).not.toBeNull();
@@ -536,7 +541,12 @@ describe('CertificationPreviewPage', () => {
   });
 
   it('REQ-PAR-EXP-004: documento sin radius; firmas con SVG y copy v0', async () => {
-    const f = await render('1');
+    // Config explícita con nombres: el seed in-memory arranca sin autoridades.
+    const config: InstitutionalConfigService = {
+      obtener: () => Promise.resolve(configFixture()),
+      guardar: () => Promise.reject(new Error('N/A')),
+    };
+    const f = await render('1', { config });
     const el = f.nativeElement as HTMLElement;
     const doc = el.querySelector('.documento-replica') as HTMLElement;
     expect(getComputedStyle(doc).borderRadius).toMatch(/^0px$/);

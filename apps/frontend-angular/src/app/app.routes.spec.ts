@@ -1146,7 +1146,8 @@ describe('app.routes', () => {
     const cmp = harness.routeNativeElement?.querySelector('app-institutional-config-page');
     expect(cmp).not.toBeNull();
     const nameInput = cmp?.querySelector('#institution-name') as HTMLInputElement | null;
-    expect(nameInput?.value).toContain('IFTS');
+    // Seed in-memory usa el nombre completo (sin sigla "IFTS").
+    expect(nameInput?.value).toContain('Instituto de Formación Técnica Superior N.° 14');
   });
 
   it("regresión: sin INSTITUTIONAL_CONFIG_SOURCE en la ruta admin, /admin/configuracion revienta en runtime", async () => {

@@ -83,25 +83,50 @@ describe('AdminDashboardPage', () => {
     expect(carga?.textContent).toContain('Carga masiva');
     expect(carga?.textContent).toContain('Importar padrón desde CSV');
   });
-  it('muestra bandeja con placeholders honestos sin totales inventados', async () => {
+  it('bandeja v0: iconos por tono, links Revisar y solo sin-fechas con conteo real', async () => {
     const f = await render();
+    await settle(f);
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('#pendientes-titulo')?.textContent).toContain('Pendientes de resolución');
-    expect(el.textContent).toContain('Sin totales');
+    // Total agregado sin fuente: se muestra "— tareas", nunca el "22 tareas" seed de v0.
+    expect(el.querySelector('.pendientes .panel-meta')?.textContent).toContain('— tareas');
     expect(el.textContent).not.toContain('22 tareas');
+
+    const rows = Array.from(el.querySelectorAll('.pendientes-list a.pendiente-row'));
+    expect(rows.length).toBe(4);
+    for (const row of rows) {
+      expect(row.querySelector('.pendiente-icon svg')).not.toBeNull();
+      expect(row.querySelector('.pendiente-revisar')?.textContent).toContain('Revisar');
+    }
+    expect(rows[0].getAttribute('href')).toContain('/admin/cursos');
+    expect(rows[1].getAttribute('href')).toContain('/admin/alumnos');
+    expect(rows[2].getAttribute('href')).toContain('/admin/certificaciones');
+
+    // Conteo real derivado de cantidadFechas para "Cursos sin fechas asignadas".
+    const courses = TestBed.inject(COURSES_SOURCE);
+    const cursos = await courses.listar();
+    const sinFechas = cursos.filter((c) => c.cantidadFechas === 0).length;
     const badges = Array.from(el.querySelectorAll('.pendiente-badge'));
     expect(badges.length).toBe(4);
-    for (const b of badges) {
+    expect(badges[0].textContent?.trim()).toBe(String(sinFechas));
+    for (const b of badges.slice(1)) {
       expect(b.textContent?.trim()).toBe('—');
     }
-    expect(el.textContent).not.toMatch(/Cursos sin fechas asignadas[\s\S]*?\b3\b/);
   });
 
-  it('muestra actividad vacía sin PII ni eventos seed', async () => {
+  it('actividad v0: tabla con columnas y estado vacío sin PII ni eventos seed', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('#actividad-titulo')?.textContent).toContain('Actividad reciente');
+    const ths = Array.from(el.querySelectorAll('.actividad-table th')).map((th) =>
+      th.textContent?.trim(),
+    );
+    expect(ths).toEqual(['Hora', 'ID', 'Tipo', 'Detalle', 'Autor']);
     expect(el.textContent).toContain('Sin registro de actividad disponible');
+    // Link presentacional deshabilitado (sin API de bitácora): no es <a>.
+    const verRegistro = el.querySelector('.actividad .panel-link--disabled');
+    expect(verRegistro?.textContent).toContain('Ver registro completo');
+    expect(verRegistro?.tagName).not.toBe('A');
     expect(el.textContent).not.toContain('Vega');
     expect(el.textContent).not.toContain('EVT-9921');
     expect(el.textContent).not.toContain('bedelia.mpereyra');

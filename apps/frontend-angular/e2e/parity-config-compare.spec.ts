@@ -182,7 +182,9 @@ test.describe('parity config Angular vs v0', () => {
       expect.arrayContaining(['identidad', 'certificados', 'autoridades', 'contacto', 'validacion']),
     );
     expect(fp.hasImpactBanner).toBeTruthy();
-    expect(fp.hasSeccionesNav).toBeTruthy();
+    // La nav SECCIONES solo existe en desktop (>= 64rem), igual que en v0.
+    const esDesktop = (page.viewportSize()?.width ?? 0) >= 1024;
+    expect(fp.hasSeccionesNav).toBe(esDesktop);
     expect(fp.stickyBarFixed).toBeTruthy();
     expect(fp.logosCount).toBeGreaterThanOrEqual(5);
     expect(fp.enabledControls.some((c) => c.includes('institution-name'))).toBeTruthy();
