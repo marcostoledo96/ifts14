@@ -213,9 +213,9 @@
   color: #8a6100;
 }
 
-/* v0 usa bg-accent (#e6f6f9 celeste); --color-accent local es dorado, no aplica. */
+/* Aviso info — bg-accent v0 (#e6f6f9). */
 .pendiente-icon--info {
-  background: #e6f6f9;
+  background: var(--color-accent);
   color: var(--color-tech-blue);
 }
 

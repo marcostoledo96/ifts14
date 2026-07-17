@@ -38,10 +38,14 @@
   --tracking-caps-membrete: 0.22em;
   --tracking-section: 0.16em;
 
-  /* Paleta secundaria — centraliza tokens usados por componentes */
-  --color-secondary: #1e3a5f;
-  --color-accent: #c8a84e;
+  /* Superficies semánticas — alineadas a muestra_pagina/app/globals.css */
+  --color-secondary: #eef2f6;
+  --color-secondary-foreground: #0b1f33;
+  --color-accent: #e6f6f9;
+  --color-accent-foreground: #0b1f33;
   --color-primary-foreground: #ffffff;
+  /* Dorado institucional (no es --accent de v0) */
+  --color-gold: #c8a84e;
 
   /* Radios */
   --radius-sm: 0.25rem;
@@ -55,13 +59,17 @@
   --layout-page-max: 72rem;
   --layout-folio-max: 42rem;
 
-  /* Espaciado — escala 4-32px */
+  /* Espaciado — escala alineada a Tailwind (v0) */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.5rem;
   --space-6: 2rem;
+  --space-7: 2.25rem;
+  --space-8: 2.5rem;
+  --space-9: 3rem;
+  --space-10: 3.5rem;
 
   /* Foco y motion */
   --focus-ring: 0 0 0 2px var(--color-ring);

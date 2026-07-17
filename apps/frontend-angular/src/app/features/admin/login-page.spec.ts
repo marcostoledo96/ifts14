@@ -77,8 +77,14 @@ describe('LoginPage', () => {
     const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
     spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 401 }));
     await f.componentInstance.onAccesoSimulado({ username: 'bad', password: 'wrong' });
+    f.detectChanges();
     expect(f.componentInstance.errorMsg()).toContain('no coinciden con un registro autorizado');
     expect(f.componentInstance.loading()).toBe(false);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.error-login')).toBeNull();
+    expect(el.querySelector('#login-error[role="alert"]')?.textContent).toContain(
+      'no coinciden con un registro autorizado',
+    );
   });
 
   it('login con error 429 muestra mensaje de rate limit', async () => {

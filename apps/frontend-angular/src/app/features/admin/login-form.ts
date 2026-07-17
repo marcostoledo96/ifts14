@@ -1,6 +1,8 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
+  effect,
   input,
   output,
   signal,
@@ -22,12 +24,24 @@ interface LoginFormValue {
 })
 export class LoginForm {
   readonly loading = input(false);
+  /** Error del login HTTP (401/429); se muestra en el mismo alert que la validación local. */
+  readonly serverError = input('');
   readonly accesoSimulado = output<AdminAuthCredentials>();
 
   readonly usuario = signal('');
   readonly clave = signal('');
   readonly errorMsg = signal('');
   readonly showPassword = signal(false);
+
+  readonly displayError = computed(() => this.errorMsg() || this.serverError());
+
+  constructor() {
+    effect(() => {
+      const msg = this.serverError();
+      if (!msg) return;
+      queueMicrotask(() => document.getElementById('login-error')?.focus());
+    });
+  }
 
   togglePasswordVisibility(): void {
     this.showPassword.update((v) => !v);
@@ -54,7 +68,6 @@ export class LoginForm {
     const error = this.validar(value);
     if (error) {
       this.errorMsg.set(error);
-      // setTimeout(0): el alert role=alert debe existir en el DOM antes del focus.
       setTimeout(() => {
         document.getElementById('login-error')?.focus();
       }, 0);
@@ -62,7 +75,6 @@ export class LoginForm {
     }
     this.errorMsg.set('');
     this.accesoSimulado.emit({ username: value.usuario, password: value.clave });
-    // REQ-AUTH-008: limpiar credenciales del formulario tras el envío.
     this.clave.set('');
     this.usuario.set('');
   }
