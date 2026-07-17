@@ -105,6 +105,21 @@ export class AttendanceMarkingPage {
     );
   });
 
+  /** True tras un guardado exitoso y sin dirty (feedback verde v0). */
+  readonly guardadoOk = computed(() => this.ok().length > 0 && !this.dirty());
+
+  private readonly fmtFechaCorta = new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  private readonly fmtFechaLarga = new Intl.DateTimeFormat('es-AR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+
   // ponytail: generación de carga para descartar resultados stale cuando el
   // cursoId/fechaId cambia antes de que termine la carga anterior (route reuse).
   private loadGen = 0;
@@ -168,6 +183,37 @@ export class AttendanceMarkingPage {
 
   onSearch(event: Event): void {
     this.q.set((event.target as HTMLInputElement).value);
+  }
+
+  onLimpiarBusqueda(): void {
+    this.q.set('');
+  }
+
+  formatFechaCorta(iso: string): string {
+    return this.formatIso(iso, this.fmtFechaCorta);
+  }
+
+  formatFechaLarga(iso: string): string {
+    return this.formatIso(iso, this.fmtFechaLarga);
+  }
+
+  private formatIso(iso: string, fmt: Intl.DateTimeFormat): string {
+    const [y, m, d] = iso.split('-').map(Number);
+    if (!y || !m || !d) return iso;
+    return fmt.format(new Date(y, m - 1, d));
+  }
+
+  etiquetaOpcionFecha(opt: { fecha: string; descripcion: string | null; estado: string }): string {
+    const base = this.formatFechaCorta(opt.fecha);
+    const detalle = opt.descripcion?.trim();
+    let label = detalle ? `${base} — ${detalle}` : base;
+    if (opt.estado === 'cancelada') label += ' (cancelada)';
+    else if (opt.estado === 'realizada') label += ' (realizada)';
+    return label;
+  }
+
+  indiceFila(i: number): string {
+    return String(i + 1).padStart(2, '0');
   }
 
   togglePresente(alumnoId: number): void {

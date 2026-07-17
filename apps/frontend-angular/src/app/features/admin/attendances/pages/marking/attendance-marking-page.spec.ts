@@ -47,17 +47,29 @@ describe('AttendanceMarkingPage', () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Curso de introducción a la gestión');
-    expect(el.textContent).toContain('2026-03-02');
+    expect(el.textContent).toMatch(/02 de mar/i);
+    expect(el.querySelector('.fecha-select')?.getAttribute('value') ?? (el.querySelector('.fecha-select') as HTMLSelectElement).value).toBe('11');
     const rows = el.querySelectorAll('.alumno-row');
     expect(rows.length).toBeGreaterThanOrEqual(12);
   });
 
-  it('muestra resumen de carga en dl', async () => {
+  it('enlaces Volver al curso y Ver curso apuntan al detalle', async () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
-    const dl = el.querySelector('.resumen');
-    expect(dl).not.toBeNull();
-    expect(dl?.tagName).toBe('DL');
+    expect(el.textContent).toContain('Volver al curso');
+    expect(el.textContent).toContain('Registro de presentes');
+    expect(el.textContent).toContain('Alumnos del curso');
+    const links = Array.from(el.querySelectorAll('a[href*="/admin/cursos/1"]')) as HTMLAnchorElement[];
+    expect(links.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('no inventa legajo ni email en el roster', async () => {
+    const f = await render(1, 11);
+    const el = f.nativeElement as HTMLElement;
+    const text = (el.textContent || '').toLowerCase();
+    expect(text).not.toContain('leg-');
+    expect(text).not.toContain('@');
+    expect(text).not.toContain('example.invalid');
   });
 
   it('dniMostrar visible y enmascarado (XX****XX)', async () => {
