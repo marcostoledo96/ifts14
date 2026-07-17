@@ -76,6 +76,19 @@ export class CertificationsListPage {
     return ESTADO_LABEL[estado];
   }
 
+  formatEmision(iso: string | null): string {
+    if (!iso) return '—';
+    const [y, m, d] = iso.split('-').map(Number);
+    if (!y || !m || !d) return iso;
+    return new Intl.DateTimeFormat('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date(y, m - 1, d));
+  }
+
+  readonly skeletonRows = [0, 1, 2, 3, 4] as const;
+
   async recargar(): Promise<void> {
     const generation = ++this.loadGeneration;
     if (this.vistaQA() !== 'datos') return;
