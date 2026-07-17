@@ -35,12 +35,8 @@ export class StudentDetailPage {
     return a ? `${a.nombre} ${a.apellido}` : '';
   });
 
-  readonly certificacionesRevocadas = computed(() => {
-    // Calculado consistentemente a partir de los cursos asociados.
-    const a = this.alumno();
-    if (!a) return 0;
-    return a.cursos.filter((c) => c.estadoCert === 'en-curso' && c.certificacionId === 'revocado').length; // O 0 para mock base
-  });
+  /** Sin fuente de revocadas en el detalle: siempre 0 (honesto). */
+  readonly certificacionesRevocadas = computed(() => 0);
 
   constructor() {
     this.route.paramMap.subscribe((params) => {

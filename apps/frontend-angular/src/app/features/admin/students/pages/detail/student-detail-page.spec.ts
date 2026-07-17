@@ -24,6 +24,7 @@ describe('StudentDetailPage', () => {
           { path: 'admin/alumnos/:id', component: StudentDetailPage },
           { path: 'admin/alumnos', component: class DummyComponent {} },
           { path: 'admin/certificaciones/nueva', component: class DummyComponent {} },
+          { path: 'admin/certificaciones/:id', component: class DummyComponent {} },
         ]),
         { provide: STUDENTS_SOURCE, useValue: studentsService },
         {
@@ -53,8 +54,10 @@ describe('StudentDetailPage', () => {
     expect(textContent).toContain('Persona Uno');
     expect(textContent).toContain('00****01');
     expect(textContent).toContain('2021');
+    expect(textContent).toContain('Legajo');
+    expect(textContent).toContain('#1');
 
-    expect(textContent.toLowerCase()).not.toContain('legajo');
+    // Privacidad: pan "Legajo" OK; códigos LEG-* e emails inventados NO.
     expect(textContent.toLowerCase()).not.toContain('leg-');
     expect(textContent.toLowerCase()).not.toContain('email@');
     expect(textContent.toLowerCase()).not.toContain('example.invalid');
@@ -62,6 +65,22 @@ describe('StudentDetailPage', () => {
     expect(textContent).toContain('Curso de introducción a la gestión');
     expect(textContent).toContain('CUR-001');
     expect(textContent).toContain('2/3');
+    expect(textContent).toContain('Ver certificación');
+  });
+
+  it('enlaza Ver certificación cuando el curso emitido tiene certificacionId', async () => {
+    const harness = await RouterTestingHarness.create('/admin/alumnos/1');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+
+    const rootElement = harness.fixture.nativeElement as HTMLElement;
+    const verLinks = Array.from(rootElement.querySelectorAll('a')).filter((a) =>
+      (a.textContent || '').includes('Ver certificación'),
+    ) as HTMLAnchorElement[];
+    expect(verLinks.length).toBeGreaterThanOrEqual(2);
+    expect(verLinks.some((a) => (a.getAttribute('href') || '').includes('/admin/certificaciones/1'))).toBeTrue();
+    expect(verLinks.some((a) => (a.getAttribute('href') || '').includes('/admin/certificaciones/2'))).toBeTrue();
   });
 
   it('habilita Nueva certificación y Emitir con query params', async () => {

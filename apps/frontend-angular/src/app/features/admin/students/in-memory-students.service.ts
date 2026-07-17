@@ -20,8 +20,9 @@ export const seed: readonly SeedAlumnoRaw[] = initialSeed;
 
 const CURSOS_MOCK_MAP: Record<number, CursoPresente[]> = {
   1: [
-    { id: '1', nombre: 'Curso de introducción a la gestión', codigo: 'CUR-001', presentes: ['2026-03-02', '2026-03-09', '2026-03-16'], estadoCert: 'emitida', certificacionId: null },
-    { id: '2', nombre: 'Curso de herramientas administrativas', codigo: 'CUR-002', presentes: ['2026-04-05', '2026-04-12'], estadoCert: 'emitida', certificacionId: null },
+    // certificacionId numérico → enlace real a /admin/certificaciones/:id (seed certs).
+    { id: '1', nombre: 'Curso de introducción a la gestión', codigo: 'CUR-001', presentes: ['2026-03-02', '2026-03-09', '2026-03-16'], estadoCert: 'emitida', certificacionId: '1' },
+    { id: '2', nombre: 'Curso de herramientas administrativas', codigo: 'CUR-002', presentes: ['2026-04-05', '2026-04-12'], estadoCert: 'emitida', certificacionId: '2' },
     { id: '3', nombre: 'Curso de prácticas documentales', codigo: 'CUR-003', presentes: ['2026-05-04'], estadoCert: 'pendiente', certificacionId: null },
     { id: '6', nombre: 'Curso de atención al público', codigo: 'CUR-006', presentes: ['2026-06-01'], estadoCert: 'en-curso', certificacionId: null },
   ],
