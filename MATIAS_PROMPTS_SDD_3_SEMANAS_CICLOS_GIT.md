@@ -1,12 +1,20 @@
 # Matías — guía ejecutable SDD para Angular 20 en Windows
 
+> **Estado global (2026-07-17): F0–F6 del MVP — SIN CICLOS ACTIVOS PENDIENTES.**
+>
+> - **Hechos:** F0-01…F5-03, F5-04, F6-01, F6-03 (alcance efectivo), F6-04.
+> - **Diferido fuera de MVP:** F6-02 (placeholder carga masiva) → backlog P9 / decisión posterior; no bloquea cierre de esta guía.
+> - Paridad visual adicional (`docs/frontend/PROMPT-PARIDAD-MUESTRA-PAGINA.md` y archives `frontend-parity-*`) y QA staging (P8-04/P8-05) se siguen fuera de F0–F6.
+>
+> Esta guía queda como **referencia histórica ejecutable**. No abrir ciclos F0–F6 nuevos salvo regresión o decisión explícita de reabrir alcance (p. ej. F6-02).
+
 Esta guía es el punto de entrada único y vigente para que Matías trabaje el frontend Angular 20 del módulo `/certificados/` desde Windows. Se trabaja en ciclos chicos, con Spec-Driven Development, validación explícita y cierre obligatorio con `sdd-archive`.
 
-> Estado de esta guía: cubre F0-F6 en una secuencia unificada. `muestra_pagina/` es la referencia visual v0 final y completa (export de Next.js/React con capturas para todos los prompts 4-22); no hay prompts pendientes de export v0. Los ciclos F4-F6 al final de esta guía detallan los flujos administrativos, PDF, entrega manual, revocación, carga masiva, auditoría y configuración.
+> Estado de esta guía: cubre F0-F6 en una secuencia unificada. `muestra_pagina/` es la referencia visual v0 final y completa (export de Next.js/React con capturas para todos los prompts 4-22); no hay prompts pendientes de export v0. Los ciclos F4-F6 al final de esta guía detallan los flujos administrativos, PDF, entrega manual, revocación, carga masiva (diferida), auditoría/copiar link y configuración.
 
 ## Índice de estado de fases (F0-F6)
 
-Estado actualizado al 2026-06-28. Convención: ✅ hecho, ⏳ pendiente, 🚫 bloqueado (por Marcos u otro).
+Estado actualizado al **2026-07-17**. Convención: ✅ hecho, ⏳ pendiente, 🚫 diferido/fuera de MVP, 🚫 bloqueado (por Marcos u otro).
 
 | Fase | # | Ciclo | Estado | Rama sugerida | Commit/Notas |
 |---|---|---|---|---|---|
@@ -30,20 +38,20 @@ Estado actualizado al 2026-06-28. Convención: ✅ hecho, ⏳ pendiente, 🚫 bl
 | F3 | F3-04 | QA manual completo | ✅ | qa/frontend-release-readiness | Matías. |
 | F3 | F3-05 | Build para `/certificados/` | ✅ | frontend/api-readiness | Marcos si hace falta. |
 | F3 | F3-06 | Handoff a Marcos | ✅ | qa/frontend-release-readiness | Matías. |
-| F4 | F4-01 | Detalle de certificación administrativo | ✅ | frontend/certificate-detail-pdf | Matías. Bloqueo: spec previa si incluye historial, QR o revocación real. |
-| F4 | F4-02 | Vista previa PDF complementario | ✅ | frontend/certificate-detail-pdf | Matías. Bloqueo: spec previa de PDF, layout y datos permitidos. |
-| F4 | F4-03 | Listado de cursos | ✅ | frontend/admin-courses | Matías. Bloqueo: contrato o mocks explícitos para cursos, fechas y estados. |
-| F4 | F4-04 | Detalle de curso | ✅ | frontend/admin-courses | Matías. Bloqueo: contrato de curso, fechas, asistencias y certificaciones asociadas. |
-| F5 | F5-01 | Listado de certificaciones | ✅ | frontend/admin-certifications | Matías. Bloqueo: contrato de filtros, paginación y estados. |
-| F5 | F5-02 | Listado de alumnos | ✅ | frontend/admin-students | Matías. Bloqueo: definir datos visibles; DNI completo solo si la spec lo exige en contexto privado/administrativo. |
-| F5 | F5-03 | Detalle administrativo de alumno | ✅ | frontend/admin-students | Matías. Bloqueo: spec previa de datos personales permitidos. |
-| F5 | F5-04 | Entrega manual de certificación | ⏳ | frontend/admin-certifications | Matías. Bloqueo: contrato de entrega manual y copy aprobado; sin "reenviar" ni "enviar email". |
-| F6 | F6-01 | Revocar certificación | ✅ | frontend/admin-certifications | Matías. Bloqueo: spec de permisos, confirmación y efecto irreversible. |
-| F6 | F6-02 | Placeholder de carga masiva | ⏳ | frontend/admin-bulk-config | Matías. Bloqueo: alcance placeholder; no importar archivos reales. |
-| F6 | F6-03 | Auditoría básica | ⏳ | frontend/admin-certifications | Matías. Bloqueo: contrato de eventos auditables y permisos. |
-| F6 | F6-04 | Configuración institucional | ⏳ | frontend/admin-bulk-config | Matías. Bloqueo: definir secciones, permisos y datos no sensibles. |
+| F4 | F4-01 | Detalle de certificación administrativo | ✅ | frontend/certificate-detail-pdf | Matías. |
+| F4 | F4-02 | Vista previa PDF complementario | ✅ | frontend/certificate-detail-pdf | Matías. |
+| F4 | F4-03 | Listado de cursos | ✅ | frontend/admin-courses | Matías. |
+| F4 | F4-04 | Detalle de curso | ✅ | frontend/admin-courses | Matías. |
+| F5 | F5-01 | Listado de certificaciones | ✅ | frontend/admin-certifications | Matías. |
+| F5 | F5-02 | Listado de alumnos | ✅ | frontend/admin-students | Matías. |
+| F5 | F5-03 | Detalle administrativo de alumno | ✅ | frontend/admin-students | Matías. |
+| F5 | F5-04 | Entrega manual de certificación | ✅ | frontend/admin-certifications | Cerrado: `p6-01-entrega-manual-funcional` + `frontend-entrega-manual-qr` + paridad entrega/revocar/PDF. Sin email. |
+| F6 | F6-01 | Revocar certificación | ✅ | frontend/admin-certifications | Matías. |
+| F6 | F6-02 | Placeholder de carga masiva | 🚫 | frontend/admin-bulk-config | **Diferido fuera de MVP** (P9 / decisión posterior). No hay ruta ni feature en producto. |
+| F6 | F6-03 | Auditoría / Copiar link (alcance efectivo) | ✅ | frontend/admin-certifications | Cerrado como timeline `auditEvents` en expediente + Copiar/Compartir (`frontend-certificado-preview`). Sin pantalla `/admin/auditoria` dedicada (fuera de MVP). |
+| F6 | F6-04 | Configuración institucional | ✅ | frontend/admin-bulk-config | Cerrado: `frontend-configuracion-institucional` + `frontend-parity-configuracion-layout`. |
 
-**Resumen**: 24 de 28 hechos. 4 pendientes. F0 a F4 están completos. F5 casi completo (solo falta entrega manual). F6 tiene revocación completada. Cambios ad-hoc de governance también commiteados en PR #6: regla de commit con aprobación explícita (`d4589a1`), regla de push a ramas con aprobación explícita (`79a72ca`), fix de bugs de Codex (`e890c3c`).
+**Resumen (2026-07-17):** **27 de 28 hechos** para el MVP; **1 diferido** (F6-02). **No hay ciclos F0–F6 activos pendientes** en esta guía. Auth real: sesión PHP (no `X-Admin-Key` en Angular). Continuación operativa: paridad residual / QA staging en plan P8 y `docs/qa/CHECKLIST-TESTING-MANUAL.md`.
 
 ### División operativa frontend
 
@@ -85,7 +93,7 @@ Antes de cualquier ciclo F0-F6, Matías debe:
 | Fuente documental | `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md` y specs OpenSpec vigentes. |
 | Backend/API | No inventar contratos. Usar solo lo documentado por Marcos. |
 | Seguridad | No tocar `material_privado_no_versionar/`, dumps, logs, credenciales ni archivos `.env`. |
-| Decisiones D0 | QR/token permanente (reenvío no rota); DNI completo visible en validación pública; certificado de curso con fechas asistidas; auth admin simple `X-Admin-Key` temporal; firmantes PDF Rector/a + Asesor/a Pedagógica; staging `/certificados_staging/`. |
+| Decisiones D0 | QR/token permanente (reenvío no rota); DNI completo visible en validación pública; certificado de curso con fechas asistidas; **auth admin = sesión PHP + CSRF** (no `X-Admin-Key` en Angular); firmantes PDF Rector/a y Asesor/a Pedagógica; staging `/certificados_staging/`. |
 | Cierre admin | Matías puede avanzar sistema visual y componentes base sin backend final, pero **no debe cerrar pantallas admin como "done"** hasta que Marcos provea contratos/mocks aprobados para cada flujo. El trabajo visual puede quedar "in progress / pending contract". |
 | Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. **Para el flujo de Matías**: OpenCode PUEDE ejecutar operaciones Git con aprobación explícita de Matías en el mismo turno, comando exacto, evidencia previa, diff-confirmation gate cuando corresponda, árbol limpio o decisión explícita de stash/commit/abortar; la única prohibición dura es `git push` directo a `main`; ver sección "Ruta rápida" punto 8. **Para el flujo de Marcos**: ver `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` — Marcos mantiene autoridad total sobre su propio workflow. |
 
@@ -1644,6 +1652,8 @@ Commit sugerido: `feat(frontend): detalle administrativo de alumno`.
 
 ### Ciclo F5-04 — Entrega manual de certificación
 
+> **Estado (2026-07-17): ✅ CERRADO.** Evidencia: `openspec/changes/archive/2026-07-15-p6-01-entrega-manual-funcional/`, `openspec/changes/archive/2026-07-17-frontend-entrega-manual-qr/`, paridad entrega/revocar/PDF. No reabrir salvo regresión.
+
 Objetivo: implementar la entrega manual de certificación: copiar link público y descargar PDF. NO hay reenvío por email ni SMTP en el MVP.
 Rama sugerida: `frontend/admin-certifications`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/backend/01-contrato-api-certificados.md`, referencia visual v0 de `muestra_pagina/app/admin/certificaciones/[id]/entrega` y spec del ciclo activo.
@@ -1690,7 +1700,9 @@ Commit sugerido: `feat(frontend): revocar certificacion admin`.
 
 ### Ciclo F6-02 — Placeholder de carga masiva
 
-Objetivo: implementar un placeholder de carga masiva; no importar archivos reales.
+> **Estado (2026-07-17): 🚫 DIFERIDO — fuera de MVP.** No ejecutar este ciclo salvo decisión explícita de reabrir alcance. No hay feature/ruta de carga masiva en el producto actual. Seguir en backlog P9 si el instituto lo pide.
+
+Objetivo (histórico): implementar un placeholder de carga masiva; no importar archivos reales.
 Rama sugerida: `frontend/admin-bulk-config`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, referencia visual v0 de `muestra_pagina` y spec del ciclo activo.
 
@@ -1712,7 +1724,9 @@ Commit sugerido: `feat(frontend): placeholder carga masiva`.
 
 ### Ciclo F6-03 — Auditoría básica
 
-Objetivo: implementar la vista de auditoría básica con eventos auditables y permisos definidos por spec.
+> **Estado (2026-07-17): ✅ CERRADO (alcance efectivo MVP).** Timeline `auditEvents` en expediente + Copiar/Compartir con URL canónica (`frontend-certificado-preview`). Pantalla dedicada `/admin/auditoria` **no** forma parte del MVP. No reabrir salvo decisión de ampliar alcance.
+
+Objetivo (histórico): implementar la vista de auditoría básica con eventos auditables y permisos definidos por spec.
 Rama sugerida: `frontend/admin-certifications`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/backend/01-contrato-api-certificados.md`, referencia visual v0 de `muestra_pagina` y spec del ciclo activo.
 
@@ -1733,6 +1747,8 @@ Archive: `docs/frontend/00-angular20-port-v0.md`, spec del ciclo.
 Commit sugerido: `feat(frontend): auditoria basica admin`.
 
 ### Ciclo F6-04 — Configuración institucional
+
+> **Estado (2026-07-17): ✅ CERRADO.** Evidencia: `openspec/changes/archive/2026-07-16-frontend-configuracion-institucional/`, `openspec/changes/archive/2026-07-17-frontend-parity-configuracion-layout/`. No reabrir salvo regresión.
 
 Objetivo: implementar la configuración institucional con secciones, permisos y datos no sensibles.
 Rama sugerida: `frontend/admin-bulk-config`.
