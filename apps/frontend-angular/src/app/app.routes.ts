@@ -18,12 +18,10 @@ import { InMemoryInstitutionalConfigService } from './features/admin/institution
 import { environment } from '../environments/environment';
 
 export const routes: Routes = [
-  // La raíz carga una página de inicio no validante: no llama a la API ni usa
-  // tokens de demo. La validación sólo ocurre en validar/:tokenCertificacion.
+  // Entrada por /certificados/ → login admin (la validación pública sigue en validar/:token).
   {
     path: '',
-    loadComponent: () =>
-      import('./features/landing/landing-page').then((m) => m.LandingPage),
+    redirectTo: '/admin/login',
     pathMatch: 'full',
   },
   {

@@ -1,6 +1,7 @@
 :host {
   display: block;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--color-paper);
   color: var(--color-foreground);
   font-family: var(--font-sans);
@@ -21,9 +22,10 @@
 }
 
 .login-layout {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .login-aside {
@@ -32,7 +34,7 @@
   flex-direction: row;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-6) var(--space-5);
   background: var(--color-ink);
   color: var(--color-ink-foreground);
   overflow: hidden;
@@ -101,10 +103,12 @@
 
 .login-main {
   position: relative;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-5) var(--space-4);
+  padding: 2.5rem 1.25rem;
+  background: var(--color-paper);
 }
 
 .main-texture {
@@ -114,6 +118,7 @@
     linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
   background-size: 32px 32px;
   mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 30%, transparent 80%);
 }
 
 .login-stack {
@@ -125,15 +130,15 @@
 
 .card {
   width: 100%;
-  padding: var(--space-6);
+  padding: var(--space-6) var(--space-5);
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 6%, transparent);
 }
 
 .card-header {
-  margin-bottom: var(--space-5);
+  margin-bottom: 1.75rem;
 }
 
 .card-title {
@@ -142,6 +147,7 @@
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.02em;
+  color: var(--color-foreground);
 }
 
 .card-subtitle {
@@ -152,36 +158,13 @@
 }
 
 .card-divider {
-  margin-top: var(--space-5);
+  margin-top: var(--space-6);
   height: 1px;
   background: var(--color-border);
 }
 
-.error-login {
-  margin: 0 0 var(--space-4);
-  display: flex;
-  align-items: flex-start;
-  gap: 0.625rem;
-  padding: 0.75rem 0.875rem;
-  border-left: 2px solid var(--color-destructive);
-  background: var(--color-destructive-soft);
-  color: var(--color-destructive);
-  font-size: 0.75rem;
-  line-height: 1.5;
-}
-
-.error-login:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-destructive) 40%, transparent);
-}
-
-.error-icon {
-  flex-shrink: 0;
-  margin-top: 0.1rem;
-}
-
 .login-footer {
-  margin-top: var(--space-5);
+  margin-top: var(--space-6);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -204,30 +187,46 @@
   color: color-mix(in srgb, var(--color-muted-foreground) 70%, transparent);
 }
 
-@media (min-width: 48rem) {
+@media (min-width: 40rem) {
+  .login-aside {
+    padding: var(--space-6) 2.5rem;
+  }
+
+  .login-main {
+    padding: 2.5rem var(--space-6);
+  }
+
+  .card {
+    padding: 2.5rem 2.25rem;
+  }
+}
+
+@media (min-width: 64rem) {
   .login-layout {
-    grid-template-columns: minmax(16rem, 0.42fr) 1fr;
+    flex-direction: row;
   }
 
   .login-aside {
+    width: 42%;
+    max-width: 36rem;
     flex-direction: column;
     align-items: stretch;
     justify-content: space-between;
     gap: var(--space-6);
-    padding: var(--space-8) var(--space-6);
+    padding: var(--space-9) var(--space-6);
   }
 
   .aside-mensaje {
     position: relative;
     z-index: 1;
     display: block;
-    max-width: 24rem;
+    max-width: 28rem;
   }
 
   .aside-accent {
     width: 3rem;
     height: 1px;
-    margin-bottom: var(--space-4);
+    margin-bottom: 1.25rem;
     background: var(--color-circuit);
   }
 
@@ -236,16 +235,18 @@
     font-family: var(--font-mono);
     font-size: 1.5rem;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.375;
     letter-spacing: -0.02em;
+    text-wrap: pretty;
   }
 
   .aside-lead {
     margin: var(--space-4) 0 0;
-    max-width: 22rem;
+    max-width: 24rem;
     font-size: 0.875rem;
-    line-height: 1.6;
+    line-height: 1.625;
     color: color-mix(in srgb, var(--color-ink-foreground) 60%, transparent);
+    text-wrap: pretty;
   }
 
   .estado-sistema {
@@ -303,10 +304,12 @@
   }
 
   .login-main {
-    padding: var(--space-8) var(--space-5);
+    padding: var(--space-9) var(--space-6);
   }
+}
 
-  .card {
-    padding: var(--space-8) var(--space-7);
+@media (min-width: 80rem) {
+  .aside-title {
+    font-size: 1.875rem;
   }
 }

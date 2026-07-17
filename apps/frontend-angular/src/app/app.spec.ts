@@ -25,7 +25,7 @@ describe('App', () => {
 
   it('en ruta pública renderiza shell semántico con header, main#contenido y footer', async () => {
     const router = TestBed.inject(Router);
-    await router.navigateByUrl('/');
+    await router.navigateByUrl('/ruta-publica-inexistente');
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
@@ -36,7 +36,7 @@ describe('App', () => {
 
   it('en ruta pública incluye skip link hacia #contenido', async () => {
     const router = TestBed.inject(Router);
-    await router.navigateByUrl('/');
+    await router.navigateByUrl('/ruta-publica-inexistente');
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;

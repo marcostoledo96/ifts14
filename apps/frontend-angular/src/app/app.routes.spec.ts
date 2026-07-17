@@ -4,7 +4,6 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './app.routes';
 import { NotFoundPage } from './features/not-found/not-found-page';
 import { PublicValidationPage } from './features/public-validation/public-validation-page';
-import { LandingPage } from './features/landing/landing-page';
 import { LoginPage } from './features/admin/login-page';
 import { AdminShell } from './features/admin/admin-shell';
 import { ADMIN_AUTH, FakeAdminAuthService } from './features/admin/admin-auth.service';
@@ -45,17 +44,17 @@ describe('app.routes', () => {
     return router;
   }
 
-  it("raíz carga LandingPage (no redirige a demo-valido)", () => {
+  it("raíz redirige a /admin/login", () => {
     const root = routes.find((r) => r.path === '');
-    expect(root?.redirectTo).toBeUndefined();
-    expect(root?.loadComponent).toBeDefined();
+    expect(root?.redirectTo).toBe('/admin/login');
     expect(root?.pathMatch).toBe('full');
+    expect(root?.loadComponent).toBeUndefined();
   });
 
   it("raíz no carga PublicValidationPage", () => {
     const root = routes.find((r) => r.path === '');
-    const validar = routes.find((r) => r.path === 'validar/:tokenCertificacion');
-    expect(root?.loadComponent).not.toBe(validar?.loadComponent);
+    expect(root?.redirectTo).toBe('/admin/login');
+    expect(root?.loadComponent).toBeUndefined();
   });
 
   it("ruta válida carga PublicValidationPage", () => {
@@ -87,10 +86,11 @@ describe('app.routes', () => {
     }
   });
 
-  it("navegación real: raíz no termina en demo-valido ni en validar", async () => {
+  it("navegación real: raíz termina en /admin/login sin validar ni demo", async () => {
     await setupRouter();
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');
+    expect(router.url).toBe('/admin/login');
     expect(router.url).not.toContain('demo-valido');
     expect(router.url).not.toContain('/validar/');
   });
@@ -241,7 +241,7 @@ describe('app.routes', () => {
     await setupRouter('/');
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');
-    expect(router.url).toBe('/');
+    expect(router.url).toBe('/admin/login');
     await router.navigateByUrl('/validar/demo-valido');
     expect(router.url).toContain('/validar/');
   });
@@ -481,7 +481,7 @@ describe('app.routes', () => {
     await setupRouter('/');
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');
-    expect(router.url).toBe('/');
+    expect(router.url).toBe('/admin/login');
     await router.navigateByUrl('/validar/demo-valido');
     expect(router.url).toContain('/validar/');
   });
@@ -764,7 +764,7 @@ describe('app.routes', () => {
     await setupRouter('/');
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');
-    expect(router.url).toBe('/');
+    expect(router.url).toBe('/admin/login');
     await router.navigateByUrl('/validar/demo-valido');
     expect(router.url).toContain('/validar/');
   });
@@ -982,7 +982,7 @@ describe('app.routes', () => {
     await setupRouter('/');
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');
-    expect(router.url).toBe('/');
+    expect(router.url).toBe('/admin/login');
     await router.navigateByUrl('/validar/demo-valido');
     expect(router.url).toContain('/validar/');
   });
@@ -1058,7 +1058,7 @@ describe('app.routes', () => {
     await setupRouter('/');
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');
-    expect(router.url).toBe('/');
+    expect(router.url).toBe('/admin/login');
     await router.navigateByUrl('/validar/demo-valido');
     expect(router.url).toContain('/validar/');
   });
@@ -1181,7 +1181,7 @@ describe('app.routes', () => {
     await setupRouter('/');
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/');
-    expect(router.url).toBe('/');
+    expect(router.url).toBe('/admin/login');
     await router.navigateByUrl('/validar/demo-valido');
     expect(router.url).toContain('/validar/');
   });

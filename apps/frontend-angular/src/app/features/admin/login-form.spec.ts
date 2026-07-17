@@ -117,6 +117,15 @@ describe('LoginForm', () => {
     expect(alert?.textContent).toContain('Completá');
   });
 
+  it('muestra serverError en el mismo alert del formulario', async () => {
+    const f = await render();
+    f.componentRef.setInput('serverError', 'Las credenciales no coinciden con un registro autorizado.');
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const alert = el.querySelector('#login-error[role="alert"]');
+    expect(alert?.textContent).toContain('no coinciden con un registro autorizado');
+  });
+
   it('mueve el foco al alert de error tras envío inválido por flujo real de submit', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
