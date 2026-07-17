@@ -5,8 +5,7 @@ import { filter, map } from 'rxjs';
 import { ADMIN_AUTH } from './admin-auth.service';
 import { SidebarAdmin } from './sidebar-admin';
 
-// Shell admin: banner sticky, sidebar fija desktop/drawer mobile,
-// main#contenido y footer admin. Asume landmarks únicos en /admin/*.
+// Shell admin: sidebar fija desktop / drawer mobile, main#contenido y footer.
 // F2-04: rutas hijas con <router-outlet> (dashboard, cursos/*).
 @Component({
   selector: 'app-admin-shell',
@@ -23,6 +22,7 @@ export class AdminShell {
   // click en overlay cierra. Render condicional para evitar exponer
   // nav/logout a teclado/screen readers cuando está cerrado.
   readonly menuAbierto = signal(false);
+
 
   // Ruta actual del router (string post-NavigationEnd). Se pasa como
   // [active] a SidebarAdmin para que marque la sección vigente.
