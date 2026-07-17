@@ -13,6 +13,10 @@ import {
 } from './admin-auth.service';
 import { environment } from '../../../environments/environment';
 
+function authEnvelope(data: { authenticated: boolean; csrfToken?: string }) {
+  return { data, meta: { requestId: 'req_test' } };
+}
+
 describe('HttpAdminAuthService', () => {
   let service: HttpAdminAuthService;
   let httpMock: HttpTestingController;
@@ -37,13 +41,13 @@ describe('HttpAdminAuthService', () => {
     expect(service.csrfToken()).toBeNull();
   });
 
-  it('login exitoso guarda csrfToken', async () => {
+  it('login exitoso guarda csrfToken desde envelope.data', async () => {
     const creds: AdminAuthCredentials = { username: 'admin', password: 'clave123' };
     const promise = service.login(creds);
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/login`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(creds);
-    req.flush({ authenticated: true, csrfToken: 'csrf-abc' });
+    req.flush(authEnvelope({ authenticated: true, csrfToken: 'csrf-abc' }));
     await promise;
     expect(service.csrfToken()).toBe('csrf-abc');
   });
@@ -61,7 +65,7 @@ describe('HttpAdminAuthService', () => {
     const promise = service.session();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/session`);
     expect(req.request.method).toBe('GET');
-    req.flush({ authenticated: true, csrfToken: 'csrf-session' });
+    req.flush(authEnvelope({ authenticated: true, csrfToken: 'csrf-session' }));
     const result = await promise;
     expect(result).toBe(true);
     expect(service.csrfToken()).toBe('csrf-session');
@@ -70,7 +74,7 @@ describe('HttpAdminAuthService', () => {
   it('session retorna false cuando authenticated=false', async () => {
     const promise = service.session();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/session`);
-    req.flush({ authenticated: false });
+    req.flush(authEnvelope({ authenticated: false }));
     const result = await promise;
     expect(result).toBe(false);
   });
@@ -84,17 +88,16 @@ describe('HttpAdminAuthService', () => {
   });
 
   it('logout limpia csrfToken', async () => {
-    // Simular login primero
     const loginPromise = service.login({ username: 'admin', password: 'clave123' });
     const loginReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/login`);
-    loginReq.flush({ authenticated: true, csrfToken: 'csrf-xyz' });
+    loginReq.flush(authEnvelope({ authenticated: true, csrfToken: 'csrf-xyz' }));
     await loginPromise;
     expect(service.csrfToken()).toBe('csrf-xyz');
 
     const logoutPromise = service.logout();
     const logoutReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/logout`);
     expect(logoutReq.request.method).toBe('POST');
-    logoutReq.flush({ authenticated: false });
+    logoutReq.flush(authEnvelope({ authenticated: false }));
     await logoutPromise;
     expect(service.csrfToken()).toBeNull();
   });
@@ -108,7 +111,7 @@ describe('HttpAdminAuthService', () => {
     const setItemSpy = spyOn(Storage.prototype, 'setItem').and.callThrough();
     const promise = service.login({ username: 'admin', password: 'clave123' });
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/login`);
-    req.flush({ authenticated: true, csrfToken: 'csrf' });
+    req.flush(authEnvelope({ authenticated: true, csrfToken: 'csrf' }));
     await promise;
     expect(setItemSpy).not.toHaveBeenCalled();
   });

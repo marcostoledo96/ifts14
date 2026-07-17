@@ -5,60 +5,316 @@
       <h1 id="cursos-title" class="title">Cursos</h1>
       <p class="subtitle">Gestión de programas, fechas de cursada y certificaciones emitidas.</p>
     </div>
-    <a class="btn-primary" routerLink="/admin/cursos/nuevo">Nuevo curso</a>
+    <a class="btn-primary" routerLink="/admin/cursos/nuevo">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M5 12h14M12 5v14" stroke-linecap="round"/>
+      </svg>
+      Nuevo curso
+    </a>
   </div>
 
   <p class="demo-banner" role="status">Datos de demostración: los cambios no se persisten al recargar.</p>
 
   <section class="filtros" aria-label="Buscar y filtrar cursos">
-    <label class="filtro-search">
-      <span class="filtro-label">Filtrar por nombre o código</span>
-      <input type="search" [value]="q()" (input)="onSearch($event)" placeholder="Ej. Curso de gestión…" aria-label="Buscar curso por código o nombre" />
-    </label>
-    <label class="filtro-estado">
-      <span class="filtro-label">Estado</span>
-      <select [value]="estado()" (change)="onEstado($event)" aria-label="Filtrar por estado">
-        <option value="todos">Todos</option>
-        @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
-      </select>
-    </label>
-    <div class="filtro-fechas">
-      <span class="filtro-label">Fechas de cursada</span>
-      <div class="filter-chips">
-        <button type="button" data-fechas="con" [attr.aria-pressed]="conFechas() === true" (click)="onConFechas(true)">Con fechas</button>
-        <button type="button" data-fechas="sin" [attr.aria-pressed]="conFechas() === false" (click)="onConFechas(false)">Sin fechas</button>
+    <div class="filtros-main">
+      <label class="filtro-search" for="buscar-curso">
+        <span class="filtro-label">Filtrar por nombre o código</span>
+        <span class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+          </svg>
+          <input
+            id="buscar-curso"
+            type="search"
+            [value]="q()"
+            (input)="onSearch($event)"
+            placeholder="Ej. Desarrollo Web…"
+            aria-label="Buscar curso por código o nombre"
+          />
+        </span>
+      </label>
+      <div class="filtro-estado">
+        <span class="filtro-label" id="filtro-estado-label">Estado</span>
+        <div class="filter-chips" role="group" aria-labelledby="filtro-estado-label">
+          @for (e of estados; track e) {
+            <button
+              type="button"
+              class="chip-estado"
+              [attr.data-estado]="e"
+              [attr.aria-pressed]="estado() === e"
+              (click)="onEstado(e)"
+            >
+              <span class="chip-dot chip-dot--{{ e }}" aria-hidden="true"></span>
+              {{ estadoChipLabel[e] }}
+            </button>
+          }
+        </div>
+      </div>
+      <div class="filtro-fechas">
+        <span class="filtro-label">Fechas de cursada</span>
+        <div class="filter-chips">
+          <button type="button" data-fechas="con" [attr.aria-pressed]="conFechas() === true" (click)="onConFechas(true)">Con fechas</button>
+          <button type="button" data-fechas="sin" [attr.aria-pressed]="conFechas() === false" (click)="onConFechas(false)">Sin fechas</button>
+        </div>
       </div>
     </div>
+    @if (mostrarResumen()) {
+      <div class="results-summary">
+        <p aria-live="polite">
+          <span class="count-mono">{{ cursos().length }}</span>
+          {{ cursos().length === 1 ? 'curso' : 'cursos' }}
+          {{ hayFiltrosActivos() ? 'coinciden con el filtro' : 'en el archivo' }}
+        </p>
+        @if (hayFiltrosActivos()) {
+          <button class="clear-filters" type="button" (click)="onLimpiarFiltros()">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+            </svg>
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    }
   </section>
 
-  <div class="results-summary">
-    <p aria-live="polite">{{ cursos().length }} {{ cursos().length === 1 ? 'curso' : 'cursos' }} {{ hayFiltrosActivos() ? 'coinciden con los filtros' : 'en el archivo' }}.</p>
-    @if (hayFiltrosActivos()) { <button class="clear-filters" type="button" (click)="onLimpiarFiltros()">Limpiar filtros</button> }
-  </div>
+  @if (qaEnabled) {
+    <div class="vista-qa" aria-label="Vista de revisión QA">
+      <span class="vista-qa-label">Vista</span>
+      @for (view of vistasQa; track view) {
+        <button
+          type="button"
+          class="vista-qa-btn"
+          [attr.aria-pressed]="vistaQA() === view"
+          (click)="onVistaQA(view)"
+        >
+          {{ vistaQaLabel[view] }}
+        </button>
+      }
+    </div>
+  }
 
-  @if (cargando()) {
-    <p class="estado-linea" aria-busy="true">Cargando cursos…</p>
-  } @else if (error()) {
-    <div class="estado-linea estado-error" role="alert"><p>{{ error() }}</p><button type="button" (click)="onReintentar()">Reintentar</button></div>
+  @if (mostrandoCarga()) {
+    <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando cursos">
+      <div class="skeleton-head">
+        <span class="skeleton-bar skeleton-bar--lg"></span>
+      </div>
+      <ul class="skeleton-rows">
+        @for (_ of [1, 2, 3, 4]; track $index) {
+          <li class="skeleton-row">
+            <span class="skeleton-accent" aria-hidden="true"></span>
+            <span class="skeleton-body">
+              <span class="skeleton-bar skeleton-bar--md skeleton-pulse"></span>
+              <span class="skeleton-bar skeleton-bar--sm skeleton-pulse"></span>
+            </span>
+            <span class="skeleton-bar skeleton-bar--xs skeleton-pulse skeleton-hide-sm"></span>
+            <span class="skeleton-bar skeleton-bar--xs skeleton-pulse skeleton-hide-sm"></span>
+            <span class="skeleton-bar skeleton-bar--badge skeleton-pulse"></span>
+          </li>
+        }
+      </ul>
+    </div>
+  } @else if (mostrandoError()) {
+    <div class="estado-panel estado-error" role="alert">
+      <span class="estado-icon-wrap estado-icon-wrap--error" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke-linejoin="round"/>
+          <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">No pudimos cargar los cursos</h2>
+      <p>{{ error() || 'Hubo un problema de conexión con el archivo académico. Revisá la red e intentá nuevamente.' }}</p>
+      <button type="button" class="btn-secondary" (click)="onReintentar()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke-linecap="round"/>
+          <path d="M21 3v5h-5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" stroke-linecap="round"/>
+          <path d="M8 16H3v5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Reintentar
+      </button>
+    </div>
   } @else if (vacioTotal()) {
-    <p class="estado-linea">Todavía no hay cursos cargados.</p>
+    <div class="estado-panel" data-state="empty-total" aria-live="polite">
+      <span class="estado-icon-wrap estado-icon-wrap--empty" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 20h16a2 2 0 0 0 2-2V8l-6-4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z" stroke-linejoin="round"/>
+          <path d="M22 8H12M12 4v16" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Todavía no hay cursos cargados</h2>
+      <p>Creá el primer curso para empezar a registrar fechas de cursada, asistencias y certificados.</p>
+      <a class="btn-primary" routerLink="/admin/cursos/nuevo">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M5 12h14M12 5v14" stroke-linecap="round"/>
+        </svg>
+        Crear primer curso
+      </a>
+    </div>
   } @else if (sinCoincidencias()) {
-    <p class="estado-linea">No hay cursos que coincidan con los filtros.</p>
+    <div class="estado-panel" data-state="no-results" aria-live="polite">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Ningún curso coincide</h2>
+      <p>Probá con otro nombre o ajustá los filtros de estado y fechas.</p>
+      <button class="btn-secondary" type="button" (click)="onLimpiarFiltros()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+        </svg>
+        Limpiar filtros
+      </button>
+    </div>
   } @else {
     <div class="courses-table-wrap">
       <table>
-        <caption>Listado de cursos del Instituto</caption>
-        <thead><tr><th scope="col">Curso</th><th scope="col">Fechas</th><th scope="col">Presentes</th><th scope="col">Certificaciones</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
+        <caption class="sr-only">Listado de cursos del Instituto</caption>
+        <thead>
+          <tr>
+            <th scope="col">Nombre del curso</th>
+            <th scope="col">Fechas</th>
+            <th scope="col">Alumnos presentes</th>
+            <th scope="col">Certificaciones</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="th-actions">Acciones</th>
+          </tr>
+        </thead>
         <tbody>
           @for (c of cursos(); track c.id) {
-            <tr><td><strong>{{ c.nombre }}</strong><span class="course-code">{{ c.codigo }} · {{ c.cuatrimestre }}</span></td><td>{{ c.cantidadFechas }}</td><td><span title="Dato disponible con integración real">—</span><span class="sr-only">Dato disponible con integración real</span></td><td><span title="Dato disponible con integración real">—</span><span class="sr-only">Dato disponible con integración real</span></td><td><span class="estado-chip estado-{{ c.estado }}">{{ c.estado }}</span></td><td class="actions"><a [routerLink]="['/admin/cursos', c.id]" [attr.aria-label]="'Ver detalle de ' + c.nombre">Ver detalle</a><a [routerLink]="['/admin/cursos', c.id, 'editar']" [attr.aria-label]="'Editar ' + c.nombre">Editar</a></td></tr>
+            <tr class="curso-row" [class.curso-row--muted]="esInactivoVisual(c.estado)">
+              <td>
+                <span class="row-accent row-accent--{{ c.estado }}" aria-hidden="true"></span>
+                <strong>{{ c.nombre }}</strong>
+                <span class="course-code">{{ c.codigo }} · {{ c.cuatrimestre }}</span>
+              </td>
+              <td>
+                <span class="metrica" [class.metrica--muted]="c.cantidadFechas === 0 || esInactivoVisual(c.estado)">
+                  <span class="metrica-valor">{{ c.cantidadFechas }}</span>
+                  <span class="metrica-unidad">{{ c.cantidadFechas === 1 ? 'fecha' : 'fechas' }}</span>
+                </span>
+              </td>
+              <td>
+                <span class="metrica" [class.metrica--muted]="esInactivoVisual(c.estado)" title="Dato disponible con integración real">
+                  <span class="metrica-valor">{{ formatoMetrica(c.alumnosPresentes) }}</span>
+                  @if (c.alumnosPresentes == null) {
+                    <span class="sr-only">Dato disponible con integración real</span>
+                  } @else {
+                    <span class="metrica-unidad">alumnos</span>
+                  }
+                </span>
+              </td>
+              <td>
+                <span class="metrica" [class.metrica--muted]="esInactivoVisual(c.estado)" title="Dato disponible con integración real">
+                  <span class="metrica-valor">{{ formatoMetrica(c.certificaciones) }}</span>
+                  @if (c.certificaciones == null) {
+                    <span class="sr-only">Dato disponible con integración real</span>
+                  } @else {
+                    <span class="metrica-unidad">emitidas</span>
+                  }
+                </span>
+              </td>
+              <td>
+                <span class="estado-badge estado-badge--{{ c.estado }}">
+                  <span class="estado-dot" aria-hidden="true"></span>
+                  {{ etiquetaEstado(c.estado) }}
+                </span>
+              </td>
+              <td class="actions">
+                <a class="action-icon" [routerLink]="['/admin/cursos', c.id]" [attr.aria-label]="'Ver detalle de ' + c.nombre">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </a>
+                <a class="action-icon" [routerLink]="['/admin/cursos', c.id, 'editar']" [attr.aria-label]="'Editar ' + c.nombre">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+              </td>
+            </tr>
           }
         </tbody>
       </table>
     </div>
     <ul class="cards-mobile">
       @for (c of cursos(); track c.id) {
-        <li class="card-curso"><header><div><h2>{{ c.nombre }}</h2><p>{{ c.codigo }} · {{ c.cuatrimestre }}</p></div><span class="estado-chip estado-{{ c.estado }}">{{ c.estado }}</span></header><dl class="metrics"><div><dt>Fechas</dt><dd>{{ c.cantidadFechas }}</dd></div><div><dt>Presentes</dt><dd title="Dato disponible con integración real">—<span class="sr-only">Dato disponible con integración real</span></dd></div><div><dt>Certif.</dt><dd title="Dato disponible con integración real">—<span class="sr-only">Dato disponible con integración real</span></dd></div></dl><div class="card-actions"><a [routerLink]="['/admin/cursos', c.id]" [attr.aria-label]="'Ver detalle de ' + c.nombre">Ver detalle</a><a [routerLink]="['/admin/cursos', c.id, 'editar']" [attr.aria-label]="'Editar ' + c.nombre">Editar</a></div></li>
+        <li class="card-curso" [class.card-curso--muted]="esInactivoVisual(c.estado)">
+          <span class="card-accent card-accent--{{ c.estado }}" aria-hidden="true"></span>
+          <div class="card-body">
+            <header>
+              <div>
+                <h2>{{ c.nombre }}</h2>
+                <p>{{ c.codigo }} · {{ c.cuatrimestre }}</p>
+              </div>
+              <span class="estado-badge estado-badge--{{ c.estado }}">
+                <span class="estado-dot" aria-hidden="true"></span>
+                {{ etiquetaEstado(c.estado) }}
+              </span>
+            </header>
+            <dl class="metrics">
+              <div>
+                <dt>
+                  <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
+                  </svg>
+                  Fechas
+                </dt>
+                <dd>{{ c.cantidadFechas }}</dd>
+              </div>
+              <div>
+                <dt>
+                  <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke-linecap="round"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round"/>
+                  </svg>
+                  Presentes
+                </dt>
+                <dd title="Dato disponible con integración real">
+                  {{ formatoMetrica(c.alumnosPresentes) }}
+                  @if (c.alumnosPresentes == null) {
+                    <span class="sr-only">Dato disponible con integración real</span>
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" stroke-linejoin="round"/>
+                    <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Certif.
+                </dt>
+                <dd title="Dato disponible con integración real">
+                  {{ formatoMetrica(c.certificaciones) }}
+                  @if (c.certificaciones == null) {
+                    <span class="sr-only">Dato disponible con integración real</span>
+                  }
+                </dd>
+              </div>
+            </dl>
+            <div class="card-actions">
+              <a [routerLink]="['/admin/cursos', c.id]" [attr.aria-label]="'Ver detalle de ' + c.nombre">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Ver detalle
+              </a>
+              <a [routerLink]="['/admin/cursos', c.id, 'editar']" [attr.aria-label]="'Editar ' + c.nombre">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" stroke-linejoin="round"/>
+                </svg>
+                Editar
+              </a>
+            </div>
+          </div>
+        </li>
       }
     </ul>
   }

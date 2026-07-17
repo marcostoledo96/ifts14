@@ -1,7 +1,11 @@
-<section aria-labelledby="editor-title">
-  <p class="volver">
-    <a routerLink="/admin/cursos">← Volver al listado</a>
-  </p>
+<section aria-labelledby="editor-title" class="editor-page">
+  <a routerLink="/admin/cursos" class="volver">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+      <path d="M19 12H5" />
+      <path d="m12 19-7-7 7-7" />
+    </svg>
+    Volver a cursos
+  </a>
 
   @if (cargando()) {
     <p class="estado-linea">Cargando editor…</p>
@@ -9,14 +13,33 @@
 
   @if (!cargando()) {
     <header class="editor-header">
-      <p class="kicker">{{ mode() === 'create' ? 'Nuevo curso' : 'Editar curso' }}</p>
-      <h1 id="editor-title" class="title">
-        {{ mode() === 'create' ? 'Crear curso' : 'Fechas de ' + (detalle()?.nombre || '') }}
-      </h1>
+      <div class="header-text">
+        <p class="kicker">{{ mode() === 'create' ? 'Alta de curso' : 'Ficha de curso' }}</p>
+        <h1 id="editor-title" class="title">
+          {{ mode() === 'create' ? 'Nuevo curso' : 'Editar curso' }}
+        </h1>
+      </div>
+      @if (mode() === 'edit' && detalle(); as d) {
+        <div class="header-badges">
+          <span class="badge badge-code">
+            <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="4" x2="20" y1="9" y2="9" />
+              <line x1="4" x2="20" y1="15" y2="15" />
+              <line x1="10" x2="8" y1="3" y2="21" />
+              <line x1="16" x2="14" y1="3" y2="21" />
+            </svg>
+            {{ d.codigo }}
+          </span>
+          <span class="badge" [class.badge-activo]="activo()" [class.badge-inactivo]="!activo()">
+            <span class="badge-dot" aria-hidden="true"></span>
+            {{ activo() ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+      }
     </header>
 
     <p class="demo-banner" role="status">
-      Datos de demostración: los cambios no se persisten al recargar.
+      Datos de demostración: en modo mock los cambios viven en memoria hasta recargar.
     </p>
 
     @if (error()) {
@@ -26,115 +49,227 @@
       <p class="estado-linea estado-ok" role="status">{{ ok() }}</p>
     }
 
-    <form (ngSubmit)="guardar()">
-      <fieldset class="curso-fieldset">
-        <legend>Datos del curso</legend>
-        <label class="campo">
-          <span class="campo-label">Código</span>
-          <input
-            type="text"
-            [value]="codigo()"
-            (input)="onCodigo($event)"
-            [disabled]="mode() === 'edit'"
-            aria-label="Código del curso"
-            required
-          />
-        </label>
-        <label class="campo">
-          <span class="campo-label">Nombre</span>
-          <input
-            type="text"
-            [value]="nombre()"
-            (input)="onNombre($event)"
-            [disabled]="mode() === 'edit'"
-            aria-label="Nombre del curso"
-            required
-          />
-        </label>
-        <label class="campo">
-          <span class="campo-label">Estado</span>
-          <select
-            [value]="estado()"
-            (change)="onEstado($event)"
-            [disabled]="mode() === 'edit'"
-            aria-label="Estado del curso"
-          >
-            @for (e of estados; track e) {
-              <option [value]="e">{{ e }}</option>
-            }
-          </select>
-        </label>
-      </fieldset>
+    <form class="editor-grid" (ngSubmit)="guardar()">
+      <div class="editor-main">
+        <section class="panel" aria-labelledby="datos-titulo">
+          <header class="panel-header">
+            <h2 id="datos-titulo" class="panel-title">Datos generales</h2>
+            <p class="panel-sub">
+              @if (mode() === 'create') {
+                Código y nombre obligatorios. El curso se crea en estado activo.
+              } @else {
+                Código y nombre no se pueden editar (sin endpoint de actualización).
+              }
+            </p>
+          </header>
+          <div class="panel-body">
+            <label class="campo" for="curso-codigo">
+              <span class="campo-label">Código <span class="req" aria-hidden="true">*</span></span>
+              <input
+                id="curso-codigo"
+                type="text"
+                [value]="codigo()"
+                (input)="onCodigo($event)"
+                [disabled]="mode() === 'edit'"
+                autocomplete="off"
+                required
+              />
+            </label>
+            <label class="campo" for="curso-nombre">
+              <span class="campo-label">Nombre del curso <span class="req" aria-hidden="true">*</span></span>
+              <input
+                id="curso-nombre"
+                type="text"
+                [value]="nombre()"
+                (input)="onNombre($event)"
+                [disabled]="mode() === 'edit'"
+                placeholder="ej. Introducción a Redes de Datos"
+                required
+              />
+            </label>
 
-      <fieldset class="fechas-fieldset">
-        <legend>Fechas</legend>
-        <p class="fechas-ayuda">
-          En modo edición, agregá o modificá fechas. En modo creación, las fechas se guardan
-          después de crear el curso.
-        </p>
-
-        @if (fechas().length === 0) {
-          <p class="estado-linea">No hay fechas cargadas.</p>
-        }
-
-        @for (f of fechas(); track $index) {
-          <fieldset class="fecha-fieldset">
-            <legend>Fecha {{ $index + 1 }}</legend>
-            <div class="fecha-campos">
-              <label class="campo campo-fecha">
-                <span class="campo-label">Fecha</span>
-                <input
-                  type="date"
-                  [value]="f.fecha"
-                  (input)="onFechaInput($index, $event)"
-                  aria-label="Fecha del curso"
-                  required
-                />
-              </label>
-              <label class="campo campo-desc">
-                <span class="campo-label">Descripción</span>
-                <input
-                  type="text"
-                  [value]="f.descripcion || ''"
-                  (input)="onDescripcionInput($index, $event)"
-                  aria-label="Descripción de la fecha"
-                />
-              </label>
-              <label class="campo campo-estado">
-                <span class="campo-label">Estado</span>
-                <select
-                  [value]="f.estado"
-                  (change)="onEstadoFecha($index, $event)"
-                  aria-label="Estado de la fecha"
+            @if (mode() === 'edit') {
+              <div class="toggle-row">
+                <div class="toggle-copy">
+                  <p class="toggle-title">Curso activo</p>
+                  <p class="toggle-hint">
+                    Los cursos inactivos no admiten nuevas asistencias ni certificaciones.
+                    Al guardar, se envía el estado al servidor.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="switch"
+                  role="switch"
+                  [attr.aria-checked]="activo()"
+                  aria-label="Curso activo"
+                  [class.switch-on]="activo()"
+                  (click)="toggleActivo()"
                 >
-                  @for (e of estadosFecha; track e) {
-                    <option [value]="e">{{ e }}</option>
-                  }
-                </select>
-              </label>
-              <button
-                type="button"
-                class="btn-quitar"
-                (click)="quitarFecha($index)"
-                aria-label="Quitar fecha {{ $index + 1 }}"
-              >
-                Quitar
-              </button>
+                  <span class="switch-thumb" aria-hidden="true"></span>
+                </button>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="fechas-titulo">
+          <header class="panel-header panel-header-row">
+            <div class="fechas-heading">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <rect width="18" height="18" x="3" y="4" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              <h2 id="fechas-titulo" class="panel-title">Fechas del curso</h2>
+              <span class="badge badge-count" aria-label="Cantidad de fechas">{{ fechas().length }}</span>
             </div>
-          </fieldset>
-        }
+            <button type="button" class="btn-add" (click)="agregarFecha()">
+              <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M5 12h14M12 5v14" />
+              </svg>
+              Agregar fecha
+            </button>
+          </header>
 
-        <button type="button" class="btn-secondary" (click)="agregarFecha()">
-          + Agregar fecha
-        </button>
-      </fieldset>
+          <p class="panel-hint">
+            Las fechas son la base de las asistencias y de la emisión de certificados.
+            Definí al menos la fecha de finalización para poder certificar.
+          </p>
 
-      <div class="acciones">
-        <button type="submit" class="btn-primary" [disabled]="guardando()">
-          {{ guardando() ? 'Guardando…' : 'Guardar' }}
-        </button>
-        <a class="btn-secondary" routerLink="/admin/cursos">Cancelar</a>
+          @if (mode() === 'edit' && impactoRealizadas()) {
+            <div class="impact-banner" role="note">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+                <path d="M12 9v4M12 17h.01" />
+              </svg>
+              <div>
+                <p class="impact-title">Cambios con impacto en certificados emitidos</p>
+                <p class="impact-text">
+                  Modificar o quitar fechas ya realizadas sincroniza los certificados del
+                  curso y marca el PDF como desactualizado. El QR no cambia. La regeneración
+                  y entrega se gestionan desde Certificaciones.
+                </p>
+              </div>
+            </div>
+          }
+
+          <div class="panel-body">
+            @if (fechas().length === 0) {
+              <div class="empty-fechas">
+                <p class="empty-title">Todavía no hay fechas cargadas</p>
+                <p class="empty-text">
+                  Agregá la fecha de inicio y de finalización del curso para habilitar
+                  asistencias y certificaciones.
+                </p>
+                <button type="button" class="btn-primary" (click)="agregarFecha()">
+                  Agregar primera fecha
+                </button>
+              </div>
+            } @else {
+              <div class="fechas-table" role="table" aria-label="Fechas del curso">
+                <div class="fechas-head" role="row">
+                  <span role="columnheader">#</span>
+                  <span role="columnheader">Fecha</span>
+                  <span role="columnheader">Descripción</span>
+                  <span role="columnheader">Estado</span>
+                  <span class="sr-only" role="columnheader">Acciones</span>
+                </div>
+                <ul class="fechas-list">
+                  @for (f of fechas(); track $index) {
+                    <li class="fecha-row" role="row">
+                      <span class="fecha-idx" role="cell">{{ indiceFecha($index) }}</span>
+                      <label class="campo campo-fecha" role="cell">
+                        <span class="campo-label mobile-only">Fecha</span>
+                        <input
+                          type="date"
+                          [value]="f.fecha"
+                          (input)="onFechaInput($index, $event)"
+                          [attr.aria-label]="'Fecha ' + ($index + 1)"
+                          required
+                        />
+                      </label>
+                      <label class="campo campo-desc" role="cell">
+                        <span class="campo-label mobile-only">Descripción</span>
+                        <input
+                          type="text"
+                          [value]="f.descripcion || ''"
+                          (input)="onDescripcionInput($index, $event)"
+                          placeholder="ej. Inicio de cursada"
+                          [attr.aria-label]="'Descripción de la fecha ' + ($index + 1)"
+                        />
+                      </label>
+                      <label class="campo campo-estado" role="cell">
+                        <span class="campo-label mobile-only">Estado</span>
+                        <select
+                          [value]="f.estado"
+                          (change)="onEstadoFecha($index, $event)"
+                          [attr.aria-label]="'Estado de la fecha ' + ($index + 1)"
+                        >
+                          @for (e of estadosFecha; track e) {
+                            <option [value]="e">{{ e }}</option>
+                          }
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        class="btn-quitar"
+                        (click)="quitarFecha($index)"
+                        [attr.aria-label]="'Quitar fecha ' + ($index + 1)"
+                      >
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4h8v2" />
+                          <path d="M19 6l-1 14H6L5 6" />
+                        </svg>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+        </section>
       </div>
+
+      <aside class="editor-aside" aria-label="Acciones y metadatos">
+        <div class="aside-card sticky-actions">
+          <button type="submit" class="btn-primary btn-block" [disabled]="guardando()">
+            {{ guardando() ? 'Guardando…' : mode() === 'create' ? 'Guardar curso' : 'Guardar cambios' }}
+          </button>
+          <a class="btn-secondary btn-block" routerLink="/admin/cursos">Cancelar</a>
+        </div>
+
+        @if (mode() === 'edit' && detalle(); as d) {
+          <div class="aside-card meta-card">
+            <h2 class="meta-title">Metadatos del sistema</h2>
+            <dl class="meta-list">
+              <div class="meta-item">
+                <dt>Código</dt>
+                <dd class="mono">{{ d.codigo }}</dd>
+              </div>
+              <div class="meta-item">
+                <dt>Estado</dt>
+                <dd>{{ estadoResultante() }}</dd>
+              </div>
+              <div class="meta-item">
+                <dt>Creado</dt>
+                <dd class="mono">{{ formatearTs(d.createdAt) }}</dd>
+              </div>
+              <div class="meta-item">
+                <dt>Última modificación</dt>
+                <dd class="mono">{{ formatearTs(d.updatedAt) }}</dd>
+              </div>
+            </dl>
+          </div>
+        } @else {
+          <div class="aside-card meta-note">
+            <p>
+              El identificador del curso se genera automáticamente al guardar.
+              El estado inicial es <strong>activo</strong>.
+            </p>
+          </div>
+        }
+      </aside>
     </form>
   }
 </section>

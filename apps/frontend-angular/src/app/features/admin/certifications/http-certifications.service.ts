@@ -10,6 +10,8 @@ import {
   Certificacion,
   CertificacionDetalle,
   CertificacionesFiltros,
+  EmisionResult,
+  EmitirCertificacionPayload,
   EntregaManualDto,
   PdfStatus,
   RegenerarPdfResult,
@@ -66,14 +68,17 @@ export class HttpCertificationsService implements CertificationsService {
   private readonly http = inject(HttpClient);
 
   async listar(filtros?: CertificacionesFiltros): Promise<readonly Certificacion[]> {
-    const url = `${environment.apiBaseUrl}/admin/certificados`;
+    const params = new URLSearchParams();
+    if (filtros?.estado) params.set('estado', filtros.estado);
+    if (filtros?.cursoId != null) params.set('cursoId', String(filtros.cursoId));
+    if (filtros?.alumnoId != null) params.set('alumnoId', String(filtros.alumnoId));
+    const qs = params.toString();
+    const url = `${environment.apiBaseUrl}/admin/certificados${qs ? `?${qs}` : ''}`;
     const envelope = await firstValueFrom(
       this.http.get<ApiEnvelope<ListResponse>>(url),
     );
     let list = envelope.data.items.map((dto) => this.toCertificacion(dto));
-    if (filtros?.estado) {
-      list = list.filter((c) => c.estado === filtros.estado);
-    }
+    // Filtros texto siguen client-side (backend no los expone).
     if (filtros?.curso) {
       const q = filtros.curso.trim().toLowerCase();
       if (q) list = list.filter((c) => c.cursoNombre.toLowerCase().includes(q));
@@ -115,6 +120,16 @@ export class HttpCertificationsService implements CertificationsService {
     };
   }
 
+  async descargarQrPng(id: number): Promise<Blob> {
+    const url = `${environment.apiBaseUrl}/admin/certificados/${id}/qr.png`;
+    return firstValueFrom(this.http.get(url, { responseType: 'blob' }));
+  }
+
+  async descargarPdf(id: number): Promise<Blob> {
+    const url = `${environment.apiBaseUrl}/admin/certificados/${id}/pdf`;
+    return firstValueFrom(this.http.get(url, { responseType: 'blob' }));
+  }
+
   async contar(): Promise<number> {
     const url = `${environment.apiBaseUrl}/admin/certificados`;
     const envelope = await firstValueFrom(
@@ -141,6 +156,19 @@ export class HttpCertificationsService implements CertificationsService {
     const url = `${environment.apiBaseUrl}/admin/certificados/${id}/revocar`;
     // ponytail: backend usa key `reason`, no `motivo`.
     await firstValueFrom(this.http.post<ApiEnvelope<unknown>>(url, { reason: motivo }));
+  }
+
+  async emitir(payload: EmitirCertificacionPayload): Promise<EmisionResult> {
+    const url = `${environment.apiBaseUrl}/admin/certificados`;
+    const envelope = await firstValueFrom(
+      this.http.post<ApiEnvelope<EmisionResult>>(url, {
+        alumnoId: payload.alumnoId,
+        cursoId: payload.cursoId,
+        issuedAt: payload.issuedAt,
+        expiresAt: payload.expiresAt,
+      }),
+    );
+    return envelope.data;
   }
 
   private toCertificacion(dto: CertListDto): Certificacion {

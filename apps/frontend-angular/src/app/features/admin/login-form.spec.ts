@@ -3,32 +3,41 @@ import { FormsModule } from '@angular/forms';
 import { LoginForm } from './login-form';
 
 describe('LoginForm', () => {
-  async function render() {
+  async function render(loading = false) {
     await TestBed.configureTestingModule({
       imports: [LoginForm, FormsModule],
     }).compileComponents();
     const fixture = TestBed.createComponent(LoginForm);
+    fixture.componentRef.setInput('loading', loading);
     fixture.detectChanges();
     return fixture;
   }
 
-  it('renderiza el subtítulo de acceso', async () => {
+  it('muestra el aviso de auditoría institucional', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Ingresá tu ID institucional y clave de acceso');
+    expect(el.textContent).toContain('Todas las acciones administrativas quedan registradas.');
+    expect(el.querySelector('.aviso-auditoria[role="note"]')).not.toBeNull();
+    expect(el.textContent).not.toContain('Acceso simulado');
   });
 
   it('usa fieldset/legend sr-only y label asociados', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('fieldset')).not.toBeNull();
-    expect(el.querySelector('legend.sr-only, legend')).not.toBeNull();
+    expect(el.querySelector('legend')).not.toBeNull();
     const usuarioLabel = el.querySelector('label[for="login-usuario"]');
     const claveLabel = el.querySelector('label[for="login-clave"]');
     expect(usuarioLabel).not.toBeNull();
     expect(claveLabel).not.toBeNull();
     expect(el.querySelector('#login-usuario')).not.toBeNull();
     expect(el.querySelector('#login-clave')).not.toBeNull();
+  });
+
+  it('incluye iconos SVG decorativos en los inputs', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('.input-icon[aria-hidden="true"]').length).toBeGreaterThanOrEqual(2);
   });
 
   it('autocomplete correcto en los inputs', async () => {
@@ -38,6 +47,64 @@ describe('LoginForm', () => {
     expect(el.querySelector('#login-clave')?.getAttribute('autocomplete')).toBe(
       'current-password',
     );
+  });
+
+  it('alterna visibilidad de la clave con aria-pressed', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const toggle = el.querySelector<HTMLButtonElement>('button.toggle-password');
+    const clave = el.querySelector<HTMLInputElement>('#login-clave');
+    expect(toggle).not.toBeNull();
+    expect(clave?.getAttribute('type')).toBe('password');
+    expect(toggle?.getAttribute('aria-label')).toBe('Mostrar clave');
+    expect(toggle?.getAttribute('aria-pressed')).toBe('false');
+    toggle?.click();
+    f.detectChanges();
+    expect(clave?.getAttribute('type')).toBe('text');
+    expect(toggle?.getAttribute('aria-label')).toBe('Ocultar clave');
+    expect(toggle?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('muestra Verificando… y deshabilita el fieldset cuando loading', async () => {
+    const f = await render(true);
+    const el = f.nativeElement as HTMLElement;
+    const submit = el.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const fieldset = el.querySelector<HTMLFieldSetElement>('fieldset');
+    expect(submit?.textContent).toContain('Verificando');
+    expect(submit?.getAttribute('aria-busy')).toBe('true');
+    expect(fieldset?.disabled).toBe(true);
+  });
+
+  it('CTA idle es Ingresar con flecha', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const submit = el.querySelector('button[type="submit"]');
+    expect(submit?.textContent).toContain('Ingresar');
+    expect(submit?.querySelector('svg.arrow')).not.toBeNull();
+  });
+
+  it('usa placeholder institucional sin credenciales demo', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const usuario = el.querySelector<HTMLInputElement>('#login-usuario');
+    expect(usuario?.getAttribute('placeholder')).toBe('docente.apellido@ifts14.edu.ar');
+    expect(el.textContent).not.toContain('usuario.demo@example.invalid');
+    expect(el.innerHTML).not.toContain('usuario.demo');
+  });
+
+  it('coloca el alert de error antes de los campos', async () => {
+    const f = await render();
+    f.componentInstance.enviar();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const fieldset = el.querySelector('fieldset');
+    const alert = el.querySelector('#login-error[role="alert"]');
+    const firstCampo = el.querySelector('.campo');
+    expect(alert).not.toBeNull();
+    expect(firstCampo).not.toBeNull();
+    expect(fieldset?.firstElementChild?.tagName?.toLowerCase()).toBe('legend');
+    const position = alert!.compareDocumentPosition(firstCampo!);
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('muestra error role=alert cuando el envío está vacío', async () => {
@@ -50,18 +117,21 @@ describe('LoginForm', () => {
     expect(alert?.textContent).toContain('Completá');
   });
 
+  it('muestra serverError en el mismo alert del formulario', async () => {
+    const f = await render();
+    f.componentRef.setInput('serverError', 'Las credenciales no coinciden con un registro autorizado.');
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const alert = el.querySelector('#login-error[role="alert"]');
+    expect(alert?.textContent).toContain('no coinciden con un registro autorizado');
+  });
+
   it('mueve el foco al alert de error tras envío inválido por flujo real de submit', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const form = el.querySelector('form') as HTMLFormElement;
-    // Ejercita el path real de ngSubmit: dispatchEvent('submit') dispara el
-    // handler del formulario, no una llamada directa al método. El foco se
-    // difiere con setTimeout(0) (macrotask) para que el alert esté renderizado.
     form.dispatchEvent(new Event('submit'));
     f.detectChanges();
-    // Espera dos macrotareas: 1) flush de CD tras el handler, 2) el
-    // setTimeout(0) del componente. zone.js envuelve timers en microtasks
-    // pero igual necesita un tick para aplicar el cambio al DOM.
     await new Promise((r) => setTimeout(r, 0));
     await new Promise((r) => setTimeout(r, 0));
     const alert = el.querySelector<HTMLElement>('#login-error');
@@ -100,7 +170,6 @@ describe('LoginForm', () => {
     f.componentInstance.clave.set('clave123');
     f.componentInstance.enviar();
     f.detectChanges();
-    // REQ-AUTH-008: credenciales limpiadas del formulario tras envío.
     expect(f.componentInstance.usuario()).toBe('');
     expect(f.componentInstance.clave()).toBe('');
   });
@@ -121,5 +190,12 @@ describe('LoginForm', () => {
     f.componentInstance.clave.set('clave123');
     f.componentInstance.enviar();
     expect(setItemSpy).not.toHaveBeenCalled();
+  });
+
+  it('no contiene credenciales demo de la referencia React', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('usuario.demo@example.invalid');
+    expect(el.innerHTML).not.toContain('usuario.demo');
   });
 });

@@ -23,26 +23,34 @@ describe('AttendancesListPage', () => {
     return fixture;
   }
 
+  function cards(el: HTMLElement): NodeListOf<Element> {
+    return el.querySelectorAll('.lista-asis .card-asis');
+  }
+
+  function tableLinks(el: HTMLElement): NodeListOf<Element> {
+    return el.querySelectorAll('[data-testid="asistencias-tabla"] .card-asis-link');
+  }
+
   it('muestra título Asistencias y banner de demo', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Asistencias');
+    expect(el.textContent).toContain('Registro de cursada');
     expect(el.textContent).toContain('Datos de demostración');
   });
 
-  it('renderiza tarjetas de fechas del seed (excluye canceladas)', async () => {
+  it('renderiza filas/tarjetas del seed (excluye canceladas)', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const cards = el.querySelectorAll('.card-asis');
-    // Seed: curso 1 (3), curso 2 (2), curso 3 (1), curso 4 (2), curso 5 (0 cancelada),
-    // curso 6 (3) = 11 fechas no canceladas.
-    expect(cards.length).toBe(11);
+    // Seed: curso 1 (3), 2 (2), 3 (1), 4 (2), 5 (0 cancelada), 6 (3) = 11.
+    expect(cards(el).length).toBe(11);
+    expect(el.querySelectorAll('[data-testid="asistencias-tabla"] tbody tr').length).toBe(11);
   });
 
-  it('cada tarjeta tiene enlace Tomar asistencia', async () => {
+  it('cada fila tiene enlace Tomar asistencia', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const links = el.querySelectorAll('.card-asis-link');
+    const links = tableLinks(el);
     expect(links.length).toBe(11);
     const first = links[0] as HTMLAnchorElement;
     expect(first.getAttribute('href')).toContain('/admin/cursos/');
@@ -65,18 +73,31 @@ describe('AttendancesListPage', () => {
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
-    const cards = el.querySelectorAll('.card-asis');
-    expect(cards.length).toBe(3); // 3 fechas del curso 1
+    expect(cards(el).length).toBe(3);
+  });
+
+  it('filtra por chip Programadas', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const chip = el.querySelector('button[data-estado="programada"]') as HTMLButtonElement;
+    expect(chip).toBeTruthy();
+    chip.click();
+    f.detectChanges();
+    const rows = Array.from(el.querySelectorAll('[data-testid="asistencias-tabla"] tbody tr'));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.textContent?.toLowerCase()).toContain('programada');
+      expect(row.textContent?.toLowerCase()).not.toContain('realizada');
+    }
   });
 
   it('muestra conteo demostrativo presentes/total por fecha', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const conteos = Array.from(el.querySelectorAll('.card-asis-conteo')).map(
-      (d) => d.textContent?.trim() ?? '',
-    );
+    const conteos = Array.from(
+      el.querySelectorAll('[data-testid="asistencias-tabla"] .card-asis-conteo'),
+    ).map((d) => d.textContent?.trim() ?? '');
     expect(conteos.length).toBe(11);
-    // Todas las tarjetas muestran formato N/M.
     for (const c of conteos) {
       expect(c).toMatch(/^\d+\/\d+$/);
     }
@@ -85,9 +106,8 @@ describe('AttendancesListPage', () => {
   it('conteo deriva del mock: fecha realizada curso 4 tiene 8 presentes', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    // Cada tarjeta: dl con dds [fecha, codigo, (detalle?), conteo].
-    const cards = Array.from(el.querySelectorAll('.card-asis'));
-    const conteos = cards.map((card) => {
+    const cardsEl = Array.from(cards(el));
+    const conteos = cardsEl.map((card) => {
       const dds = Array.from(card.querySelectorAll('.card-asis-meta dd'));
       const codigo = dds[1]?.textContent?.trim() ?? '';
       const conteo = card.querySelector('.card-asis-conteo')?.textContent?.trim() ?? '';
@@ -102,8 +122,8 @@ describe('AttendancesListPage', () => {
   it('total deriva del mock: curso 1 tiene 13 alumnos (12 + 1)', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const cards = Array.from(el.querySelectorAll('.card-asis'));
-    const conteos = cards.map((card) => {
+    const cardsEl = Array.from(cards(el));
+    const conteos = cardsEl.map((card) => {
       const dds = Array.from(card.querySelectorAll('.card-asis-meta dd'));
       const codigo = dds[1]?.textContent?.trim() ?? '';
       const total = Number(
@@ -146,8 +166,6 @@ describe('AttendancesListPage', () => {
       ],
     }).compileComponents();
     const courses = TestBed.inject(COURSES_SOURCE);
-    // Crear un curso vacío (sin fechas): antes del fix, listarAlumnos(cursoId)
-    // rechazaba y hacía errorar a /admin/asistencias.
     await courses.crear({ codigo: 'VACIO', nombre: 'Curso vacío', estado: 'borrador' });
     const f = TestBed.createComponent(AttendancesListPage);
     f.detectChanges();
@@ -161,14 +179,14 @@ describe('AttendancesListPage', () => {
   it('cada enlace Tomar asistencia tiene aria-label contextual con curso y fecha', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const links = Array.from(el.querySelectorAll('.card-asis-link')) as HTMLAnchorElement[];
+    const links = Array.from(tableLinks(el)) as HTMLAnchorElement[];
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
-      const card = link.closest('.card-asis') as HTMLElement;
-      const curso = card.querySelector('.card-asis-title')?.textContent?.trim() ?? '';
-      const fecha = card.querySelector('.card-asis-meta dd')?.textContent?.trim() ?? '';
+      const row = link.closest('tr') as HTMLElement;
+      const curso = row.querySelector('.curso-nombre')?.textContent?.trim() ?? '';
       const label = link.getAttribute('aria-label') ?? '';
-      expect(label).toBe(`Tomar asistencia de ${curso} — ${fecha}`);
+      expect(label.startsWith(`Tomar asistencia de ${curso} — `)).toBeTrue();
+      expect(label).toMatch(/\d{4}-\d{2}-\d{2}$/);
     }
   });
 });

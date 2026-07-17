@@ -138,6 +138,61 @@ final class FakePdoForRegen extends PDO
             'texto_certificado' => 'Ha aprobado el curso',
         ]];
     }
+
+    /** SELECT de regeneración: cert + token activo + campos de revisión/PDF. */
+    public function selectCertWithTokenForRegen(int $id): array|false
+    {
+        if (!isset($this->certs[$id])) {
+            return false;
+        }
+        $cert = $this->certs[$id];
+        $vigente = $cert['vence_en'] === null || (string) $cert['vence_en'] >= date('Y-m-d');
+        $tokenCipher = null;
+        $tokenPrefix = '';
+        foreach ($this->tokens as $tok) {
+            if ((int) $tok['certificado_id'] !== $id) {
+                continue;
+            }
+            if (($tok['estado'] ?? '') !== 'activo') {
+                continue;
+            }
+            if ($tok['revocado_en'] !== null) {
+                continue;
+            }
+            $now = time();
+            $desde = strtotime((string) ($tok['vigente_desde'] ?? 'now'));
+            if ($desde !== false && $desde > $now) {
+                continue;
+            }
+            $hasta = $tok['vigente_hasta'];
+            if ($hasta !== null) {
+                $hastaTs = strtotime((string) $hasta);
+                if ($hastaTs !== false && $hastaTs < $now) {
+                    continue;
+                }
+            }
+            $tokenCipher = $tok['token_cifrado'];
+            $tokenPrefix = (string) $tok['token_prefijo'];
+            break;
+        }
+        return [
+            'id' => $cert['id'],
+            'estado' => $cert['estado'],
+            'vence_en' => $cert['vence_en'],
+            'vence_en_vigente' => $vigente ? 1 : 0,
+            'cert_revocado_en' => $cert['revocado_en'],
+            'codigo_certificado' => $cert['codigo_certificado'],
+            'pdf_estado' => $cert['pdf_estado'],
+            'contenido_revision' => $cert['contenido_revision'],
+            'pdf_generado_revision' => $cert['pdf_generado_revision'],
+            'alumno_nombre_mostrar' => $cert['alumno_nombre_mostrar'],
+            'curso_nombre' => $cert['curso_nombre'],
+            'emitido_en' => $cert['emitido_en'],
+            'alumno_id' => $cert['alumno_id'],
+            'token_prefijo' => $tokenPrefix,
+            'token_cifrado' => $tokenCipher,
+        ];
+    }
 }
 
 final class FakeStmtForRegen extends PDOStatement
@@ -287,66 +342,10 @@ function seedPdfDirRegen(): string
     return $dir;
 }
 
-// Helper: factory que crea un fake PDO fresco con el método de selección
-// extendido para regeneración (incluye campos extra: contenido_revision,
-// pdf_generado_revision, alumno_nombre_mostrar, etc.).
+// Helper: factory de fake PDO fresco para regeneración.
 function makeRegenPdo(): FakePdoForRegen
 {
-    return new class () extends FakePdoForRegen {
-        public function selectCertWithTokenForRegen(int $id): array|false
-        {
-            if (!isset($this->certs[$id])) {
-                return false;
-            }
-            $cert = $this->certs[$id];
-            $vigente = $cert['vence_en'] === null || (string) $cert['vence_en'] >= date('Y-m-d');
-            $tokenCipher = null;
-            $tokenPrefix = '';
-            foreach ($this->tokens as $tok) {
-                if ((int) $tok['certificado_id'] !== $id) {
-                    continue;
-                }
-                if (($tok['estado'] ?? '') !== 'activo') {
-                    continue;
-                }
-                if ($tok['revocado_en'] !== null) {
-                    continue;
-                }
-                $now = time();
-                $desde = strtotime((string) ($tok['vigente_desde'] ?? 'now'));
-                if ($desde !== false && $desde > $now) {
-                    continue;
-                }
-                $hasta = $tok['vigente_hasta'];
-                if ($hasta !== null) {
-                    $hastaTs = strtotime((string) $hasta);
-                    if ($hastaTs !== false && $hastaTs < $now) {
-                        continue;
-                    }
-                }
-                $tokenCipher = $tok['token_cifrado'];
-                $tokenPrefix = (string) $tok['token_prefijo'];
-                break;
-            }
-            return [
-                'id' => $cert['id'],
-                'estado' => $cert['estado'],
-                'vence_en' => $cert['vence_en'],
-                'vence_en_vigente' => $vigente ? 1 : 0,
-                'cert_revocado_en' => $cert['revocado_en'],
-                'codigo_certificado' => $cert['codigo_certificado'],
-                'pdf_estado' => $cert['pdf_estado'],
-                'contenido_revision' => $cert['contenido_revision'],
-                'pdf_generado_revision' => $cert['pdf_generado_revision'],
-                'alumno_nombre_mostrar' => $cert['alumno_nombre_mostrar'],
-                'curso_nombre' => $cert['curso_nombre'],
-                'emitido_en' => $cert['emitido_en'],
-                'alumno_id' => $cert['alumno_id'],
-                'token_prefijo' => $tokenPrefix,
-                'token_cifrado' => $tokenCipher,
-            ];
-        }
-    };
+    return new FakePdoForRegen();
 }
 
 // =====================================================

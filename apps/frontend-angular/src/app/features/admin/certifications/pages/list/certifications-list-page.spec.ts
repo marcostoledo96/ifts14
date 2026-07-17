@@ -30,6 +30,15 @@ describe('CertificationsListPage', () => {
     expect(el.textContent).toContain('Datos de demostración');
   });
 
+  it('expone CTA Nueva certificación hacia /admin/certificaciones/nueva', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const cta = el.querySelector('a[href="/admin/certificaciones/nueva"], a[routerlink="/admin/certificaciones/nueva"]')
+      ?? Array.from(el.querySelectorAll('a')).find((a) => a.textContent?.includes('Nueva certificación'));
+    expect(cta).toBeTruthy();
+    expect((cta as HTMLAnchorElement).getAttribute('href') || (cta as HTMLAnchorElement).getAttribute('ng-reflect-router-link')).toContain('nueva');
+  });
+
   it('expone input type=search', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
@@ -42,7 +51,10 @@ describe('CertificationsListPage', () => {
     // 4 chips de estado + 4 botones de vista QA (en dev) = 8.
     expect(el.querySelectorAll('button[aria-pressed]').length).toBeGreaterThanOrEqual(4);
     expect(el.textContent).toContain('Estado de validez');
+    expect(el.textContent).toContain('Válida');
+    expect(el.querySelector('button[data-estado="vigente"]')?.textContent).toContain('Válida');
     expect(el.textContent).not.toContain('Estado de entrega');
+    expect(el.textContent).not.toMatch(/\benvio\b/i);
   });
 
   it('expone selector de curso independiente basado en el seed seguro', async () => {
@@ -99,13 +111,14 @@ describe('CertificationsListPage', () => {
   it('filtra por validez y búsqueda de forma combinada y limpia filtros', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('button'));
-    buttons.find((button) => button.textContent?.includes('vigente'))?.click();
+    const chip = el.querySelector('button[data-estado="vigente"]') as HTMLButtonElement;
+    chip.click();
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
+    expect(f.componentInstance.estado()).toBe('vigente');
     expect(el.textContent).toContain('Limpiar filtros');
-    expect(el.querySelector('button[aria-pressed="true"]')).not.toBeNull();
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('combina curso, validez y búsqueda; conserva el texto y reinicia la página', async () => {
@@ -116,14 +129,14 @@ describe('CertificationsListPage', () => {
     const select = el.querySelector('select[aria-label="Filtrar por curso"]') as HTMLSelectElement;
     select.value = 'Curso de introducción a la gestión';
     select.dispatchEvent(new Event('change'));
-    const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('button'));
-    buttons.find((button) => button.textContent?.includes('vigente'))?.click();
+    (el.querySelector('button[data-estado="vigente"]') as HTMLButtonElement).click();
     const input = el.querySelector('input[type="search"]') as HTMLInputElement;
     input.value = 'Uno';
     input.dispatchEvent(new Event('input'));
     f.detectChanges();
 
     expect(page.q()).toBe('Uno');
+    expect(page.estado()).toBe('vigente');
     expect(page.pagina()).toBe(1);
     expect(page.resultadosFiltrados().map((c) => c.id)).toEqual([1]);
   });
@@ -138,8 +151,8 @@ describe('CertificationsListPage', () => {
     await f.whenStable();
     f.detectChanges();
     expect(el.querySelectorAll('.cards-mobile article').length).toBe(1);
-    expect(el.querySelector('.results-summary p')?.textContent?.trim()).toBe(
-      'Total: 6 · Coincidencias: 1 · Visibles: 1',
+    expect(el.querySelector('.results-summary p')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      '1 certificación coinciden con el filtro',
     );
   });
 
@@ -164,13 +177,55 @@ describe('CertificationsListPage', () => {
     const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('.vista-qa button'));
     buttons.find((button) => button.textContent?.includes('Cargando'))?.click();
     f.detectChanges();
-    expect(el.querySelector('output[aria-busy="true"] li:nth-child(5)')).not.toBeNull();
+    expect(el.querySelector('.tabla-skeleton[aria-busy="true"]')).not.toBeNull();
     buttons.find((button) => button.textContent?.includes('Error'))?.click();
     f.detectChanges();
+    expect(el.querySelector('[role="alert"] svg.estado-icon')).not.toBeNull();
     expect(el.querySelector('[role="alert"] button')?.textContent).toContain('Reintentar');
     buttons.find((button) => button.textContent?.includes('Sin registros'))?.click();
     f.detectChanges();
-    expect(el.querySelector('[data-state="empty-total"]')).not.toBeNull();
+    const empty = el.querySelector('[data-state="empty-total"]');
+    expect(empty).not.toBeNull();
+    expect(empty?.querySelector('svg[data-icon="inbox"]')).not.toBeNull();
+    expect(empty?.textContent).toContain('Emitir primera certificación');
+    expect(
+      empty?.querySelector('a[href="/admin/certificaciones/nueva"], a[routerlink="/admin/certificaciones/nueva"]')
+        ?? Array.from(empty?.querySelectorAll('a') ?? []).find((a) => a.textContent?.includes('Emitir primera')),
+    ).toBeTruthy();
+  });
+
+  it('muestra badges de validez con punto y borde para los cuatro estados', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const badges = Array.from(el.querySelectorAll('.validez-badge'));
+    expect(badges.length).toBeGreaterThan(0);
+    expect(badges.every((b) => b.querySelector('.validez-dot'))).toBeTrue();
+    const labels = new Set(badges.map((b) => b.textContent?.trim()));
+    expect(labels.has('Válida')).toBeTrue();
+    // Seed incluye al menos vigente; labels de otros estados si están presentes.
+    for (const estado of ['borrador', 'vigente', 'revocado', 'vencido'] as const) {
+      const badge = el.querySelector(`.validez-badge[data-estado="${estado}"]`);
+      if (badge) {
+        expect(badge.querySelector('.validez-dot')).not.toBeNull();
+        expect(badge.textContent?.trim()).toBe(
+          estado === 'vigente' ? 'Válida' : estado === 'borrador' ? 'Borrador' : estado === 'revocado' ? 'Revocado' : 'Vencido',
+        );
+      }
+    }
+  });
+
+  it('chip Válida filtra solo estado vigente del modelo', async () => {
+    const f = await render();
+    const page = f.componentInstance;
+    const el = f.nativeElement as HTMLElement;
+    (el.querySelector('button[data-estado="vigente"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(page.estado()).toBe('vigente');
+    expect(page.resultadosFiltrados().every((c) => c.estado === 'vigente')).toBeTrue();
+    expect(el.querySelectorAll('.validez-badge').length).toBeGreaterThan(0);
+    expect(
+      Array.from(el.querySelectorAll('.validez-badge')).every((b) => b.getAttribute('data-estado') === 'vigente'),
+    ).toBeTrue();
   });
 
   it('no renderiza el harness cuando QA está deshabilitado', async () => {
@@ -225,9 +280,12 @@ describe('CertificationsListPage', () => {
       listar: listarSpy,
       obtener: () => Promise.resolve({} as any),
       obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
       regenerarPdf: () => Promise.resolve({ regenerado: false }),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
     };
     await TestBed.configureTestingModule({
       imports: [CertificationsListPage],
@@ -269,9 +327,12 @@ describe('CertificationsListPage', () => {
         }),
       obtener: () => Promise.reject(new Error('N/A')),
       obtenerEntregaManual: () => Promise.reject(new Error('N/A')),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
       regenerarPdf: () => Promise.reject(new Error('N/A')),
       contar: () => Promise.resolve(0),
       revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
     };
     await TestBed.configureTestingModule({
       imports: [CertificationsListPage],

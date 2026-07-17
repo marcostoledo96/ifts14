@@ -116,6 +116,12 @@ export class CertificationRevokePage {
     }
   }
 
+  // Cierre al presionar Escape (paridad v0)
+  @HostListener('document:keydown.escape')
+  volverAlExpediente(): void {
+    void this.router.navigate(this.volverLink());
+  }
+
   // T5: focus trap — Tab/Shift+Tab se mantiene dentro del diálogo
   @HostListener('keydown.tab', ['$event'])
   @HostListener('keydown.shift.tab', ['$event'])

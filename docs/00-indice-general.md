@@ -30,7 +30,7 @@ Los prompts anteriores de `docs/opencode/` quedan archivados en `docs/opencode/a
 | Deploy | `deploy/AGENTS.md`, `docs/deploy/00-cpanel-certificados.md`, `deploy/README.md` |
 | Auditoría | `docs/auditoria/INDEX.md`, `docs/auditoria/00-inventario-material-descargado.md`, `docs/auditoria/01-auditoria-material-original.md`, `docs/auditoria/02-hallazgos-dumps-sql.md`, `docs/auditoria/IFTS14_ajuste_documentacion_planificacion_marcos_matias.md` |
 | Scripts | `scripts/AGENTS.md` |
-| Specs | `openspec/AGENTS.md`, `openspec/specs/README.md`, `openspec/specs/repo-seguro/spec.md`, `openspec/specs/backend-contrato-api-certificados/spec.md`, `openspec/specs/backend-modelo-datos-certificados/spec.md` |
+| Specs | `openspec/AGENTS.md`, `openspec/specs/README.md`, `openspec/specs/repo-seguro/spec.md`, `openspec/specs/backend-contrato-api-certificados/spec.md`, `openspec/specs/backend-modelo-datos-certificados/spec.md`, `openspec/specs/frontend-ci-quality-gates/spec.md`, `openspec/specs/backend-ci-quality-gates/spec.md`, `openspec/specs/mariadb-ci-quality-gates/spec.md`, `openspec/specs/security-docs-ci-gates/spec.md` |
 | Referencia visual v0 | `muestra_pagina/` (listado seguro), `docs/frontend/00-angular20-port-v0.md` |
 | OpenCode / costos | `docs/opencode/optimizacion-tokens.md`, `docs/opencode/verificacion-flujo-opencode-sdd.md`, `docs/arquitectura/graphify/README.md` |
 

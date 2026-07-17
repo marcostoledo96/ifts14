@@ -10,8 +10,8 @@ $user = getenv('IFTS14_TEST_DB_USER') ?: 'root';
 $pass = getenv('IFTS14_TEST_DB_PASS') ?: '';
 
 if (!is_string($dsn) || $dsn === '' || getenv('IFTS14_TEST_DB_ALLOW_RESET') !== '1') {
-    echo "SKIP HttpEmissionE2eTest: requiere IFTS14_TEST_DB_DSN e IFTS14_TEST_DB_ALLOW_RESET=1 sobre una DB descartable.\n";
-    return;
+    fwrite(STDERR, "FATAL: HttpEmissionE2eTest requires IFTS14_TEST_DB_DSN and IFTS14_TEST_DB_ALLOW_RESET=1 on a disposable DB.\n");
+    exit(1);
 }
 
 $db = mysqlConfigFromDsn($dsn);

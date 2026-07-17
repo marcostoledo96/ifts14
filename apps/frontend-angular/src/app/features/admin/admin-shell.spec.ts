@@ -41,10 +41,12 @@ describe('AdminShell', () => {
     return fixture;
   }
 
-  it('renderiza banner único (role=banner) sin duplicar main ni contentinfo del root', async () => {
+  it('renderiza banner móvil (role=banner) sin duplicar main ni contentinfo del root', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelectorAll('[role="banner"]').length).toBe(1);
+    expect(el.querySelector('.mobile-nav')).not.toBeNull();
+    expect(el.querySelector('.topbar')).toBeNull();
     expect(el.querySelectorAll('[role="main"]').length).toBe(1);
     expect(el.querySelectorAll('[role="contentinfo"]').length).toBe(1);
   });
@@ -56,10 +58,18 @@ describe('AdminShell', () => {
     expect(el.querySelector('app-admin-dashboard-page')).toBeNull();
   });
 
-  it('muestra badge Sesión activa en topbar', async () => {
+  it('NO muestra search, sync, ayuda, notificaciones ni avatar en el chrome', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Sesión activa');
+    expect(el.querySelector('.topbar-search')).toBeNull();
+    expect(el.querySelector('input[type="search"]')).toBeNull();
+    expect(el.querySelector('.topbar-sync')).toBeNull();
+    expect(el.textContent).not.toContain('Sincronizado');
+    expect(el.querySelector('[aria-label="Ayuda"]')).toBeNull();
+    expect(el.querySelector('[aria-label="Notificaciones"]')).toBeNull();
+    expect(el.querySelector('.topbar-avatar')).toBeNull();
+    expect(el.textContent).not.toContain('Sesión activa');
+    expect(el.textContent).not.toContain('IFTS N.° 14 — Admin');
   });
 
   it('incluye skip link hacia #contenido', async () => {
@@ -96,7 +106,7 @@ describe('AdminShell', () => {
     expect(drawers.length).toBe(0);
   });
 
-  it('drawer mobile, overlay, nav y logout están PRESENTES cuando el menú está abierto', async () => {
+  it('drawer mobile, overlay, nav y logout quedan PRESENTES cuando el menú está abierto', async () => {
     const f = await render();
     f.componentInstance.abrirMenu();
     f.detectChanges();

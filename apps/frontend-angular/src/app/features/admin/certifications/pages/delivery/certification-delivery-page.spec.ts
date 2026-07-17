@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick, flushMicrotasks } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CertificationDeliveryPage } from './certification-delivery-page';
 import { provideRouter } from '@angular/router';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
@@ -68,19 +68,60 @@ describe('CertificationDeliveryPage', () => {
     expect(d).toBe('15/03/2024'); // default de 'es-AR'
   });
 
-  it('should simulate PDF download', fakeAsync(() => {
-    const openSpy = spyOn(window, 'open');
-    void component.descargarPdf();
-    flushMicrotasks(); // resolve the initial synchronous parts if any
-    expect(component.descargando()).toBeTrue();
-    expect(component.descargado()).toBeFalse();
+  it('should download PDF via service Blob (REQ-PAR-DEL-001)', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
 
-    tick(700);
+    const fakeBlob = new Blob(['%PDF-mock'], { type: 'application/pdf' });
+    const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
+    const pdfSpy = spyOn(svc, 'descargarPdf').and.resolveTo(fakeBlob);
+    const createUrlSpy = spyOn(URL, 'createObjectURL').and.returnValue('blob:fake-pdf');
+    const revokeSpy = spyOn(URL, 'revokeObjectURL');
+    const clickSpy = spyOn(HTMLAnchorElement.prototype, 'click');
 
+    await component.descargarPdf();
+
+    expect(pdfSpy).toHaveBeenCalledWith(1);
+    expect(createUrlSpy).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+    expect(revokeSpy).toHaveBeenCalledWith('blob:fake-pdf');
     expect(component.descargando()).toBeFalse();
     expect(component.descargado()).toBeTrue();
-    expect(openSpy).toHaveBeenCalledWith(jasmine.stringMatching(/pdf/), '_blank');
-  }));
+  });
+
+  it('PDF filename is semantic: cert-{codigo}.pdf', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
+    spyOn(svc, 'descargarPdf').and.resolveTo(new Blob(['x'], { type: 'application/pdf' }));
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:fake');
+    spyOn(URL, 'revokeObjectURL');
+
+    let downloadedName = '';
+    spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) {
+      downloadedName = this.download;
+    });
+
+    await component.descargarPdf();
+    expect(downloadedName).toBe('cert-IFTS14-CERT-0001.pdf');
+  });
+
+  it('footer has Copiar + PDF + Cancelar; QR outside footer (REQ-PAR-DEL-001)', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const footer = el.querySelector('.dialog-footer .actions');
+    expect(footer?.textContent).toContain('Copiar link');
+    expect(footer?.textContent).toContain('Descargar PDF');
+    expect(footer?.textContent).toContain('Cancelar');
+    expect(footer?.textContent).not.toContain('Descargar QR');
+    const qrBtn = Array.from(el.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Descargar QR'),
+    );
+    expect(qrBtn).toBeTruthy();
+    expect(footer?.contains(qrBtn as Node)).toBeFalse();
+  });
 
   it('should copy link via navigator.clipboard and show feedback (REQ-DEL-003)', async () => {
     await fixture.whenStable();
@@ -134,36 +175,33 @@ describe('CertificationDeliveryPage', () => {
     });
   });
 
-  it('should download QR via fetch → Blob → createObjectURL (REQ-DEL-002)', async () => {
+  it('should download QR via service Blob → createObjectURL (REQ-QR-002)', async () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
     const fakeBlob = new Blob(['fake-qr-png'], { type: 'image/png' });
-    const fetchSpy = spyOn(window, 'fetch').and.returnValue(
-      Promise.resolve(new Response(fakeBlob, { status: 200, headers: { 'Content-Type': 'image/png' } }))
-    );
+    const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
+    const qrSpy = spyOn(svc, 'descargarQrPng').and.resolveTo(fakeBlob);
     const createUrlSpy = spyOn(URL, 'createObjectURL').and.returnValue('blob:fake-qr');
     const revokeSpy = spyOn(URL, 'revokeObjectURL');
-
     const clickSpy = spyOn(HTMLAnchorElement.prototype, 'click');
 
     await component.descargarQr();
 
-    expect(fetchSpy).toHaveBeenCalledWith(jasmine.stringMatching(/qr\.png$/));
+    expect(qrSpy).toHaveBeenCalledWith(1);
     expect(createUrlSpy).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
     expect(revokeSpy).toHaveBeenCalledWith('blob:fake-qr');
     expect(component.qrDescargando()).toBeFalse();
+    expect(component.qrError()).toBe('');
   });
 
-  it('QR filename is semantic: {numeroExpediente}-qr.png (REQ-DEL-002)', async () => {
+  it('QR filename is semantic: cert-{codigo}-qr.png (REQ-QR-002)', async () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const fakeBlob = new Blob(['x'], { type: 'image/png' });
-    spyOn(window, 'fetch').and.returnValue(
-      Promise.resolve(new Response(fakeBlob, { status: 200 }))
-    );
+    const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
+    spyOn(svc, 'descargarQrPng').and.resolveTo(new Blob(['x'], { type: 'image/png' }));
     spyOn(URL, 'createObjectURL').and.returnValue('blob:fake');
     spyOn(URL, 'revokeObjectURL');
 
@@ -174,7 +212,35 @@ describe('CertificationDeliveryPage', () => {
 
     await component.descargarQr();
 
-    expect(downloadedName).toBe('IFTS14-CERT-0001-qr.png');
+    expect(downloadedName).toBe('cert-IFTS14-CERT-0001-qr.png');
+  });
+
+  it('REQ-QR-001: botón Descargar QR visible con aria-label', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const btn = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((b) => b.textContent?.includes('Descargar QR'));
+    expect(btn).toBeTruthy();
+    expect((btn as HTMLButtonElement).disabled).toBeFalse();
+    expect(btn?.getAttribute('aria-label')).toContain('QR');
+  });
+
+  it('REQ-QR-002: error de QR es inline y no limpia el diálogo', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
+    spyOn(svc, 'descargarQrPng').and.rejectWith(new Error('QR no disponible: 500'));
+
+    await component.descargarQr();
+    fixture.detectChanges();
+
+    expect(component.qrError()).toContain('QR no disponible');
+    expect(component.error()).toBe('');
+    expect(component.detalle()).toBeTruthy();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('QR no disponible');
   });
 
   it('should detect PDF outdated and show regenerar message (REQ-DEL-004, REQ-DEL-005)', async () => {

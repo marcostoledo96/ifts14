@@ -1,41 +1,218 @@
-<section aria-labelledby="dash-title">
-  <p class="kicker">Panel administrativo — sesión mock</p>
-  <h1 id="dash-title" class="title">Dashboard</h1>
-  <p class="intro">
-    Vista placeholder sin datos reales. Todos los módulos son navegables en modo demostración.
-  </p>
-  <ul class="cards">
-    <li class="card card--action">
-      <h2 class="card-title">Cursos</h2>
-      <p class="card-desc">Gestión de cursos y fechas — disponible.</p>
-      <a class="card-link" routerLink="/admin/cursos">
-        <span>Abrir Cursos</span>
-        <span class="card-count" aria-label="Cantidad de cursos en demo">{{ cursosCount }}</span>
+<div class="workbench">
+  <header class="page-header">
+    <h1 id="dash-title" class="title">Panel de certificaciones</h1>
+    <p class="intro">Gestión de cursos, asistencias y certificados con QR.</p>
+  </header>
+
+  <section class="acciones" aria-labelledby="acciones-titulo">
+    <h2 id="acciones-titulo" class="section-kicker">Acciones</h2>
+    <div class="acciones-grid">
+      <a
+        class="accion accion--primary"
+        routerLink="/admin/certificaciones/nueva"
+      >
+        <span class="accion-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+            <line x1="12" x2="12" y1="8" y2="16" />
+            <line x1="8" x2="16" y1="12" y2="12" />
+          </svg>
+        </span>
+        <span class="accion-text">
+          <span class="accion-label">Nueva certificación</span>
+          <span class="accion-desc">Emitir certificado con QR</span>
+        </span>
       </a>
-    </li>
-    <li class="card card--action">
-      <h2 class="card-title">Asistencias</h2>
-      <p class="card-desc">Registro de presentes por fecha — disponible.</p>
-      <a class="card-link" routerLink="/admin/asistencias">
-        <span>Abrir Asistencias</span>
-        <span class="card-count" aria-label="Cantidad de fechas pendientes en demo">{{ asistenciasCount }}</span>
+
+      <a class="accion" routerLink="/admin/cursos/nuevo">
+        <span class="accion-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 7v6" />
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+            <path d="M9 10h6" />
+          </svg>
+        </span>
+        <span class="accion-text">
+          <span class="accion-label">Nuevo curso</span>
+          <span class="accion-desc">Alta de comisión y fechas</span>
+        </span>
       </a>
-    </li>
-    <li class="card card--action">
-      <h2 class="card-title">Alumnos</h2>
-      <p class="card-desc">Registro académico minimizado — disponible.</p>
-      <a class="card-link" routerLink="/admin/alumnos">
-        <span>Abrir Alumnos</span>
-        <span class="card-count" aria-label="Cantidad de alumnos en demo">{{ alumnosCount() }}</span>
+
+      <a class="accion" routerLink="/admin/asistencias">
+        <span class="accion-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v4" />
+            <path d="M16 2v4" />
+            <rect width="18" height="18" x="3" y="4" rx="2" />
+            <path d="M3 10h18" />
+            <path d="m9 16 2 2 4-4" />
+          </svg>
+        </span>
+        <span class="accion-text">
+          <span class="accion-label">Cargar asistencias</span>
+          <span class="accion-desc">Registrar presentes por clase</span>
+        </span>
       </a>
-    </li>
-    <li class="card card--action">
-      <h2 class="card-title">Certificaciones</h2>
-      <p class="card-desc">Emisión y revocación de certificados — base mock-only.</p>
-      <a class="card-link" routerLink="/admin/certificaciones">
-        <span>Abrir Certificaciones</span>
-        <span class="card-count" aria-label="Cantidad de certificaciones en demo">{{ certificacionesCount() }}</span>
+
+      <a class="accion" routerLink="/admin/certificaciones">
+        <span class="accion-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 17H7A5 5 0 0 1 7 7h2" />
+            <path d="M15 7h2a5 5 0 1 1 0 10h-2" />
+            <line x1="8" x2="16" y1="12" y2="12" />
+          </svg>
+        </span>
+        <span class="accion-text">
+          <span class="accion-label">Entrega manual</span>
+          <span class="accion-desc">Copiar link y descargar PDF</span>
+        </span>
       </a>
-    </li>
-  </ul>
-</section>
+
+      <button
+        type="button"
+        class="accion accion--disabled"
+        disabled
+        aria-disabled="true"
+        title="La carga masiva aún no está disponible (sin API de importación)"
+      >
+        <span class="accion-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v12" />
+            <path d="m17 8-5-5-5 5" />
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          </svg>
+        </span>
+        <span class="accion-text">
+          <span class="accion-label">Carga masiva</span>
+          <span class="accion-desc">Importar padrón desde CSV</span>
+        </span>
+        <span class="sr-only">La carga masiva aún no está disponible</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="panel pendientes" aria-labelledby="pendientes-titulo">
+    <div class="panel-head">
+      <h2 id="pendientes-titulo" class="panel-title">Pendientes de resolución</h2>
+      <span class="panel-meta" title="Total no disponible: varias fuentes sin API">— tareas</span>
+    </div>
+    <ul class="pendientes-list">
+      @for (item of pendientes; track item.id) {
+        <li>
+          <a class="pendiente-row" [routerLink]="item.route">
+            <span
+              class="pendiente-icon"
+              [class.pendiente-icon--warning]="item.tone === 'warning'"
+              [class.pendiente-icon--info]="item.tone === 'info'"
+              [class.pendiente-icon--destructive]="item.tone === 'destructive'"
+              aria-hidden="true"
+            >
+              @switch (item.iconId) {
+                @case ('calendar-x') {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 2v4" /><path d="M16 2v4" />
+                    <rect width="18" height="18" x="3" y="4" rx="2" />
+                    <path d="M3 10h18" /><path d="m14 14-4 4" /><path d="m10 14 4 4" />
+                  </svg>
+                }
+                @case ('mail-warning') {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 10.5V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h12.5" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    <path d="M20 14v4" /><path d="M20 22v.01" />
+                  </svg>
+                }
+                @case ('send') {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z" />
+                    <path d="M6 12h16" />
+                  </svg>
+                }
+                @case ('refresh') {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                    <path d="M21 3v5h-5" />
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                    <path d="M8 16H3v5" />
+                  </svg>
+                }
+              }
+            </span>
+            <span class="pendiente-body">
+              <span class="pendiente-label">
+                {{ item.label }}
+                <span
+                  class="pendiente-badge"
+                  [attr.title]="item.sinFuente"
+                  [attr.aria-label]="item.sinFuente ?? 'Conteo de ' + item.label"
+                >{{ badgePendiente(item) }}</span>
+              </span>
+              <span class="pendiente-detalle">{{ item.detalle }}</span>
+            </span>
+            <span class="pendiente-revisar" aria-hidden="true">
+              <span class="pendiente-revisar-texto">Revisar</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section class="panel actividad" aria-labelledby="actividad-titulo">
+    <div class="panel-head">
+      <h2 id="actividad-titulo" class="panel-title">Actividad reciente</h2>
+      <span
+        class="panel-link panel-link--disabled"
+        title="El registro completo aún no está disponible (sin API de bitácora)"
+      >Ver registro completo</span>
+    </div>
+    <div class="actividad-scroll">
+      <table class="actividad-table">
+        <thead>
+          <tr>
+            @for (col of actividadColumnas; track col) {
+              <th scope="col" [class.actividad-th--right]="col === 'Autor'">{{ col }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="empty-actividad" [attr.colspan]="actividadColumnas.length" role="status">
+              Sin registro de actividad disponible.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="resumen" aria-label="Resumen operativo">
+    <h2 class="section-kicker">Resumen operativo</h2>
+    @if (errorMetricas()) {
+      <p class="metricas-error" role="status">
+        No se pudieron cargar algunas métricas.
+      </p>
+    }
+    <div class="resumen-grid" [attr.aria-busy]="metricasCargando()">
+      <div class="resumen-cell">
+        <span class="resumen-label">Cursos cargados</span>
+        <span class="resumen-value" data-metric="cursos">{{ formatoMetrica(cursosCargados()) }}</span>
+      </div>
+      <div class="resumen-cell">
+        <span class="resumen-label">Alumnos registrados</span>
+        <span class="resumen-value" data-metric="alumnos">{{ formatoMetrica(alumnosRegistrados()) }}</span>
+      </div>
+      <div class="resumen-cell">
+        <span class="resumen-label">Certificaciones emitidas</span>
+        <span class="resumen-value resumen-value--valid" data-metric="emitidas">{{ formatoMetrica(certificacionesEmitidas()) }}</span>
+      </div>
+      <div class="resumen-cell">
+        <span class="resumen-label">Certificaciones revocadas</span>
+        <span class="resumen-value resumen-value--destructive" data-metric="revocadas">{{ formatoMetrica(certificacionesRevocadas()) }}</span>
+      </div>
+    </div>
+  </section>
+</div>

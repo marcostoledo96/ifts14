@@ -32,9 +32,9 @@ El sistema DEBE exponer `/admin/cursos`, `/admin/cursos/nuevo`, `/admin/cursos/:
 
 ### Requirement: UI contract-ready de cursos y fechas
 
-El sistema DEBE renderizar listado, detalle y editor de cursos con semántica accesible, estados claros y datos ficticios no sensibles solo en memoria. El listado DEBE mostrar cuatrimestre, cantidad derivada de fechas y métricas de presentes/certificaciones como placeholders explícitos; estas últimas NO DEBEN consultar otros features. DEBE ofrecer filtros por búsqueda, los cuatro estados y con/sin fechas, resumen accesible y limpieza de filtros.
+El sistema DEBE renderizar listado, detalle y editor de cursos con semántica accesible, estados claros y datos ficticios no sensibles solo en memoria. El listado DEBE mostrar cuatrimestre, cantidad derivada de fechas y métricas de presentes/certificaciones como placeholders explícitos; estas últimas NO DEBEN consultar otros features. DEBE ofrecer filtros por búsqueda, chips toggle de los cuatro estados (Borrador / Activos / Cerrados / Archivados) con indicador visual, chips con/sin fechas, badge de estado con dot y borde semántico, acento lateral en filas/cards, estados de carga/error/vacío con iconografía inline, resumen accesible y limpieza de filtros.
 
-(Previously: Renderizaba listado, detalle y editor básicos, sin contrato de paridad responsive, filtros por fechas ni estados de pantalla diferenciados.)
+(Previously: filtro de estado vía select; badge de estado plano; estados de pantalla solo texto.)
 
 #### Scenario: Listado y detalle navegables
 
@@ -64,21 +64,28 @@ El sistema DEBE renderizar listado, detalle y editor de cursos con semántica ac
 
 #### Scenario: Filtros y limpieza
 
-- **Given** se aplican búsqueda, estado y filtro con/sin fechas
+- **Given** se aplican búsqueda, chip de estado y filtro con/sin fechas
 - **When** se activa “Limpiar filtros”
 - **Then** DEBEN restablecerse los tres filtros y el resumen accesible DEBE anunciar el resultado.
+
+#### Scenario: Chips de estado con toggle
+
+- **Given** el listado está cargado
+- **When** se activa un chip de estado y luego el mismo chip otra vez
+- **Then** DEBE filtrar por ese estado y después limpiar el filtro de estado (toggle single).
+- **And** NO DEBE usarse un `<select>` de estado.
 
 #### Scenario: Carga, error y reintento
 
 - **Given** la obtención del listado está pendiente o falla
 - **When** se muestra cada estado
-- **Then** DEBEN diferenciarse carga y error seguro, y el error DEBE permitir reintentar.
+- **Then** DEBEN diferenciarse carga y error seguro con iconografía inline, y el error DEBE permitir reintentar.
 
 #### Scenario: Vacío y sin resultados diferenciados
 
 - **Given** no hay cursos o los filtros no encuentran coincidencias
 - **When** termina la carga
-- **Then** DEBEN mostrarse mensajes distintos para vacío inicial y sin resultados, con limpieza disponible para este último.
+- **Then** DEBEN mostrarse mensajes distintos para vacío inicial y sin resultados, con CTA “Crear primer curso” en el vacío y limpieza disponible para sin resultados.
 
 #### Scenario: Acciones existentes y detalle implementado
 

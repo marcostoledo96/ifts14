@@ -1,6 +1,40 @@
 # Deploy cPanel — /certificados/
 
-> **Estado P5-01:** staging candidato PASS; producción no activada ni validada. Las referencias históricas a `X-Admin-Key` HTTP y `STOP DESPLIEGUE` se conservan como antecedente, no como autorización actual.
+> **Estado P8-03:** staging deploy funcional. Login admin verificado en local y staging. Fix de envelope (`res.data.*`) commiteado. Producción `/certificados/` permanece en PHP 8.1 sin tocar.
+
+## Entorno real de staging (P8-01)
+
+| Recurso | Valor |
+|---|---|
+| Subdominio | `certificados-qa.ifts14.com.ar` |
+| Document root | `/public_html/certificados_qa/` |
+| Backend | `/certificados_staging/api/` |
+| PHP | 8.4.22 (ea-php84, CGI/FastCGI) |
+| MariaDB | 10.6.27 (`ifts14c8_cert_stg`) |
+| Config externa | `/home/ifts14c8/ifts14_config/` (0700) |
+| Sesiones | files, strict_mode=1, use_only_cookies=1, use_trans_sid=0 |
+
+### Config admin — reglas no negociables
+
+| Campo | Valor obligatorio | Nota |
+|---|---|---|
+| `admin_username` | string | Ej: `bedelia_admin` |
+| `admin_password_hash` | bcrypt | `password_hash()` |
+| `admin_session_idle_seconds` | **1800** exacto | `Config::adminSessionSettings()` compara igualdad estricta |
+| `admin_session_absolute_seconds` | **28800** exacto | Cualquier otro valor → login 401 silencioso |
+| `CERTIFICADOS_CONFIG_PATH` | path al `.php` de config | **Nunca `IFTS14_CONFIG_PATH`** — ese nombre no lo lee el código |
+
+### Lecciones del entorno
+
+1. **SetEnv NO funciona.** `mod_env` no está habilitado → usar `.user.ini` + `auto_prepend_file`.
+2. **No hay Terminal ni SSH.** Todo se prepara local y se sube.
+3. **Composer no instalado.** Generar `vendor/` localmente y subir como ZIP.
+4. **Dominio principal usa PHP 8.1.** No cambiarlo globalmente.
+5. **PHP-FPM no disponible.** CGI/FastCGI funciona correctamente.
+6. **Rate-limit login:** 5 intentos / 300s por IP → 429. Borrar bucket `ifts14-admin-login-*.json` en `runtime/` para resetear.
+7. **Backend usa envelope `{ data, meta }`.** El frontend debe leer `res.data.*`, no `res.*`. Fix commiteado en `875e3dc`.
+8. **TTL admin son fijos (1800/28800).** No son configurables sin cambiar constantes en `Config.php`.
+9. **Nunca compartir:** contraseñas, hashes, tokens, DNI, rutas privadas, IPs, credenciales DB.
 
 ## Objetivo
 
@@ -301,6 +335,68 @@ No usar base real, certificados reales, DNI reales, logs productivos ni capturas
 | Configuración externa con placeholders | `Backend PHP`, `Artefactos permitidos y prohibidos` |
 | Backup y rollback manual | `Backup manual y rollback` |
 | Validación posterior con datos ficticios | `Validación con datos ficticios` |
+
+## Quality gates de CI (frontend)
+
+El job `frontend-tests` de `.github/workflows/backend-tests.yml` ejecuta 6 pasos en cada PR contra frontend, en este orden:
+
+1. `npm ci`.
+2. `npm run test:ci` (Karma headless + guarda `no-focused-tests.mjs`).
+3. `npx tsc --noEmit -p tsconfig.app.json` (TypeScript estricto).
+4. `npm run build` (build AOT de producción, `baseHref=/certificados/`).
+5. `npm run build -- --configuration production-staging` (build AOT de staging, `baseHref=/certificados_staging/`).
+6. `node scripts/ci-mock-guard.mjs` (verifica `useRealApi === true` en `environment.ts`).
+
+Contrato vigente: el job solo se marca como `success` si los pasos 2, 3 y 4 pasan (contrato de 3 pasos núcleo). Un fallo en cualquier paso impide el merge. Spec canónica: `openspec/specs/frontend-ci-quality-gates/spec.md`. Detalle del ciclo en `openspec/changes/archive/2026-07-16-p7-01-frontend-ci/`.
+
+**Branch protection**: la regla `Require status checks to pass before merging` para el check `frontend-tests` debe configurarse manualmente en GitHub (Settings → Branches → Branch protection rules). El script de CI no la aplica; queda como tarea operativa de Marcos o Matías.
+
+**ESLint**: diferido a un ciclo posterior. No es parte de los gates vigentes.
+
+## Quality gates de CI (backend)
+
+El job `php-tests` de `.github/workflows/backend-tests.yml` ejecuta los quality gates de backend en cada PR contra código PHP, en este orden (resumen operativo; detalles del paso exacto en el YAML):
+
+1. Build de la imagen PHP 8.4 (`docker build -t ifts14-php84 -f docker/php84/Dockerfile .`).
+2. `composer install` desde `composer:2` con `--no-dev --no-interaction --prefer-dist`.
+3. `composer validate --strict` — falla si `composer.json` o `composer.lock` no son válidos.
+4. `composer audit` — falla si hay advisories de seguridad en dependencias.
+5. Unit tests (sin DB): 12/12 tests PHP procedimentales.
+6. E2E con MariaDB 10.6: 11/11 tests PHP procedimentales.
+7. `php -l` sobre todo `apps/backend-php/**/*.php` (excluyendo `vendor/`) — falla ante cualquier error de sintaxis.
+8. `scripts/test-privacy-headers.sh` (verifica `Referrer-Policy`, `X-Robots-Tag`, etc.).
+
+Contrato vigente: el job se marca como `success` solo si composer validate, composer audit, los 12 unit tests, los 11 E2E con MariaDB, `php -l` y la guarda de privacy headers pasan. Un fallo en cualquier paso impide el merge. Spec canónica: `openspec/specs/backend-ci-quality-gates/spec.md`. Detalle del ciclo en `openspec/changes/archive/2026-07-16-p7-02-backend-ci/`.
+
+PHPUnit/Pest, cobertura de código y reestructuración del workflow se difieren a ciclos posteriores y no forman parte de estos gates.
+
+## Quality gates de CI (MariaDB)
+
+El job `php-tests` de `.github/workflows/backend-tests.yml` ejecuta los quality gates de MariaDB 10.6 contra el service container del workflow, en este orden (resumen operativo; detalles del paso exacto en el YAML):
+
+1. `mariadb-client` instalado vía `apt-get` en el runner Ubuntu (la imagen PHP 8.4 `ifts14-php84` no incluye el cliente).
+2. `database-setup` (paso nuevo) — aplica las 10 migraciones `001.sql`–`010.sql` en orden numérico vía `mariadb` CLI contra el service container en `127.0.0.1:3306`. Falla con código distinto de `0` ante cualquier error de SQL o de conexión.
+3. `Schema contract` (paso nuevo) — ejecuta `apps/backend-php/tests/DatabaseSchemaContractTest.php` (201 líneas) dentro del contenedor PHP 8.4 con las variables de entorno del service container. El test valida 10 tablas, columnas (vía substring sobre `INFORMATION_SCHEMA.COLUMNS`), enums (post-006/009) y versiones registradas en `cert_schema_migrations` (007–010). Falla con `exit(1)` si la DB no está disponible.
+4. `E2E con MariaDB` — encadena 11/11 tests PHP con `&&`: `SnapshotEmission, HttpEmissionE2e, AdminMasterDataHttp, AdminCertificadosConsultaHttp, Readiness, CertificateRevisionMigration, AttendanceRevision, CourseDateRevision, QrImage, RegenerarPdf, fault-injection-audit`. Ningún test puede hacer SKIP silencioso: 7/7 con guarda de DB usan `fwrite(STDERR, "FATAL: ..."); exit(1);` cuando falta `IFTS14_TEST_DB_DSN` o `ALLOW_RESET≠1`.
+5. `Upgrade test` (paso nuevo) — `scripts/test-database-upgrade.sh` (53 líneas, sintaxis validada con `bash -n`). Crea dos contenedores MariaDB descartables, aplica `schema_003_historical.sql` y `schema_003_current.sql`, converge a través de 006–010 y compara con `diff`; sale con `0` solo si ambos convergen a la misma estructura exacta.
+
+Contrato vigente: el job se marca como `success` solo si el paso `database-setup` aplica 10/10 migraciones, el schema contract valida la estructura esperada, los 11 tests E2E pasan sin SKIP y el upgrade test confirma la convergencia de variantes históricas. Un fallo en cualquier paso impide el merge. Spec canónica: `openspec/specs/mariadb-ci-quality-gates/spec.md`. Detalle del ciclo en `openspec/changes/archive/2026-07-16-p7-03-mariadb-ci/`.
+
+PHPUnit/Pest, cobertura de código y refactor de los tests E2E a un framework se difieren a ciclos posteriores y no forman parte de estos gates.
+
+## Quality gates de CI (security/docs)
+
+El job `security-docs-gates` de `.github/workflows/backend-tests.yml` ejecuta los quality gates de seguridad y mantenimiento documental en cada PR, en este orden (resumen operativo; detalles del paso exacto en el YAML):
+
+1. **Gitleaks** (`gitleaks/gitleaks-action@v2`) — escanea el repositorio en busca de secretos versionados. Falla con código distinto de `0` ante cualquier API key, token o private key real. La configuración de allowlist vive en `.gitleaks.toml` versionado en la raíz y cubre `muestra_pagina/` (referencia visual), código de test (`apps/backend-php/tests/**`, `apps/frontend-angular/src/**/*.spec.ts`) y migraciones SQL (`database/migrations/**/*.sql`).
+2. **`git diff --check origin/main...HEAD`** — falla si hay errores de whitespace (espacios al final, tabs mezclados, líneas sin newline final). Se ejecuta **antes** de los chequeos documentales para detectar regresiones de formato de forma temprana.
+3. **Enlaces internos** (`scripts/ci-link-check.sh`) — verifica que los enlaces internos en `docs/` y `openspec/specs/` apunten a archivos existentes. Falla con código distinto de `0` ante cualquier enlace roto. Los enlaces externos (http/https) quedan fuera del alcance.
+4. **Términos obsoletos** (`scripts/ci-obsolete-terms.sh`, rewrite con `awk` para performance) — busca términos obsoletos en docs activas: `SMTP` (como feature activo), `PHPMailer` (como feature activo), `firma digital verificada`, `reenvío automático`, `M4-01B` (como pendiente cuando ya está implementado), `entregado` (como estado), `pendiente-entrega` y `requiere-nueva-entrega`. Aplica filtro de contexto para reducir falsos positivos en frases históricas o de remoción.
+5. **OpenSpec sin huérfanos** (`scripts/ci-openspec-orphan-check.sh`) — verifica que no haya carpetas que estén **simultáneamente** activas en `openspec/changes/<nombre>/` y archivadas en `openspec/changes/archive/YYYY-MM-DD-<nombre>/`. Falla con código distinto de `0` ante cualquier huérfano. Un ciclo SDD en curso (no archivado) no es huérfano.
+
+Contrato vigente: el job se marca como `success` solo si los cinco pasos pasan con código `0`. Un fallo en cualquier paso impide el merge. Spec canónica: `openspec/specs/security-docs-ci-gates/spec.md`. Detalle del ciclo en `openspec/changes/archive/2026-07-16-p7-04-seguridad-docs/`.
+
+Los tres scripts (`ci-link-check.sh`, `ci-obsolete-terms.sh`, `ci-openspec-orphan-check.sh`) son POSIX-shellscripts validables con `bash -n` y exit-code explícito. ESLint, hooks de pre-commit, escaneo de `muestra_pagina/` y escaneo de `material_privado_no_versionar/` se difieren a ciclos posteriores y no forman parte de estos gates.
 
 ## Estado de capacidad pública
 

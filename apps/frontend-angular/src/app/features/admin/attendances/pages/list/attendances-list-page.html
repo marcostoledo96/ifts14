@@ -1,51 +1,209 @@
 <section aria-labelledby="asist-title">
   <div class="header-row">
     <div>
-      <p class="kicker">Admin · Asistencias</p>
+      <p class="kicker">Registro de cursada</p>
       <h1 id="asist-title" class="title">Asistencias</h1>
+      <p class="intro">
+        Fechas de clase listas para marcar presentes. Elegí una fecha y registrá la asistencia del curso.
+      </p>
     </div>
   </div>
 
   <p class="demo-banner" role="status">
+    <svg class="demo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+    </svg>
     Datos de demostración: los cambios no se persisten al recargar.
   </p>
 
-  <div class="filtros">
-    <label class="filtro-search">
-      <span class="filtro-label">Buscar</span>
-      <input
-        type="search"
-        [value]="q()"
-        (input)="onSearch($event)"
-        placeholder="Curso, código o fecha…"
-        aria-label="Buscar fechas por curso, código o fecha"
-      />
-    </label>
-  </div>
+  <section class="filtros" aria-label="Buscar y filtrar fechas de asistencia">
+    <div class="filtros-main">
+      <label class="filtro-search" for="buscar-asistencia">
+        <span class="filtro-label">Buscar</span>
+        <span class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+          </svg>
+          <input
+            id="buscar-asistencia"
+            type="search"
+            autocomplete="off"
+            [value]="q()"
+            (input)="onSearch($event)"
+            placeholder="Curso, código o fecha…"
+            aria-label="Buscar fechas por curso, código o fecha"
+          />
+        </span>
+        <p class="search-hint">Filtrá al instante por nombre, código o fecha ISO.</p>
+      </label>
+
+      <div class="filtro-estado">
+        <span class="filtro-label" id="filtro-estado-label">Estado de la fecha</span>
+        <div class="filter-chips" role="group" aria-labelledby="filtro-estado-label">
+          @for (e of estados; track e) {
+            <button
+              type="button"
+              class="chip-estado"
+              [attr.data-estado]="e"
+              [attr.aria-pressed]="estado() === e"
+              (click)="onEstado(e)"
+            >
+              <span class="chip-dot chip-dot--{{ e }}" aria-hidden="true"></span>
+              {{ estadoChipLabel[e] }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (mostrarResumen()) {
+      <div class="results-summary">
+        <p aria-live="polite">
+          <span class="count-mono">{{ filtradas().length }}</span>
+          {{ filtradas().length === 1 ? 'fecha' : 'fechas' }}
+          {{ hayFiltrosActivos() ? 'coinciden con el filtro' : 'asistibles' }}
+        </p>
+        @if (hayFiltrosActivos()) {
+          <button type="button" class="clear-filters" (click)="onLimpiarFiltros()">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+            </svg>
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    }
+  </section>
 
   @if (cargando()) {
-    <p class="estado-linea">Cargando asistencias…</p>
-  }
-  @if (error()) {
-    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
-  }
+    <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando asistencias">
+      <div class="skeleton-head">
+        <span class="skeleton-label">Cargando fechas…</span>
+      </div>
+      <ul class="skeleton-rows">
+        @for (_ of skeletonRows; track $index) {
+          <li class="skeleton-row">
+            <span class="skeleton-bar skeleton-bar--name skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--code skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--date skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--metric skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--action skeleton-pulse"></span>
+          </li>
+        }
+      </ul>
+    </div>
+  } @else if (error()) {
+    <div class="estado-panel estado-error" role="alert">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke-linejoin="round"/>
+          <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">No pudimos cargar las asistencias</h2>
+      <p>{{ error() }}</p>
+      <button type="button" class="btn-primary" (click)="onReintentar()">Reintentar</button>
+    </div>
+  } @else if (vacioTotal()) {
+    <div class="estado-panel" data-state="empty-total" aria-live="polite">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Todavía no hay fechas para marcar</h2>
+      <p>
+        Cuando un curso tenga fechas de cursada programadas o realizadas, van a aparecer acá para registrar presentes.
+      </p>
+      <a class="btn-primary" routerLink="/admin/cursos">Ir a Cursos</a>
+    </div>
+  } @else if (vacioFiltro()) {
+    <div class="estado-panel" data-state="no-results" aria-live="polite">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Ninguna fecha coincide</h2>
+      <p>No hay fechas que coincidan con la búsqueda o el filtro de estado.</p>
+      <button type="button" class="btn-secondary" (click)="onLimpiarFiltros()">Limpiar filtros</button>
+    </div>
+  } @else {
+    <div class="table-wrap" data-testid="asistencias-tabla">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Curso</th>
+            <th scope="col">Código</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="th-center">Presentes</th>
+            <th scope="col" class="th-actions"><span class="sr-only">Acción</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of filtradas(); track fila.fecha.id) {
+            <tr>
+              <td>
+                <span class="curso-nombre">{{ fila.curso.nombre }}</span>
+                @if (fila.fecha.descripcion) {
+                  <span class="curso-detalle">{{ fila.fecha.descripcion }}</span>
+                }
+              </td>
+              <td class="mono">{{ fila.curso.codigo }}</td>
+              <td>
+                <time [attr.datetime]="fila.fecha.fecha">{{ formatFecha(fila.fecha.fecha) }}</time>
+              </td>
+              <td>
+                <span class="estado-chip estado-{{ fila.fecha.estado }}">
+                  {{ etiquetaEstado(fila.fecha.estado) }}
+                </span>
+              </td>
+              <td class="td-center">
+                <span class="card-asis-conteo mono">{{ fila.presentes }}/{{ fila.total }}</span>
+              </td>
+              <td class="td-actions">
+                <a
+                  class="card-asis-link btn-marcar"
+                  [routerLink]="linkMarcado(fila)"
+                  [attr.aria-label]="'Tomar asistencia de ' + fila.curso.nombre + ' — ' + fila.fecha.fecha"
+                >
+                  <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M8 2v4M16 2v4M3 10h18" stroke-linecap="round"/>
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="m9 16 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Tomar asistencia
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
 
-  @if (!cargando() && filtradas().length === 0) {
-    <p class="estado-linea">No hay fechas que coincidan con la búsqueda.</p>
-  }
-
-  @if (!cargando() && filtradas().length > 0) {
-    <ul class="lista-asis">
+    <ul class="lista-asis" data-testid="asistencias-cards">
       @for (fila of filtradas(); track fila.fecha.id) {
         <li>
           <article class="card-asis">
             <header class="card-asis-header">
-              <h2 class="card-asis-title">{{ fila.curso.nombre }}</h2>
-              <span class="estado-chip estado-{{ fila.fecha.estado }}">{{ fila.fecha.estado }}</span>
+              <div class="card-asis-heading">
+                <h2 class="card-asis-title">{{ fila.curso.nombre }}</h2>
+                <span class="mono card-asis-code">{{ fila.curso.codigo }}</span>
+              </div>
+              <span class="estado-chip estado-{{ fila.fecha.estado }}">
+                {{ etiquetaEstado(fila.fecha.estado) }}
+              </span>
             </header>
             <dl class="card-asis-meta">
               <dt>Fecha</dt>
-              <dd>{{ fila.fecha.fecha }}</dd>
+              <dd>
+                <time [attr.datetime]="fila.fecha.fecha">{{ formatFecha(fila.fecha.fecha) }}</time>
+              </dd>
               <dt>Curso</dt>
               <dd>{{ fila.curso.codigo }}</dd>
               @if (fila.fecha.descripcion) {
@@ -56,10 +214,15 @@
               <dd class="card-asis-conteo">{{ fila.presentes }}/{{ fila.total }}</dd>
             </dl>
             <a
-              class="card-asis-link"
+              class="card-asis-link btn-marcar"
               [routerLink]="linkMarcado(fila)"
               [attr.aria-label]="'Tomar asistencia de ' + fila.curso.nombre + ' — ' + fila.fecha.fecha"
             >
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <path d="M8 2v4M16 2v4M3 10h18" stroke-linecap="round"/>
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <path d="m9 16 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
               Tomar asistencia
             </a>
           </article>
