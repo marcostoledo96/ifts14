@@ -1,13 +1,4 @@
-<section aria-labelledby="marcado-title">
-  <p class="volver">
-    <a routerLink="/admin/asistencias" class="volver-link">
-      <svg class="volver-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      Volver a Asistencias
-    </a>
-  </p>
-
+<section class="marcado-page" aria-labelledby="marcado-title">
   @if (cargando()) {
     <div class="estado-linea" aria-busy="true">Cargando asistencias…</div>
   }
@@ -17,18 +8,36 @@
   }
 
   @if (!cargando() && detalle(); as d) {
-    <header class="marcado-header">
-      <div class="marcado-header-main">
-        <p class="kicker">Registro de presentes · {{ d.codigo }}</p>
-        <h1 id="marcado-title" class="title">{{ d.nombre }}</h1>
-      </div>
-      <a class="link-curso" [routerLink]="['/admin/cursos', d.id]">
-        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke-linecap="round"/>
-          <path d="M15 3h6v6M10 14 21 3" stroke-linecap="round" stroke-linejoin="round"/>
+    <header class="page-header">
+      <a class="volver-link" [routerLink]="['/admin/cursos', d.id]">
+        <svg class="volver-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Ver curso
+        Volver al curso
       </a>
+
+      <div class="page-header-row">
+        <div class="page-header-main">
+          <p class="kicker">Registro de presentes</p>
+          <h1 id="marcado-title" class="title">{{ d.nombre }}</h1>
+          <div class="meta-curso">
+            <span class="meta-item">
+              <span class="meta-dot" aria-hidden="true"></span>
+              {{ d.codigo }}
+            </span>
+            @if (d.cuatrimestre) {
+              <span class="meta-item mono">{{ d.cuatrimestre }}</span>
+            }
+          </div>
+        </div>
+        <a class="link-curso" [routerLink]="['/admin/cursos', d.id]">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke-linecap="round"/>
+            <path d="M15 3h6v6M10 14 21 3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Ver curso
+        </a>
+      </div>
     </header>
 
     <p class="demo-banner" role="status">
@@ -36,147 +45,248 @@
     </p>
 
     @if (fechaActual(); as f) {
-      <section class="controles-card" aria-label="Fecha y búsqueda">
-        <div class="controles">
-          <label class="control-campo">
-            <span class="control-label">Fecha de la clase</span>
-            <span class="select-wrap">
-              <svg class="field-icon field-icon--calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
-              </svg>
-              <select
-                class="fecha-select"
-                [value]="fechaId()"
-                (change)="onFechaSeleccionada($event)"
-                aria-label="Seleccionar fecha de la clase"
-              >
-                @for (opt of fechasOrdenadas(); track opt.id) {
-                  <option [value]="opt.id" [disabled]="opt.estado === 'cancelada'">
-                    {{ opt.fecha }}{{ opt.descripcion ? ' — ' + opt.descripcion : '' }}
-                    @if (opt.estado === 'cancelada') {
-                      (cancelada)
-                    } @else if (opt.estado === 'realizada') {
-                      (realizada)
+      <div class="layout-grid">
+        <div class="col-main">
+          <section class="controles-card" aria-label="Fecha y búsqueda">
+            <div class="controles">
+              <label class="control-campo" for="fecha-clase">
+                <span class="control-label">Fecha de la clase</span>
+                <span class="select-wrap">
+                  <svg class="field-icon field-icon--calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
+                  </svg>
+                  <select
+                    id="fecha-clase"
+                    class="fecha-select"
+                    [value]="fechaId()"
+                    (change)="onFechaSeleccionada($event)"
+                    aria-label="Seleccionar fecha de la clase"
+                  >
+                    @for (opt of fechasOrdenadas(); track opt.id) {
+                      <option [value]="opt.id" [disabled]="opt.estado === 'cancelada'">
+                        {{ etiquetaOpcionFecha(opt) }}
+                      </option>
                     }
-                  </option>
-                }
-              </select>
-            </span>
-          </label>
+                  </select>
+                </span>
+              </label>
 
-          <label class="control-campo filtro-search">
-            <span class="control-label">Buscar alumno</span>
-            <span class="search-wrap">
-              <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"/>
-                <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
-              </svg>
-              <input
-                type="search"
-                autocomplete="off"
-                [value]="q()"
-                (input)="onSearch($event)"
-                placeholder="Apellido, nombre o documento…"
-                aria-label="Buscar alumno por nombre o documento enmascarado"
-              />
-            </span>
-          </label>
-        </div>
-      </section>
+              <label class="control-campo filtro-search" for="buscar-alumno">
+                <span class="control-label">Buscar alumno</span>
+                <span class="search-wrap">
+                  <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+                  </svg>
+                  <input
+                    id="buscar-alumno"
+                    type="search"
+                    autocomplete="off"
+                    [value]="q()"
+                    (input)="onSearch($event)"
+                    placeholder="Apellido, nombre o documento…"
+                    aria-label="Buscar alumno por nombre o documento enmascarado"
+                  />
+                  @if (q()) {
+                    <button
+                      type="button"
+                      class="clear-search"
+                      (click)="onLimpiarBusqueda()"
+                      aria-label="Limpiar búsqueda"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                        <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+                      </svg>
+                    </button>
+                  }
+                </span>
+              </label>
+            </div>
+          </section>
 
-      <dl class="resumen" aria-live="polite">
-        <div class="resumen-item">
-          <dt>Fecha</dt>
-          <dd>{{ f.fecha }}</dd>
-        </div>
-        <div class="resumen-item">
-          <dt>Presentes</dt>
-          <dd class="resumen-presentes">{{ marcadosCount() }}</dd>
-        </div>
-        <div class="resumen-item resumen-cambios" [class.tiene-cambios]="dirty()">
-          <dt>Cambios sin guardar</dt>
-          <dd>
-            @if (dirty()) {
-              {{ cambios() }}
-              @if (agregados() > 0) {
-                <span class="resumen-detalle">· {{ agregados() }} marcado(s)</span>
-              }
-              @if (quitados() > 0) {
-                <span class="resumen-detalle">· {{ quitados() }} quitado(s)</span>
-              }
+          <section class="roster" aria-labelledby="roster-titulo">
+            <header class="roster-header">
+              <div class="roster-title-row">
+                <h2 id="roster-titulo">Alumnos del curso</h2>
+                <span class="roster-count mono" aria-label="{{ alumnosFiltrados().length }} alumnos visibles">
+                  {{ alumnosFiltrados().length }}
+                </span>
+              </div>
+              <p class="roster-hint">Marcá únicamente quiénes estuvieron presentes.</p>
+            </header>
+
+            @if (alumnosFiltrados().length === 0) {
+              <div class="roster-empty">
+                <span class="estado-icon-wrap" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <p class="roster-empty-title">Sin resultados para “{{ q() }}”</p>
+                <p class="roster-empty-copy">Revisá la ortografía o probá con el documento enmascarado.</p>
+                <button type="button" class="btn-secondary btn-compact" (click)="onLimpiarBusqueda()">
+                  Limpiar búsqueda
+                </button>
+              </div>
             } @else {
-              Sin cambios pendientes
+              <div class="roster-cols" aria-hidden="true">
+                <span>#</span>
+                <span>Alumno</span>
+                <span>Documento</span>
+                <span class="col-right">Presente</span>
+              </div>
+
+              <ul class="alumnos-lista">
+                @for (a of alumnosFiltrados(); track a.id; let i = $index) {
+                  <li class="alumno-row" [class.is-presente]="estaMarcado(a.id)">
+                    <span class="alumno-idx mono">{{ indiceFila(i) }}</span>
+                    <div class="alumno-datos">
+                      <span class="alumno-nombre">{{ a.apellidoNombre }}</span>
+                      @if (a.estado === 'inactivo') {
+                        <span class="alumno-estado">inactivo</span>
+                      }
+                      <span class="alumno-dni-mobile mono">DNI {{ a.dniMostrar }}</span>
+                    </div>
+                    <span class="alumno-dni mono">{{ a.dniMostrar }}</span>
+                    <div class="alumno-accion">
+                      <button
+                        type="button"
+                        class="toggle-presente"
+                        [class.presente]="estaMarcado(a.id)"
+                        [attr.aria-pressed]="estaMarcado(a.id)"
+                        (click)="togglePresente(a.id)"
+                        [attr.aria-label]="
+                          (estaMarcado(a.id) ? 'Quitar de presentes a ' : 'Marcar presente a ') +
+                          a.apellidoNombre
+                        "
+                      >
+                        @if (estaMarcado(a.id)) {
+                          <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+                            <path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                          Presente
+                        } @else {
+                          <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                          </svg>
+                          Marcar
+                        }
+                      </button>
+                    </div>
+                  </li>
+                }
+              </ul>
             }
-          </dd>
+          </section>
         </div>
-      </dl>
 
-      <fieldset class="alumnos-fieldset">
-        <legend>Presentes ({{ marcadosCount() }})</legend>
+        <aside class="col-aside">
+          <section class="resumen" aria-labelledby="resumen-titulo">
+            <header class="resumen-header">
+              <h2 id="resumen-titulo">Resumen de carga</h2>
+            </header>
 
-        @if (alumnosFiltrados().length === 0) {
-          <p class="estado-linea">No hay alumnos que coincidan con la búsqueda.</p>
-        } @else {
-          <ul class="alumnos-lista">
-            @for (a of alumnosFiltrados(); track a.id) {
-              <li class="alumno-row">
-                <div class="alumno-datos">
-                  <span class="alumno-nombre">{{ a.apellidoNombre }}</span>
-                  <span class="alumno-dni">{{ a.dniMostrar }}</span>
-                  @if (a.estado === 'inactivo') {
-                    <span class="alumno-estado">inactivo</span>
+            <div class="resumen-body">
+              <div class="resumen-row">
+                <span class="resumen-label">Fecha</span>
+                <span class="resumen-fecha">{{ formatFechaLarga(f.fecha) }}</span>
+              </div>
+
+              <div class="resumen-presentes-box">
+                <span class="resumen-presentes-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke-linecap="round"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 11h-6" stroke-linecap="round"/>
+                  </svg>
+                  Presentes
+                </span>
+                <span class="resumen-presentes mono">{{ marcadosCount() }}</span>
+              </div>
+              <!-- Compat tests / lectores: conteo explícito Presentes (N) -->
+              <p class="sr-only" aria-live="polite">Presentes ({{ marcadosCount() }})</p>
+
+              <div
+                class="resumen-cambios"
+                [class.tiene-cambios]="dirty()"
+                aria-live="polite"
+              >
+                <svg class="resumen-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+                </svg>
+                <div class="resumen-cambios-copy">
+                  @if (dirty()) {
+                    <p class="resumen-cambios-title">
+                      {{ cambios() }}
+                      {{ cambios() === 1 ? 'cambio sin guardar' : 'cambios sin guardar' }}
+                    </p>
+                    <p class="resumen-detalle">
+                      @if (agregados() > 0) {
+                        {{ agregados() }} marcado{{ agregados() === 1 ? '' : 's' }}
+                      }
+                      @if (agregados() > 0 && quitados() > 0) {
+                        <span> · </span>
+                      }
+                      @if (quitados() > 0) {
+                        {{ quitados() }} quitado{{ quitados() === 1 ? '' : 's' }}
+                      }
+                    </p>
+                  } @else if (guardadoOk()) {
+                    <p>Asistencias guardadas.</p>
+                  } @else {
+                    <p>Sin cambios pendientes.</p>
                   }
                 </div>
-                <button
-                  type="button"
-                  class="toggle-presente"
-                  [class.presente]="estaMarcado(a.id)"
-                  [attr.aria-pressed]="estaMarcado(a.id)"
-                  (click)="togglePresente(a.id)"
-                  [attr.aria-label]="
-                    (estaMarcado(a.id) ? 'Quitar de presentes a ' : 'Marcar presente a ') +
-                    a.apellidoNombre
-                  "
-                >
-                  {{ estaMarcado(a.id) ? '✓ Presente' : '+ Marcar' }}
-                </button>
-              </li>
-            }
-          </ul>
-        }
-      </fieldset>
+              </div>
+            </div>
 
-      <div class="acciones">
-        <button
-          type="button"
-          class="btn-primary"
-          (click)="guardar()"
-          [disabled]="!dirty() || guardando()"
-        >
-          {{ guardando() ? 'Guardando…' : 'Guardar' }}
-        </button>
-        <button
-          type="button"
-          class="btn-secondary"
-          (click)="descartar()"
-          [disabled]="!dirty()"
-        >
-          Descartar
-        </button>
+            <div class="acciones">
+              <button
+                type="button"
+                class="btn-primary"
+                (click)="guardar()"
+                [disabled]="!dirty() || guardando()"
+              >
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {{ guardando() ? 'Guardando…' : 'Guardar asistencias' }}
+              </button>
+              <button
+                type="button"
+                class="btn-secondary"
+                (click)="descartar()"
+                [disabled]="!dirty()"
+              >
+                Cancelar
+              </button>
+            </div>
+          </section>
+
+          @if (guardadoOk()) {
+            <p class="guardado-ok" role="status">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Presentes guardados correctamente
+            </p>
+          }
+
+          <output class="guardado-feedback" aria-live="polite">{{ ok() }}</output>
+        </aside>
       </div>
-
-      <output class="guardado-feedback" aria-live="polite">{{ ok() }}</output>
     } @else if (fechaNoEncontrada()) {
-      <p class="estado-linea estado-error" role="alert">
-        Fecha no encontrada. La fecha indicada no pertenece al curso.
-      </p>
-      <p class="volver">
-        <a routerLink="/admin/asistencias" class="volver-link">Volver a Asistencias</a>
-      </p>
-      <p class="volver">
-        <a [routerLink]="['/admin/cursos', courseId()]">Ver detalle del curso</a>
-      </p>
+      <div class="estado-panel estado-error" role="alert">
+        <h2 class="estado-title">Fecha no encontrada</h2>
+        <p>La fecha indicada no pertenece al curso.</p>
+        <div class="error-actions">
+          <a class="btn-primary" [routerLink]="['/admin/cursos', courseId()]">Ver detalle del curso</a>
+          <a class="btn-secondary" routerLink="/admin/asistencias">Ir a Asistencias</a>
+        </div>
+      </div>
     }
   }
 </section>
