@@ -28,6 +28,7 @@ Los prompts anteriores de `docs/opencode/` quedan archivados en `docs/opencode/a
 | Backend | `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md`, `docs/backend/01-contrato-api-certificados.md`, `docs/backend/API.md` |
 | Base de datos | `database/AGENTS.md`, `docs/database/00-mariadb.md`, `docs/database/01-modelo-datos-certificados.md`, `database/README.md` |
 | Deploy | `deploy/AGENTS.md`, `docs/deploy/00-cpanel-certificados.md`, `deploy/README.md` |
+| QA manual | `docs/qa/CHECKLIST-TESTING-MANUAL.md` (checklist integral con checkpoints: flujos, datos, seguridad, API, responsive, a11y) |
 | Auditoría | `docs/auditoria/INDEX.md`, `docs/auditoria/00-inventario-material-descargado.md`, `docs/auditoria/01-auditoria-material-original.md`, `docs/auditoria/02-hallazgos-dumps-sql.md`, `docs/auditoria/IFTS14_ajuste_documentacion_planificacion_marcos_matias.md` |
 | Scripts | `scripts/AGENTS.md` |
 | Specs | `openspec/AGENTS.md`, `openspec/specs/README.md`, `openspec/specs/repo-seguro/spec.md`, `openspec/specs/backend-contrato-api-certificados/spec.md`, `openspec/specs/backend-modelo-datos-certificados/spec.md`, `openspec/specs/frontend-ci-quality-gates/spec.md`, `openspec/specs/backend-ci-quality-gates/spec.md`, `openspec/specs/mariadb-ci-quality-gates/spec.md`, `openspec/specs/security-docs-ci-gates/spec.md` |

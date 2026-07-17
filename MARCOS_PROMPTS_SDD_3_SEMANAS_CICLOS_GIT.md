@@ -1,10 +1,16 @@
 # Marcos — guía operativa SDD para backend, datos y deploy
 
-> **Estado global**: Todos los bloques planificados (M1 al M4) han sido completados con éxito y documentados. El backend, bases de datos y configuración de deploy del MVP están al 100%.
+> **Estado global (2026-07-17): CERRADA — sin ciclos pendientes en esta guía.**
+>
+> Todos los bloques planificados **M1 → M4** están completados, verificados y documentados (`sdd-archive`). No quedan tareas M1-01..M4-07 por abrir desde este archivo.
+>
+> Trabajo operativo posterior (auth sesión PHP, CI P7, staging P8, QA manual, producción) **no forma parte de esta guía de 3 semanas**: se sigue en `docs/planificacion/IFTS14_PLAN_CORRECCIONES_PREPRODUCCION_SDD_TDD.md` y en `docs/qa/CHECKLIST-TESTING-MANUAL.md`.
+>
+> Esta guía queda como **referencia histórica ejecutable** (prompts, checkpoints, plantillas). No iniciar ciclos M1–M4 nuevos salvo regresión o decisión explícita de reabrir alcance.
 
-Esta guía es el punto de entrada para que Marcos trabaje ciclos chicos del módulo `/certificados/` con Spec-Driven Development. Marcos ya conoce el proyecto: este documento prioriza ruta rápida, puntos de parada para QA manual y handoff revisable.
+Esta guía fue el punto de entrada para que Marcos trabaje ciclos chicos del módulo `/certificados/` con Spec-Driven Development. Marcos ya conoce el proyecto: prioriza ruta rápida, puntos de parada para QA manual y handoff revisable.
 
-> Regla base: un ciclo por vez. Cerrar siempre con `sdd-archive` antes de proponer commit.
+> Regla base (sigue vigente para ciclos futuros fuera de M1–M4): un ciclo por vez. Cerrar siempre con `sdd-archive` antes de proponer commit.
 
 ## Herramientas de reducción de tokens y costo
 
@@ -19,8 +25,10 @@ Marcos debe aplicar estas reglas antes de iniciar ciclos con OpenCode/Gentle-AI:
 
 ## Ruta rápida
 
+> **Nota (2026-07-17):** los ciclos M1–M4 de esta guía ya están cerrados. La ruta rápida aplica a **ciclos futuros** fuera de M1–M4 (p. ej. remediaciones del plan P8+), no a reabrir M1–M4.
+
 1. Leer `AGENTS.md`, `docs/00-indice-general.md`, `docs/opencode/optimizacion-tokens.md` y el ciclo activo.
-2. Elegir un ciclo M1-01..M3-06 o un desbloqueo frontend autorizado y abrir sus archivos mínimos.
+2. Elegir un ciclo **nuevo** autorizado (no M1–M4 salvo regresión) y abrir sus archivos mínimos.
 3. Pedir a OpenCode el ciclo SDD completo: explore → propose → spec → design → tasks → apply → verify → archive.
 4. Frenar en cada checkpoint de QA manual y guardar evidencia breve del resultado.
 5. Entregar handoff final con archivos, validaciones, bloqueos, riesgos y comandos Git solo propuestos.
@@ -34,7 +42,7 @@ Marcos debe aplicar estas reglas antes de iniciar ciclos con OpenCode/Gentle-AI:
 | Frontend | Puede tomar solo fundación Angular, validación pública, mocks/contratos frontend y build `/certificados/` cuando Matías esté bloqueado o se necesite destrabar backend. No inventar diseño final. |
 | Material privado | No modificar ni copiar contenido de `material_privado_no_versionar/`; solo nombres y riesgos generales cuando el ciclo lo autorice. |
 | Datos sensibles | No imprimir credenciales, dumps, logs, DNI completo en logs/auditoría ni tokens completos. El DTO público muestra DNI completo por decisión D0. |
-| Decisiones D0 | QR/token permanente (no se rota en operaciones operativas; solo revocación explícita o regeneración excepcional auditada); DNI completo público; certificado de curso con fechas asistidas; auth simple `X-Admin-Key` temporal; firmantes Rector/a + Asesor/a Pedagógica; entrega manual (copiar link + descargar PDF) sin email, SMTP, PHPMailer ni transporte `stub`; staging `/certificados_staging/`. |
+| Decisiones D0 | QR/token permanente (no se rota en operaciones operativas; solo revocación explícita o regeneración excepcional auditada); DNI completo público; certificado de curso con fechas asistidas; **auth admin = sesión PHP nativa + CSRF** (P5-01; `X-Admin-Key` solo CLI/smokes, no autoriza HTTP); firmantes Rector/a + Asesor/a Pedagógica; entrega manual (copiar link + descargar PDF/QR) sin email, SMTP, PHPMailer ni transporte `stub`; staging `/certificados_staging/`. |
 | Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. OpenCode puede crear o cambiar ramas (`git switch`, `git checkout`, `git branch`, `git switch -c`, `git checkout -b`) solo con aprobación explícita de Marcos, árbol limpio y rama fuente explícita/actualizada. |
 | Git — nota | Commit, push y PR requieren aprobación explícita de Marcos en el mismo turno. `git merge`, `git rebase`, `git push` a `main` y merge de PR quedan fuera de OpenCode. |
 
@@ -273,9 +281,7 @@ Commit sugerido: `feat(backend): validar certificados por token`.
 
 ## Semana 3 — backend, base, seguridad, deploy e integración final
 
-Orden actualizado: El bloque fundacional M3 (backend, seguridad, deploy) se encuentra completado y mergeado. Matías avanzó drásticamente y completó la integración real y gran parte de la estructura, por lo que el front dejó de ser un factor bloqueante.
-
-Estado operativo: Los ciclos M3 están resueltos y el enfoque actual recae enteramente sobre el bloque M4 (Emisión real con token permanente, base de datos real y modelo de asistencias/cursos).
+> **Cierre (2026-07-17):** M3 y M4 están **completados y archivados**. El texto de los ciclos abajo se conserva como historial de prompts; **no hay foco pendiente en M3 ni en M4** desde esta guía.
 
 ### Ciclo M3-01 — rate limiting del endpoint público
 
@@ -422,7 +428,7 @@ Commit sugerido: `docs(integracion): cerrar checklist angular api`.
 
 ## Semana 4 — sincronización D0 y backend de certificados de curso
 
-Bloque M4 para alinear backend, DB, PDF, entrega manual, auth y deploy con las decisiones D0 confirmadas: QR/token permanente, DNI completo público, certificado de curso con fechas asistidas, auth simple temporal, firmantes institucionales, Composer como gate de dependencias PHP y staging `/certificados_staging/`. La entrega de certificados es manual (copiar link + descargar PDF); NO se ejecuta email, SMTP, PHPMailer ni transporte `stub` en el MVP.
+> **Bloque M4 — CERRADO.** Histórico: alineó backend, DB, PDF, entrega manual, auth y deploy con D0 (QR/token permanente, DNI completo público, fechas asistidas, firmantes institucionales, Composer/vendor, staging). Entrega manual (link + PDF/QR); sin email/SMTP/PHPMailer/`stub`. **No reabrir ciclos M4 salvo regresión.**
 
 | Ciclo | Nombre | Objetivo | Rama sugerida |
 |---|---|---|---|
