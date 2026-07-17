@@ -1,10 +1,15 @@
 <section aria-labelledby="marcado-title">
   <p class="volver">
-    <a routerLink="/admin/asistencias">← Volver a Asistencias</a>
+    <a routerLink="/admin/asistencias" class="volver-link">
+      <svg class="volver-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Volver a Asistencias
+    </a>
   </p>
 
   @if (cargando()) {
-    <p class="estado-linea">Cargando asistencias…</p>
+    <div class="estado-linea" aria-busy="true">Cargando asistencias…</div>
   }
 
   @if (error()) {
@@ -13,8 +18,17 @@
 
   @if (!cargando() && detalle(); as d) {
     <header class="marcado-header">
-      <p class="kicker">Curso · {{ d.codigo }}</p>
-      <h1 id="marcado-title" class="title">Asistencias — {{ d.nombre }}</h1>
+      <div class="marcado-header-main">
+        <p class="kicker">Registro de presentes · {{ d.codigo }}</p>
+        <h1 id="marcado-title" class="title">{{ d.nombre }}</h1>
+      </div>
+      <a class="link-curso" [routerLink]="['/admin/cursos', d.id]">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke-linecap="round"/>
+          <path d="M15 3h6v6M10 14 21 3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Ver curso
+      </a>
     </header>
 
     <p class="demo-banner" role="status">
@@ -22,39 +36,54 @@
     </p>
 
     @if (fechaActual(); as f) {
-      <div class="controles">
-        <label class="control-campo">
-          <span class="control-label">Fecha de la clase</span>
-          <select
-            class="fecha-select"
-            [value]="fechaId()"
-            (change)="onFechaSeleccionada($event)"
-            aria-label="Seleccionar fecha de la clase"
-          >
-            @for (opt of fechasOrdenadas(); track opt.id) {
-              <option [value]="opt.id" [disabled]="opt.estado === 'cancelada'">
-                {{ opt.fecha }}{{ opt.descripcion ? ' — ' + opt.descripcion : '' }}
-                @if (opt.estado === 'cancelada') {
-                  (cancelada)
-                } @else if (opt.estado === 'realizada') {
-                  (realizada)
+      <section class="controles-card" aria-label="Fecha y búsqueda">
+        <div class="controles">
+          <label class="control-campo">
+            <span class="control-label">Fecha de la clase</span>
+            <span class="select-wrap">
+              <svg class="field-icon field-icon--calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
+              </svg>
+              <select
+                class="fecha-select"
+                [value]="fechaId()"
+                (change)="onFechaSeleccionada($event)"
+                aria-label="Seleccionar fecha de la clase"
+              >
+                @for (opt of fechasOrdenadas(); track opt.id) {
+                  <option [value]="opt.id" [disabled]="opt.estado === 'cancelada'">
+                    {{ opt.fecha }}{{ opt.descripcion ? ' — ' + opt.descripcion : '' }}
+                    @if (opt.estado === 'cancelada') {
+                      (cancelada)
+                    } @else if (opt.estado === 'realizada') {
+                      (realizada)
+                    }
+                  </option>
                 }
-              </option>
-            }
-          </select>
-        </label>
+              </select>
+            </span>
+          </label>
 
-        <label class="control-campo filtro-search">
-          <span class="control-label">Buscar alumno</span>
-          <input
-            type="search"
-            [value]="q()"
-            (input)="onSearch($event)"
-            placeholder="Nombre o documento…"
-            aria-label="Buscar alumno por nombre o documento enmascarado"
-          />
-        </label>
-      </div>
+          <label class="control-campo filtro-search">
+            <span class="control-label">Buscar alumno</span>
+            <span class="search-wrap">
+              <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/>
+                <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+              </svg>
+              <input
+                type="search"
+                autocomplete="off"
+                [value]="q()"
+                (input)="onSearch($event)"
+                placeholder="Apellido, nombre o documento…"
+                aria-label="Buscar alumno por nombre o documento enmascarado"
+              />
+            </span>
+          </label>
+        </div>
+      </section>
 
       <dl class="resumen" aria-live="polite">
         <div class="resumen-item">
@@ -143,7 +172,7 @@
         Fecha no encontrada. La fecha indicada no pertenece al curso.
       </p>
       <p class="volver">
-        <a routerLink="/admin/asistencias">← Volver a Asistencias</a>
+        <a routerLink="/admin/asistencias" class="volver-link">Volver a Asistencias</a>
       </p>
       <p class="volver">
         <a [routerLink]="['/admin/cursos', courseId()]">Ver detalle del curso</a>
