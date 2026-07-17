@@ -78,7 +78,7 @@ El smoke histórico `scripts/test-alto-c-interactive.sh` fue discontinuado porqu
 | `scripts/test-alto-c-interactive.sh` | Discontinuado | Termina con código `2`; no ejecuta requests ni despliegues. |
 | Docs/specs/archivos históricos y deploy | No ejecutable | Se conservan como evidencia o quedan bajo el gate de despliegue; no autorizan HTTP ni se modifican en este ciclo. |
 
-El audit `fault-injection-audit.php` es un arnés CLI opcional de seguridad, no parte de la suite CI estándar: exige configuración demo/test explícita y fixtures de seed antes de renombrar la tabla de auditoría. Su rechazo sin esos prerequisitos es una protección correcta, no una falla del producto.
+El audit `fault-injection-audit.php` corre en el paso E2E de CI: con `IFTS14_TEST_DB_*` + `ALLOW_RESET=1` genera config demo temporal y el token fixture; fuera de CI exige `CERTIFICADOS_CONFIG_PATH` demo/test explícito. El rechazo sin esos prerequisitos es una protección correcta.
 
 ## Pendientes
 

@@ -32,9 +32,24 @@
 
 .resumen { display: block; min-height: 1.25rem; margin-bottom: var(--space-3); color: var(--color-muted-foreground); font-size: .875rem; }
 .curso-ficha { display: flex; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card); }
-.acento { width: var(--space-1); flex: 0 0 var(--space-1); background: var(--color-valid); }
+.acento { width: var(--space-1); flex: 0 0 var(--space-1); background: var(--color-circuit); }
+.acento--inactivo { background: var(--color-border); }
 .curso-contenido { min-width: 0; flex: 1; padding: var(--space-5); }
 .curso-header { display: flex; justify-content: space-between; gap: var(--space-3); align-items: flex-start; }
+.curso-badges { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
+.curso-divider { border: 0; border-top: 1px solid var(--color-border); margin: var(--space-5) 0; }
+.asistencias-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.asistencias-meta { margin: var(--space-1) 0 0; font-size: 0.875rem; color: var(--color-muted-foreground); }
+.asistencias-meta .mono { font-family: var(--font-mono); color: var(--color-foreground); }
+.asistencias-ctas { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+@media (min-width: 40rem) {
+  .asistencias-head { flex-direction: row; align-items: center; justify-content: space-between; }
+}
 .codigo, .fecha { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .codigo { display: inline-block; margin: 0; padding: var(--space-1) var(--space-2); background: var(--color-muted); border-radius: var(--radius-sm); font-size: .75rem; }
 

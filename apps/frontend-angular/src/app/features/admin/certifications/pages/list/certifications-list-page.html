@@ -1,18 +1,292 @@
 <section aria-labelledby="cert-title">
-  <div class="header-row"><div><p class="kicker">Archivo documental</p><h1 id="cert-title" class="title">Certificaciones</h1><p class="subtitle">Emisión, validez y entrega de credenciales académicas.</p></div></div>
-  <p class="demo-banner" role="status">Datos de demostración — No persiste al recargar.</p>
+  <div class="header-row">
+    <div>
+      <p class="kicker">Archivo documental</p>
+      <h1 id="cert-title" class="title">Certificaciones</h1>
+      <p class="subtitle">Emisión, validez y entrega de credenciales académicas del Instituto.</p>
+    </div>
+    <a routerLink="/admin/certificaciones/nueva" class="cta-nueva">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" stroke-linejoin="round"/>
+        <path d="M14 2v6h6M12 18v-6M9 15h6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Nueva certificación
+    </a>
+  </div>
+
+  <p class="demo-banner" role="status">
+    <svg class="demo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+    </svg>
+    Datos de demostración — No persiste al recargar.
+  </p>
+
   <section class="filtros" aria-label="Buscar y filtrar certificaciones">
-    <label class="filtro-search"><span class="filtro-label">Buscar registro</span><input type="search" [value]="q()" (input)="onSearch($event)" placeholder="Alumno, documento, curso o N.º…" aria-label="Buscar certificación" /></label>
-    <label class="filtro-search"><span class="filtro-label">Curso</span><select [value]="curso()" (change)="onCurso($event)" aria-label="Filtrar por curso"><option value="todos">Todos los cursos</option>@for (cursoNombre of cursos(); track cursoNombre) { <option [value]="cursoNombre">{{ cursoNombre }}</option> }</select></label>
-    <div class="filter-group"><span class="filtro-label">Estado de validez</span><div class="filter-chips">@for (e of estados; track e) { <button type="button" class="estado-chip" [attr.aria-pressed]="estado() === e" (click)="onEstado(e)">{{ e }}</button> }</div></div>
-    <div class="results-summary"><p aria-live="polite">Total: {{ certificados().length }} · Coincidencias: {{ resultadosFiltrados().length }} · Visibles: {{ itemsVisibles().length }}</p>@if (hayFiltrosActivos()) { <button type="button" class="clear-filters" (click)="onLimpiarFiltros()">Limpiar filtros</button> }</div>
+    <div class="filtros-top">
+      <label class="filtro-search" for="buscar-certificacion">
+        <span class="filtro-label">Buscar registro</span>
+        <span class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+          </svg>
+          <input
+            id="buscar-certificacion"
+            type="search"
+            autocomplete="off"
+            [value]="q()"
+            (input)="onSearch($event)"
+            placeholder="Alumno, documento, curso o N.º…"
+            aria-label="Buscar certificación"
+          />
+        </span>
+      </label>
+
+      <label class="filtro-curso" for="filtro-curso">
+        <span class="filtro-label">Curso</span>
+        <select
+          id="filtro-curso"
+          [value]="curso()"
+          (change)="onCurso($event)"
+          aria-label="Filtrar por curso"
+        >
+          <option value="todos">Todos los cursos</option>
+          @for (cursoNombre of cursos(); track cursoNombre) {
+            <option [value]="cursoNombre">{{ cursoNombre }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <div class="filtros-chips">
+      <div class="filter-group">
+        <span class="filtro-label" id="filtro-validez-label">Estado de validez</span>
+        <div class="filter-chips" role="group" aria-labelledby="filtro-validez-label">
+          @for (e of estados; track e) {
+            <button
+              type="button"
+              class="chip-estado"
+              [attr.data-estado]="e"
+              [attr.aria-pressed]="estado() === e"
+              (click)="onEstado(e)"
+            >
+              <span class="chip-dot chip-dot--{{ e }}" aria-hidden="true"></span>
+              {{ estadoLabel[e] }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (vistaQA() === 'datos' || !qaEnabled) {
+      <div class="results-summary">
+        <p aria-live="polite">
+          <span class="count-mono">{{ resultadosFiltrados().length }}</span>
+          {{ resultadosFiltrados().length === 1 ? 'certificación' : 'certificaciones' }}
+          {{ hayFiltrosActivos() ? 'coinciden con el filtro' : 'en el archivo' }}
+        </p>
+        @if (hayFiltrosActivos()) {
+          <button type="button" class="clear-filters" (click)="onLimpiarFiltros()">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+            </svg>
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    }
   </section>
-  @if (qaEnabled) { <div class="vista-qa" aria-label="Vista de revisión QA"><span class="filtro-label">Vista de revisión (QA)</span>@for (view of ['datos', 'cargando', 'error', 'vacio-total']; track view) { <button type="button" [attr.aria-pressed]="vistaQA() === view" (click)="onVistaQA($any(view))">{{ view === 'datos' ? 'Con datos' : view === 'cargando' ? 'Cargando' : view === 'error' ? 'Error' : 'Sin registros' }}</button> }</div> }
-  @if (vistaQA() === 'cargando' || cargando()) { <output class="loading" aria-busy="true"><span>Cargando certificaciones…</span><ul>@for (s of [1,2,3,4,5]; track s) { <li class="skeleton"></li> }</ul></output> }
-  @else if (vistaQA() === 'error' || error()) { <div class="estado-error" role="alert"><p>{{ error() || 'No se pudo cargar el listado de certificaciones.' }}</p><button type="button" (click)="onReintentar()">Reintentar</button></div> }
-  @else if (vacioTotal()) { <output data-state="empty-total" class="empty" aria-live="polite">No hay certificaciones registradas.</output> }
-  @else if (sinCoincidencias()) { <output data-state="no-results" class="empty" aria-live="polite">No hay certificaciones que coincidan con los filtros. <button type="button" (click)="onLimpiarFiltros()">Limpiar filtros</button></output> }
-  @else { <div class="certifications-table-wrap"><table><caption>Listado de certificaciones emitidas por el Instituto</caption><thead><tr><th scope="col">N.º certificado</th><th scope="col">Alumno / documento</th><th scope="col">Curso</th><th scope="col">Emisión</th><th scope="col">Validez</th><th scope="col">Acción</th></tr></thead><tbody>@for (c of itemsVisibles(); track c.id) { <tr><td>{{ c.numero }}</td><td>{{ c.nombreAlumno }}<small>{{ c.documentMasked }}</small></td><td>{{ c.cursoNombre }}</td><td>{{ c.emitidoEn || '—' }}</td><td><span class="estado-chip">{{ c.estado }}</span></td><td><a [routerLink]="['/admin/certificaciones', c.id]">Ver detalle</a> <a [routerLink]="['/admin/certificaciones', c.id, 'pdf']">PDF</a></td></tr> }</tbody></table></div>
-    <ul class="cards-mobile">@for (c of itemsVisibles(); track c.id) { <li><article><header><strong>{{ c.numero }}</strong><span class="estado-chip">{{ c.estado }}</span></header><p>{{ c.nombreAlumno }}</p><p>{{ c.cursoNombre }}</p><dl><dt>Documento</dt><dd>{{ c.documentMasked }}</dd><dt>Emisión</dt><dd>{{ c.emitidoEn || '—' }}</dd></dl><a [routerLink]="['/admin/certificaciones', c.id]">Ver detalle</a> <a [routerLink]="['/admin/certificaciones', c.id, 'pdf']">PDF</a></article></li> }</ul>
-    <nav class="paginacion" aria-label="Paginación"><button type="button" aria-label="Página anterior" [disabled]="paginaSegura() === 1" (click)="onPagina(paginaSegura() - 1)">«</button>@for (page of [1, 2]; track page) { @if (page <= totalPaginas()) { <button type="button" [attr.aria-current]="paginaSegura() === page ? 'page' : null" (click)="onPagina(page)">{{ page }}</button> } }<button type="button" aria-label="Página siguiente" [disabled]="paginaSegura() === totalPaginas()" (click)="onPagina(paginaSegura() + 1)">»</button></nav> }
+
+  @if (qaEnabled) {
+    <div class="vista-qa" aria-label="Vista de revisión QA">
+      <span class="vista-qa-label">Vista</span>
+      @for (view of ['datos', 'cargando', 'error', 'vacio-total']; track view) {
+        <button
+          type="button"
+          class="vista-qa-btn"
+          [attr.aria-pressed]="vistaQA() === view"
+          (click)="onVistaQA($any(view))"
+        >
+          {{ view === 'datos' ? 'Con datos' : view === 'cargando' ? 'Cargando' : view === 'error' ? 'Error' : 'Sin registros' }}
+        </button>
+      }
+    </div>
+  }
+
+  @if (vistaQA() === 'cargando' || cargando()) {
+    <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando certificaciones">
+      <div class="skeleton-head">
+        <span class="skeleton-label">Cargando certificaciones…</span>
+      </div>
+      <ul class="skeleton-rows">
+        @for (_ of skeletonRows; track $index) {
+          <li class="skeleton-row">
+            <span class="skeleton-bar skeleton-bar--code skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--name skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--curso skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--date skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--badge skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--action skeleton-pulse"></span>
+          </li>
+        }
+      </ul>
+    </div>
+  } @else if (vistaQA() === 'error' || error()) {
+    <div class="estado-panel estado-error" role="alert">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke-linejoin="round"/>
+          <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">No pudimos cargar el archivo</h2>
+      <p>{{ error() || 'No se pudo cargar el listado de certificaciones.' }}</p>
+      <button type="button" class="btn-primary" (click)="onReintentar()">Reintentar</button>
+    </div>
+  } @else if (vacioTotal()) {
+    <div class="estado-panel" data-state="empty-total" aria-live="polite">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" data-icon="inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+          <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Todavía no hay certificaciones</h2>
+      <p>Cuando emitas la primera credencial, va a aparecer acá con su validez y enlace al expediente.</p>
+      <a class="cta-nueva" routerLink="/admin/certificaciones/nueva">Emitir primera certificación</a>
+    </div>
+  } @else if (sinCoincidencias()) {
+    <div class="estado-panel" data-state="no-results" aria-live="polite">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Sin coincidencias</h2>
+      <p>No hay certificaciones que coincidan con los filtros.</p>
+      <button type="button" class="clear-filters" (click)="onLimpiarFiltros()">Limpiar filtros</button>
+    </div>
+  } @else {
+    <div class="certifications-table-wrap">
+      <table>
+        <caption class="sr-only">Listado de certificaciones emitidas por el Instituto</caption>
+        <thead>
+          <tr>
+            <th scope="col">N.º certificado</th>
+            <th scope="col">Alumno / documento</th>
+            <th scope="col">Curso</th>
+            <th scope="col">Emisión</th>
+            <th scope="col">Validez</th>
+            <th scope="col" class="th-actions">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of itemsVisibles(); track c.id) {
+            <tr [class.is-revocado]="c.estado === 'revocado'">
+              <td>
+                <span class="cert-numero mono" [class.line-through]="c.estado === 'revocado'">{{ c.numero }}</span>
+              </td>
+              <td>
+                <span class="alumno-nombre">{{ c.nombreAlumno }}</span>
+                <span class="alumno-doc mono">DNI {{ c.documentMasked }}</span>
+              </td>
+              <td class="curso-nombre">{{ c.cursoNombre }}</td>
+              <td class="mono emision">{{ formatEmision(c.emitidoEn) }}</td>
+              <td>
+                <span class="validez-badge validez-badge--{{ c.estado }}" [attr.data-estado]="c.estado">
+                  <span class="validez-dot" aria-hidden="true"></span>
+                  {{ etiquetaEstado(c.estado) }}
+                </span>
+              </td>
+              <td class="td-actions">
+                <a
+                  class="btn-ver"
+                  [routerLink]="['/admin/certificaciones', c.id]"
+                  [attr.aria-label]="'Ver detalle del certificado ' + c.numero"
+                >
+                  <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  Ver detalle
+                </a>
+                <a class="btn-pdf" [routerLink]="['/admin/certificaciones', c.id, 'pdf']">PDF</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="table-footer">
+        <p>
+          Mostrando
+          <span class="count-mono">{{ itemsVisibles().length }}</span>
+          de
+          <span class="count-mono">{{ resultadosFiltrados().length }}</span>
+          registros
+        </p>
+        <nav class="paginacion" aria-label="Paginación">
+          <button type="button" aria-label="Página anterior" [disabled]="paginaSegura() === 1" (click)="onPagina(paginaSegura() - 1)">«</button>
+          @for (page of [1, 2, 3, 4, 5]; track page) {
+            @if (page <= totalPaginas()) {
+              <button type="button" [attr.aria-current]="paginaSegura() === page ? 'page' : null" (click)="onPagina(page)">{{ page }}</button>
+            }
+          }
+          <button type="button" aria-label="Página siguiente" [disabled]="paginaSegura() === totalPaginas()" (click)="onPagina(paginaSegura() + 1)">»</button>
+        </nav>
+      </div>
+    </div>
+
+    <ul class="cards-mobile">
+      @for (c of itemsVisibles(); track c.id) {
+        <li>
+          <article [class.is-revocado]="c.estado === 'revocado'">
+            <header>
+              <strong class="cert-numero mono" [class.line-through]="c.estado === 'revocado'">{{ c.numero }}</strong>
+              <span class="validez-badge validez-badge--{{ c.estado }}" [attr.data-estado]="c.estado">
+                <span class="validez-dot" aria-hidden="true"></span>
+                {{ etiquetaEstado(c.estado) }}
+              </span>
+            </header>
+            <p class="alumno-nombre">{{ c.nombreAlumno }}</p>
+            <p class="alumno-doc mono">DNI {{ c.documentMasked }}</p>
+            <p class="curso-nombre">{{ c.cursoNombre }}</p>
+            <dl>
+              <dt>Emisión</dt>
+              <dd class="mono">{{ formatEmision(c.emitidoEn) }}</dd>
+            </dl>
+            <div class="card-actions">
+              <a class="btn-ver" [routerLink]="['/admin/certificaciones', c.id]">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Ver detalle
+              </a>
+              <a class="btn-pdf" [routerLink]="['/admin/certificaciones', c.id, 'pdf']">PDF</a>
+            </div>
+          </article>
+        </li>
+      }
+      <li class="cards-footer">
+        <p>
+          Mostrando
+          <span class="count-mono">{{ itemsVisibles().length }}</span>
+          de
+          <span class="count-mono">{{ resultadosFiltrados().length }}</span>
+          registros
+        </p>
+        <nav class="paginacion" aria-label="Paginación móvil">
+          <button type="button" aria-label="Página anterior" [disabled]="paginaSegura() === 1" (click)="onPagina(paginaSegura() - 1)">«</button>
+          @for (page of [1, 2, 3, 4, 5]; track page) {
+            @if (page <= totalPaginas()) {
+              <button type="button" [attr.aria-current]="paginaSegura() === page ? 'page' : null" (click)="onPagina(page)">{{ page }}</button>
+            }
+          }
+          <button type="button" aria-label="Página siguiente" [disabled]="paginaSegura() === totalPaginas()" (click)="onPagina(paginaSegura() + 1)">»</button>
+        </nav>
+      </li>
+    </ul>
+  }
 </section>

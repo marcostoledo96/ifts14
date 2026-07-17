@@ -1,0 +1,70 @@
+<section aria-labelledby="student-new-title">
+  <nav class="breadcrumb" aria-label="Migas de pan">
+    <a routerLink="/admin/alumnos" class="breadcrumb-link">Alumnos</a>
+    <span class="sep" aria-hidden="true">/</span>
+    <span class="active">Nuevo alumno</span>
+  </nav>
+
+  <header class="header-row">
+    <div>
+      <p class="kicker">Registro académico</p>
+      <h1 id="student-new-title" class="title">Nuevo alumno</h1>
+      <p class="subtitle">Alta mínima: apellido y nombre, y documento. El estado queda activo por defecto.</p>
+    </div>
+  </header>
+
+  <p class="demo-banner" role="status">
+    Datos de demostración: en modo mock los cambios viven en memoria hasta recargar.
+  </p>
+
+  @if (errorSubmit()) {
+    <p class="estado-error" role="alert">{{ errorSubmit() }}</p>
+  }
+
+  <form class="form-panel" (ngSubmit)="guardar()" novalidate>
+    <label class="campo">
+      <span class="campo-label">Apellido y nombre</span>
+      <input
+        type="text"
+        name="apellidoNombre"
+        autocomplete="name"
+        [value]="apellidoNombre()"
+        (input)="onApellidoNombre($event)"
+        [attr.aria-invalid]="errorApellido() ? 'true' : null"
+        [attr.aria-describedby]="errorApellido() ? 'err-apellido' : null"
+        [disabled]="guardando()"
+        required
+      />
+      @if (errorApellido()) {
+        <span id="err-apellido" class="campo-error" role="alert">{{ errorApellido() }}</span>
+      }
+    </label>
+
+    <label class="campo">
+      <span class="campo-label">DNI</span>
+      <input
+        type="text"
+        name="dni"
+        inputmode="numeric"
+        autocomplete="off"
+        [value]="dni()"
+        (input)="onDni($event)"
+        [attr.aria-invalid]="errorDni() ? 'true' : null"
+        [attr.aria-describedby]="errorDni() ? 'err-dni' : null"
+        [disabled]="guardando()"
+        required
+      />
+      @if (errorDni()) {
+        <span id="err-dni" class="campo-error" role="alert">{{ errorDni() }}</span>
+      }
+      <span class="campo-ayuda">Solo se usa para el alta. En listados se muestra enmascarado.</span>
+    </label>
+
+    <div class="acciones">
+      <a routerLink="/admin/alumnos" class="btn-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary" [disabled]="guardando()">
+        {{ guardando() ? 'Guardando…' : 'Crear alumno' }}
+      </button>
+    </div>
+  </form>
+</section>

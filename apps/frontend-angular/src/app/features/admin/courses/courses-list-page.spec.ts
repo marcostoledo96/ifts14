@@ -1,17 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { CoursesListPage } from './courses-list-page';
+import { COURSES_QA_ENABLED, CoursesListPage } from './courses-list-page';
 import { Curso } from './courses.models';
 import { COURSES_SOURCE, CoursesService } from './courses.service';
 import { InMemoryCoursesService } from './in-memory-courses.service';
 
 describe('CoursesListPage', () => {
-  async function render(source: CoursesService = new InMemoryCoursesService()) {
+  async function render(
+    source: CoursesService = new InMemoryCoursesService(),
+    qaEnabled?: boolean,
+  ) {
     await TestBed.configureTestingModule({
       imports: [CoursesListPage],
       providers: [
         provideRouter([]),
         { provide: COURSES_SOURCE, useValue: source },
+        ...(qaEnabled === undefined ? [] : [{ provide: COURSES_QA_ENABLED, useValue: qaEnabled }]),
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(CoursesListPage);
@@ -22,12 +26,15 @@ describe('CoursesListPage', () => {
     return fixture;
   }
 
-  it('muestra título Cursos y enlace Nuevo curso', async () => {
+  it('muestra título Cursos y enlace Nuevo curso con icono Plus', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Cursos');
     const nuevoLink = el.querySelector('a[routerLink="/admin/cursos/nuevo"]');
     expect(nuevoLink).not.toBeNull();
+    expect(nuevoLink?.querySelector('svg.btn-icon')).not.toBeNull();
+    expect(el.querySelector('.filtro-search .search-icon')).not.toBeNull();
+    expect(el.querySelector('.filtros .results-summary')).not.toBeNull();
   });
 
   it('muestra banner Datos de demostración', async () => {
@@ -46,6 +53,22 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('button[aria-pressed][data-fechas="con"]')).not.toBeNull();
     expect(el.querySelector('button[aria-pressed][data-fechas="sin"]')).not.toBeNull();
     expect(el.querySelector('[aria-live="polite"]')?.textContent).toContain('cursos');
+  });
+
+  it('expone chips de estado con dots y no usa select de estado', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('select')).toBeNull();
+    expect(el.querySelector('input[type="search"]')).not.toBeNull();
+    for (const estado of ['borrador', 'activo', 'cerrado', 'archivado']) {
+      const chip = el.querySelector(`button[data-estado="${estado}"]`) as HTMLButtonElement | null;
+      expect(chip).not.toBeNull();
+      expect(chip?.querySelector('.chip-dot')).not.toBeNull();
+    }
+    expect(el.textContent).toContain('Activos');
+    expect(el.textContent).toContain('Cerrados');
+    expect(el.textContent).toContain('Archivados');
+    expect(el.textContent).toContain('Borrador');
   });
 
   it('limpia filtros y mantiene acciones de detalle y edición accesibles', async () => {
@@ -69,18 +92,21 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('a[aria-label^="Editar"]')).not.toBeNull();
   });
 
-  it('expone input type=search y select de estado', async () => {
-    const f = await render();
-    const el = f.nativeElement as HTMLElement;
-    expect(el.querySelector('input[type="search"]')).not.toBeNull();
-    expect(el.querySelector('select')).not.toBeNull();
-  });
-
-  it('renderiza items del seed (6 cursos)', async () => {
+  it('renderiza items del seed (6 cursos) con badge, acento, iconos y placeholders', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const cards = el.querySelectorAll('.card-curso');
     expect(cards.length).toBe(6);
+    expect(el.querySelector('.estado-badge .estado-dot')).not.toBeNull();
+    expect(el.querySelector('.row-accent')).not.toBeNull();
+    expect(el.querySelector('.card-accent')).not.toBeNull();
+    expect(el.querySelector('.action-icon svg')).not.toBeNull();
+    expect(el.querySelector('.metrics .metric-icon')).not.toBeNull();
+    expect(el.textContent).toContain('Activo');
+    expect(el.textContent).toContain('fechas');
+    const presentes = el.querySelectorAll('td span[title="Dato disponible con integración real"]');
+    expect(presentes.length).toBeGreaterThan(0);
+    expect(presentes[0].textContent).toContain('—');
   });
 
   it('enlaces de detalle apuntan a /admin/cursos/:id', async () => {
@@ -91,17 +117,34 @@ describe('CoursesListPage', () => {
     expect(link?.getAttribute('href')).toContain('/admin/cursos/');
   });
 
-  it('filtrar por estado=activo reduce la lista', async () => {
+  it('filtrar por estado=activo con chip reduce la lista', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const select = el.querySelector('select') as HTMLSelectElement;
-    select.value = 'activo';
-    select.dispatchEvent(new Event('change'));
+    const chip = el.querySelector('button[data-estado="activo"]') as HTMLButtonElement;
+    chip.click();
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
     const cards = el.querySelectorAll('.card-curso');
     expect(cards.length).toBe(3);
+  });
+
+  it('segundo click en el mismo chip limpia el filtro de estado', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const chip = el.querySelector('button[data-estado="activo"]') as HTMLButtonElement;
+    chip.click();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(el.querySelectorAll('.card-curso').length).toBe(3);
+    chip.click();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(chip.getAttribute('aria-pressed')).toBe('false');
+    expect(el.querySelectorAll('.card-curso').length).toBe(6);
   });
 
   it('filtrar por texto reduce la lista', async () => {
@@ -117,7 +160,7 @@ describe('CoursesListPage', () => {
     expect(cards.length).toBe(1);
   });
 
-  it('filtrar sin matches muestra mensaje de vacío', async () => {
+  it('filtrar sin matches muestra vacío v0 con título e icono', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const input = el.querySelector('input[type="search"]') as HTMLInputElement;
@@ -126,10 +169,13 @@ describe('CoursesListPage', () => {
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
-    expect(el.textContent).toContain('No hay cursos que coincidan');
+    expect(el.querySelector('[data-state="no-results"] .estado-title')?.textContent).toContain(
+      'Ningún curso coincide',
+    );
+    expect(el.querySelector('[data-state="no-results"] .estado-icon')).not.toBeNull();
   });
 
-  it('muestra error seguro y reintenta la carga', async () => {
+  it('muestra error v0 con título, icono y reintenta la carga', async () => {
     const source = jasmine.createSpyObj<CoursesService>('CoursesService', [
       'listar', 'obtener', 'crear', 'actualizarEstado', 'listarFechas', 'guardarFecha', 'reemplazarFechas',
     ]);
@@ -139,7 +185,11 @@ describe('CoursesListPage', () => {
     );
     const f = await render(source);
     const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="alert"] .estado-title')?.textContent).toContain(
+      'No pudimos cargar los cursos',
+    );
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('No se pudo cargar');
+    expect(el.querySelector('[role="alert"] .estado-icon')).not.toBeNull();
     const retry = el.querySelector('[role="alert"] button') as HTMLButtonElement;
     expect(retry.textContent).toContain('Reintentar');
     retry.click();
@@ -147,7 +197,41 @@ describe('CoursesListPage', () => {
     await f.whenStable();
     f.detectChanges();
     expect(source.listar).toHaveBeenCalledTimes(2);
-    expect(el.textContent).toContain('Todavía no hay cursos cargados');
+    expect(el.querySelector('[data-state="empty-total"] .estado-title')?.textContent).toContain(
+      'Todavía no hay cursos cargados',
+    );
+    expect(el.querySelector('[data-state="empty-total"] a[routerLink="/admin/cursos/nuevo"]')?.textContent)
+      .toContain('Crear primer curso');
+  });
+
+  it('expone Vista QA en desarrollo y fuerza skeleton/vacío/error', async () => {
+    const f = await render(new InMemoryCoursesService(), true);
+    const el = f.nativeElement as HTMLElement;
+    const page = f.componentInstance;
+    expect(el.querySelector('.vista-qa')).not.toBeNull();
+    expect(el.textContent).toContain('Con datos');
+    expect(el.textContent).toContain('Sin cursos');
+
+    page.onVistaQA('cargando');
+    f.detectChanges();
+    expect(el.querySelector('.tabla-skeleton[aria-busy="true"]')).not.toBeNull();
+
+    page.onVistaQA('vacio-total');
+    f.detectChanges();
+    expect(el.querySelector('[data-state="empty-total"]')).not.toBeNull();
+
+    page.onVistaQA('error');
+    f.detectChanges();
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it('ignora onVistaQA cuando QA está deshabilitado', async () => {
+    const f = await render(new InMemoryCoursesService(), false);
+    const page = f.componentInstance;
+    page.onVistaQA('cargando');
+    f.detectChanges();
+    expect(page.vistaQA()).toBe('datos');
+    expect((f.nativeElement as HTMLElement).querySelector('.vista-qa')).toBeNull();
   });
 
   it('conserva el último filtro cuando dos cargas terminan en orden inverso', async () => {

@@ -28,7 +28,6 @@ async function renderWith(token: string, source: ValidationSource) {
   const fixture = TestBed.createComponent(PublicValidationPage);
   fixture.componentRef.setInput('tokenCertificacion', token);
   fixture.detectChanges();
-  // resource() loader es async: esperar resolución.
   await fixture.whenStable();
   fixture.detectChanges();
   return fixture;
@@ -50,122 +49,126 @@ describe('PublicValidationPage', () => {
 
   const notFoundResult: ValidationSourceResult = {
     ok: false,
-    error: { error: { code: 'CERTIFICATE_NOT_FOUND', message: 'x', details: [] }, meta: { requestId: 'r' } },
+    error: {
+      error: { code: 'CERTIFICATE_NOT_FOUND', message: 'x', details: [] },
+      meta: { requestId: 'r' },
+    },
   };
 
   const revokedResult: ValidationSourceResult = {
     ok: false,
-    error: { error: { code: 'CERTIFICATE_REVOKED', message: 'x', details: [] }, meta: { requestId: 'r' } },
+    error: {
+      error: { code: 'CERTIFICATE_REVOKED', message: 'x', details: [] },
+      meta: { requestId: 'r' },
+    },
   };
 
   const expiredResult: ValidationSourceResult = {
     ok: false,
-    error: { error: { code: 'CERTIFICATE_EXPIRED', message: 'x', details: [] }, meta: { requestId: 'r' } },
+    error: {
+      error: { code: 'CERTIFICATE_EXPIRED', message: 'x', details: [] },
+      meta: { requestId: 'r' },
+    },
   };
 
   const techResult: ValidationSourceResult = { ok: false, error: null };
 
-  it('demo-valido → bloque válido con curso, DNI completo y fechas asistidas (D0)', async () => {
+  it('demo-valido → folio válido con ACTA, DNI completo, fechas y PieControl (D0)', async () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const text = textOf(fixture);
-    expect(text).toContain('Certificado verificable');
+    expect(text).toContain('ACTA DE VALIDACIÓN ACADÉMICA');
+    expect(text).toContain('Certificación válida');
+    expect(text).toContain('Documento verificado');
     expect(text).toContain('Técnico Superior en Sistemas');
     expect(text).toContain('12345678');
     expect(text).toContain('2025-03-10');
     expect(text).toContain('2025-03-12');
+    expect(text).toContain('Certificado de curso');
+    expect(text).toContain('ESTADO DE REGISTRO: VÁLIDO');
     expect(text).not.toContain('demo-valido');
   });
 
-  it('demo-revocado → mismo bloque "no verificable"', async () => {
+  it('demo-revocado → chrome revocada con sello, sin inventar alumno', async () => {
     const fixture = await renderWith('demo-revocado', new StubSource(revokedResult));
     const text = textOf(fixture);
-    expect(text).toContain('no es verificable');
-    expect(text).not.toContain('revocado');
+    expect(text).toContain('Certificación revocada');
+    expect(text).toContain('REVOCADO');
     expect(text).not.toContain('CERTIFICATE_REVOKED');
+    expect(text).not.toContain('María');
+    expect(text).not.toContain('12345678');
   });
 
-  it('demo-expirado → mismo bloque "no verificable"', async () => {
+  it('demo-expirado → chrome no encontrada (sin revelar expirado)', async () => {
     const fixture = await renderWith('demo-expirado', new StubSource(expiredResult));
     const text = textOf(fixture);
-    expect(text).toContain('no es verificable');
+    expect(text).toContain('Certificación no encontrada');
+    expect(text).toContain('SIN REGISTRO');
     expect(text).not.toContain('expirado');
+    expect(text).not.toContain('CERTIFICATE_EXPIRED');
   });
 
-  it('demo-inexistente → mismo bloque "no verificable"', async () => {
+  it('demo-inexistente → chrome no encontrada', async () => {
     const fixture = await renderWith('demo-inexistente', new StubSource(notFoundResult));
     const text = textOf(fixture);
-    expect(text).toContain('no es verificable');
+    expect(text).toContain('Certificación no encontrada');
+    expect(text).toContain('Sin registro para esta consulta');
     expect(text).not.toContain('404');
     expect(text).not.toContain('CERTIFICATE_NOT_FOUND');
   });
 
-  it('demo-error-tecnico → bloque técnico, sin stack ni rutas', async () => {
+  it('demo-error-tecnico → chrome documental sin stack ni rutas', async () => {
     const fixture = await renderWith('demo-error-tecnico', new StubSource(techResult));
     const text = textOf(fixture);
-    expect(text).toContain('No se pudo completar la verificación');
+    expect(text).toContain('No pudimos completar la validación');
+    expect(text).toContain('Reintentar validación');
+    expect(text).toContain('SERVICE_UNAVAILABLE');
     expect(text).not.toContain('stack');
     expect(text).not.toContain('/api/');
   });
 
   it('BandaEstado es el único dueño de aria-live (sin región anidada)', async () => {
-    const fixture = await renderWith('demo-revocado', new StubSource(revokedResult));
+    const fixture = await renderWith('demo-inexistente', new StubSource(notFoundResult));
     const el = fixture.nativeElement as HTMLElement;
-    // W3: el contenedor genérico ya no expone aria-live; BandaEstado es el único dueño.
     const liveRegions = el.querySelectorAll('[aria-live="polite"]');
     expect(liveRegions.length).toBe(1);
     expect(liveRegions[0].closest('app-banda-estado')).not.toBeNull();
     expect(liveRegions[0].getAttribute('aria-atomic')).toBe('true');
-    // El contenedor raíz de la página no debe replicar live semantics.
     const wrapper = el.querySelector('section.validation');
     expect(wrapper?.hasAttribute('aria-live')).toBe(false);
   });
 
-  it('estado válido se anuncia vía BandaEstado (única región live, contiene texto válido)', async () => {
+  it('estado válido anuncia vía BandaEstado dentro del folio', async () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const el = fixture.nativeElement as HTMLElement;
-    // W4 (Codex PR #33): el estado válido también debe comunicarse vía BandaEstado.
     const liveRegions = el.querySelectorAll('[aria-live="polite"]');
     expect(liveRegions.length).toBe(1);
     expect(liveRegions[0].closest('app-banda-estado')).not.toBeNull();
-    expect(liveRegions[0].getAttribute('aria-atomic')).toBe('true');
-    const banda = el.querySelector('app-banda-estado');
+    const banda = el.querySelector('article.folio app-banda-estado');
     expect(banda).not.toBeNull();
-    expect(banda?.textContent ?? '').toContain('Certificado verificable');
-    // Sin región live anidada dentro del folio de detalles.
-    const folio = el.querySelector('article.folio');
-    expect(folio?.querySelectorAll('[aria-live]').length ?? 0).toBe(0);
+    expect(banda?.textContent ?? '').toContain('Documento verificado');
   });
 
   it('render basado en primitivos: dl/dt/dd nativos válidos en bloque válido (W2)', async () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const el = fixture.nativeElement as HTMLElement;
-    // W2: el bloque válido usa dt/dd nativos dentro de un dl; sin wrappers custom.
     const dl = el.querySelector('dl');
     expect(dl).not.toBeNull();
     expect(dl?.querySelector('dt')).not.toBeNull();
     expect(dl?.querySelector('dd')).not.toBeNull();
-    // Sin elementos custom dentro del <dl> (content model válido).
     expect(dl?.querySelector('app-campo-dato, app-banda-estado')).toBeNull();
   });
 
-  it('membrete institucional "IFTS N.° 14 — Bedelía" visible en estado válido', async () => {
-    const fixture = await renderWith('demo-valido', new StubSource(validResult));
-    const text = textOf(fixture);
-    expect(text).toContain('IFTS N.° 14 — Bedelía');
-  });
-
-  it('tabla de fechas asistidas: una fila por fecha, sin coma-separadas', async () => {
+  it('tabla de fechas asistidas: SEQ padded y SÍ', async () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const el = fixture.nativeElement as HTMLElement;
     const filas = el.querySelectorAll('table.tabla-asistencias tbody tr');
     expect(filas.length).toBe(2);
-    // Cada celda de fecha contiene solo una fecha, no ambas separadas por coma.
-    const fechas = Array.from(filas).map((f) => f.querySelectorAll('td')[1]?.textContent?.trim() ?? '');
-    expect(fechas).toContain('2025-03-10');
-    expect(fechas).toContain('2025-03-12');
+    expect(filas[0].querySelectorAll('td')[0]?.textContent?.trim()).toBe('001');
+    expect(filas[1].querySelectorAll('td')[0]?.textContent?.trim()).toBe('002');
+    expect(textOf(fixture)).toContain('SÍ');
   });
 
-  it('sidebar con sello decorativo aria-hidden y timestamp de consulta', async () => {
+  it('sidebar con sello decorativo aria-hidden, PieControl y timestamp', async () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const el = fixture.nativeElement as HTMLElement;
     const aside = el.querySelector('aside.folio-aside');
@@ -173,8 +176,8 @@ describe('PublicValidationPage', () => {
     const sello = aside?.querySelector('svg.sello-svg');
     expect(sello).not.toBeNull();
     expect(sello?.getAttribute('aria-hidden')).toBe('true');
-    expect(aside?.textContent ?? '').toContain('CONSULTA');
     expect(aside?.textContent ?? '').toMatch(/\d{2}\/\d{2}\/\d{4} · \d{2}:\d{2} ART/);
+    expect(el.querySelector('.pie-control .pie-mono')?.textContent?.trim()).toBe('14');
   });
 
   it('no dibuja QR decorativo', async () => {
@@ -182,29 +185,28 @@ describe('PublicValidationPage', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('app-qr-verificacion')).toBeNull();
     const aside = el.querySelector('aside.folio-aside');
-    // Solo el sello SVG en el aside, sin QR ni canvas/canvas-like.
     const svgs = aside?.querySelectorAll('svg') ?? [];
     expect(svgs.length).toBe(1);
   });
 
-  it('estado no-verificable con cuerpo editorial y sugerencias', async () => {
+  it('estado no-encontrada con sugerencias numeradas y sello sin-registro', async () => {
     const fixture = await renderWith('demo-inexistente', new StubSource(notFoundResult));
     const el = fixture.nativeElement as HTMLElement;
     const folio = el.querySelector('article.folio-no-verificable');
     expect(folio).not.toBeNull();
-    // Cuerpo editorial con lista de sugerencias.
-    expect(folio?.querySelector('ol.sugerencias')).not.toBeNull();
-    expect(folio?.querySelectorAll('ol.sugerencias li').length).toBeGreaterThan(0);
-    // Botón reintentar presente.
+    expect(folio?.querySelectorAll('ul.sugerencias li').length).toBe(3);
     expect(folio?.querySelector('button.btn-primario')).not.toBeNull();
+    expect(folio?.textContent ?? '').toContain('SIN REGISTRO');
+    expect(folio?.querySelector('aside svg.sello-svg')).not.toBeNull();
   });
 
-  it('estado technical-error con botón reintentar', async () => {
+  it('estado technical-error con botón reintentar y pie', async () => {
     const fixture = await renderWith('demo-error-tecnico', new StubSource(techResult));
     const el = fixture.nativeElement as HTMLElement;
     const folio = el.querySelector('article.folio-error');
     expect(folio).not.toBeNull();
     expect(folio?.querySelector('button.btn-primario')).not.toBeNull();
+    expect(folio?.querySelector('.pie-control')).not.toBeNull();
   });
 
   it('error de resource() muestra bloque técnico (isTechnicalError)', async () => {
@@ -226,7 +228,6 @@ describe('PublicValidationPage', () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const text = textOf(fixture);
     expect(text).not.toContain('demo-valido');
-    // Sin rutas internas ni stack traces.
     expect(text).not.toMatch(/\/api\//);
     expect(text).not.toMatch(/stack/i);
   });
@@ -234,6 +235,6 @@ describe('PublicValidationPage', () => {
   it('con MockValidationSource real: demo-valido → válido (smoke del wiring)', async () => {
     const fixture = await renderWith('demo-valido', new MockValidationSource());
     const text = textOf(fixture);
-    expect(text).toContain('Certificado verificable');
+    expect(text).toContain('Certificación válida');
   });
 });

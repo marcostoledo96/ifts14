@@ -47,8 +47,9 @@ export function studentDocumentDisplay(student: CertificateStudentDto): string {
 }
 
 // Estado de vista consumido por la UI pública.
-// Regla pública: 404 CERTIFICATE_NOT_FOUND, revocado, expirado e inexistente
-// colapsan a `not-verifiable`. `reason` es interno (logs), la UI no lo muestra.
+// Regla pública: 404, revocado, expirado e inexistente colapsan a `not-verifiable`
+// con `reason` interno. La UI puede ramificar chrome de revocada solo cuando
+// reason === CERTIFICATE_REVOKED (mock/futuro); el resto usa no-encontrada.
 // `technical-error` queda separado y sin detalles de infraestructura.
 export type ValidationViewState =
   | { kind: 'valid'; certificate: CertificateVerificationDto; requestId: string }

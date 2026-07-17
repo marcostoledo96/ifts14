@@ -94,21 +94,22 @@ En desarrollo y tests, el sistema DEBE ofrecer un harness QA explícito y no per
 
 ### Requirement: Previsualización segura y handoff explícito
 
-El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente mock-only con estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Revocar certificación` DEBE navegar a `/admin/certificaciones/:id/revocar`; `Copiar link` y `Entrega manual` DEBEN permanecer deshabilitadas con handoff F6-03 y F5-04. El QR/token DEBE permanecer permanente. NO DEBE usar backend, HTTP, storage, sesión real, `X-Admin-Key`, PDF/QR real, dependencias nuevas, datos reales, DNI/token completos, email, legajo ni matrícula.
+El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente con estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada decorativa. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Revocar certificación` DEBE navegar a `/admin/certificaciones/:id/revocar`; `Entrega manual` DEBE navegar al flujo de entrega vigente. `Copiar link` y `Compartir` DEBEN usar la URL canónica de `obtenerEntregaManual().publicValidationUrl` (deshabilitados si revocado o sin URL). Las autoridades de la réplica DEBEN venir de configuración institucional (`rectorName`/`advisorName` + roles); si la config falla o ambos nombres están vacíos, DEBE mostrar “Configuración institucional pendiente” sin bloquear Copiar/Compartir. El QR/token DEBE permanecer permanente. NO DEBE exponer DNI/token completos, email, legajo ni matrícula.
 
-#### Scenario: Expediente de una certificación mock
+#### Scenario: Expediente de una certificación
 
-- **Given** Bedelía abre un expediente con id mock válido
+- **Given** Bedelía abre un expediente con id válido
 - **When** la pantalla carga
-- **Then** DEBE mostrar datos seguros, URL truncada y permitir volver al listado.
+- **Then** DEBE mostrar datos seguros, URL truncada decorativa y permitir volver al listado.
 
-#### Scenario: Handoff F4-02 y F6-01 habilitados, restantes diferidos
+#### Scenario: Acciones PDF, revocación, entrega y copy/share
 
-- **Given** Bedelía visualiza un expediente mock
-- **When** selecciona una acción PDF, de revocación, o revisa los demás controles
+- **Given** Bedelía visualiza un expediente
+- **When** selecciona PDF, revocación, entrega, o inspecciona Copiar/Compartir
 - **Then** las acciones PDF DEBEN abrir la vista imprimible sin rotar QR/token.
-- **And** la acción de revocación DEBE navegar a `/admin/certificaciones/:id/revocar`.
-- **And** los otros controles DEBEN continuar deshabilitados con su handoff explícito.
+- **And** la revocación DEBE navegar a `/admin/certificaciones/:id/revocar`.
+- **And** Entrega manual DEBE navegar al flujo de entrega vigente.
+- **And** Copiar/Compartir DEBEN usar la URL canónica de entrega-manual cuando el certificado no está revocado.
 
 #### Scenario: Id inexistente, inválido o ausente
 
@@ -120,7 +121,7 @@ El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente mock-only 
 
 - **Given** el expediente se renderiza en la UI admin
 - **When** se inspecciona la información visible
-- **Then** NO DEBE exponer datos prohibidos ni realizar solicitudes de red.
+- **Then** NO DEBE exponer DNI completo, token completo, email, legajo ni matrícula.
 
 ### Requirement: Paridad visual, folio imprimible y evidencia de verificación
 
@@ -150,7 +151,15 @@ El sistema DEBE mantener paridad visual igual o mejor que la referencia v0 del e
 - **Given** la vista imprimible está cargada
 - **When** Bedelía ejecuta la impresión nativa
 - **Then** DEBE aplicarse A4 apaisado y excluir los controles no imprimibles.
-- **And** NO DEBE generarse ni descargarse un PDF real.
+- **And** la impresión MUST usar `window.print()` (no generar PDF client-side inventado).
+
+#### Scenario: Descargar PDF con seam API (P-13)
+
+- **Given** la vista `/admin/certificaciones/:id/pdf` cargada y existe `GET /admin/certificados/{id}/pdf`
+- **When** Bedelía pulsa **Descargar PDF**
+- **Then** DEBE invocar `CertificationsService.descargarPdf(id)` (HttpClient blob) y disparar descarga `cert-{codigo}.pdf`
+- **And** MUST NOT inventar un Blob sin respuesta del servicio
+- **And** Imprimir MUST permanecer disponible en paralelo
 
 #### Scenario: Checker de aplicación real por estado
 
@@ -174,3 +183,20 @@ El sistema DEBE documentar durante `sdd-archive` que F4-02 agrega una vista impr
 - **Given** se archiva F4-02
 - **When** se actualizan specs y documentación frontend
 - **Then** DEBE constar el alcance mock-only, los archivos afectados y los handoffs F5-F6.
+
+### Requirement: Emisión directa de certificación (pantalla nueva)
+
+El sistema DEBE exponer la ruta estática `/admin/certificaciones/nueva` **antes** de `/admin/certificaciones/:id`, con una pantalla única de emisión (no wizard) que orquesta seams existentes. El body de emisión DEBE ser exactamente `{ alumnoId, cursoId, issuedAt, expiresAt }`. Tras HTTP 201, DEBE navegar al expediente `/admin/certificaciones/:id`. NO DEBE inventar email, DNI completo admin, logos, firmas archivo ni folio definitivo antes del POST.
+
+#### Scenario: Ruta estática precede a :id
+
+- **Given** sesión admin activa
+- **When** se navega a `/admin/certificaciones/nueva`
+- **Then** DEBE cargar la pantalla de emisión y NO el detalle con id literal `"nueva"`.
+
+#### Scenario: Emitir con éxito
+
+- **Given** un par alumno/curso con presentes elegibles sobre fechas `realizada`
+- **When** Bedelía confirma Emitir
+- **Then** DEBE enviarse `POST /admin/certificados` con el body de cuatro campos
+- **And** DEBE navegar al detalle del `data.id` recibido.

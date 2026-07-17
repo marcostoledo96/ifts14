@@ -20,9 +20,13 @@ export interface AdminAuthService {
 
 export const ADMIN_AUTH = new InjectionToken<AdminAuthService>('ADMIN_AUTH');
 
-interface AuthResponse {
+interface AuthData {
   authenticated: boolean;
   csrfToken?: string;
+}
+
+interface AuthEnvelope {
+  data: AuthData;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -33,27 +37,29 @@ export class HttpAdminAuthService implements AdminAuthService {
 
   async login(credentials: AdminAuthCredentials): Promise<void> {
     const res = await firstValueFrom(
-      this.http.post<AuthResponse>(
+      this.http.post<AuthEnvelope>(
         `${environment.apiBaseUrl}/admin/auth/login`,
         credentials,
       ),
     );
-    if (res.authenticated && res.csrfToken) {
-      this._csrfToken.set(res.csrfToken);
+    const data = res.data;
+    if (data?.authenticated && data.csrfToken) {
+      this._csrfToken.set(data.csrfToken);
     }
   }
 
   async session(): Promise<boolean> {
     try {
       const res = await firstValueFrom(
-        this.http.get<AuthResponse>(
+        this.http.get<AuthEnvelope>(
           `${environment.apiBaseUrl}/admin/auth/session`,
         ),
       );
-      if (res.authenticated && res.csrfToken) {
-        this._csrfToken.set(res.csrfToken);
+      const data = res.data;
+      if (data?.authenticated && data.csrfToken) {
+        this._csrfToken.set(data.csrfToken);
       }
-      return res.authenticated === true;
+      return data?.authenticated === true;
     } catch {
       return false;
     }

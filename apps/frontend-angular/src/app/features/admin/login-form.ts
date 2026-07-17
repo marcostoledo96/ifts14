@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminAuthCredentials } from './admin-auth.service';
 
@@ -15,12 +23,29 @@ interface LoginFormValue {
   styleUrl: './login-form.css',
 })
 export class LoginForm {
+  readonly loading = input(false);
+  /** Error del login HTTP (401/429); se muestra en el mismo alert que la validación local. */
+  readonly serverError = input('');
   readonly accesoSimulado = output<AdminAuthCredentials>();
 
-  // Señales locales reactivas para el estado del formulario.
   readonly usuario = signal('');
   readonly clave = signal('');
   readonly errorMsg = signal('');
+  readonly showPassword = signal(false);
+
+  readonly displayError = computed(() => this.errorMsg() || this.serverError());
+
+  constructor() {
+    effect(() => {
+      const msg = this.serverError();
+      if (!msg) return;
+      queueMicrotask(() => document.getElementById('login-error')?.focus());
+    });
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword.update((v) => !v);
+  }
 
   private validar(value: LoginFormValue): string {
     if (!value.usuario.trim() || !value.clave) {
@@ -36,15 +61,13 @@ export class LoginForm {
   }
 
   enviar(): void {
+    if (this.loading()) {
+      return;
+    }
     const value: LoginFormValue = { usuario: this.usuario(), clave: this.clave() };
     const error = this.validar(value);
     if (error) {
       this.errorMsg.set(error);
-      // El alert role=alert se renderiza por @if(errorMsg()) en la plantilla.
-      // OnPush+signal agenda CD vía zone.onMicrotaskEmpty; un queueMicrotask
-      // corre ANTES de ese flush y el <p> aún no existe. setTimeout(0) es una
-      // macrotask: corre después del flush de CD y del render, cuando el alert
-      // ya está en el DOM. Estable en el flujo real de ngSubmit.
       setTimeout(() => {
         document.getElementById('login-error')?.focus();
       }, 0);
@@ -52,7 +75,6 @@ export class LoginForm {
     }
     this.errorMsg.set('');
     this.accesoSimulado.emit({ username: value.usuario, password: value.clave });
-    // REQ-AUTH-008: limpiar credenciales del formulario tras el envío.
     this.clave.set('');
     this.usuario.set('');
   }

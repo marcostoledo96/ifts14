@@ -71,6 +71,27 @@ export class HttpAttendanceService implements AttendanceService {
       .map((a) => this.toAsistencia(a));
   }
 
+  async listarAsistenciasPorPar(cursoId: number, alumnoId: number): Promise<readonly Asistencia[]> {
+    const params = new URLSearchParams({
+      cursoId: String(cursoId),
+      alumnoId: String(alumnoId),
+    });
+    const url = `${environment.apiBaseUrl}/admin/asistencias?${params.toString()}`;
+    const envelope = await firstValueFrom(
+      this.http.get<ApiEnvelope<AsistenciasListResponse>>(url),
+    );
+    return envelope.data.items.map((a) => this.toAsistencia(a));
+  }
+
+  async listarAsistenciasPorAlumno(alumnoId: number): Promise<readonly Asistencia[]> {
+    const params = new URLSearchParams({ alumnoId: String(alumnoId) });
+    const url = `${environment.apiBaseUrl}/admin/asistencias?${params.toString()}`;
+    const envelope = await firstValueFrom(
+      this.http.get<ApiEnvelope<AsistenciasListResponse>>(url),
+    );
+    return envelope.data.items.map((a) => this.toAsistencia(a));
+  }
+
   async marcar(
     cursoId: number,
     fechaId: number,

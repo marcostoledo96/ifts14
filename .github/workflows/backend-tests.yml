@@ -37,6 +37,22 @@ jobs:
             composer:2 \
             composer install --no-dev --no-interaction --prefer-dist
 
+      - name: Composer validate
+        run: |
+          docker run --rm \
+            -v "$PWD":/workspace \
+            -w /workspace/apps/backend-php \
+            composer:2 \
+            composer validate --strict
+
+      - name: Composer audit
+        run: |
+          docker run --rm \
+            -v "$PWD":/workspace \
+            -w /workspace/apps/backend-php \
+            composer:2 \
+            composer audit
+
       - name: Unit tests (sin base de datos)
         run: |
           docker run --rm -v "$PWD/apps/backend-php":/app -w /app ifts14-php84 sh -lc '
@@ -49,8 +65,33 @@ jobs:
             php tests/EntregaManualTest.php &&
             php tests/AdminCertificateServiceTest.php &&
             php tests/HttpContractTest.php &&
-            php tests/PdfResilienceTest.php
+            php tests/PdfResilienceTest.php &&
+            php tests/AdminMasterDataServiceTest.php &&
+            php tests/SessionHttpTest.php
           '
+
+      - name: Database setup (migraciones)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq mariadb-client >/dev/null
+          for f in database/migrations/0*.sql; do
+            echo "Aplicando $f..."
+            mariadb -h 127.0.0.1 -u root -ptest_root_only ifts14_test < "$f"
+          done
+
+      - name: Schema contract
+        env:
+          IFTS14_TEST_DB_DSN: mysql:host=127.0.0.1;dbname=ifts14_test
+          IFTS14_TEST_DB_USER: root
+          IFTS14_TEST_DB_PASS: test_root_only
+          IFTS14_TEST_DB_ALLOW_RESET: "1"
+        run: |
+          docker run --rm --network host \
+            -v "$PWD":/workspace -w /workspace \
+            -e IFTS14_TEST_DB_DSN \
+            -e IFTS14_TEST_DB_USER \
+            -e IFTS14_TEST_DB_PASS \
+            -e IFTS14_TEST_DB_ALLOW_RESET \
+            ifts14-php84 php apps/backend-php/tests/DatabaseSchemaContractTest.php
 
       - name: E2E con MariaDB
         env:
@@ -73,11 +114,29 @@ jobs:
               php apps/backend-php/tests/ReadinessTest.php &&
               php apps/backend-php/tests/CertificateRevisionMigrationTest.php &&
               php apps/backend-php/tests/AttendanceRevisionTest.php &&
-              php apps/backend-php/tests/CourseDateRevisionTest.php
+              php apps/backend-php/tests/CourseDateRevisionTest.php &&
+              php apps/backend-php/tests/QrImageTest.php &&
+              php apps/backend-php/tests/RegenerarPdfTest.php &&
+              php apps/backend-php/tests/fault-injection-audit.php
             '
+
+      - name: Upgrade test
+        run: bash scripts/test-database-upgrade.sh
 
       - name: Privacy headers
         run: bash scripts/test-privacy-headers.sh
+
+      - name: PHP lint
+        run: |
+          docker run --rm -v "$PWD/apps/backend-php":/app -w /app ifts14-php84 sh -lc '
+            set -e
+            errors=$(find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \; 2>&1 | grep -v "^No syntax errors" || true)
+            if [ -n "$errors" ]; then
+              printf "%s\n" "$errors"
+              exit 1
+            fi
+            echo "OK php -l: sin errores de sintaxis"
+          '
 
   frontend-tests:
     runs-on: ubuntu-latest
@@ -101,5 +160,44 @@ jobs:
       - name: Bloquear focused tests + tests unitarios (Karma headless)
         run: npm run test:ci
 
-      - name: Build Angular
+      - name: TypeScript strict check (tsc --noEmit)
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Build producción
         run: npm run build
+
+      - name: Build staging
+        run: npm run build -- --configuration production-staging
+
+      - name: Detectar mocks en producción
+        run: node scripts/ci-mock-guard.mjs
+
+  security-docs-gates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_ENABLE_COMMENTS: "false"
+
+      - name: git diff --check
+        run: git diff --check origin/main...HEAD
+
+      - name: Enlaces internos
+        run: bash scripts/ci-link-check.sh
+
+      - name: Términos obsoletos
+        run: bash scripts/ci-obsolete-terms.sh
+
+      - name: OpenSpec huérfano
+        run: bash scripts/ci-openspec-orphan-check.sh

@@ -30,17 +30,22 @@
   --color-border: #d9e0e8;
   --color-ring: #1565c0;
 
-  /* Tipografía */
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Tipografía — stack intencional sin deps (Geist de v0 no se porta) */
+  --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --tracking-caps: 0.18em;
   --tracking-caps-tight: 0.12em;
   --tracking-caps-membrete: 0.22em;
+  --tracking-section: 0.16em;
 
-  /* Paleta secundaria — centraliza tokens usados por componentes */
-  --color-secondary: #1e3a5f;
-  --color-accent: #c8a84e;
+  /* Superficies semánticas — alineadas a muestra_pagina/app/globals.css */
+  --color-secondary: #eef2f6;
+  --color-secondary-foreground: #0b1f33;
+  --color-accent: #e6f6f9;
+  --color-accent-foreground: #0b1f33;
   --color-primary-foreground: #ffffff;
+  /* Dorado institucional (no es --accent de v0) */
+  --color-gold: #c8a84e;
 
   /* Radios */
   --radius-sm: 0.25rem;
@@ -51,16 +56,20 @@
   /* Layout — anchos máximos de página y folio (F1-02).
      Centraliza los magic numbers 56rem/42rem usados en app, header,
      folio y validación pública para mantener consistencia responsive. */
-  --layout-page-max: 56rem;
+  --layout-page-max: 72rem;
   --layout-folio-max: 42rem;
 
-  /* Espaciado — escala 4-32px */
+  /* Espaciado — escala alineada a Tailwind (v0) */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.5rem;
   --space-6: 2rem;
+  --space-7: 2.25rem;
+  --space-8: 2.5rem;
+  --space-9: 3rem;
+  --space-10: 3.5rem;
 
   /* Foco y motion */
   --focus-ring: 0 0 0 2px var(--color-ring);

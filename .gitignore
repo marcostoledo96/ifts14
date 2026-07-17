@@ -84,5 +84,11 @@ graphify-out/
 # CodeGraph: metadata local de indexado, no se versiona
 .codegraph/
 
+# Store local de pnpm (nunca versionar)
+.pnpm-store/
+
+# Borradores SDD locales (ciclos formales viven en openspec/)
+sdd/
+
 # Temporales de check de impresión F4-02 (script regenera en cada ejecución)
 openspec/changes/f4-02-certificate-pdf-preview/evidence/.pdf-check/

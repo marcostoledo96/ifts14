@@ -1,5 +1,17 @@
 # F4-03 — Listado de cursos con paridad v0
 
+## Actualización 2026-07-16 — polish de lista
+
+El ciclo `frontend-cursos-list-polish` quedó archivado en
+`openspec/changes/archive/2026-07-16-frontend-cursos-list-polish/`.
+
+- Verify: PASS WITH WARNINGS (`test:ci` 696/696, `tsc` exit 0, `build` exit 0).
+- Filtro de estado migrado a chips con dots: Borrador, Activos, Cerrados, Archivados.
+- Badges de estado con dot + borde semántico.
+- Acento lateral de color en filas y cards.
+- Estados loading/error/empty/sin coincidencias con SVG inline.
+- `Presentes` y `Certificaciones` siguen mostrando `—`: el API no expone conteos y no se agregaron consultas N+1 ni datos inventados.
+
 ## Resumen
 
 Evolución in-place de `CoursesListPage` para que `/admin/cursos` alcance paridad funcional y visual con la referencia v0, conservando el contrato mock seguro de F2-04. La pantalla agrega tabla accesible desktop, tarjetas con métricas en mobile, filtro por disponibilidad de fechas, limpieza, y diferenciación de loading, error con reintento, vacío total y sin coincidencias. Las métricas de presentes/certificaciones se exponen como `null`/`—` con texto accesible explícito, sin acoplar features.

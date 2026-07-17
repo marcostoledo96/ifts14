@@ -1,11 +1,71 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from './certifications/certifications.service';
+import { COURSES_SOURCE } from './courses/courses.service';
 import { STUDENTS_SOURCE } from './students/students.service';
 
-// Dashboard placeholder: sin datos reales ni llamadas a API. F2-04 habilita
-// la tarjeta Cursos, F2-05 la tarjeta Asistencias y F2-06 la tarjeta
-// Certificaciones como enlaces reales con conteos ficticios.
+type Metric = number | null;
+
+export type PendienteTone = 'warning' | 'info' | 'destructive';
+
+export interface PendienteFila {
+  readonly id: string;
+  readonly label: string;
+  readonly detalle: string;
+  readonly tone: PendienteTone;
+  readonly iconId: 'calendar-x' | 'mail-warning' | 'send' | 'refresh';
+  /** Página real donde revisar el pendiente. */
+  readonly route: string;
+  readonly sinFuente: string | null;
+}
+
+/** Filas de bandeja calcadas de v0. Solo `sin-fechas` tiene conteo real
+ *  (derivado de cantidadFechas); el resto no tiene fuente en la API. */
+export const DASHBOARD_PENDIENTES: readonly PendienteFila[] = [
+  {
+    id: 'sin-fechas',
+    label: 'Cursos sin fechas asignadas',
+    detalle: 'No se puede emitir certificado sin fecha de finalización.',
+    tone: 'warning',
+    iconId: 'calendar-x',
+    route: '/admin/cursos',
+    sinFuente: null,
+  },
+  {
+    id: 'sin-email',
+    label: 'Alumnos sin email registrado',
+    detalle: 'Sin canal de contacto registrado para la entrega manual.',
+    tone: 'warning',
+    iconId: 'mail-warning',
+    route: '/admin/alumnos',
+    sinFuente: 'Conteo no disponible: el backend no expone email.',
+  },
+  {
+    id: 'sin-entrega',
+    label: 'Certificaciones pendientes de entrega',
+    detalle: 'Emitidas y firmadas, aún no entregadas al alumno.',
+    tone: 'info',
+    iconId: 'send',
+    route: '/admin/certificaciones',
+    sinFuente: 'Conteo no disponible: no hay estado de entrega.',
+  },
+  {
+    id: 're-entrega',
+    label: 'Requieren nueva entrega por modificación',
+    detalle: 'Datos editados luego de la emisión original.',
+    tone: 'destructive',
+    iconId: 'refresh',
+    route: '/admin/certificaciones',
+    sinFuente: 'Conteo no disponible: no hay listado de PDF desactualizado.',
+  },
+];
+
+/** Columnas de la tabla de actividad (paridad v0). Sin API de bitácora:
+ *  solo estructura + estado vacío, nunca eventos inventados. */
+export const ACTIVIDAD_COLUMNAS = ['Hora', 'ID', 'Tipo', 'Detalle', 'Autor'] as const;
+
+// Mesa de trabajo admin: acciones reales + resumen derivado de seams.
+// Bandeja con conteo real solo donde hay fuente; actividad sin eventos seed.
 @Component({
   selector: 'app-admin-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -14,28 +74,82 @@ import { STUDENTS_SOURCE } from './students/students.service';
   styleUrl: './admin-dashboard-page.css',
 })
 export class AdminDashboardPage {
-  // Conteo ficticio: la UI muestra un número demo, sin persistencia real.
-  // ponytail: valor fijo demo; el recuento real llega con la integración backend.
-  readonly cursosCount = 6;
-  readonly asistenciasCount = 11; // fechas programadas/realizadas en seed
-  // Conteo derivado del seam CERTIFICATIONS_SOURCE.contar() (seed mock).
-  // Arranca en 0 y se hidrata vía microtask; sin HTTP/fetch/storage.
-  readonly certificacionesCount = signal(0);
-  readonly alumnosCount = signal(0);
+  private readonly courses = inject(COURSES_SOURCE, { optional: true });
+  private readonly students = inject(STUDENTS_SOURCE, { optional: true });
+  private readonly certs = inject(CERTIFICATIONS_SOURCE, { optional: true });
+
+  readonly pendientes = DASHBOARD_PENDIENTES;
+  readonly actividadColumnas = ACTIVIDAD_COLUMNAS;
+
+  readonly cursosCargados = signal<Metric>(null);
+  readonly cursosSinFechas = signal<Metric>(null);
+  readonly alumnosRegistrados = signal<Metric>(null);
+  readonly certificacionesEmitidas = signal<Metric>(null);
+  readonly certificacionesRevocadas = signal<Metric>(null);
+  readonly metricasCargando = signal(true);
+  readonly errorMetricas = signal(false);
 
   constructor() {
-    const certs = inject(CERTIFICATIONS_SOURCE, { optional: true });
-    const students = inject(STUDENTS_SOURCE, { optional: true });
-    // ponytail: optional:true protege render fuera del árbol admin; en
-    // runtime el provider siempre está colgado en la ruta admin.
-    if (certs) {
-      // ponytail: catch() deja el conteo en 0; el dashboard sigue renderizable
-      // aunque el seam rechace (provider roto o seed corrupto).
-      certs.contar().then(
-        (n) => this.certificacionesCount.set(n),
-        () => this.certificacionesCount.set(0),
-      );
+    void this.cargarMetricas();
+  }
+
+  private async cargarMetricas(): Promise<void> {
+    this.metricasCargando.set(true);
+    this.errorMetricas.set(false);
+
+    const coursesP = this.courses
+      ? this.courses.listar()
+      : Promise.reject(new Error('COURSES_SOURCE ausente'));
+    const studentsP = this.students
+      ? this.students.contar()
+      : Promise.reject(new Error('STUDENTS_SOURCE ausente'));
+    const certsP = this.certs
+      ? this.certs.listar()
+      : Promise.reject(new Error('CERTIFICATIONS_SOURCE ausente'));
+
+    const [cursosR, alumnosR, certsR] = await Promise.allSettled([coursesP, studentsP, certsP]);
+
+    let huboError = false;
+
+    if (cursosR.status === 'fulfilled') {
+      this.cursosCargados.set(cursosR.value.length);
+      this.cursosSinFechas.set(cursosR.value.filter((c) => c.cantidadFechas === 0).length);
+    } else {
+      this.cursosCargados.set(null);
+      this.cursosSinFechas.set(null);
+      huboError = true;
     }
-    if (students) students.contar().then((n) => this.alumnosCount.set(n), () => this.alumnosCount.set(0));
+
+    if (alumnosR.status === 'fulfilled') {
+      this.alumnosRegistrados.set(alumnosR.value);
+    } else {
+      this.alumnosRegistrados.set(null);
+      huboError = true;
+    }
+
+    if (certsR.status === 'fulfilled') {
+      const list = certsR.value;
+      this.certificacionesEmitidas.set(
+        list.filter((c) => c.estado === 'vigente' || c.estado === 'vencido').length,
+      );
+      this.certificacionesRevocadas.set(list.filter((c) => c.estado === 'revocado').length);
+    } else {
+      this.certificacionesEmitidas.set(null);
+      this.certificacionesRevocadas.set(null);
+      huboError = true;
+    }
+
+    this.errorMetricas.set(huboError);
+    this.metricasCargando.set(false);
+  }
+
+  formatoMetrica(value: Metric): string {
+    return value === null ? '—' : String(value);
+  }
+
+  /** Badge por fila: solo `sin-fechas` tiene conteo real. */
+  badgePendiente(item: PendienteFila): string {
+    if (item.id !== 'sin-fechas') return '—';
+    return this.formatoMetrica(this.cursosSinFechas());
   }
 }

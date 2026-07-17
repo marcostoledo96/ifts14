@@ -171,7 +171,7 @@ The system SHALL provide `HttpCertificationsService` implementing `Certification
 - WHEN `listar(filtros)` is called with `envio`, `estado`, `cursoId`, or `q` filters
 - THEN the service SHALL fetch all certifications and apply the filters client-side
 - AND the response SHALL include `numero` (from `certificateCode`), `nombreAlumno` (from `student.displayName`), `estado` (from `status`)
-- AND `envio` SHALL default to `'pendiente-entrega'` when absent
+- AND `envio` SHALL default to `'no_emitido'` when absent
 
 #### Scenario: Get certification detail
 
@@ -191,6 +191,19 @@ The system SHALL provide `HttpCertificationsService` implementing `Certification
 - WHEN `revocar(id, motivo)` is called
 - THEN the service SHALL POST to `/admin/certificados/:id/revocar` with `{ reason: motivo }` in the body (backend key is `reason`, not `motivo`)
 
+#### Scenario: Emit certification
+
+- GIVEN a valid body `{ alumnoId, cursoId, issuedAt, expiresAt }`
+- WHEN `emitir(body)` is called
+- THEN the service SHALL `POST /admin/certificados` with exactly those four fields
+- AND SHALL return the created certification from `envelope.data` (HTTP 201)
+
+#### Scenario: List certifications with server-supported filters
+
+- GIVEN filters include `estado`, `cursoId`, and/or `alumnoId`
+- WHEN `listar(filtros)` is called
+- THEN the HTTP implementation SHALL forward those query params to `GET /admin/certificados` when supported by the adapter
+
 #### Scenario: HTTP error handling for certifications
 
 - GIVEN the backend returns a 4xx or 5xx status
@@ -199,18 +212,27 @@ The system SHALL provide `HttpCertificationsService` implementing `Certification
 
 ### Requirement: HttpInstitutionalConfigService provides institutional configuration
 
-The system SHALL provide a new `InstitutionalConfigService` interface and `HttpInstitutionalConfigService` implementation.
+The system SHALL provide an `InstitutionalConfigService` interface, `HttpInstitutionalConfigService`, and `InMemoryInstitutionalConfigService` wired via `environment.useRealApi`.
+
+The `InstitutionalConfig` model SHALL map 1:1 to the backend DTO fields: `institutionName`, `certificateText`, `rectorName`, `rectorRole`, `advisorName`, `advisorRole`, `updatedAt`. It SHALL NOT invent fields the API does not expose (`direccion`, `logoUrl`, logos, email, signature uploads).
 
 #### Scenario: Fetch institutional config
 
 - GIVEN the backend returns config from `GET /admin/configuracion-institucional`
 - WHEN `obtener()` is called
-- THEN the service SHALL return `InstitutionalConfig` with at least `nombre` (mapped from `institutionName`), `direccion` (default `null`), and `logoUrl` (default `null`)
+- THEN the service SHALL return `InstitutionalConfig` mapped 1:1 from `envelope.data` (null string fields normalized to `''`)
+
+#### Scenario: Save institutional config
+
+- GIVEN a valid write payload with non-empty `institutionName`
+- WHEN `guardar(payload)` is called
+- THEN the service SHALL `PUT /admin/configuracion-institucional` with the write body
+- AND SHALL return the updated `InstitutionalConfig` from `envelope.data`
 
 #### Scenario: HTTP error handling for config
 
 - GIVEN the backend returns a 4xx or 5xx status
-- WHEN `obtener()` is called
+- WHEN `obtener()` or `guardar()` is called
 - THEN the service SHALL reject the promise with a descriptive error
 
 ### Requirement: HttpTestingController tests for all HTTP services
@@ -265,22 +287,15 @@ The existing in-memory service implementations and `InjectionToken` providers SH
 
 `app.routes.ts` SHALL select between HTTP and in-memory implementations using the `environment.useRealApi` flag, matching the existing `VALIDATION_SOURCE` pattern from the M3-06 checkpoint.
 
-#### Scenario: Four tokens switch between HTTP and in-memory
+#### Scenario: Five tokens switch between HTTP and in-memory
 
 - GIVEN `environment.useRealApi` is `true`
 - WHEN the app boots
-- THEN `COURSES_SOURCE`, `STUDENTS_SOURCE`, `ATTENDANCE_SOURCE`, and `CERTIFICATIONS_SOURCE` SHALL resolve to their HTTP implementations
+- THEN `COURSES_SOURCE`, `STUDENTS_SOURCE`, `ATTENDANCE_SOURCE`, `CERTIFICATIONS_SOURCE`, and `INSTITUTIONAL_CONFIG_SOURCE` SHALL resolve to their HTTP implementations
 
 - GIVEN `environment.useRealApi` is `false`
 - WHEN the app boots
-- THEN those same four tokens SHALL resolve to their in-memory implementations
-
-#### Scenario: INSTITUTIONAL_CONFIG_SOURCE is HTTP-only
-
-- GIVEN no `InMemoryInstitutionalConfigService` exists
-- WHEN the app boots
-- THEN `INSTITUTIONAL_CONFIG_SOURCE` SHALL resolve to `HttpInstitutionalConfigService` unconditionally
-- AND if offline development requires a mock, an `InMemoryInstitutionalConfigService` SHALL be added in a future cycle
+- THEN those same five tokens SHALL resolve to their in-memory implementations
 
 ## Design Decisions Resolved During Implementation
 

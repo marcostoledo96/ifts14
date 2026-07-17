@@ -14,13 +14,14 @@ import { COURSES_SOURCE } from './courses.service';
 import {
   CursoDetalle,
   CursoDraft,
+  CursoFecha,
   CursoFechaDraft,
   EstadoCurso,
   EstadoFecha,
 } from './courses.models';
 
-// Editor de curso: modo create (alta) o edit (gestión de fechas).
-// Sin HTTP/storage. Mutaciones solo en memoria.
+// Editor de curso: create (alta) o edit (estado + fechas).
+// Layout v0 con contrato estricto: sin campos fantasma.
 @Component({
   selector: 'app-course-editor-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,26 +30,24 @@ import {
   styleUrl: './course-editor-page.css',
 })
 export class CourseEditorPage {
-  // El route define data.mode ('create' | 'edit'). Angular inyecta el
-  // snapshot de la ruta en `data` vía withComponentInputBinding().
   readonly mode = input<'create' | 'edit'>('create');
-  // withComponentInputBinding() pasa :id como string; el id numérico se
-  // computa con idNumber() y se valida antes de usarlo en el servicio.
   readonly id = input<string>('');
 
   private readonly courses = inject(COURSES_SOURCE);
   private readonly router = inject(Router);
 
-  readonly estados: readonly EstadoCurso[] = ['borrador', 'activo', 'cerrado', 'archivado'];
   readonly estadosFecha: readonly EstadoFecha[] = ['programada', 'realizada', 'cancelada'];
 
-  // Campos del curso (modo create).
   readonly codigo = signal('');
   readonly nombre = signal('');
-  readonly estado = signal<EstadoCurso>('borrador');
+  /** Toggle UI "Curso activo" (solo edit). */
+  readonly activo = signal(true);
+  /** Estado persistido al cargar (edit); base para mapear el toggle. */
+  readonly estadoOriginal = signal<EstadoCurso>('activo');
 
-  // Fechas del curso (modo edit). Cada item es un draft editable.
   readonly fechas = signal<CursoFechaDraft[]>([]);
+  /** Snapshot de fechas al cargar; base del aviso de impacto. */
+  private readonly fechasOriginales = signal<readonly CursoFecha[]>([]);
   readonly detalle = signal<CursoDetalle | null>(null);
 
   readonly cargando = signal(true);
@@ -56,22 +55,42 @@ export class CourseEditorPage {
   readonly error = signal('');
   readonly ok = signal('');
 
-  // Id numérico validado. NaN, vacío o <= 0 → null (tratado como no encontrado).
   readonly idNumber = computed<number | null>(() => {
     const n = Number(this.id());
     return !this.id() || Number.isNaN(n) || n <= 0 ? null : n;
   });
 
-  // ponytail: generación de carga para descartar resultados stale cuando el
-  // id/mode cambia antes de que termine la carga anterior (route reuse).
+  /** Estado a persistir al guardar en edit. */
+  readonly estadoResultante = computed<EstadoCurso>(() => {
+    if (this.activo()) return 'activo';
+    const original = this.estadoOriginal();
+    return original === 'activo' ? 'cerrado' : original;
+  });
+
+  /**
+   * True si alguna fecha original `realizada` fue modificada o quitada
+   * del borrador (el backend sincroniza certificados al mutar realizadas).
+   */
+  readonly impactoRealizadas = computed(() => {
+    const drafts = this.fechas();
+    for (const orig of this.fechasOriginales()) {
+      if (orig.estado !== 'realizada') continue;
+      const draft = drafts.find((d) => d.id === orig.id);
+      if (!draft) return true;
+      if (
+        draft.fecha !== orig.fecha ||
+        (draft.descripcion ?? null) !== (orig.descripcion ?? null) ||
+        draft.estado !== orig.estado
+      ) {
+        return true;
+      }
+    }
+    return false;
+  });
+
   private loadGen = 0;
 
   constructor() {
-    // Reacciona a cambios de mode()/id() tras la ligadura inicial y también
-    // cuando Angular reutiliza la misma instancia de componente al navegar
-    // entre URLs que comparten la misma route config (p.ej. /cursos/1/editar
-    // -> /cursos/2/editar). ngOnInit no vuelve a correr en ese caso, pero el
-    // effect sí re-ejecuta porque las signals input() cambian.
     effect(() => {
       const mode = this.mode();
       const id = this.id();
@@ -81,13 +100,13 @@ export class CourseEditorPage {
 
   private async recargar(mode: 'create' | 'edit', id: string): Promise<void> {
     const gen = ++this.loadGen;
-    // Reset de estado stale antes de cargar para que no queden fechas del
-    // curso anterior visibles/ediciones mientras carga el nuevo.
     this.detalle.set(null);
     this.fechas.set([]);
+    this.fechasOriginales.set([]);
     this.codigo.set('');
     this.nombre.set('');
-    this.estado.set('borrador');
+    this.activo.set(true);
+    this.estadoOriginal.set('activo');
     this.ok.set('');
     this.error.set('');
     this.cargando.set(true);
@@ -100,11 +119,13 @@ export class CourseEditorPage {
           return;
         }
         const d = await this.courses.obtener(cid);
-        if (gen !== this.loadGen) return; // carga stale, ignorar
+        if (gen !== this.loadGen) return;
         this.detalle.set(d);
         this.codigo.set(d.codigo);
         this.nombre.set(d.nombre);
-        this.estado.set(d.estado);
+        this.estadoOriginal.set(d.estado);
+        this.activo.set(d.estado === 'activo');
+        this.fechasOriginales.set(d.fechas);
         this.fechas.set(
           d.fechas.map((f) => ({
             id: f.id,
@@ -122,15 +143,22 @@ export class CourseEditorPage {
     }
   }
 
+  toggleActivo(): void {
+    this.activo.update((v) => !v);
+    this.ok.set('');
+  }
+
   agregarFecha(): void {
     this.fechas.update((list) => [
       ...list,
       { id: null, fecha: '', descripcion: null, orden: list.length + 1, estado: 'programada' },
     ]);
+    this.ok.set('');
   }
 
   quitarFecha(index: number): void {
     this.fechas.update((list) => list.filter((_, i) => i !== index));
+    this.ok.set('');
   }
 
   onFechaInput(index: number, event: Event): void {
@@ -138,6 +166,7 @@ export class CourseEditorPage {
     this.fechas.update((list) =>
       list.map((f, i) => (i === index ? { ...f, fecha: value } : f)),
     );
+    this.ok.set('');
   }
 
   onDescripcionInput(index: number, event: Event): void {
@@ -145,6 +174,7 @@ export class CourseEditorPage {
     this.fechas.update((list) =>
       list.map((f, i) => (i === index ? { ...f, descripcion: value || null } : f)),
     );
+    this.ok.set('');
   }
 
   onEstadoFecha(index: number, event: Event): void {
@@ -152,18 +182,28 @@ export class CourseEditorPage {
     this.fechas.update((list) =>
       list.map((f, i) => (i === index ? { ...f, estado: value } : f)),
     );
+    this.ok.set('');
   }
 
   onCodigo(event: Event): void {
     this.codigo.set((event.target as HTMLInputElement).value);
+    this.ok.set('');
   }
 
   onNombre(event: Event): void {
     this.nombre.set((event.target as HTMLInputElement).value);
+    this.ok.set('');
   }
 
-  onEstado(event: Event): void {
-    this.estado.set((event.target as HTMLSelectElement).value as EstadoCurso);
+  formatearTs(iso: string | undefined | null): string {
+    if (!iso) return '—';
+    // ISO → YYYY-MM-DD HH:mm (sin inventar timezone local compleja).
+    const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/.exec(iso);
+    return m ? `${m[1]} ${m[2]}` : iso;
+  }
+
+  indiceFecha(i: number): string {
+    return String(i + 1).padStart(2, '0');
   }
 
   validar(): string {
@@ -189,29 +229,44 @@ export class CourseEditorPage {
     this.guardando.set(true);
     try {
       if (this.mode() === 'create') {
+        // Backend createCourse ignora estado e inserta siempre 'activo'.
         const draft: CursoDraft = {
           codigo: this.codigo().trim(),
           nombre: this.nombre().trim(),
-          estado: this.estado(),
+          estado: 'activo',
         };
         const creado = await this.courses.crear(draft);
-        // Tras crear, guardar fechas (si las hubo) y volver al detalle.
         for (const f of this.fechas()) {
           await this.courses.guardarFecha(creado.id, f);
         }
         await this.router.navigate(['/admin/cursos', creado.id]);
         return;
       }
-      // modo edit: reemplazo completo del set de fechas (crea nuevas, actualiza
-      // existentes y elimina las quitadas). Sin esto, quitarFecha solo remueve
-      // del signal local y la fecha quitada reaparece al recargar el detalle.
       const cid = this.idNumber();
       if (cid === null) {
         this.error.set('Curso no encontrado.');
         return;
       }
+      const nuevoEstado = this.estadoResultante();
+      if (nuevoEstado !== this.estadoOriginal()) {
+        await this.courses.actualizarEstado(cid, nuevoEstado);
+      }
       await this.courses.reemplazarFechas(cid, this.fechas());
-      this.ok.set('Cambios guardados en memoria (demo). No persisten al recargar.');
+      const d = await this.courses.obtener(cid);
+      this.detalle.set(d);
+      this.estadoOriginal.set(d.estado);
+      this.activo.set(d.estado === 'activo');
+      this.fechasOriginales.set(d.fechas);
+      this.fechas.set(
+        d.fechas.map((f) => ({
+          id: f.id,
+          fecha: f.fecha,
+          descripcion: f.descripcion,
+          orden: f.orden,
+          estado: f.estado,
+        })),
+      );
+      this.ok.set('Cambios guardados.');
     } catch (e) {
       this.error.set((e as Error).message);
     } finally {

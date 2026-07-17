@@ -1,163 +1,399 @@
 <section aria-labelledby="students-title">
-  <p class="kicker">Registro académico</p>
-  <h1 id="students-title">Alumnos</h1>
-  <p class="intro">Listado demostrativo con datos personales minimizados.</p>
-  <section class="filters" aria-label="Buscar y filtrar alumnos">
-    <label for="buscar-alumno">Buscar por nombre o documento enmascarado</label>
-    <input
-      id="buscar-alumno"
-      type="search"
-      autocomplete="off"
-      [value]="q()"
-      (input)="onSearch($event)"
-      placeholder="Nombre o XX****XX"
-    />
-    <div class="chips" aria-label="Filtros rápidos">
-      <button
-        type="button"
-        [attr.aria-pressed]="contacto() === 'con-email'"
-        (click)="onContacto('con-email')"
-      >
-        Contacto disponible
-      </button>
-      <button
-        type="button"
-        [attr.aria-pressed]="contacto() === 'sin-email'"
-        (click)="onContacto('sin-email')"
-      >
-        Sin email
-      </button>
-      <button
-        type="button"
-        [attr.aria-pressed]="certificacion() === 'con-cert'"
-        (click)="onCertificacion('con-cert')"
-      >
-        Con certificaciones
-      </button>
-      <button
-        type="button"
-        [attr.aria-pressed]="certificacion() === 'sin-cert'"
-        (click)="onCertificacion('sin-cert')"
-      >
-        Sin certificaciones
-      </button>
+  <div class="header-row">
+    <div>
+      <p class="kicker">Registro académico</p>
+      <h1 id="students-title">Alumnos</h1>
+      <p class="intro">Legajos de estudiantes con su trayectoria de cursada y credenciales válidas.</p>
     </div>
-    @if (hayFiltrosActivos()) {
-      <button type="button" class="clear" (click)="onLimpiar()">Limpiar filtros</button>
-    }
-  </section>
-  @if (qaEnabled) {
-    <div class="qa" aria-label="Controles QA solo desarrollo">
-      @for (vista of ['datos', 'cargando', 'error', 'vacio-total']; track vista) {
+    <a class="btn-primary" routerLink="/admin/alumnos/nuevo" data-testid="cta-nuevo-alumno">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke-linecap="round"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M19 8v6M22 11h-6" stroke-linecap="round"/>
+      </svg>
+      Nuevo alumno
+    </a>
+  </div>
+
+  <section class="filters" aria-label="Buscar y filtrar alumnos">
+    <div class="filters-main">
+      <label for="buscar-alumno">Buscar alumno</label>
+      <span class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+        </svg>
+        <input
+          id="buscar-alumno"
+          type="search"
+          autocomplete="off"
+          [value]="q()"
+          (input)="onSearch($event)"
+          placeholder="Nombre, apellido o documento…"
+        />
+      </span>
+      <p class="search-hint">Escribí para filtrar el registro al instante.</p>
+    </div>
+
+    <div class="chips-row">
+      <p class="chips-label">Filtros rápidos</p>
+      <div class="chips" aria-label="Filtros rápidos">
         <button
           type="button"
-          [attr.aria-pressed]="vistaQA() === vista"
-          (click)="onForzarEstado($any(vista))"
+          class="chip"
+          [attr.aria-pressed]="certificacion() === 'con-cert'"
+          (click)="onCertificacion('con-cert')"
         >
-          {{ vista }}
+          <span class="chip-dot chip-dot--ok" aria-hidden="true"></span>
+          Con certificaciones
+        </button>
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="certificacion() === 'sin-cert'"
+          (click)="onCertificacion('sin-cert')"
+        >
+          <span class="chip-dot" aria-hidden="true"></span>
+          Sin certificaciones
+        </button>
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="contacto() === 'sin-email'"
+          (click)="onContacto('sin-email')"
+        >
+          <svg class="chip-icon chip-icon--warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M22 10.5V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h12.5"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            <path d="M20 14v4M20 22v.01" stroke-linecap="round"/>
+          </svg>
+          Sin email
+        </button>
+      </div>
+    </div>
+
+    @if (mostrarResumen()) {
+      <div class="results-summary">
+        <p aria-live="polite">
+          <span class="count-mono">{{ resultadosFiltrados().length }}</span>
+          {{ resultadosFiltrados().length === 1 ? 'alumno' : 'alumnos' }}
+          {{ hayFiltrosActivos() ? 'coinciden con el filtro' : 'en el registro' }}
+        </p>
+        @if (hayFiltrosActivos()) {
+          <button type="button" class="clear" (click)="onLimpiar()">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+            </svg>
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    }
+  </section>
+
+  @if (qaEnabled) {
+    <div class="vista-qa" aria-label="Vista de revisión QA">
+      <span class="vista-qa-label">Vista</span>
+      @for (vista of vistasQa; track vista) {
+        <button
+          type="button"
+          class="vista-qa-btn"
+          [attr.aria-pressed]="vistaQA() === vista"
+          (click)="onForzarEstado(vista)"
+        >
+          {{ vistaQaLabel[vista] }}
         </button>
       }
     </div>
   }
-  @if (cargando() || vistaQA() === 'cargando') {
-    <p class="state" aria-busy="true">Cargando listado de alumnos…</p>
-  } @else if (error() || vistaQA() === 'error') {
-    <div class="state error" role="alert">
-      <p>{{ error() || 'No se pudo cargar el listado de alumnos.' }}</p>
-      <button type="button" (click)="onReintentar()">Reintentar</button>
+
+  @if (mostrandoCarga()) {
+    <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando registro">
+      <div class="skeleton-head">
+        <span class="skeleton-label">Cargando registro…</span>
+      </div>
+      <ul class="skeleton-rows">
+        @for (_ of skeletonRows; track $index) {
+          <li class="skeleton-row">
+            <span class="skeleton-bar skeleton-bar--name skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--dni skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--metric skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--action skeleton-pulse"></span>
+          </li>
+        }
+      </ul>
+    </div>
+  } @else if (mostrandoError()) {
+    <div class="estado-panel estado-error" role="alert">
+      <span class="estado-icon-wrap estado-icon-wrap--error" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke-linejoin="round"/>
+          <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">No pudimos cargar el registro</h2>
+      <p>{{ error() || 'Hubo un problema al sincronizar el listado de alumnos. Revisá la conexión e intentá de nuevo.' }}</p>
+      <button type="button" class="btn-primary" (click)="onReintentar()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke-linecap="round"/>
+          <path d="M21 3v5h-5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" stroke-linecap="round"/>
+          <path d="M8 16H3v5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Reintentar
+      </button>
     </div>
   } @else if (vacioTotal()) {
-    <output class="state" aria-live="polite" aria-atomic="true"
-      >No hay alumnos cargados para mostrar.</output
-    >
-  } @else if (sinCoincidencias()) {
-    <div class="state">
-      <p role="status" aria-live="polite" aria-atomic="true">
-        Sin coincidencias: no hay alumnos para los filtros aplicados.
+    <div class="estado-panel" data-state="empty-total" aria-live="polite">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon estado-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke-linecap="round"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Todavía no hay alumnos cargados</h2>
+      <p role="status">
+        Cuando registres el primer alumno, su legajo va a aparecer acá junto a su trayectoria de cursada y sus certificaciones válidas.
       </p>
-      <button type="button" (click)="onLimpiar()">Limpiar filtros</button>
+      <a class="btn-primary" routerLink="/admin/alumnos/nuevo">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke-linecap="round"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M19 8v6M22 11h-6" stroke-linecap="round"/>
+        </svg>
+        Registrar primer alumno
+      </a>
+    </div>
+  } @else if (sinCoincidencias()) {
+    <div class="estado-panel" data-state="no-results" aria-live="polite">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Sin coincidencias</h2>
+      <p role="status" aria-live="polite" aria-atomic="true">
+        Ningún alumno coincide con la búsqueda o los filtros aplicados.
+      </p>
+      <button type="button" class="btn-secondary" (click)="onLimpiar()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+        </svg>
+        Limpiar filtros
+      </button>
     </div>
   } @else {
-    <output aria-live="polite" aria-atomic="true"
-      >Mostrando {{ itemsVisibles().length }} de {{ resultadosFiltrados().length }}</output
-    >
     <div class="table-wrap">
       <table class="alumnos-tabla">
-        <caption>
-          Alumnos
-        </caption>
+        <caption class="sr-only">Registro de alumnos del Instituto</caption>
         <thead>
           <tr>
             <th scope="col">Apellido y nombre</th>
             <th scope="col">Documento</th>
             <th scope="col">Contacto</th>
-            <th scope="col">Cursos con asistencia</th>
-            <th scope="col">Certificaciones válidas</th>
-            <th scope="col">Acción</th>
+            <th scope="col" class="th-center">Cursos c/ asist.</th>
+            <th scope="col" class="th-center">Cert. válidas</th>
+            <th scope="col" class="th-actions">Acción</th>
           </tr>
         </thead>
         <tbody>
           @for (alumno of itemsVisibles(); track alumno.id) {
             <tr>
-              <td>{{ alumno.apellido }}, {{ alumno.nombre }}</td>
+              <td>
+                <span class="alumno-nombre">{{ alumno.apellido }}, {{ alumno.nombre }}</span>
+              </td>
               <td class="mono">{{ alumno.dniMostrar }}</td>
-              <td>{{ etiquetaContacto(alumno) }}</td>
-              <td>{{ alumno.cursosConAsistencia }}</td>
-              <td>{{ alumno.certificacionesValidas }}</td>
+              <td>
+                <span class="contacto-badge" [class.contacto-badge--warn]="mostrarWarningSinEmail(alumno)">
+                  @if (mostrarWarningSinEmail(alumno)) {
+                    <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M22 10.5V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h12.5"/>
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                      <path d="M20 14v4M20 22v.01" stroke-linecap="round"/>
+                    </svg>
+                  }
+                  {{ etiquetaContacto(alumno) }}
+                </span>
+              </td>
+              <td class="td-center">
+                <span class="metrica">
+                  @if (mostrarBook(alumno)) {
+                    <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-linecap="round"/>
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke-linejoin="round"/>
+                    </svg>
+                  }
+                  {{ formatoMetrica(alumno.cursosConAsistencia) }}
+                </span>
+              </td>
+              <td class="td-center">
+                <span
+                  class="cert-badge"
+                  [class.cert-badge--ok]="alumno.certificacionesValidas != null && alumno.certificacionesValidas > 0"
+                >
+                  @if (mostrarShield(alumno)) {
+                    <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" stroke-linejoin="round"/>
+                      <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  }
+                  {{ formatoMetrica(alumno.certificacionesValidas) }}
+                </span>
+              </td>
               <td>
                 <div class="detalle-accion">
                   <a
                     [routerLink]="['/admin/alumnos', alumno.id]"
                     class="btn-detalle"
                     [attr.aria-label]="'Ver detalle de ' + alumno.apellido + ', ' + alumno.nombre"
-                    >Ver detalle</a
                   >
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke-linejoin="round"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Ver detalle
+                  </a>
                 </div>
               </td>
             </tr>
           }
         </tbody>
       </table>
+      <div class="list-footer">
+        <p class="footer-count">
+          Mostrando
+          <span class="count-mono">{{ itemsVisibles().length }}</span>
+          de
+          <span class="count-mono">{{ resultadosFiltrados().length }}</span>
+          registros
+        </p>
+        <nav class="pager" aria-label="Paginación de alumnos">
+          <button
+            type="button"
+            class="pager-btn"
+            aria-label="Página anterior"
+            (click)="onPagina(paginaSegura() - 1)"
+            [disabled]="paginaSegura() === 1"
+          >‹</button>
+          @for (p of paginasVisibles(); track p) {
+            <button
+              type="button"
+              class="pager-btn pager-num"
+              [attr.aria-current]="p === paginaSegura() ? 'page' : null"
+              [attr.aria-label]="'Página ' + p"
+              (click)="onPagina(p)"
+            >{{ p }}</button>
+          }
+          @if (totalPaginas() > 5 && paginaSegura() < totalPaginas() - 2) {
+            <span class="pager-ellipsis" aria-hidden="true">…</span>
+          }
+          <button
+            type="button"
+            class="pager-btn"
+            aria-label="Página siguiente"
+            (click)="onPagina(paginaSegura() + 1)"
+            [disabled]="paginaSegura() === totalPaginas()"
+          >›</button>
+        </nav>
+      </div>
     </div>
     <ul class="alumnos-cards">
       @for (alumno of itemsVisibles(); track alumno.id) {
         <li>
-          <h2>{{ alumno.apellido }}, {{ alumno.nombre }}</h2>
-          <dl class="documento">
-            <dt>Documento</dt>
-            <dd class="mono">{{ alumno.dniMostrar }}</dd>
-          </dl>
-          <p>{{ etiquetaContacto(alumno) }}</p>
-          <p>
-            {{ alumno.cursosConAsistencia }} cursos con asistencia ·
-            {{ alumno.certificacionesValidas }} certificaciones válidas
-          </p>
-          <div class="detalle-accion">
-            <a
-              [routerLink]="['/admin/alumnos', alumno.id]"
-              class="btn-detalle"
-              [attr.aria-label]="'Ver detalle de ' + alumno.apellido + ', ' + alumno.nombre"
-              >Ver detalle</a
-            >
+          <div class="card-top">
+            <div>
+              <h2>{{ alumno.apellido }}, {{ alumno.nombre }}</h2>
+              <dl class="documento">
+                <dt>Documento</dt>
+                <dd class="mono">{{ alumno.dniMostrar }}</dd>
+              </dl>
+            </div>
+            <div class="detalle-accion">
+              <a
+                [routerLink]="['/admin/alumnos', alumno.id]"
+                class="btn-detalle btn-detalle--bordered"
+                [attr.aria-label]="'Ver detalle de ' + alumno.apellido + ', ' + alumno.nombre"
+              >
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Ver
+              </a>
+            </div>
+          </div>
+          <div class="card-contacto">
+            <span class="contacto-badge" [class.contacto-badge--warn]="mostrarWarningSinEmail(alumno)">
+              @if (mostrarWarningSinEmail(alumno)) {
+                <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M22 10.5V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h12.5"/>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  <path d="M20 14v4M20 22v.01" stroke-linecap="round"/>
+                </svg>
+              }
+              {{ etiquetaContacto(alumno) }}
+            </span>
+          </div>
+          <div class="card-metrics">
+            <span class="metrica">
+              @if (mostrarBook(alumno)) {
+                <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-linecap="round"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke-linejoin="round"/>
+                </svg>
+              }
+              <span class="count-mono">{{ formatoMetrica(alumno.cursosConAsistencia) }}</span>
+              cursos c/ asistencia
+            </span>
+            <span class="metrica">
+              @if (mostrarShield(alumno)) {
+                <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" stroke-linejoin="round"/>
+                  <path d="m9 12 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              }
+              <span class="count-mono">{{ formatoMetrica(alumno.certificacionesValidas) }}</span>
+              cert. válidas
+            </span>
           </div>
         </li>
       }
     </ul>
-    <nav aria-label="Paginación de alumnos">
-      <button
-        type="button"
-        (click)="onPagina(paginaSegura() - 1)"
-        [disabled]="paginaSegura() === 1"
-      >
-        Anterior</button
-      ><span>Página {{ paginaSegura() }} de {{ totalPaginas() }}</span
-      ><button
-        type="button"
-        (click)="onPagina(paginaSegura() + 1)"
-        [disabled]="paginaSegura() === totalPaginas()"
-      >
-        Siguiente
-      </button>
-    </nav>
+    <div class="cards-footer">
+      <p class="footer-count">
+        Mostrando
+        <span class="count-mono">{{ itemsVisibles().length }}</span>
+        de
+        <span class="count-mono">{{ resultadosFiltrados().length }}</span>
+        registros
+      </p>
+      <nav class="pager" aria-label="Paginación de alumnos (móvil)">
+        <button
+          type="button"
+          class="pager-btn"
+          aria-label="Página anterior"
+          (click)="onPagina(paginaSegura() - 1)"
+          [disabled]="paginaSegura() === 1"
+        >‹</button>
+        @for (p of paginasVisibles(); track p) {
+          <button
+            type="button"
+            class="pager-btn pager-num"
+            [attr.aria-current]="p === paginaSegura() ? 'page' : null"
+            [attr.aria-label]="'Página ' + p"
+            (click)="onPagina(p)"
+          >{{ p }}</button>
+        }
+        <button
+          type="button"
+          class="pager-btn"
+          aria-label="Página siguiente"
+          (click)="onPagina(paginaSegura() + 1)"
+          [disabled]="paginaSegura() === totalPaginas()"
+        >›</button>
+      </nav>
+    </div>
   }
 </section>
