@@ -52,7 +52,7 @@
   /* Layout — anchos máximos de página y folio (F1-02).
      Centraliza los magic numbers 56rem/42rem usados en app, header,
      folio y validación pública para mantener consistencia responsive. */
-  --layout-page-max: 56rem;
+  --layout-page-max: 72rem;
   --layout-folio-max: 42rem;
 
   /* Espaciado — escala 4-32px */

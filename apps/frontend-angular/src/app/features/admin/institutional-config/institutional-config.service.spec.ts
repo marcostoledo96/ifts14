@@ -172,7 +172,7 @@ describe('InMemoryInstitutionalConfigService', () => {
 
   it('obtener devuelve el seed con defaults institucionales', async () => {
     const config = await service.obtener();
-    expect(config.institutionName).toBe('IFTS N.° 14');
+    expect(config.institutionName).toBe('Instituto de Formación Técnica Superior N.° 14');
     expect(config.rectorRole).toBeTruthy();
     expect(config.advisorRole).toBeTruthy();
   });

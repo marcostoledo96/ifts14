@@ -153,36 +153,33 @@ describe('InstitutionalConfigPage', () => {
     expect(el(f).querySelector('#validacion')).not.toBeNull();
   });
 
-  // --- REQ-CFG / CFGLAY-005: sin fantasmas ---
+  // --- REQ-CFG / CFGLAY-005: sin fantasmas editables ---
 
-  it('no ofrece inputs fantasma: sin upload, logo ni dirección editables', async () => {
+  it('no ofrece upload real: sin input file; botones de logo/firma deshabilitados', async () => {
     const f = await render();
     expect(el(f).querySelector('input[type="file"]')).toBeNull();
-    const controls = Array.from(el(f).querySelectorAll('input, textarea'));
-    for (const c of controls) {
-      const label = `${c.getAttribute('aria-label') || ''} ${c.id}`.toLowerCase();
-      expect(label).not.toContain('logo');
-      expect(label).not.toContain('direccion');
-      expect(label).not.toContain('dirección');
-      expect(label).not.toContain('email');
-    }
-    const fileButtons = Array.from(el(f).querySelectorAll('button')).filter((b) =>
-      /subir firma/i.test(b.textContent || ''),
+    const uploadBtns = Array.from(el(f).querySelectorAll('button')).filter((b) =>
+      /subir logo|reemplazar|subir firma/i.test(b.textContent || ''),
     );
-    expect(fileButtons.length).toBeGreaterThan(0);
-    for (const b of fileButtons) {
+    expect(uploadBtns.length).toBeGreaterThan(0);
+    for (const b of uploadBtns) {
       expect(b.disabled).toBeTrue();
     }
   });
 
-  it('contacto y validación no tienen inputs editables inventados', async () => {
+  it('contacto y validación solo tienen controles presentacionales deshabilitados', async () => {
     const f = await render();
     const contacto = el(f).querySelector('#contacto');
     const validacion = el(f).querySelector('#validacion');
     expect(contacto).not.toBeNull();
     expect(validacion).not.toBeNull();
-    expect(contacto!.querySelectorAll('input, textarea, select').length).toBe(0);
-    expect(validacion!.querySelectorAll('input, textarea, select').length).toBe(0);
+    for (const section of [contacto!, validacion!]) {
+      const controls = Array.from(section.querySelectorAll('input, textarea, select'));
+      expect(controls.length).toBeGreaterThan(0);
+      for (const c of controls) {
+        expect((c as HTMLInputElement).disabled).toBeTrue();
+      }
+    }
     expect(contacto!.textContent).toContain('SMTP');
     expect(validacion!.textContent).toContain('no se editan');
   });
@@ -196,13 +193,55 @@ describe('InstitutionalConfigPage', () => {
     expect(el(f).querySelector('.signature-preview')?.textContent).toContain('Nueva Rectora');
   });
 
-  it('incluye bloque estático de contacto/validación sin inputs', async () => {
+  it('identidad sigue el orden v0: nombre, logos, texto institucional', async () => {
+    const f = await render();
+    const body = el(f).querySelector('#identidad .cfg-section-body');
+    expect(body).not.toBeNull();
+    const labels = Array.from(body!.querySelectorAll('.cfg-label, .logos-head .cfg-label')).map(
+      (n) => n.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+    );
+    expect(labels[0]).toContain('Nombre visible del instituto');
+    expect(labels[1]).toContain('Logos y sellos');
+    expect(labels.some((l) => /Texto institucional base/i.test(l))).toBeTrue();
+    expect(el(f).querySelector('.logos-grid')?.children.length).toBe(5);
+    expect(el(f).querySelector('.logos-badge')?.textContent).toContain('1 sin cargar');
+  });
+
+  it('certificados sigue el orden v0: título, texto base, formato, QR, sello', async () => {
+    const f = await render();
+    const body = el(f).querySelector('#certificados .cfg-section-body');
+    expect(body).not.toBeNull();
+    const ids = Array.from(body!.querySelectorAll('input, textarea, [role="switch"]')).map(
+      (n) => n.id || n.getAttribute('aria-label') || '',
+    );
+    expect(ids[0]).toBe('titulo-cert');
+    expect(ids[1]).toBe('certificate-text');
+    expect(ids).toContain('formato-numero');
+    expect(ids).toContain('texto-qr');
+    const sello = el(f).querySelector('#certificados [role="switch"]') as HTMLButtonElement;
+    expect(sello.disabled).toBeTrue();
+    expect(input(f, '#certificate-text').disabled).toBeFalse();
+    expect(input(f, '#titulo-cert').disabled).toBeTrue();
+  });
+
+  it('incluye bloque estático de contacto/validación; presentacionales no entran al PUT', async () => {
     const f = await render();
     const staticBlocks = el(f).querySelectorAll('.static-info');
     expect(staticBlocks.length).toBeGreaterThanOrEqual(1);
-    for (const block of Array.from(staticBlocks)) {
-      expect(block.querySelectorAll('input, textarea, select').length).toBe(0);
-    }
+    setValue(f, '#institution-name', 'IFTS editado');
+    (el(f).querySelector('.sticky-bar button[type="submit"]') as HTMLButtonElement).click();
+    await settle(f);
+    expect(stub.lastPayload).not.toBeNull();
+    expect(Object.keys(stub.lastPayload!)).toEqual(
+      jasmine.arrayWithExactContents([
+        'institutionName',
+        'certificateText',
+        'rectorName',
+        'rectorRole',
+        'advisorName',
+        'advisorRole',
+      ]),
+    );
   });
 
   // --- REQ-CFG-006 / CFGLAY-006: dirty sticky ---

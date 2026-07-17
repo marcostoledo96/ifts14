@@ -37,11 +37,26 @@
   min-height: 100vh;
 }
 
+/* Sticky al viewport: el footer (Configuración / Cerrar sesión) queda
+   visible sin scroll de página. Sin esto el aside crece con el main y
+   empuja el pie fuera de la ventana (paridad con muestra_pagina fixed). */
 .sidebar-desktop {
   display: none;
   width: 16rem;
   flex: 0 0 16rem;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--color-ink);
+}
+
+.sidebar-desktop app-sidebar-admin,
+.drawer-mobile app-sidebar-admin {
+  display: block;
+  height: 100%;
 }
 
 .content {
@@ -266,7 +281,7 @@ footer {
   width: 16rem;
   max-width: 80vw;
   background: var(--color-ink);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* --- Print: ocultar chrome admin para impresión limpia del contenido. --- */

@@ -9,13 +9,13 @@ import {
 } from './institutional-config.service';
 
 const SEED: InstitutionalConfig = {
-  institutionName: 'IFTS N.° 14',
+  institutionName: 'Instituto de Formación Técnica Superior N.° 14',
   certificateText:
-    'Se certifica la asistencia al curso indicado, con las fechas registradas por Bedelía.',
-  rectorName: 'Nombre Apellido',
-  rectorRole: 'Rector/a',
-  advisorName: 'Nombre Apellido',
-  advisorRole: 'Asesor/a pedagógico/a',
+    'Se certifica que la persona mencionada ha aprobado satisfactoriamente el curso detallado, cumpliendo con la asistencia y las evaluaciones requeridas.',
+  rectorName: '',
+  rectorRole: 'Rectora del IFTS N.° 14',
+  advisorName: '',
+  advisorRole: 'Asesora Pedagógica del IFTS N.° 14',
   updatedAt: '2026-01-01T00:00:00Z',
 };
 
