@@ -151,8 +151,8 @@ describe('CertificationsListPage', () => {
     await f.whenStable();
     f.detectChanges();
     expect(el.querySelectorAll('.cards-mobile article').length).toBe(1);
-    expect(el.querySelector('.results-summary p')?.textContent?.trim()).toBe(
-      'Total: 6 · Coincidencias: 1 · Visibles: 1',
+    expect(el.querySelector('.results-summary p')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      '1 certificación coinciden con el filtro',
     );
   });
 
@@ -177,7 +177,7 @@ describe('CertificationsListPage', () => {
     const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('.vista-qa button'));
     buttons.find((button) => button.textContent?.includes('Cargando'))?.click();
     f.detectChanges();
-    expect(el.querySelector('.estado-panel[aria-busy="true"] svg.estado-icon')).not.toBeNull();
+    expect(el.querySelector('.tabla-skeleton[aria-busy="true"]')).not.toBeNull();
     buttons.find((button) => button.textContent?.includes('Error'))?.click();
     f.detectChanges();
     expect(el.querySelector('[role="alert"] svg.estado-icon')).not.toBeNull();
