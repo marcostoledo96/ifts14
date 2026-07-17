@@ -62,7 +62,7 @@ Sos el agente de implementación frontend del IFTS 14. Tu trabajo es cerrar la *
 | 15 | `.../entrega` | `certification-delivery-page` | `entrega-manual.tsx` | `entrega-*` | **PARCIAL** — Angular tiene Descargar QR (plus vs v0); layout modal a calcar |
 | 16 | `.../pdf` | `certification-pdf-preview-page` | `vista-previa-pdf.tsx` | `pdf-*` | **PARCIAL** — autoridades demo vs config; print chrome |
 | 17 | `.../revocar` | `certification-revoke-page` | `revocar-certificacion.tsx` | `rev-*` | **PARCIAL** — calibrar modal/errores |
-| 18 | `/admin/configuracion` | `institutional-config-page` | `configuracion-institucional.tsx` | `cfg-*` | **PARCIAL (P-14)** — nav sticky + 5 secciones + copy v0; DTO editables; logos/firmas/SMTP/sello honestos (disabled/omit) |
+| 18 | `/admin/configuracion` | `institutional-config-page` | `configuracion-institucional.tsx` | `cfg-*` | **PARCIAL (P-14)** — nav sticky + 5 secciones + copy v0; DTO editables; logos/firmas/sello honestos (sin SMTP; disabled/omit) |
 | 19 | `/validar/:token` | `public-validation-page` | `validacion/*` | `desktop/mobile/error/revocada/noencontrada` | **REVISAR** — folio, sellos, estados |
 | 20 | `/` landing + 404 | landing / not-found | `app/page.tsx` + estados | — | **REVISAR** |
 
