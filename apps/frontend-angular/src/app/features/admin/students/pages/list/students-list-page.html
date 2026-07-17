@@ -3,7 +3,7 @@
     <div>
       <p class="kicker">Registro académico</p>
       <h1 id="students-title">Alumnos</h1>
-      <p class="intro">Estudiantes con trayectoria de cursada y credenciales válidas.</p>
+      <p class="intro">Legajos de estudiantes con su trayectoria de cursada y credenciales válidas.</p>
     </div>
     <a class="btn-primary" routerLink="/admin/alumnos/nuevo" data-testid="cta-nuevo-alumno">
       <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -17,7 +17,7 @@
 
   <section class="filters" aria-label="Buscar y filtrar alumnos">
     <div class="filters-main">
-      <label for="buscar-alumno">Buscar por nombre o documento enmascarado</label>
+      <label for="buscar-alumno">Buscar alumno</label>
       <span class="search-wrap">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
           <circle cx="11" cy="11" r="7"/>
@@ -29,7 +29,7 @@
           autocomplete="off"
           [value]="q()"
           (input)="onSearch($event)"
-          placeholder="Nombre o XX****XX"
+          placeholder="Nombre, apellido o documento…"
         />
       </span>
       <p class="search-hint">Escribí para filtrar el registro al instante.</p>
@@ -38,26 +38,6 @@
     <div class="chips-row">
       <p class="chips-label">Filtros rápidos</p>
       <div class="chips" aria-label="Filtros rápidos">
-        <button
-          type="button"
-          class="chip"
-          [attr.aria-pressed]="contacto() === 'con-email'"
-          (click)="onContacto('con-email')"
-        >
-          <span class="chip-dot chip-dot--ok" aria-hidden="true"></span>
-          Contacto disponible
-        </button>
-        <button
-          type="button"
-          class="chip"
-          [attr.aria-pressed]="contacto() === 'sin-email'"
-          (click)="onContacto('sin-email')"
-        >
-          <svg class="chip-icon chip-icon--warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-          </svg>
-          Sin email
-        </button>
         <button
           type="button"
           class="chip"
@@ -76,81 +56,138 @@
           <span class="chip-dot" aria-hidden="true"></span>
           Sin certificaciones
         </button>
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="contacto() === 'sin-email'"
+          (click)="onContacto('sin-email')"
+        >
+          <svg class="chip-icon chip-icon--warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M22 10.5V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h12.5"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            <path d="M20 14v4M20 22v.01" stroke-linecap="round"/>
+          </svg>
+          Sin email
+        </button>
       </div>
     </div>
 
-    <div class="results-summary">
-      <output aria-live="polite" aria-atomic="true"
-        >Mostrando {{ itemsVisibles().length }} de {{ resultadosFiltrados().length }}</output
-      >
-      @if (hayFiltrosActivos()) {
-        <button type="button" class="clear" (click)="onLimpiar()">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
-          </svg>
-          Limpiar filtros
-        </button>
-      }
-    </div>
+    @if (mostrarResumen()) {
+      <div class="results-summary">
+        <p aria-live="polite">
+          <span class="count-mono">{{ resultadosFiltrados().length }}</span>
+          {{ resultadosFiltrados().length === 1 ? 'alumno' : 'alumnos' }}
+          {{ hayFiltrosActivos() ? 'coinciden con el filtro' : 'en el registro' }}
+        </p>
+        @if (hayFiltrosActivos()) {
+          <button type="button" class="clear" (click)="onLimpiar()">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+            </svg>
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    }
   </section>
 
   @if (qaEnabled) {
-    <div class="qa" aria-label="Controles QA solo desarrollo">
-      @for (vista of ['datos', 'cargando', 'error', 'vacio-total']; track vista) {
+    <div class="vista-qa" aria-label="Vista de revisión QA">
+      <span class="vista-qa-label">Vista</span>
+      @for (vista of vistasQa; track vista) {
         <button
           type="button"
+          class="vista-qa-btn"
           [attr.aria-pressed]="vistaQA() === vista"
-          (click)="onForzarEstado($any(vista))"
+          (click)="onForzarEstado(vista)"
         >
-          {{ vista }}
+          {{ vistaQaLabel[vista] }}
         </button>
       }
     </div>
   }
 
-  @if (cargando() || vistaQA() === 'cargando') {
-    <div class="estado-panel" aria-busy="true">
-      <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round"/>
-      </svg>
-      <p>Cargando listado de alumnos…</p>
+  @if (mostrandoCarga()) {
+    <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando registro">
+      <div class="skeleton-head">
+        <span class="skeleton-label">Cargando registro…</span>
+      </div>
+      <ul class="skeleton-rows">
+        @for (_ of skeletonRows; track $index) {
+          <li class="skeleton-row">
+            <span class="skeleton-bar skeleton-bar--name skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--dni skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--metric skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--action skeleton-pulse"></span>
+          </li>
+        }
+      </ul>
     </div>
-  } @else if (error() || vistaQA() === 'error') {
+  } @else if (mostrandoError()) {
     <div class="estado-panel estado-error" role="alert">
-      <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke-linejoin="round"/>
-        <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
-      </svg>
-      <p>{{ error() || 'No se pudo cargar el listado de alumnos.' }}</p>
-      <button type="button" (click)="onReintentar()">Reintentar</button>
+      <span class="estado-icon-wrap estado-icon-wrap--error" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke-linejoin="round"/>
+          <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">No pudimos cargar el registro</h2>
+      <p>{{ error() || 'Hubo un problema al sincronizar el listado de alumnos. Revisá la conexión e intentá de nuevo.' }}</p>
+      <button type="button" class="btn-primary" (click)="onReintentar()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke-linecap="round"/>
+          <path d="M21 3v5h-5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" stroke-linecap="round"/>
+          <path d="M8 16H3v5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Reintentar
+      </button>
     </div>
   } @else if (vacioTotal()) {
     <div class="estado-panel" data-state="empty-total" aria-live="polite">
-      <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke-linecap="round"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round"/>
-      </svg>
-      <p role="status">No hay alumnos cargados para mostrar.</p>
-      <a class="btn-primary" routerLink="/admin/alumnos/nuevo">Crear primer alumno</a>
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon estado-icon--lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke-linecap="round"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Todavía no hay alumnos cargados</h2>
+      <p role="status">
+        Cuando registres el primer alumno, su legajo va a aparecer acá junto a su trayectoria de cursada y sus certificaciones válidas.
+      </p>
+      <a class="btn-primary" routerLink="/admin/alumnos/nuevo">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke-linecap="round"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M19 8v6M22 11h-6" stroke-linecap="round"/>
+        </svg>
+        Registrar primer alumno
+      </a>
     </div>
   } @else if (sinCoincidencias()) {
     <div class="estado-panel" data-state="no-results" aria-live="polite">
-      <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"/>
-        <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
-      </svg>
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Sin coincidencias</h2>
       <p role="status" aria-live="polite" aria-atomic="true">
-        Sin coincidencias: no hay alumnos para los filtros aplicados.
+        Ningún alumno coincide con la búsqueda o los filtros aplicados.
       </p>
-      <button type="button" class="clear" (click)="onLimpiar()">Limpiar filtros</button>
+      <button type="button" class="btn-secondary" (click)="onLimpiar()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
+        </svg>
+        Limpiar filtros
+      </button>
     </div>
   } @else {
     <div class="table-wrap">
       <table class="alumnos-tabla">
-        <caption>
-          Alumnos
-        </caption>
+        <caption class="sr-only">Registro de alumnos del Instituto</caption>
         <thead>
           <tr>
             <th scope="col">Apellido y nombre</th>
@@ -172,7 +209,9 @@
                 <span class="contacto-badge" [class.contacto-badge--warn]="mostrarWarningSinEmail(alumno)">
                   @if (mostrarWarningSinEmail(alumno)) {
                     <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                      <path d="M22 10.5V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h12.5"/>
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                      <path d="M20 14v4M20 22v.01" stroke-linecap="round"/>
                     </svg>
                   }
                   {{ etiquetaContacto(alumno) }}
@@ -230,21 +269,33 @@
           <span class="count-mono">{{ resultadosFiltrados().length }}</span>
           registros
         </p>
-        <nav aria-label="Paginación de alumnos">
+        <nav class="pager" aria-label="Paginación de alumnos">
           <button
             type="button"
+            class="pager-btn"
+            aria-label="Página anterior"
             (click)="onPagina(paginaSegura() - 1)"
             [disabled]="paginaSegura() === 1"
-          >
-            Anterior</button
-          ><span>Página {{ paginaSegura() }} de {{ totalPaginas() }}</span
-          ><button
+          >‹</button>
+          @for (p of paginasVisibles(); track p) {
+            <button
+              type="button"
+              class="pager-btn pager-num"
+              [attr.aria-current]="p === paginaSegura() ? 'page' : null"
+              [attr.aria-label]="'Página ' + p"
+              (click)="onPagina(p)"
+            >{{ p }}</button>
+          }
+          @if (totalPaginas() > 5 && paginaSegura() < totalPaginas() - 2) {
+            <span class="pager-ellipsis" aria-hidden="true">…</span>
+          }
+          <button
             type="button"
+            class="pager-btn"
+            aria-label="Página siguiente"
             (click)="onPagina(paginaSegura() + 1)"
             [disabled]="paginaSegura() === totalPaginas()"
-          >
-            Siguiente
-          </button>
+          >›</button>
         </nav>
       </div>
     </div>
@@ -262,7 +313,7 @@
             <div class="detalle-accion">
               <a
                 [routerLink]="['/admin/alumnos', alumno.id]"
-                class="btn-detalle"
+                class="btn-detalle btn-detalle--bordered"
                 [attr.aria-label]="'Ver detalle de ' + alumno.apellido + ', ' + alumno.nombre"
               >
                 <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
@@ -277,7 +328,9 @@
             <span class="contacto-badge" [class.contacto-badge--warn]="mostrarWarningSinEmail(alumno)">
               @if (mostrarWarningSinEmail(alumno)) {
                 <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  <path d="M22 10.5V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h12.5"/>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  <path d="M20 14v4M20 22v.01" stroke-linecap="round"/>
                 </svg>
               }
               {{ etiquetaContacto(alumno) }}
@@ -316,21 +369,30 @@
         <span class="count-mono">{{ resultadosFiltrados().length }}</span>
         registros
       </p>
-      <nav aria-label="Paginación de alumnos (móvil)">
+      <nav class="pager" aria-label="Paginación de alumnos (móvil)">
         <button
           type="button"
+          class="pager-btn"
+          aria-label="Página anterior"
           (click)="onPagina(paginaSegura() - 1)"
           [disabled]="paginaSegura() === 1"
-        >
-          Anterior</button
-        ><span>Página {{ paginaSegura() }} de {{ totalPaginas() }}</span
-        ><button
+        >‹</button>
+        @for (p of paginasVisibles(); track p) {
+          <button
+            type="button"
+            class="pager-btn pager-num"
+            [attr.aria-current]="p === paginaSegura() ? 'page' : null"
+            [attr.aria-label]="'Página ' + p"
+            (click)="onPagina(p)"
+          >{{ p }}</button>
+        }
+        <button
           type="button"
+          class="pager-btn"
+          aria-label="Página siguiente"
           (click)="onPagina(paginaSegura() + 1)"
           [disabled]="paginaSegura() === totalPaginas()"
-        >
-          Siguiente
-        </button>
+        >›</button>
       </nav>
     </div>
   }
