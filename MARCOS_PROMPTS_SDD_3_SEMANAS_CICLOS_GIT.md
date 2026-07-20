@@ -41,8 +41,8 @@ Marcos debe aplicar estas reglas antes de iniciar ciclos con OpenCode/Gentle-AI:
 | Ruta pública | `/certificados/`. Staging: `/certificados_staging/`. |
 | Frontend | Puede tomar solo fundación Angular, validación pública, mocks/contratos frontend y build `/certificados/` cuando Matías esté bloqueado o se necesite destrabar backend. No inventar diseño final. |
 | Material privado | No modificar ni copiar contenido de `material_privado_no_versionar/`; solo nombres y riesgos generales cuando el ciclo lo autorice. |
-| Datos sensibles | No imprimir credenciales, dumps, logs, DNI completo en logs/auditoría ni tokens completos. El DTO público muestra DNI completo por decisión D0. |
-| Decisiones D0 | QR/token permanente (no se rota en operaciones operativas; solo revocación explícita o regeneración excepcional auditada); DNI completo público; certificado de curso con fechas asistidas; **auth admin = sesión PHP nativa + CSRF** (P5-01; `X-Admin-Key` solo CLI/smokes, no autoriza HTTP); firmantes Rector/a + Asesor/a Pedagógica; entrega manual (copiar link + descargar PDF/QR) sin email, SMTP, PHPMailer ni transporte `stub`; staging `/certificados_staging/`. |
+| Datos sensibles | No imprimir credenciales, dumps, logs, DNI completo en logs/auditoría/errores ni tokens completos. DNI completo visible en validación pública y UI admin (D0, 2026-07-20). |
+| Decisiones D0 | QR/token permanente (no se rota en operaciones operativas; solo revocación explícita o regeneración excepcional auditada); DNI completo en validación pública y UI admin (listados/detalle/expediente); certificado de curso con fechas asistidas; logs/auditoría/errores/dumps sin DNI ni token completos; **auth admin = sesión PHP nativa + CSRF** (P5-01; `X-Admin-Key` solo CLI/smokes, no autoriza HTTP); firmantes Rector/a + Asesor/a Pedagógica; entrega manual (copiar link + descargar PDF/QR) sin email, SMTP, PHPMailer ni transporte `stub`; staging `/certificados_staging/`. |
 | Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. OpenCode puede crear o cambiar ramas (`git switch`, `git checkout`, `git branch`, `git switch -c`, `git checkout -b`) solo con aprobación explícita de Marcos, árbol limpio y rama fuente explícita/actualizada. |
 | Git — nota | Commit, push y PR requieren aprobación explícita de Marcos en el mismo turno. `git merge`, `git rebase`, `git push` a `main` y merge de PR quedan fuera de OpenCode. |
 
@@ -456,7 +456,7 @@ Commit sugerido: `docs(integracion): cerrar checklist angular api`.
 - Coordinar con Matías sobre la referencia v0 final (`muestra_pagina/` — listado seguro); el `MANIFIESTO_V0.md` histórico fue retirado al reemplazar la carpeta por el export final.
 - Gates: Composer pendiente de localizar en cPanel; `vendor/` nunca versionado. NO hay SMTP real ni cuenta de prueba: la entrega es manual.
 - QR/token permanente: el token NO se rota en ninguna operación operativa del MVP. Solo revocación explícita o regeneración excepcional auditada pueden reemplazarlo.
-- DNI completo visible en validación pública (D0); logs/auditoría sin DNI completo.
+- DNI completo visible en validación pública y UI admin (D0, 2026-07-20); logs/auditoría/errores/dumps sin DNI ni token completos.
 
 ### Prompt base M4
 
@@ -465,7 +465,7 @@ Trabajemos el ciclo M4-XX — <nombre> para IFTS14.
 Usá SDD completo: explore, propose, spec, design, tasks, apply, verify y archive.
 Leé AGENTS.md, docs/00-indice-general.md, docs/backend/01-contrato-api-certificados.md,
 docs/database/01-modelo-datos-certificados.md y los docs/specs indicados por el ciclo.
-Respetá D0: QR permanente, DNI completo público, fechas asistidas, auth simple temporal,
+Respetá D0: QR permanente, DNI completo en validación pública y UI admin, fechas asistidas, auth simple temporal,
 firmantes Rector/a + Asesor/a Pedagógica, entrega manual sin SMTP en el MVP, gates Composer, staging /certificados_staging/.
 No toques Angular salvo coordinación explícita. No modifiques material_privado_no_versionar/.
 No ejecutes commit, push ni PR sin aprobación explícita de Marcos. No ejecutes `git merge`,

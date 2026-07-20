@@ -25,20 +25,19 @@ describe('AttendanceMockService', () => {
     expect(list.length).toBeLessThanOrEqual(15);
   });
 
-  it('dniMostrar cumple formato XX****XX', async () => {
+  it('dniMostrar expone DNI completo ficticio (7–8 dígitos)', async () => {
     const svc = await setup();
     const list = await svc.listarAlumnos(1);
     for (const a of list) {
-      expect(a.dniMostrar).toMatch(/^\d{2}\*{4}\d{2}$/);
+      expect(a.dniMostrar).toMatch(/^\d{7,8}$/);
     }
   });
 
-  it('no contiene email, DNI completo, token, legajo ni matrícula en campos', async () => {
+  it('no contiene email, token, legajo ni matrícula en campos extra', async () => {
     const svc = await setup();
     const list = await svc.listarAlumnos(1);
     for (const a of list) {
       expect(a.apellidoNombre).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
-      expect(a.dniMostrar).not.toMatch(/^\d{7,8}$/);
       // Sin campos extra: solo id, apellidoNombre, dniMostrar, estado.
       expect(Object.keys(a).sort()).toEqual(
         ['apellidoNombre', 'dniMostrar', 'estado', 'id'].sort(),
@@ -114,10 +113,12 @@ describe('AttendanceMockService', () => {
   it('marcar reconoce fecha creada en la sesión (no está en seed estático)', async () => {
     const svc = await setup();
     const courses = TestBed.inject(COURSES_SOURCE);
-    const det = await courses.obtener(1);
+    const hoyAr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+    }).format(new Date());
     const nueva = await courses.guardarFecha(1, {
       id: null,
-      fecha: '2026-07-20',
+      fecha: hoyAr,
       descripcion: 'Fecha extra creada en sesión',
       orden: 99,
       estado: 'programada',
@@ -126,10 +127,52 @@ describe('AttendanceMockService', () => {
     const marcados = alumnos.slice(0, 2).map((a) => ({ alumnoId: a.id, presente: true }));
     const result = await svc.marcar(1, nueva.id, marcados);
     expect(result.length).toBe(2);
-    expect(result[0].fecha).toBe('2026-07-20');
+    expect(result[0].fecha).toBe(hoyAr);
+    // Same-day (hoy AR) permanece programada según auto-estado.
     expect(result[0].fechaEstado).toBe('programada');
     const after = await svc.listarAsistencias(1, nueva.id);
     expect(after.length).toBe(2);
+  });
+
+  it('marcar en fecha pasada pasa a realizada y actualiza el curso', async () => {
+    const svc = await setup();
+    const courses = TestBed.inject(COURSES_SOURCE);
+    const nueva = await courses.guardarFecha(1, {
+      id: null,
+      fecha: '2020-03-01',
+      descripcion: 'Fecha pasada auto',
+      orden: 98,
+      estado: 'programada',
+    });
+    const alumnos = await svc.listarAlumnos(1);
+    const marcados = alumnos.slice(0, 1).map((a) => ({ alumnoId: a.id, presente: true }));
+    const result = await svc.marcar(1, nueva.id, marcados);
+    expect(result[0].fechaEstado).toBe('realizada');
+    const det = await courses.obtener(1);
+    expect(det.fechas.find((f) => f.id === nueva.id)?.estado).toBe('realizada');
+  });
+
+  it('marcar vacío en fecha realizada vuelve a programada', async () => {
+    const svc = await setup();
+    const courses = TestBed.inject(COURSES_SOURCE);
+    const nueva = await courses.guardarFecha(1, {
+      id: null,
+      fecha: '2020-04-01',
+      descripcion: 'Fecha a vaciar',
+      orden: 97,
+      estado: 'programada',
+    });
+    const alumnos = await svc.listarAlumnos(1);
+    await svc.marcar(
+      1,
+      nueva.id,
+      alumnos.slice(0, 2).map((a) => ({ alumnoId: a.id, presente: true })),
+    );
+    await svc.marcar(1, nueva.id, []);
+    const det = await courses.obtener(1);
+    expect(det.fechas.find((f) => f.id === nueva.id)?.estado).toBe('programada');
+    const after = await svc.listarAsistencias(1, nueva.id);
+    expect(after.length).toBe(0);
   });
 
   it('marcar rechaza fecha cancelada con error controlado', async () => {
@@ -162,6 +205,22 @@ describe('AttendanceMockService', () => {
   it('listarAlumnos con cursoId inválido rechaza', async () => {
     const svc = await setup();
     await expectAsync(svc.listarAlumnos(999)).toBeRejected();
+  });
+
+  it('listarAlumnos genera roster para curso creado en la sesión', async () => {
+    const svc = await setup();
+    const courses = TestBed.inject(COURSES_SOURCE);
+    const creado = await courses.crear({
+      codigo: 'CUR-QA',
+      nombre: 'Curso QA asistencias',
+      estado: 'activo',
+    });
+    const list = await svc.listarAlumnos(creado.id);
+    expect(list.length).toBeGreaterThanOrEqual(12);
+    expect(list.length).toBeLessThanOrEqual(15);
+    // Segunda llamada reutiliza el mismo roster (misma longitud / ids).
+    const again = await svc.listarAlumnos(creado.id);
+    expect(again.map((a) => a.id)).toEqual(list.map((a) => a.id));
   });
 
   it('__reset restaura el estado seed', async () => {

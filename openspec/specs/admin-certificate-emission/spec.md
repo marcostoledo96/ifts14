@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Definir la emisión administrativa mínima de certificados QR con generación de PDF/QR: el endpoint `POST /certificados/api/admin/certificados` crea un certificado y un token de verificación permanente sobre el esquema `cert_` existente, sin migraciones nuevas, exige autorización administrativa, valida un payload mínimo ficticio/demo, persiste con PDO y prepared statements, genera y persiste el PDF/QR durante la emisión (antes del alta lógico) y responde con un DTO operativo seguro que NO expone el token completo; las respuestas operativas administrativas, logs y auditoría NO DEBEN exponer el DNI completo ni el token completo (salvo DTOs explícitamente públicos cuando la decisión institucional lo requiera), incluyendo `pdfDownloadUrl` para descarga administrativa del PDF. Esta spec separa explícitamente el acto de "token activo persistido + PDF emitido" (cubierto en este ciclo) de la "verificación pública del token recién emitido" (dependiente del mecanismo de entrega/reenvío, fuera de alcance).
+Definir la emisión administrativa mínima de certificados QR con generación de PDF/QR: el endpoint `POST /certificados/api/admin/certificados` crea un certificado y un token de verificación permanente sobre el esquema `cert_` existente, sin migraciones nuevas, exige autorización administrativa, valida un payload mínimo ficticio/demo, persiste con PDO y prepared statements, genera y persiste el PDF/QR durante la emisión (antes del alta lógico) y responde con un DTO operativo seguro que NO expone el token completo; logs y auditoría NO DEBEN exponer DNI completo ni token completo (D0: DNI completo visible en DTO/UI admin y validación pública), incluyendo `pdfDownloadUrl` para descarga administrativa del PDF. Esta spec separa explícitamente el acto de "token activo persistido + PDF emitido" (cubierto en este ciclo) de la "verificación pública del token recién emitido" (dependiente del mecanismo de entrega/reenvío, fuera de alcance).
 
 ## Requirements
 
 ### Requirement: Emisión administrativa mínima de certificados
 
-La API DEBE exponer `POST /certificados/api/admin/certificados` para emitir un certificado desde `alumnoId` + `cursoId`, usando alumno, curso y asistencias activas existentes. DEBE requerir autorización administrativa, validar existencia/estado, exigir al menos una asistencia activa, leer `cert_configuracion_institucional` si existe, aplicar fallback seguro si falta, y persistir certificado, FKs nullable, token permanente, PDF/QR institucional y snapshot transaccional en `cert_certificado_fechas`. DEBE usar PDO con prepared statements y claves externas a Git. La respuesta `201` DEBE conservar `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; NO DEBE incluir token completo como campo separado, DNI completo operativo, secretos, SQL ni rutas internas. NO DEBE enviar email, activar SMTP/PHPMailer ni rotar token.
+La API DEBE exponer `POST /certificados/api/admin/certificados` para emitir un certificado desde `alumnoId` + `cursoId`, usando alumno, curso y asistencias activas existentes. DEBE requerir autorización administrativa, validar existencia/estado, exigir al menos una asistencia activa, leer `cert_configuracion_institucional` si existe, aplicar fallback seguro si falta, y persistir certificado, FKs nullable, token permanente, PDF/QR institucional y snapshot transaccional en `cert_certificado_fechas`. DEBE usar PDO con prepared statements y claves externas a Git. La respuesta `201` DEBE conservar `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; NO DEBE incluir token completo como campo separado, secretos, SQL ni rutas internas. Los DTOs admin PUEDEN incluir DNI completo en `documentMasked`/`dniMostrar` (D0); logs y auditoría NO DEBEN registrar DNI completo ni token completo. NO DEBE enviar email, activar SMTP/PHPMailer ni rotar token.
 (Antes: la emisión generaba PDF/QR y snapshot, pero no alimentaba el PDF con configuración institucional.)
 
 #### Scenario: Emisión exitosa desde alumno y curso
@@ -77,10 +77,26 @@ La API DEBE exponer `POST /certificados/api/admin/certificados` para emitir un c
 - ENTONCES NO DEBE aparecer `X-Admin-Key` ni su valor.
 - Y NO DEBEN existir llamadas Angular directas con `X-Admin-Key`.
 
+### Requirement: Definición de asistencias certificables
+
+«Asistencias activas certificables» DEBEN ser filas con `eliminado_en` NULL en fechas con estado `realizada`. Fechas `programada`/`cancelada` NO DEBEN entrar al snapshot. NO DEBE haber refresh de estado de fecha en `emitir` en este ciclo (diferido).
+
+#### Scenario: Solo realizadas en el snapshot
+
+- DADO asistencias activas en una fecha `realizada` y otra `programada`
+- CUANDO se emite
+- ENTONCES el snapshot DEBE incluir solo la `realizada` y responder `201`
+
+#### Scenario: Solo programada no certifica
+
+- DADO asistencias activas solo en fechas `programada`
+- CUANDO se emite
+- ENTONCES DEBE responder `400 VALIDATION_ERROR` sin persistir
+
 ### Requirement: Snapshot de emisión inmutable
 
-El sistema DEBE crear el snapshot en `cert_certificado_fechas` solo con asistencias activas al momento de emitir y DEBE usarlo luego para validación pública y PDF institucional.
-(Antes: el snapshot debía alimentar validación pública y PDF, sin mencionar el PDF institucional.)
+El sistema DEBE crear el snapshot en `cert_certificado_fechas` solo con asistencias activas certificables (fecha `realizada`, `eliminado_en` NULL) al emitir y DEBE usarlo luego para validación pública y PDF institucional.
+(Antes: «asistencias activas» sin exigir estado `realizada` de la fecha.)
 
 #### Scenario: Asistencia anulada después de emitir
 

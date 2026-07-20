@@ -34,8 +34,8 @@ describe('HttpAttendanceService', () => {
     req.flush({
       data: {
         items: [
-          { id: 1, apellidoNombre: 'Pérez Juan', dniMostrar: '12****78', estado: 'activo' },
-          { id: 2, apellidoNombre: 'García María', dniMostrar: '34****56', estado: 'inactivo' },
+          { id: 1, apellidoNombre: 'Pérez Juan', dniMostrar: '12345678', estado: 'activo' },
+          { id: 2, apellidoNombre: 'García María', dniMostrar: '34567890', estado: 'inactivo' },
         ],
       },
       meta: { requestId: 'r1' },
@@ -44,6 +44,7 @@ describe('HttpAttendanceService', () => {
     expect(result.length).toBe(1);
     expect(result[0].id).toBe(1);
     expect(result[0].apellidoNombre).toBe('Pérez Juan');
+    expect(result[0].dniMostrar).toBe('12345678');
     expect(result[0].estado).toBe('activo');
   });
 

@@ -3,13 +3,15 @@
   <aside class="login-aside" aria-label="Información institucional">
     <div class="aside-texture" aria-hidden="true"></div>
     <div class="aside-brand">
-      <span class="monograma" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-          <rect x="2" y="2" width="6" height="6" fill="currentColor" />
-          <rect x="12" y="2" width="6" height="6" fill="var(--color-circuit)" />
-          <rect x="2" y="12" width="6" height="6" fill="var(--color-circuit)" />
-          <rect x="12" y="12" width="6" height="6" fill="currentColor" />
-        </svg>
+      <span class="monograma">
+        <img
+          class="monograma-img"
+          [src]="logoSrc"
+          alt=""
+          width="44"
+          height="44"
+          decoding="async"
+        />
       </span>
       <div class="brand-text">
         <p class="aside-kicker">IFTS N.° 14</p>
@@ -36,6 +38,19 @@
         <dd>SHA-256 / SSL</dd>
       </div>
     </dl>
+
+    <ul class="aside-partners" aria-label="Instituciones asociadas">
+      @for (logo of partnerLogos; track logo.id) {
+        <li [class.aside-partner--featured]="logo.id === 'ba-aprende'">
+          <img
+            [src]="logo.src"
+            [alt]="logo.nombre"
+            loading="lazy"
+            decoding="async"
+          />
+        </li>
+      }
+    </ul>
   </aside>
 
   <main class="login-main" id="contenido" role="main">

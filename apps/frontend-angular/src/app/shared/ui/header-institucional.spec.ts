@@ -29,10 +29,12 @@ describe('HeaderInstitucional', () => {
     expect(el.querySelector('.badge')).toBeNull();
   });
 
-  it('SVG decorativo con aria-hidden', async () => {
+  it('muestra el logo IFTS como imagen decorativa', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const svg = el.querySelector('svg');
-    expect(svg?.getAttribute('aria-hidden')).toBe('true');
+    const img = el.querySelector('.monograma-img') as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('alt')).toBe('');
+    expect(img?.getAttribute('src')).toContain('logo-ifts.webp');
   });
 });

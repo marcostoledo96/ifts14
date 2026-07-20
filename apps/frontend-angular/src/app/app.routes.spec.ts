@@ -643,11 +643,24 @@ describe('app.routes', () => {
 
   // --- Rutas admin/asistencias F2-05 ---
 
-  it("admin children define asistencias y cursos/:id/fechas/:fechaId/asistencias", () => {
+  it("admin children define asistencias, marcado y certificados de fecha", () => {
     const children = adminChildren();
     const paths = children.map((c) => c.path);
     expect(paths).toContain('asistencias');
     expect(paths).toContain('cursos/:id/fechas/:fechaId/asistencias');
+    expect(paths).toContain('cursos/:id/fechas/:fechaId/asistencias/certificados');
+  });
+
+  it("orden seguro: …/asistencias/certificados ANTES que …/asistencias", () => {
+    const children = adminChildren();
+    const idxCerts = children.findIndex(
+      (c) => c.path === 'cursos/:id/fechas/:fechaId/asistencias/certificados',
+    );
+    const idxMark = children.findIndex(
+      (c) => c.path === 'cursos/:id/fechas/:fechaId/asistencias',
+    );
+    expect(idxCerts).toBeGreaterThanOrEqual(0);
+    expect(idxMark).toBeGreaterThan(idxCerts);
   });
 
   it("orden seguro: asistencias va después de dashboard y antes de cursos/nuevo", () => {

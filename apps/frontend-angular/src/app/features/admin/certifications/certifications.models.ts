@@ -1,6 +1,7 @@
 // Modelos de certificaciones — admin frontend.
-// Mock-only: sin DNI completo, token completo, email, legajo ni matrícula.
-// Los DTOs seguros (documentMasked, tokenPrefix, URL truncada) se usan en UI admin.
+// Mock-only: sin DNI real, token completo, email, legajo ni matrícula.
+// documentMasked (D0): nombre histórico; en UI admin contiene DNI completo ficticio.
+// tokenPrefix y URL truncada siguen siendo datos seguros parciales.
 
 export type EstadoCertificado = 'borrador' | 'vigente' | 'revocado' | 'vencido';
 
@@ -13,10 +14,13 @@ export interface Certificacion {
   readonly nombreAlumno: string; // ficticio, no plausible
   readonly cursoNombre: string; // ficticio, no plausible
   readonly estado: EstadoCertificado;
-  readonly documentMasked: string; // XX****XX
+  readonly documentMasked: string; // DNI completo ficticio (7-8 dígitos)
   readonly tokenPrefix: string; // prefijo_demo_xxx
   readonly emitidoEn: string | null; // ISO date
   readonly venceEn: string | null; // ISO date
+  /** FK admin; null en seeds legacy sin par alumno/curso. */
+  readonly alumnoId?: number | null;
+  readonly cursoId?: number | null;
 }
 
 // Detalle de previsualización: añade auditoría mínima y URL pública truncada.

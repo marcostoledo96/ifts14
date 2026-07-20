@@ -257,12 +257,14 @@
             }
             <div class="doc-header-content">
               <div class="doc-logo">
-                <svg viewBox="0 0 20 20" fill="none" class="doc-monograma" aria-hidden="true">
-                  <rect x="2" y="2" width="6" height="6" fill="currentColor" />
-                  <rect x="12" y="2" width="6" height="6" fill="var(--color-circuit)" />
-                  <rect x="2" y="12" width="6" height="6" fill="var(--color-circuit)" />
-                  <rect x="12" y="12" width="6" height="6" fill="currentColor" />
-                </svg>
+                <img
+                  class="doc-monograma"
+                  [src]="logoSrc"
+                  alt=""
+                  width="48"
+                  height="48"
+                  decoding="async"
+                />
               </div>
               <div class="doc-institution">
                 <p class="doc-inst-kicker">CERTIFICADO COMPLEMENTARIO</p>
@@ -384,6 +386,14 @@
               </p>
             </div>
           </div>
+
+          <ul class="doc-partners" aria-label="Instituciones asociadas">
+            @for (logo of partnerLogos; track logo.id) {
+              <li>
+                <img [src]="logo.src" [alt]="logo.nombre" loading="lazy" decoding="async" />
+              </li>
+            }
+          </ul>
         </article>
 
         <section class="panel auditoria-panel" aria-labelledby="audit-title">

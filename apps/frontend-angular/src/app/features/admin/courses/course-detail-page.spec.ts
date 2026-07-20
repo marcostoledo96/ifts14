@@ -189,7 +189,9 @@ describe('CourseDetailPage', () => {
     expect(el.textContent).toContain('Pendiente');
     expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/11/asistencias"], .fechas-cards a[href*="/fechas/11/asistencias"]').length).toBe(2);
     expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/12/asistencias"], .fechas-cards a[href*="/fechas/12/asistencias"]').length).toBe(2);
-    expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/11/asistencias"]')[0]?.textContent).toContain('Ver');
+    expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/11/asistencias"]')[0]?.textContent).toContain(
+      'Ver y entregar',
+    );
     expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/12/asistencias"]')[0]?.textContent).toContain('Cargar');
   });
 
@@ -204,16 +206,16 @@ describe('CourseDetailPage', () => {
     expect(el.querySelectorAll('[role="alert"]').length).toBe(0);
     expect(el.textContent).toContain('Agregar fecha');
     expect(el.textContent).toContain('Editar curso');
-    expect(el.textContent).toContain('Cargar asistencias');
+    expect(el.textContent).toContain('Todavía no hay fechas cargadas');
     expect((el.querySelector('[data-testid="cta-editar-curso"]') as HTMLAnchorElement).getAttribute('href')).toContain(
       '/admin/cursos/1/editar',
     );
-    expect(
-      (el.querySelector('[data-testid="cta-cargar-asistencias"]') as HTMLAnchorElement).getAttribute('href'),
-    ).toContain('/admin/asistencias');
+    // Sin fechas: no hay CTA a hub genérico de asistencias.
+    expect(el.querySelector('[data-testid="cta-cargar-asistencias"]')).toBeNull();
+    expect(el.querySelector('a[href*="/admin/asistencias"]')).toBeNull();
   });
 
-  it('enlaza Cargar asistencias a la primera fecha disponible', async () => {
+  it('enlaza Abrir primera fecha a la primera fecha disponible', async () => {
     const f = await render(
       courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12)]))),
       '1',
@@ -221,6 +223,7 @@ describe('CourseDetailPage', () => {
     );
     const el = f.nativeElement as HTMLElement;
     const cta = el.querySelector('[data-testid="cta-cargar-asistencias"]') as HTMLAnchorElement;
+    expect(cta.textContent?.trim()).toContain('Abrir primera fecha');
     expect(cta.getAttribute('href')).toContain('/admin/cursos/1/fechas/11/asistencias');
   });
 

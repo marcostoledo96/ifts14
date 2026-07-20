@@ -9,7 +9,9 @@
     <div>
       <p class="kicker">Registro académico</p>
       <h1 id="student-new-title" class="title">Nuevo alumno</h1>
-      <p class="subtitle">Alta mínima: apellido y nombre, y documento. El estado queda activo por defecto.</p>
+      <p class="subtitle">
+        Alta: apellido y nombre, documento y email opcional. El estado queda activo por defecto.
+      </p>
     </div>
   </header>
 
@@ -18,7 +20,17 @@
   </p>
 
   @if (errorSubmit()) {
-    <p class="estado-error" role="alert">{{ errorSubmit() }}</p>
+    <div class="estado-error" role="alert">
+      <p class="estado-error-msg">{{ errorSubmit() }}</p>
+      @if (alumnoExistenteId(); as idExistente) {
+        <a
+          class="estado-error-link"
+          [routerLink]="['/admin/alumnos', idExistente]"
+        >
+          Ver perfil del alumno
+        </a>
+      }
+    </div>
   }
 
   <form class="form-panel" (ngSubmit)="guardar()" novalidate>
@@ -57,7 +69,25 @@
       @if (errorDni()) {
         <span id="err-dni" class="campo-error" role="alert">{{ errorDni() }}</span>
       }
-      <span class="campo-ayuda">Solo se usa para el alta. En listados se muestra enmascarado.</span>
+      <span class="campo-ayuda">Se muestra completo en listados y detalle admin.</span>
+    </label>
+
+    <label class="campo">
+      <span class="campo-label">Email <span class="campo-opcional">(opcional)</span></span>
+      <input
+        type="email"
+        name="email"
+        autocomplete="email"
+        [value]="email()"
+        (input)="onEmail($event)"
+        [attr.aria-invalid]="errorEmail() ? 'true' : null"
+        [attr.aria-describedby]="errorEmail() ? 'err-email' : 'ayuda-email'"
+        [disabled]="guardando()"
+      />
+      @if (errorEmail()) {
+        <span id="err-email" class="campo-error" role="alert">{{ errorEmail() }}</span>
+      }
+      <span id="ayuda-email" class="campo-ayuda">Si lo cargás, queda disponible en el legajo del alumno.</span>
     </label>
 
     <div class="acciones">

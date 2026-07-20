@@ -26,7 +26,7 @@ Sos el agente de implementación frontend del IFTS 14. Tu trabajo es cerrar la *
      - **omitir** el control, o
      - mostrar placeholder honesto (`—` / “no disponible” / disabled con motivo),
      - **nunca** fakear datos reales ni DNI/token completos en admin.
-6. **D0:** QR/token permanente; DNI completo solo en validación pública; admin usa `documentMasked`/`tokenPrefix`.
+6. **D0:** QR/token permanente; DNI completo en validación pública y UI admin (`documentMasked`/`dniMostrar` con dígitos completos); email opcional al crear alumno.
 7. **Auth:** `X-Admin-Key` no va al browser; sesión cookie + CSRF.
 8. **Paridad = criterio de aceptación.** Un ciclo no cierra si la captura side-by-side (desktop + mobile) no alcanza paridad igual o mejor que v0 en layout/spacing/botones/iconos.
 9. **No commits** salvo pedido explícito del usuario.

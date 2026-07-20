@@ -102,7 +102,7 @@ El sistema DEBE documentar las claves `public_base_url` y `certificate_storage_p
 
 ### Requisito: DNI en el PDF del certificado de curso
 
-El PDF DEBE corresponder a un certificado de curso emitido desde alumno, curso y asistencias activas. DEBE incluir fechas asistidas desde el snapshot `cert_certificado_fechas`, no desde asistencias vivas. El PDF PUEDE mostrar DNI completo por decisión institucional. Logs, auditoría, errores y respuestas administrativas NO DEBEN exponer DNI completo ni token completo.
+El PDF DEBE corresponder a un certificado de curso emitido desde alumno, curso y asistencias activas. DEBE incluir fechas asistidas desde el snapshot `cert_certificado_fechas`, no desde asistencias vivas. El PDF PUEDE mostrar DNI completo por decisión institucional (D0). Logs, auditoría, errores y dumps NO DEBEN exponer DNI completo ni token completo.
 (Antes: exigía DNI y fechas snapshot, sin requerir texto institucional ni firmantes.)
 
 #### Escenario: DNI visible en el PDF institucional

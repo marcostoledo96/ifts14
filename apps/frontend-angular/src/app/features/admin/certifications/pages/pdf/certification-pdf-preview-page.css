@@ -394,89 +394,44 @@
   }
 }
 
-.escudo-circular {
+.folio-logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--color-ink) 70%, transparent);
-  background: var(--color-card);
   flex-shrink: 0;
+  min-width: 0;
+}
+
+.folio-logo img {
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.folio-logo--escudo img {
+  max-height: 3.25rem;
+}
+
+.folio-logo--programa img,
+.folio-logo--ciudad img {
+  max-height: 2.75rem;
+}
+
+.folio-logo--ifts img {
+  max-height: 3.25rem;
 }
 
 @media (min-width: 640px) {
-  .escudo-circular {
-    width: 4rem;
-    height: 4rem;
+  .folio-logo--escudo img,
+  .folio-logo--ifts img {
+    max-height: 3.75rem;
   }
-}
 
-.escudo-icon {
-  font-size: 1.5rem;
-  color: color-mix(in srgb, var(--color-ink) 80%, transparent);
-}
-
-.marca-programa {
-  text-align: center;
-  line-height: 1.2;
-  order: 2;
-}
-
-@media (min-width: 640px) {
-  .marca-programa {
-    order: 0;
-    padding-top: var(--space-1);
+  .folio-logo--programa img,
+  .folio-logo--ciudad img {
+    max-height: 3rem;
   }
-}
-
-.marca-programa-titulo {
-  font-weight: 600;
-  color: var(--color-ink);
-  margin: 0;
-}
-
-.marca-italic {
-  font-style: italic;
-  font-weight: 400;
-  color: var(--color-tech-blue);
-}
-
-.marca-programa-sub {
-  margin-top: 0.125rem;
-  font-family: var(--font-mono);
-  font-size: 0.5625rem;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-caps-tight);
-  color: var(--color-muted-foreground);
-}
-
-.marca-ifts {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--color-ink);
-  flex-shrink: 0;
-}
-
-@media (min-width: 640px) {
-  .marca-ifts {
-    padding-top: var(--space-1);
-  }
-}
-
-.marca-ifts-bracket {
-  color: var(--color-tech-blue);
-}
-
-.marca-ifts-sup {
-  font-size: 0.625rem;
-  color: var(--color-circuit);
 }
 
 /* ---------- Título ---------- */
@@ -1019,13 +974,8 @@
     gap: var(--space-2) !important;
   }
 
-  .escudo-circular {
-    width: 2.5rem !important;
-    height: 2.5rem !important;
-  }
-
-  .escudo-icon {
-    font-size: 1rem !important;
+  .folio-logo img {
+    max-height: 2.25rem !important;
   }
 
   /* Evitar cortes: el folio completo es una unidad atómica. */

@@ -115,10 +115,19 @@ export const routes: Routes = [
           import('./features/admin/courses/course-editor-page').then((m) => m.CourseEditorPage),
       },
       {
+        // Más específica que …/asistencias: listado de certificados del curso.
+        path: 'cursos/:id/fechas/:fechaId/asistencias/certificados',
+        title: 'Admin · Certificados del curso — IFTS 14',
+        loadComponent: () =>
+          import(
+            './features/admin/attendances/pages/date-certificates/date-certificates-page'
+          ).then((m) => m.DateCertificatesPage),
+      },
+      {
         // Ruta profunda de marcado por fecha: va ANTES que cursos/:id para
         // que :id no la capture. Orden seguro preserva catch-all admin.
         path: 'cursos/:id/fechas/:fechaId/asistencias',
-        title: 'Admin · Marcar asistencias (mock) — IFTS 14',
+        title: 'Admin · Fecha · Asistencias y certificados — IFTS 14',
         loadComponent: () =>
           import('./features/admin/attendances/pages/marking/attendance-marking-page').then(
             (m) => m.AttendanceMarkingPage,

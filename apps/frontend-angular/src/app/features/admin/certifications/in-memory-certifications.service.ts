@@ -1,7 +1,7 @@
 // Implementación en memoria de CertificationsService.
-// Seed ficticio, institucionalmente seguro: sin DNI, emails, tokens,
-// matrículas ni nombres reales. Mutaciones viven solo en la instancia
-// y se pierden al recargar. Ver spec admin-certifications-frontend.
+// Seed ficticio, institucionalmente seguro: DNI completo ficticio en UI admin,
+// sin emails reales, tokens completos, matrículas ni nombres reales.
+// Mutaciones viven solo en la instancia y se pierden al recargar.
 import { Injectable } from '@angular/core';
 import {
   AuditEvent,
@@ -27,10 +27,12 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Uno',
       cursoNombre: 'Curso de introducción a la gestión',
       estado: 'vigente',
-      documentMasked: '12****34',
+      documentMasked: '12345678',
       tokenPrefix: 'prefijo_demo_a1b',
       emitidoEn: '2026-03-01',
       venceEn: '2027-03-01',
+      alumnoId: 1,
+      cursoId: 1,
       publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
       attendedDates: ['2026-03-02', '2026-03-09', '2026-03-16'],
       auditEvents: [
@@ -43,10 +45,12 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Dos',
       cursoNombre: 'Curso de herramientas administrativas',
       estado: 'vigente',
-      documentMasked: '34****56',
+      documentMasked: '23456789',
       tokenPrefix: 'prefijo_demo_c2d',
       emitidoEn: '2026-04-05',
       venceEn: '2027-04-05',
+      alumnoId: 2,
+      cursoId: 2,
       publicValidationUrl: 'https://ifrm/validar/prefijo_demo_c2d…',
       attendedDates: ['2026-04-05', '2026-04-12'],
       auditEvents: [
@@ -59,10 +63,12 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Tres',
       cursoNombre: 'Curso de prácticas documentales',
       estado: 'borrador',
-      documentMasked: '56****78',
+      documentMasked: '34567890',
       tokenPrefix: 'prefijo_demo_e3f',
       emitidoEn: null,
       venceEn: null,
+      alumnoId: 3,
+      cursoId: 3,
       publicValidationUrl: 'https://ifrm/validar/prefijo_demo_e3f…',
       attendedDates: ['2026-05-04'],
       auditEvents: [
@@ -75,10 +81,12 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Cuatro',
       cursoNombre: 'Curso de procedimientos básicos',
       estado: 'vencido',
-      documentMasked: '78****90',
+      documentMasked: '45678901',
       tokenPrefix: 'prefijo_demo_g4h',
       emitidoEn: '2025-09-01',
       venceEn: '2026-09-01',
+      alumnoId: 4,
+      cursoId: 4,
       publicValidationUrl: 'https://ifrm/validar/prefijo_demo_g4h…',
       attendedDates: ['2025-09-01', '2025-09-08'],
       auditEvents: [
@@ -92,10 +100,12 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Cinco',
       cursoNombre: 'Curso de registros y archivo',
       estado: 'revocado',
-      documentMasked: '90****12',
+      documentMasked: '56789012',
       tokenPrefix: 'prefijo_demo_i5j',
       emitidoEn: '2025-06-10',
       venceEn: '2026-06-10',
+      alumnoId: 5,
+      cursoId: 5,
       publicValidationUrl: 'https://ifrm/validar/prefijo_demo_i5j…',
       attendedDates: ['2025-06-10'],
       auditEvents: [
@@ -109,10 +119,12 @@ export function seed(): CertificacionDetalle[] {
       nombreAlumno: 'Alumno Demo Seis',
       cursoNombre: 'Curso de atención al público',
       estado: 'vigente',
-      documentMasked: '23****45',
+      documentMasked: '67890123',
       tokenPrefix: 'prefijo_demo_k6l',
       emitidoEn: '2026-06-01',
       venceEn: '2027-06-01',
+      alumnoId: 6,
+      cursoId: 6,
       publicValidationUrl: 'https://ifrm/validar/prefijo_demo_k6l…',
       attendedDates: ['2026-06-01', '2026-06-08', '2026-06-15'],
       auditEvents: [
@@ -142,6 +154,14 @@ export class InMemoryCertificationsService implements CertificationsService {
   /** Pares alumnoId:cursoId con certificado vigente (para 409 mock). */
   private readonly vigentesPorPar = new Map<string, number>();
 
+  constructor() {
+    for (const c of this.certificados) {
+      if (c.estado === 'vigente' && c.alumnoId != null && c.cursoId != null) {
+        this.vigentesPorPar.set(this.pairKey(c.alumnoId, c.cursoId), c.id);
+      }
+    }
+  }
+
   private pairKey(alumnoId: number, cursoId: number): string {
     return `${alumnoId}:${cursoId}`;
   }
@@ -156,15 +176,11 @@ export class InMemoryCertificationsService implements CertificationsService {
     if (filtros?.curso) {
       list = list.filter((c) => c.cursoNombre === filtros.curso);
     }
-    if (filtros?.cursoId != null || filtros?.alumnoId != null) {
-      const ids = new Set<number>();
-      for (const [key, certId] of this.vigentesPorPar) {
-        const [a, c] = key.split(':').map(Number);
-        if (filtros.alumnoId != null && a !== filtros.alumnoId) continue;
-        if (filtros.cursoId != null && c !== filtros.cursoId) continue;
-        ids.add(certId);
-      }
-      list = list.filter((c) => ids.has(c.id));
+    if (filtros?.cursoId != null) {
+      list = list.filter((c) => c.cursoId === filtros.cursoId);
+    }
+    if (filtros?.alumnoId != null) {
+      list = list.filter((c) => c.alumnoId === filtros.alumnoId);
     }
     if (filtros?.q) {
       const q = filtros.q.trim().toLowerCase();
@@ -307,7 +323,7 @@ export class InMemoryCertificationsService implements CertificationsService {
     const code = `IFTS14-CERT-${String(id).padStart(4, '0')}`;
     const tokenPrefix = `prefijo_demo_${id.toString(36).padStart(3, '0').slice(-3)}`;
     const displayName = `Alumno Demo ${id}`;
-    const documentMasked = '11****99';
+    const documentMasked = '11999888';
     const courseName = `Curso mock ${payload.cursoId}`;
     const detalle: CertificacionDetalle = {
       id,
@@ -319,6 +335,8 @@ export class InMemoryCertificationsService implements CertificationsService {
       tokenPrefix,
       emitidoEn: payload.issuedAt,
       venceEn: payload.expiresAt,
+      alumnoId: payload.alumnoId,
+      cursoId: payload.cursoId,
       publicValidationUrl: truncarUrl(`https://ifrm/validar/${tokenPrefix}…`),
       attendedDates: [],
       auditEvents: [{ at: payload.issuedAt, accion: 'emision', detalle: 'Emisión mock.' }],

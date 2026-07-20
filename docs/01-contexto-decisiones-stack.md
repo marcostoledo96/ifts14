@@ -30,6 +30,7 @@ Gestión base: phpMyAdmin y herramientas MySQL de cPanel
 - El backend se implementa en PHP 8.4.21.
 - La base de datos usa MariaDB 10.6.27.
 - El deploy objetivo es `/certificados/` en cPanel.
+- **D0 (2026-07-20):** DNI completo visible en validación pública y UI admin (listados/detalle/expediente); logs, auditoría, errores y dumps no-UI sin DNI ni token completos. Email opcional al crear/editar alumno.
 
 ## Pendientes
 

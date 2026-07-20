@@ -114,6 +114,7 @@ jobs:
               php apps/backend-php/tests/ReadinessTest.php &&
               php apps/backend-php/tests/CertificateRevisionMigrationTest.php &&
               php apps/backend-php/tests/AttendanceRevisionTest.php &&
+              php apps/backend-php/tests/AutoCourseDateEstadoTest.php &&
               php apps/backend-php/tests/CourseDateRevisionTest.php &&
               php apps/backend-php/tests/QrImageTest.php &&
               php apps/backend-php/tests/RegenerarPdfTest.php &&

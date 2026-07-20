@@ -186,7 +186,7 @@ test.describe('parity config Angular vs v0', () => {
     const esDesktop = (page.viewportSize()?.width ?? 0) >= 1024;
     expect(fp.hasSeccionesNav).toBe(esDesktop);
     expect(fp.stickyBarFixed).toBeTruthy();
-    expect(fp.logosCount).toBeGreaterThanOrEqual(5);
+    expect(fp.logosCount).toBeGreaterThanOrEqual(4);
     expect(fp.enabledControls.some((c) => c.includes('institution-name'))).toBeTruthy();
     expect(fp.enabledControls.some((c) => c.includes('certificate-text'))).toBeTruthy();
   });

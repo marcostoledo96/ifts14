@@ -95,16 +95,17 @@ Criterio: 0 errores nuevos y warnings registrados (no bloquean).
 
 ## 8. Datos sensibles
 
-Criterio: NO DNI completo en UI admin, NO tokens completos, NO claves admin en bundle, NO tokens en URL admin.
+Criterio: DNI completo visible en UI admin y validación pública (D0 2026-07-20); NO tokens completos; NO claves admin en bundle; NO tokens en URL admin. Logs, auditoría, errores y dumps NO DEBEN incluir DNI completo ni token completo.
 
 | Check | Método | Resultado | Evidencia |
 |---|---|---|---|
-| UI admin no muestra DNI completo | `Select-String` sobre `apps/frontend-angular/src/app/features/admin` | **PASS** | Los modelos admin usan `documentMasked` con formato `XX****XX`. Los seeds usan `12****34`, `34****56`, etc. |
-| No tokens completos en UI admin | Revisión de `certifications.models.ts`, `in-memory-certifications.service.ts` y templates | **PASS** | Se expone `tokenPrefix` (`prefijo_demo_xxx`) y URL pública truncada a 60 caracteres. |
-| No clave admin en bundle Angular | `Select-String "X-Admin-Key"` en `src` | **PASS** | Solo aparece en specs negativos `__checks__/no-secrets.spec.ts` como patrón prohibido. 0 matches en código de producto. |
-| No storage en frontend | `Select-String` de `localStorage`, `sessionStorage`, `IndexedDB` | **PASS** | Solo aparece en specs negativos como patrón prohibido. |
-| UI pública y DNI completo | Revisión de `dto.ts`, `result-mapper.ts`, `public-validation-page` | **PASS con nota** | D0 exige DNI completo (`documentNumber`) en validación pública; es correcto por decisión institucional. |
-| Token en URL | Revisión de rutas | **PASS con nota** | La ruta pública `validar/:tokenCertificacion` requiere el token por diseño. No se detectan tokens completos en URL admin ni en logs/errores del frontend. |
+| UI admin muestra DNI completo | Revisión de modelos/templates admin | **Pendiente re-verificación D0** | Tras D0 2026-07-20, `dniMostrar`/`documentMasked` deben contener dígitos completos en listados, detalle y expediente. |
+| No tokens completos en UI admin | Revisión de `certifications.models.ts`, servicios y templates | **PASS** | Se expone `tokenPrefix` y URL pública truncada. |
+| No clave admin en bundle Angular | `Select-String "X-Admin-Key"` en `src` | **PASS** | Solo aparece en specs negativos. |
+| No storage en frontend | `Select-String` de `localStorage`, `sessionStorage`, `IndexedDB` | **PASS** | Solo aparece en specs negativos. |
+| UI pública y DNI completo | Revisión de `dto.ts`, `result-mapper.ts`, `public-validation-page` | **PASS** | D0 exige DNI completo en validación pública vigente. |
+| Logs/consola sin DNI completo | Revisión estática de errores y consola | **Pendiente** | D0: logs/auditoría/errores/dumps sin DNI ni token completos. |
+| Token en URL | Revisión de rutas | **PASS con nota** | La ruta pública `validar/:tokenCertificacion` requiere el token por diseño. No se detectan tokens completos en URL admin. |
 
 **Nota**: Los datos de prueba (`12345678` en `mock-tokens.ts`, `documentNumber` en tests) son mocks ficticios con fines de testing; no corresponden a personas reales.
 

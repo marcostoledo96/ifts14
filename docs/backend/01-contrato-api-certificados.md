@@ -28,9 +28,9 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | `GET` | `/certificados/api/admin/cursos` | Listar cursos; admite filtro `estado`. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/cursos/{id}` | Consultar curso. | Admin con `X-Admin-Key`. |
 | `PATCH` | `/certificados/api/admin/cursos/{id}/estado` | Actualizar estado del curso. | Admin con `X-Admin-Key`. |
-| `POST` | `/certificados/api/admin/alumnos` | Crear alumno con DNI cifrado/hash y DTO enmascarado. | Admin con `X-Admin-Key`. |
-| `GET` | `/certificados/api/admin/alumnos` | Listar alumnos con DNI enmascarado. | Admin con `X-Admin-Key`. |
-| `GET` | `/certificados/api/admin/alumnos/{id}` | Consultar alumno con DNI enmascarado. | Admin con `X-Admin-Key`. |
+| `POST` | `/certificados/api/admin/alumnos` | Crear alumno con DNI cifrado/hash, DTO admin con DNI completo y email opcional. | Admin con sesión/CSRF. |
+| `GET` | `/certificados/api/admin/alumnos` | Listar alumnos con DNI completo en `dniMostrar`/`documentMasked`. | Admin con sesión/CSRF. |
+| `GET` | `/certificados/api/admin/alumnos/{id}` | Consultar alumno con DNI completo en DTO admin. | Admin con sesión/CSRF. |
 | `PATCH` | `/certificados/api/admin/alumnos/{id}/estado` | Actualizar estado del alumno. | Admin con `X-Admin-Key`. |
 | `POST` | `/certificados/api/admin/cursos/{cursoId}/fechas` | Crear fecha de curso. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/cursos/{cursoId}/fechas` | Listar fechas ordenadas por `orden` y `fecha`. | Admin con `X-Admin-Key`. |
@@ -85,7 +85,7 @@ Respuesta 200 cuando el certificado es válido:
 }
 ```
 
-> **Decisión D0**: el DTO público muestra DNI completo (`documentNumber`) por decisión institucional aprobada. Los logs, auditoría, errores y respuestas administrativas NO deben exponer DNI completo. `attendedDates` lista las fechas del curso a las que asistió el alumno.
+> **Decisión D0 (2026-07-20)**: el DTO público y los DTOs admin muestran DNI completo (`documentNumber` / `dniMostrar`/`documentMasked` con dígitos completos). Los logs, auditoría, errores y dumps NO deben exponer DNI completo ni token completo. `attendedDates` lista las fechas del curso a las que asistió el alumno.
 
 ### `POST /certificados/consulta`
 
@@ -118,9 +118,10 @@ Reglas de privacidad y persistencia:
 
 - `POST /admin/alumnos` normaliza DNI a dígitos, exige longitud 7 a 10, calcula `dni_hash` binario como HMAC-SHA-256 usando `dni_cipher_key` y guarda `dni_cifrado` con esa misma clave externa.
 - Si `dni_cipher_key` falta o es inválida, responde `500 CONFIGURATION_ERROR` antes de insertar alumno.
-- `PATCH /admin/alumnos/{id}/estado` no requiere `dni_cipher_key`: solo actualiza el estado y conserva el DTO administrativo enmascarado.
-- Las respuestas admin usan `dniMostrar` y nunca devuelven DNI completo, `dni_hash`, `dni_cifrado`, tokens, SQL, secretos ni rutas internas.
+- `PATCH /admin/alumnos/{id}/estado` no requiere `dni_cipher_key`: solo actualiza el estado y conserva el DTO admin con DNI completo en `dniMostrar`/`documentMasked`.
+- Las respuestas admin usan `dniMostrar`/`documentMasked` con dígitos completos (D0 2026-07-20); email opcional (nullable). NO devuelven `dni_hash`, `dni_cifrado`, tokens, SQL, secretos ni rutas internas. Logs, auditoría y errores NO incluyen DNI completo ni token completo.
 - Asistencia válida requiere alumno `activo`, curso `activo` y fecha `programada` o `realizada` del curso.
+- Tras `POST` o `DELETE` de asistencia, si la fecha no está `cancelada`, el backend recalcula su `estado` con día local `America/Argentina/Buenos_Aires`: `realizada` solo si hay ≥1 asistencia activa y `fecha < hoy`; si no, `programada`. `cancelada` no se infiere ni se modifica automáticamente. Al entrar o salir de `realizada` se conserva el sync de snapshots / `pdf_estado=desactualizado`.
 - Los filtros `cursoId` y `alumnoId` de `GET /admin/asistencias` deben ser enteros positivos; si vienen informados con formato inválido, responden `400 VALIDATION_ERROR` en vez de ampliar el listado.
 - Una asistencia activa duplicada responde `409 CONFLICT`; la anulación usa `eliminado_en` y no hace `DELETE` físico.
 - `orden` de fechas de curso acepta solo `1..65535`; aplica a creación, actualización y al próximo orden automático. Si se supera el máximo, responde `400 VALIDATION_ERROR`.
@@ -155,7 +156,7 @@ Request mínimo:
 }
 ```
 
-La emisión toma alumno, curso y asistencias activas existentes. El DNI completo se descifra desde `cert_alumnos.dni_cifrado` solo para PDF/validación pública. La respuesta `201` NO lo devuelve: por D0, el DNI completo solo se expone en el DTO público de validación. Logs, auditoría, errores y respuestas administrativas no incluyen DNI completo.
+La emisión toma alumno, curso y asistencias activas certificables (fecha de curso en estado `realizada`, `eliminado_en` NULL). El DNI completo se descifra desde `cert_alumnos.dni_cifrado` para PDF/validación pública y para DTO admin (`documentMasked`/`dniMostrar` con dígitos completos; D0). Logs, auditoría, errores y dumps no incluyen DNI completo ni token completo.
 
 Respuesta `201`:
 
@@ -167,7 +168,7 @@ Respuesta `201`:
     "status": "vigente",
     "student": {
       "displayName": "Persona Demo",
-      "documentMasked": "00******00"
+      "documentMasked": "00123456"
     },
     "course": {
       "name": "Curso Demo"
@@ -184,15 +185,15 @@ Respuesta `201`:
 }
 ```
 
-La emisión no devuelve DNI completo ni token completo como campo separado. El campo `documentMasked` (enmascarado) en la respuesta administrativa es el único dato de documento permitido; el DNI completo queda reservado para el DTO público de validación (decisión D0). `publicValidationUrl` es el único link público previsto y contiene el token permanente; `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. `tokenPrefix` es ayuda operativa segura. El token se persiste como `token_hash` (verificación), `token_prefijo` (soporte) y `token_cifrado` (recuperable, AES-256-GCM con clave externa a Git). Si la generación o persistencia del PDF falla, o si el cifrado del token falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional, fail closed).
+La emisión no devuelve token completo como campo separado. El campo `documentMasked`/`dniMostrar` en respuestas admin contiene DNI completo visible (D0 2026-07-20). `publicValidationUrl` es el único link público previsto y contiene el token permanente; `pdfDownloadUrl` apunta al endpoint administrativo de descarga y no contiene el token de verificación. `tokenPrefix` es ayuda operativa segura. El token se persiste como `token_hash` (verificación), `token_prefijo` (soporte) y `token_cifrado` (recuperable, AES-256-GCM con clave externa a Git). Si la generación o persistencia del PDF falla, o si el cifrado del token falla, la emisión se aborta sin confirmar el alta lógico del certificado (rollback transaccional, fail closed).
 
 El PDF generado durante la emisión usa `cert_configuracion_institucional` (`id = 1`) cuando existe. Si la fila falta o un campo está vacío, la emisión continúa con valores institucionales seguros por defecto. La edición de configuración se realiza por `PUT /admin/configuracion-institucional`.
 
-La emisión persiste `alumno_id`, `curso_id` y snapshot en `cert_certificado_fechas`. Si no hay asistencias activas (`cert_asistencias.eliminado_en IS NULL` y fecha de curso `programada|realizada`), responde `400 VALIDATION_ERROR` sin persistir certificado, token, PDF ni snapshot. Si ya existe un certificado con `estado='vigente'` y `revocado_en IS NULL` para el mismo alumno y curso, responde `409 CERTIFICATE_ALREADY_EXISTS` sin persistir certificado, token, PDF ni snapshot. Revocar o pasar explícitamente el estado a `vencido` libera una nueva emisión; una fecha `vence_en` pasada no libera el slot mientras el estado siga `vigente`.
+La emisión persiste `alumno_id`, `curso_id` y snapshot en `cert_certificado_fechas`. Si no hay asistencias activas certificables (`cert_asistencias.eliminado_en IS NULL` y fecha de curso `realizada`), responde `400 VALIDATION_ERROR` sin persistir certificado, token, PDF ni snapshot. Fechas `programada` o `cancelada` no entran al snapshot. Este ciclo no refresca el estado de la fecha dentro de `emitir` (diferido). Si ya existe un certificado con `estado='vigente'` y `revocado_en IS NULL` para el mismo alumno y curso, responde `409 CERTIFICATE_ALREADY_EXISTS` sin persistir certificado, token, PDF ni snapshot. Revocar o pasar explícitamente el estado a `vencido` libera una nueva emisión; una fecha `vence_en` pasada no libera el slot mientras el estado siga `vigente`.
 
 ### `GET /admin/certificados`
 
-Listado administrativo de certificados. Requiere `X-Admin-Key`. No expone DNI completo, token completo, hash, clave ni rutas internas.
+Listado administrativo de certificados. Requiere auth admin. No expone token completo, hash, clave ni rutas internas. DNI completo visible en `documentMasked`/`dniMostrar` (D0).
 
 Query opcionales:
 
@@ -214,7 +215,7 @@ Respuesta `200`:
         "status": "vigente",
         "student": {
           "displayName": "Persona Demo",
-          "documentMasked": "00******00"
+          "documentMasked": "00123456"
         },
         "course": { "id": 2, "name": "Curso Demo" },
         "alumnoId": 1,
@@ -234,7 +235,7 @@ Respuesta `200`:
 
 Detalle administrativo (expediente) de un certificado. Requiere `X-Admin-Key`. `id` numérico entero mayor a 0.
 
-Incluye snapshot de fechas asistidas (`attendedDates`), eventos de auditoría seguros (`auditEvents` sin DNI ni token), y `links` relativos a PDF, entrega manual y QR PNG. No devuelve token completo ni DNI completo.
+Incluye snapshot de fechas asistidas (`attendedDates`), eventos de auditoría seguros (`auditEvents` sin DNI ni token en logs), y `links` relativos a PDF, entrega manual y QR PNG. No devuelve token completo. DNI completo en campos de documento del DTO admin (D0).
 
 Respuesta `200` extiende el ítem de listado con:
 
@@ -527,7 +528,7 @@ Toda respuesta de error debe usar este formato:
 
 - El DTO público muestra DNI completo (`documentNumber`) por decisión institucional aprobada; esta exposición aplica solo a la validación pública.
 - No loguear DNI completo, token completo, credenciales ni SQL con parámetros reales.
-- Los logs, auditoría, errores y respuestas administrativas NO deben incluir DNI completo ni token completo.
+- Los logs, auditoría, errores y dumps NO deben incluir DNI completo ni token completo (D0: UI admin y validación pública sí muestran DNI completo).
 - No versionar credenciales, `.env`, `db.php`, `database.php`, `config.php` ni equivalentes reales.
 - Usar PDO y prepared statements para toda consulta SQL futura.
 - Mantener configuración real fuera de Git.
@@ -631,7 +632,7 @@ Cierre documental post-merge del ciclo `m3-06-final-angular-api-smoke`. Registra
 
 | Ítem | Estado |
 |---|---|
-| `student.documentNumber` (DNI completo) sólo en DTO/UI pública | OK: decisión institucional aprobada. |
+| `student.documentNumber` (DNI completo) en DTO/UI pública y admin | OK: decisión D0 2026-07-20. |
 | `course.attendedDates` para certificados vigentes nuevos | OK: snapshot en `cert_certificado_fechas`. |
 | Legado tolerado: `student.documentMasked` sin fechas cuando no hay snapshot D0 | OK: mapper Angular lo admite como fallback. |
 | UI pública no pide DNI como input de búsqueda pública | OK: solo token desde ruta. |
@@ -640,7 +641,7 @@ Cierre documental post-merge del ciclo `m3-06-final-angular-api-smoke`. Registra
 
 | Ítem | Estado |
 |---|---|
-| `documentMasked` (enmascarado) en respuestas admin; nunca DNI completo | OK: emisión, listado, detalle y entrega manual. |
+| `documentMasked`/`dniMostrar` con dígitos completos en respuestas admin | OK: emisión, listado, detalle, alumnos y entrega manual (D0). |
 | `tokenPrefix` (prefijo no reversible); nunca token completo como campo separado | OK: el token solo vive dentro de `publicValidationUrl`. |
 | `links` relativos a PDF, entrega manual y QR PNG en detalle | OK: `/admin/certificados/{id}/{pdf,entrega-manual,qr.png}`. |
 | `attendedDates` en detalle administrativo (expediente) | OK: snapshot seguro sin DNI ni token. |
@@ -663,7 +664,7 @@ Cierre documental post-merge del ciclo `m3-06-final-angular-api-smoke`. Registra
 
 | Ítem | Estado |
 |---|---|
-| Logs, auditoría, errores y respuestas administrativas NO exponen DNI completo | OK: solo el DTO público de validación lo muestra. |
+| Logs, auditoría, errores y dumps NO exponen DNI completo ni token completo | OK: canales no-UI sin DNI ni token; UI admin y validación pública sí muestran DNI completo (D0). |
 | Logs, auditoría, errores y respuestas NO exponen token completo, claves, IV, tag, ciphertext, SQL ni rutas internas | OK. |
 | `X-Admin-Key` no se expone en bundles Angular ni en `localStorage`/`sessionStorage` | OK: admin queda fuera del bundle público; UI admin futura requerirá login PHP/Basic Auth. |
 | `details` no incluye valores sensibles | OK. |

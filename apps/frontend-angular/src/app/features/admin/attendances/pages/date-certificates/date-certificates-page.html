@@ -1,0 +1,113 @@
+<section class="certs-page" aria-labelledby="certs-page-title">
+  @if (cargando()) {
+    <div class="estado-linea" aria-busy="true">Cargando certificados…</div>
+  }
+
+  @if (error()) {
+    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (!cargando() && detalle(); as d) {
+    <header class="page-header">
+      <a
+        class="btn-volver"
+        data-testid="volver-asistencias"
+        [routerLink]="['/admin/cursos', d.id, 'fechas', fechaId(), 'asistencias']"
+      >
+        <svg class="volver-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Volver a asistencias
+      </a>
+
+      <div class="page-header-row">
+        <div class="page-header-main">
+          <p class="kicker">Certificados del curso</p>
+          <h1 id="certs-page-title" class="title">{{ d.nombre }}</h1>
+          <div class="meta-curso">
+            <span class="meta-item mono">{{ d.codigo }}</span>
+            @if (fechaActual(); as f) {
+              <span class="meta-item">Fecha {{ formatFechaCorta(f.fecha) }}</span>
+            }
+          </div>
+        </div>
+      </div>
+    </header>
+
+    @if (mensajeOk()) {
+      <p class="banner-ok" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        {{ mensajeOk() }}
+      </p>
+    }
+
+    @if (resumenGen(); as rg) {
+      <p class="resumen-gen" role="status">
+        Emitidos: {{ rg.emitidos }} · Actualizados: {{ rg.actualizados }}
+        @if (rg.fallidos > 0) {
+          · Con error: {{ rg.fallidos }}
+        }
+      </p>
+    }
+
+    <p class="intro">
+      Copiá el link público, descargá el QR de validación oficial o el PDF del certificado.
+    </p>
+
+    @if (certificados().length === 0) {
+      <div class="vacio" role="status">
+        <p>Todavía no hay certificados para este curso.</p>
+        <a
+          class="btn-primary"
+          [routerLink]="['/admin/cursos', d.id, 'fechas', fechaId(), 'asistencias']"
+        >
+          Ir a marcar asistencias
+        </a>
+      </div>
+    } @else {
+      <ul class="certs-lista" data-testid="certs-lista">
+        @for (c of certificados(); track c.id) {
+          <li class="cert-card">
+            <div class="cert-datos">
+              <p class="cert-alumno">{{ c.nombreAlumno }}</p>
+              <p class="cert-meta mono">
+                {{ c.numero }} · DNI {{ c.documentMasked }} · {{ etiquetaEstado(c.estado) }}
+              </p>
+            </div>
+            <div class="cert-acciones">
+              <button
+                type="button"
+                class="btn-accion"
+                data-testid="cert-copiar-link"
+                (click)="copiarLink(c.id)"
+                [disabled]="accionCertId() === c.id || !puedeEntregar(c)"
+              >
+                {{ copiadoId() === c.id ? 'Copiado' : 'Copiar link' }}
+              </button>
+              <button
+                type="button"
+                class="btn-accion"
+                data-testid="cert-descargar-qr"
+                (click)="descargarQr(c)"
+                [disabled]="accionCertId() === c.id || !puedeEntregar(c)"
+              >
+                Descargar QR
+              </button>
+              <button
+                type="button"
+                class="btn-accion btn-accion-primary"
+                data-testid="cert-descargar-pdf"
+                (click)="descargarPdf(c)"
+                [disabled]="accionCertId() === c.id || c.estado === 'borrador'"
+              >
+                Descargar PDF
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>
