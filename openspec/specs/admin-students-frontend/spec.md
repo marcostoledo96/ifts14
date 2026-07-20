@@ -2,20 +2,20 @@
 
 ## Propósito
 
-Listado de alumnos mock-only sin datos personales.
+Listado y detalle de alumnos mock-only con DNI completo en UI admin (D0 2026-07-20) y email de contacto opcional ficticio.
 
 ## Requirements
 
-### Requirement: Fuente privada
+### Requirement: Fuente administrativa con DNI completo
 
-El sistema DEBE proveer un DTO de UI `Alumno` desde una fuente local. Solo DEBE mostrar `dniMostrar` enmascarado, ficticio y único por alumno con patrón `NN****NN`; el DTO y el seed NO DEBEN contener, almacenar ni mostrar email literal o real, propiedad `email`, legajo, DNI completo, token, matrícula o UUID. El DTO PUEDE incluir únicamente `tieneEmail` como booleano de contacto derivado de un seed que no contiene direcciones de email literales.
+El sistema DEBE proveer un DTO de UI `Alumno` desde una fuente local. DEBE mostrar `dniMostrar` con el DNI completo ficticio (7–8 dígitos) en listados y detalle admin. El DTO PUEDE incluir `email: string | null` con direcciones ficticias `@example.invalid` en seeds. NO DEBE almacenar ni mostrar token, legajo, matrícula ni UUID. El DTO PUEDE incluir `tieneEmail` como booleano derivado de `email` para filtros de contacto.
 
-#### Scenario: DTO y seed seguros
+#### Scenario: DTO y seed administrativos
 
 - GIVEN el seed carga un alumno
 - WHEN se transforma y presenta su DTO de UI
-- THEN DEBE mostrar solo `dniMostrar` enmascarado, ficticio y único por alumno con patrón `NN****NN` y, si corresponde, `tieneEmail` booleano.
-- AND NO DEBE contener ni mostrar email, legajo, DNI completo, token, matrícula o UUID.
+- THEN DEBE mostrar `dniMostrar` con DNI completo ficticio y, si corresponde, `email` opcional `@example.invalid` y/o `tieneEmail` booleano.
+- AND NO DEBE contener ni mostrar token, legajo, matrícula o UUID.
 
 #### Scenario: Sin red
 
@@ -23,28 +23,35 @@ El sistema DEBE proveer un DTO de UI `Alumno` desde una fuente local. Solo DEBE 
 - WHEN se inspecciona
 - THEN NO DEBE emitir requests ni usar storage, cookies o IndexedDB.
 
-### Requirement: Búsqueda y filtros privados
+### Requirement: Búsqueda y filtros
 
-El sistema DEBE buscar exclusivamente por nombre y `dniMostrar` enmascarado. NO DEBE buscar ni filtrar por legajo o email. El filtro de contacto DEBE limitarse a `con-email` o `sin-email`, resuelto solo con `tieneEmail`; el listado DEBE conservar filtros combinables, cinco resultados por página y conteos.
+El sistema DEBE buscar por nombre y `dniMostrar` completo. NO DEBE buscar ni filtrar por legajo. El filtro de contacto DEBE limitarse a `con-email` o `sin-email`, resuelto con `tieneEmail` (y/o presencia de `email`). El listado DEBE conservar filtros combinables, veinte resultados por página y conteos.
 
-#### Scenario: Búsqueda y filtro de contacto seguro
+#### Scenario: Búsqueda y filtro de contacto
 
-- GIVEN existen alumnos con valores `tieneEmail` verdaderos y falsos
-- WHEN se busca por nombre o DNI enmascarado y se aplica `con-email` o `sin-email`
-- THEN DEBE devolver solo coincidencias del texto y del booleano solicitado.
-- AND NO DEBE requerir ni revelar una dirección de email o legajo.
+- GIVEN existen alumnos con y sin email registrado
+- WHEN se busca por nombre o DNI completo y se aplica `con-email` o `sin-email`
+- THEN DEBE devolver solo coincidencias del texto y del criterio de contacto solicitado.
+- AND NO DEBE requerir ni revelar legajo.
 
 #### Scenario: Entrada de búsqueda prohibida
 
-- GIVEN una persona ingresa un legajo o una dirección de email como texto de búsqueda
+- GIVEN una persona ingresa un legajo como texto de búsqueda
 - WHEN se evalúa la consulta
-- THEN NO DEBE usar esos campos ni obtener coincidencias desde datos no presentes en el DTO.
+- THEN NO DEBE usar ese campo ni obtener coincidencias desde datos no presentes en el DTO.
+
+#### Scenario: Alta con DNI duplicado
+
+- GIVEN ya existe un alumno con el mismo DNI
+- WHEN se intenta crear otro alumno con ese documento
+- THEN DEBE rechazar el alta con error de conflicto (sin crear un segundo registro).
+- AND DEBE ofrecer un enlace al perfil del alumno existente (`/admin/alumnos/{id}`).
 
 #### Scenario: Filtros y paginación
 
-- GIVEN hay más de cinco resultados
+- GIVEN hay más de veinte resultados
 - WHEN cambian filtros/página
-- THEN DEBE mostrar cinco o menos de una página válida.
+- THEN DEBE mostrar veinte o menos de una página válida.
 - AND DEBE reiniciar o acotar la página ante cambios.
 
 #### Scenario: Vistas accesibles
@@ -53,6 +60,18 @@ El sistema DEBE buscar exclusivamente por nombre y `dniMostrar` enmascarado. NO 
 - WHEN renderiza
 - THEN DEBE usar tabla con encabezados o tarjetas equivalentes.
 - AND DEBE anunciar el resumen de resultados mediante una región accesible.
+
+### Requirement: Alta con email opcional
+
+El formulario de alta DEBE aceptar apellido y nombre, DNI completo y email opcional (`AlumnoDraft.email?`). El estado DEBE quedar activo por defecto. El body de creación DEBE omitir `email` cuando el campo está vacío.
+
+#### Scenario: Alta mínima y con email
+
+- GIVEN el operador completa apellido y nombre y DNI
+- WHEN guarda sin email
+- THEN DEBE crear el alumno con `dniMostrar` igual al DNI ingresado y `email` null.
+- AND WHEN completa un email válido `@example.invalid`
+- THEN DEBE enviarlo en el draft y persistirlo en el DTO resultante.
 
 ### Requirement: Estados, detalle y QA
 
@@ -71,16 +90,16 @@ El sistema DEBE diferenciar carga/error/vacío/sin coincidencias. QA solo DEBE o
 - THEN QA DEBE operar solo en desarrollo/tests.
 - AND la navegación a `/admin/alumnos/:id` DEBE resolver el componente de detalle correspondiente si la sesión mock está activa.
 
-### Requirement: Detalle administrativo privado y consistente
+### Requirement: Detalle administrativo consistente
 
-El detalle de alumno DEBE mostrar Apellido y Nombre, DNI enmascarado `NN****NN` y el año de ingreso. NO DEBE mostrar legajo, matrícula, UUID, token completo ni dirección de email real/literal. DEBE usar el indicador booleano `tieneEmail` para mostrar "Contacto disponible" o "Sin contacto registrado". DEBE listar cursos con asistencia presentes de forma consistente con las claves existentes de cursos y certificaciones, detallando nombre del curso, código, fechas de asistencia en formato abreviado, y estado de la certificación (Emitida con link al expediente, Pendiente con link a emitir, o En curso).
+El detalle de alumno DEBE mostrar Apellido y Nombre, DNI completo en `dniMostrar` y el año de ingreso. DEBE mostrar el email registrado cuando existe, o indicador honesto cuando no. NO DEBE mostrar legajo inventado, matrícula, UUID ni token completo. DEBE listar cursos con asistencia presentes de forma consistente con las claves existentes de cursos y certificaciones, detallando nombre del curso, código, fechas de asistencia en formato abreviado, y estado de la certificación (Emitida con link al expediente, Pendiente con link a emitir, o En curso).
 
-#### Scenario: Ficha de alumno segura
+#### Scenario: Ficha de alumno admin
 
 - GIVEN la pantalla del detalle `/admin/alumnos/:id` para un alumno del seed
 - WHEN renderiza la ficha
-- THEN DEBE mostrar nombre, ingreso y DNI enmascarado `NN****NN`.
-- AND NO DEBE mostrar legajo, email literal, matrícula ni UUID.
+- THEN DEBE mostrar nombre, ingreso, DNI completo y email `@example.invalid` si corresponde.
+- AND NO DEBE mostrar legajo inventado, matrícula ni UUID.
 
 #### Scenario: Cursos y certificaciones consistentes
 
@@ -95,4 +114,3 @@ El detalle de alumno DEBE mostrar Apellido y Nombre, DNI enmascarado `NN****NN` 
 - GIVEN se navega a `/admin/alumnos/999` o un ID inválido
 - WHEN carga la página
 - THEN DEBE mostrar un estado no encontrado seguro, permitiendo volver al listado, sin romper la shell admin.
-

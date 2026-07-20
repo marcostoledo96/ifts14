@@ -1,3 +1,4 @@
+import { StudentDuplicateError } from './student-duplicate.error';
 import { Alumno, AlumnoDetalle, AlumnoDraft, CursoPresente } from './students.models';
 import { StudentsService } from './students.service';
 
@@ -6,13 +7,13 @@ interface SeedAlumnoRaw extends Alumno {
 }
 
 const initialSeed: readonly SeedAlumnoRaw[] = [
-  { id: 1, apellido: 'Ficticia', nombre: 'Persona Uno', dniMostrar: '00****01', estado: 'activo', tieneEmail: true, cursosConAsistencia: 4, certificacionesValidas: 2, ingreso: '2021' },
-  { id: 2, apellido: 'Ficticia', nombre: 'Persona Dos', dniMostrar: '00****02', estado: 'activo', tieneEmail: false, cursosConAsistencia: 1, certificacionesValidas: 0, ingreso: '2022' },
-  { id: 3, apellido: 'Demostración', nombre: 'Estudiante Tres', dniMostrar: '00****03', estado: 'activo', tieneEmail: true, cursosConAsistencia: 6, certificacionesValidas: 3, ingreso: '2021' },
-  { id: 4, apellido: 'Demostración', nombre: 'Estudiante Cuatro', dniMostrar: '00****04', estado: 'activo', tieneEmail: false, cursosConAsistencia: 3, certificacionesValidas: 1, ingreso: '2023' },
-  { id: 5, apellido: 'Ejemplo', nombre: 'Alumno Cinco', dniMostrar: '00****05', estado: 'inactivo', tieneEmail: true, cursosConAsistencia: 2, certificacionesValidas: 0, ingreso: '2022' },
-  { id: 6, apellido: 'Ejemplo', nombre: 'Alumno Seis', dniMostrar: '00****06', estado: 'activo', tieneEmail: false, cursosConAsistencia: 5, certificacionesValidas: 2, ingreso: '2021' },
-  { id: 7, apellido: 'Muestra', nombre: 'Alumno Siete', dniMostrar: '00****07', estado: 'activo', tieneEmail: true, cursosConAsistencia: 1, certificacionesValidas: 1, ingreso: '2024' },
+  { id: 1, apellido: 'Ficticia', nombre: 'Persona Uno', dniMostrar: '20111222', email: 'persona.uno@example.invalid', estado: 'activo', tieneEmail: true, cursosConAsistencia: 4, certificacionesValidas: 2, ingreso: '2021' },
+  { id: 2, apellido: 'Ficticia', nombre: 'Persona Dos', dniMostrar: '20222333', email: null, estado: 'activo', tieneEmail: false, cursosConAsistencia: 1, certificacionesValidas: 0, ingreso: '2022' },
+  { id: 3, apellido: 'Demostración', nombre: 'Estudiante Tres', dniMostrar: '20333444', email: 'estudiante.tres@example.invalid', estado: 'activo', tieneEmail: true, cursosConAsistencia: 6, certificacionesValidas: 3, ingreso: '2021' },
+  { id: 4, apellido: 'Demostración', nombre: 'Estudiante Cuatro', dniMostrar: '20444555', email: null, estado: 'activo', tieneEmail: false, cursosConAsistencia: 3, certificacionesValidas: 1, ingreso: '2023' },
+  { id: 5, apellido: 'Ejemplo', nombre: 'Alumno Cinco', dniMostrar: '20555666', email: 'alumno.cinco@example.invalid', estado: 'inactivo', tieneEmail: true, cursosConAsistencia: 2, certificacionesValidas: 0, ingreso: '2022' },
+  { id: 6, apellido: 'Ejemplo', nombre: 'Alumno Seis', dniMostrar: '20666777', email: null, estado: 'activo', tieneEmail: false, cursosConAsistencia: 5, certificacionesValidas: 2, ingreso: '2021' },
+  { id: 7, apellido: 'Muestra', nombre: 'Alumno Siete', dniMostrar: '20777888', email: 'alumno.siete@example.invalid', estado: 'activo', tieneEmail: true, cursosConAsistencia: 1, certificacionesValidas: 1, ingreso: '2024' },
 ];
 
 /** Exportado solo para tests de seed / privacy checks. */
@@ -20,7 +21,6 @@ export const seed: readonly SeedAlumnoRaw[] = initialSeed;
 
 const CURSOS_MOCK_MAP: Record<number, CursoPresente[]> = {
   1: [
-    // certificacionId numérico → enlace real a /admin/certificaciones/:id (seed certs).
     { id: '1', nombre: 'Curso de introducción a la gestión', codigo: 'CUR-001', presentes: ['2026-03-02', '2026-03-09', '2026-03-16'], estadoCert: 'emitida', certificacionId: '1' },
     { id: '2', nombre: 'Curso de herramientas administrativas', codigo: 'CUR-002', presentes: ['2026-04-05', '2026-04-12'], estadoCert: 'emitida', certificacionId: '2' },
     { id: '3', nombre: 'Curso de prácticas documentales', codigo: 'CUR-003', presentes: ['2026-05-04'], estadoCert: 'pendiente', certificacionId: null },
@@ -58,14 +58,6 @@ const CURSOS_MOCK_MAP: Record<number, CursoPresente[]> = {
   ],
 };
 
-function maskDni(dni: string): string {
-  const digits = dni.replace(/\D/g, '');
-  if (digits.length < 4) {
-    return '00****00';
-  }
-  return `${digits.slice(0, 2)}****${digits.slice(-2)}`;
-}
-
 function splitApellidoNombre(apellidoNombre: string): { apellido: string; nombre: string } {
   const trimmed = apellidoNombre.trim();
   const idx = trimmed.indexOf(' ');
@@ -75,14 +67,29 @@ function splitApellidoNombre(apellidoNombre: string): { apellido: string; nombre
   return { apellido: trimmed.slice(0, idx), nombre: trimmed.slice(idx + 1).trim() };
 }
 
+function normalizeEmail(email: string | null | undefined): string | null {
+  const trimmed = (email ?? '').trim();
+  return trimmed === '' ? null : trimmed;
+}
+
 export class InMemoryStudentsService implements StudentsService {
   private rows: SeedAlumnoRaw[] = initialSeed.map((r) => ({ ...r }));
   private nextId = Math.max(...initialSeed.map((r) => r.id)) + 1;
 
   async listar(): Promise<readonly Alumno[]> {
-    return this.rows.map(({ id, apellido, nombre, dniMostrar, estado, tieneEmail, cursosConAsistencia, certificacionesValidas }) => ({
-      id, apellido, nombre, dniMostrar, estado, tieneEmail, cursosConAsistencia, certificacionesValidas,
-    }));
+    return this.rows.map(
+      ({ id, apellido, nombre, dniMostrar, email, estado, tieneEmail, cursosConAsistencia, certificacionesValidas }) => ({
+        id,
+        apellido,
+        nombre,
+        dniMostrar,
+        email,
+        estado,
+        tieneEmail,
+        cursosConAsistencia,
+        certificacionesValidas,
+      }),
+    );
   }
 
   async contar(): Promise<number> {
@@ -98,6 +105,7 @@ export class InMemoryStudentsService implements StudentsService {
       apellido: found.apellido,
       nombre: found.nombre,
       dniMostrar: found.dniMostrar,
+      email: found.email,
       estado: found.estado,
       tieneEmail: found.tieneEmail,
       cursosConAsistencia: found.cursosConAsistencia,
@@ -109,20 +117,25 @@ export class InMemoryStudentsService implements StudentsService {
 
   async crear(draft: AlumnoDraft): Promise<AlumnoDetalle> {
     const apellidoNombre = draft.apellidoNombre.trim();
-    const dni = draft.dni.trim();
+    const dni = draft.dni.trim().replace(/\D/g, '');
     if (!apellidoNombre || !dni) {
       throw new Error('apellidoNombre y dni son requeridos');
     }
-    const dniMostrar = maskDni(dni);
+    const existente = this.rows.find((alumno) => alumno.dniMostrar === dni);
+    if (existente) {
+      throw new StudentDuplicateError(existente.id);
+    }
+    const email = normalizeEmail(draft.email);
     const { apellido, nombre } = splitApellidoNombre(apellidoNombre);
     const id = this.nextId++;
     const row: SeedAlumnoRaw = {
       id,
       apellido,
       nombre,
-      dniMostrar,
+      dniMostrar: dni,
+      email,
       estado: draft.estado ?? 'activo',
-      tieneEmail: false,
+      tieneEmail: email !== null,
       cursosConAsistencia: 0,
       certificacionesValidas: 0,
       ingreso: String(new Date().getFullYear()),

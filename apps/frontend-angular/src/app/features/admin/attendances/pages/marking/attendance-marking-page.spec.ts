@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { CERTIFICATIONS_SOURCE } from '../../../certifications/certifications.service';
+import { InMemoryCertificationsService } from '../../../certifications/in-memory-certifications.service';
 import { AttendanceMarkingPage } from './attendance-marking-page';
 import { COURSES_SOURCE, CoursesService } from '../../../courses/courses.service';
 import { InMemoryCoursesService } from '../../../courses/in-memory-courses.service';
@@ -16,9 +18,12 @@ describe('AttendanceMarkingPage', () => {
         provideRouter([]),
         { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
         { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
+        { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(AttendanceMarkingPage);
+    const router = TestBed.inject(Router);
+    spyOn(router, 'navigate').and.resolveTo(true);
     fixture.componentRef.setInput('id', String(id));
     fixture.componentRef.setInput('fechaId', String(fechaId));
     fixture.detectChanges();
@@ -57,8 +62,11 @@ describe('AttendanceMarkingPage', () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Volver al curso');
-    expect(el.textContent).toContain('Registro de presentes');
+    expect(el.textContent).toContain('Asistencias y certificados');
     expect(el.textContent).toContain('Alumnos del curso');
+    expect(el.textContent).toContain('Ver certificados del curso');
+    const cta = el.querySelector('[data-testid="cta-ver-certificados"]') as HTMLAnchorElement;
+    expect(cta.getAttribute('href')).toContain('/admin/cursos/1/fechas/11/asistencias/certificados');
     const links = Array.from(el.querySelectorAll('a[href*="/admin/cursos/1"]')) as HTMLAnchorElement[];
     expect(links.length).toBeGreaterThanOrEqual(2);
   });
@@ -72,13 +80,13 @@ describe('AttendanceMarkingPage', () => {
     expect(text).not.toContain('example.invalid');
   });
 
-  it('dniMostrar visible y enmascarado (XX****XX)', async () => {
+  it('dniMostrar visible con DNI completo ficticio', async () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
     const dnis = Array.from(el.querySelectorAll('.alumno-dni')).map((s) => s.textContent);
     expect(dnis.length).toBeGreaterThan(0);
     for (const d of dnis) {
-      expect(d).toMatch(/^\d{2}\*{4}\d{2}$/);
+      expect(d).toMatch(/^\d{7,8}$/);
     }
   });
 
@@ -124,13 +132,22 @@ describe('AttendanceMarkingPage', () => {
     expect(el.textContent).toContain('Presentes (1)');
   });
 
-  it('Guardar deshabilitado sin cambios y habilitado con cambios', async () => {
+  it('Guardar y generar deshabilitado sin presentes ni cambios; habilitado al marcar', async () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
-    const btn = el.querySelector('.btn-primary') as HTMLButtonElement;
+    const btn = el.querySelector('[data-testid="cta-guardar-generar"]') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
+    expect(btn.textContent).toContain('Guardar y generar certificados');
     toggles(el)[0].click();
     f.detectChanges();
+    expect(btn.disabled).toBe(false);
+  });
+
+  it('con presentes ya guardados permite regenerar sin dirty', async () => {
+    const f = await render(4, 41);
+    const btn = (f.nativeElement as HTMLElement).querySelector(
+      '[data-testid="cta-guardar-generar"]',
+    ) as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
   });
 
@@ -144,8 +161,9 @@ describe('AttendanceMarkingPage', () => {
     expect(cambios?.textContent).toContain('marcado');
   });
 
-  it('guardar persiste presentes en memoria', async () => {
+  it('guardar persiste presentes en memoria y redirige a certificados', async () => {
     const f = await render(1, 11);
+    const router = TestBed.inject(Router);
     const svc = TestBed.inject(ATTENDANCE_SOURCE);
     const before = await svc.listarAsistencias(1, 11);
     expect(before.length).toBe(0);
@@ -154,14 +172,75 @@ describe('AttendanceMarkingPage', () => {
     btns[1].click();
     btns[2].click();
     f.detectChanges();
-    const btn = (f.nativeElement as HTMLElement).querySelector('.btn-primary') as HTMLButtonElement;
+    const btn = (f.nativeElement as HTMLElement).querySelector(
+      '[data-testid="cta-guardar-generar"]',
+    ) as HTMLButtonElement;
     btn.click();
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
     const after = await svc.listarAsistencias(1, 11);
     expect(after.length).toBe(3);
-    expect((f.nativeElement as HTMLElement).textContent).toContain('guardada en memoria');
+    expect(router.navigate).toHaveBeenCalledWith(
+      ['/admin/cursos', 1, 'fechas', 11, 'asistencias', 'certificados'],
+      jasmine.objectContaining({
+        state: jasmine.objectContaining({
+          mensaje: jasmine.stringMatching(/Asistencias guardadas/),
+        }),
+      }),
+    );
+  });
+
+  it('guardarYGenerar emite nuevos, regenera vigentes y navega a la página de certificados', async () => {
+    const f = await render(1, 11);
+    const router = TestBed.inject(Router);
+    const certs = TestBed.inject(CERTIFICATIONS_SOURCE);
+    const emitirSpy = spyOn(certs, 'emitir').and.callThrough();
+    const regenerarSpy = spyOn(certs, 'regenerarPdf').and.callThrough();
+    const vigenteAntes = (await certs.listar({ cursoId: 1, alumnoId: 1, estado: 'vigente' }))[0];
+    expect(vigenteAntes).toBeTruthy();
+    const tokenAntes = vigenteAntes.tokenPrefix;
+
+    const btns = toggles(f.nativeElement as HTMLElement);
+    // Alumno 1 ya tiene vigente en curso 1 → regenerar; 2 y 3 → emitir.
+    btns[0].click();
+    btns[1].click();
+    btns[2].click();
+    f.detectChanges();
+    const btn = (f.nativeElement as HTMLElement).querySelector(
+      '[data-testid="cta-guardar-generar"]',
+    ) as HTMLButtonElement;
+    btn.click();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+
+    expect(regenerarSpy).toHaveBeenCalledWith(vigenteAntes.id);
+    expect(emitirSpy).toHaveBeenCalledTimes(2);
+    const vigenteDespues = (await certs.listar({ cursoId: 1, alumnoId: 1, estado: 'vigente' }))[0];
+    expect(vigenteDespues.tokenPrefix).toBe(tokenAntes);
+    expect(f.componentInstance.resumenGen()).toEqual(
+      jasmine.objectContaining({ emitidos: 2, actualizados: 1, fallidos: 0 }),
+    );
+    expect(router.navigate).toHaveBeenCalledWith(
+      ['/admin/cursos', 1, 'fechas', 11, 'asistencias', 'certificados'],
+      jasmine.objectContaining({
+        state: jasmine.objectContaining({
+          resumenGen: jasmine.objectContaining({ emitidos: 2, actualizados: 1 }),
+        }),
+      }),
+    );
+  });
+
+  it('sidebar ofrece CTA a la página de certificados (sin lista lateral)', async () => {
+    const f = await render(1, 11);
+    await f.whenStable();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Certificados del curso');
+    expect(el.querySelector('[data-testid="cta-ver-certificados"]')).not.toBeNull();
+    expect(el.querySelectorAll('[data-testid="cert-descargar-pdf"]').length).toBe(0);
+    expect(el.querySelector('.certs-lista')).toBeNull();
   });
 
   it('descartar restaura baseline', async () => {
@@ -199,13 +278,13 @@ describe('AttendanceMarkingPage', () => {
     expect(rows.length).toBeLessThan(12);
   });
 
-  it('no muestra aviso de impacto de certificados (non-goal)', async () => {
-    const f = await render(4, 41);
+  it('CTA a certificados del curso en el hub (sin lista lateral)', async () => {
+    const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
-    toggles(el)[0].click();
-    f.detectChanges();
-    expect(el.textContent).not.toContain('certificado');
-    expect(el.textContent).not.toContain('entregar nuevamente');
+    expect(el.querySelector('.certs-cta-panel')).not.toBeNull();
+    expect(el.querySelector('[data-testid="cta-ver-certificados"]')).not.toBeNull();
+    expect(el.textContent).toContain('Certificados del curso');
+    expect(el.querySelector('.certs-lista')).toBeNull();
   });
 
   // --- Selector de fecha inline ---
@@ -213,8 +292,8 @@ describe('AttendanceMarkingPage', () => {
   it('selector cambia fecha sin cambios: navega a la nueva ruta', async () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
-    const router = TestBed.inject(Router);
-    const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    const navSpy = TestBed.inject(Router).navigate as jasmine.Spy;
+    navSpy.calls.reset();
     const select = el.querySelector('.fecha-select') as HTMLSelectElement;
     select.value = '12';
     select.dispatchEvent(new Event('change'));
@@ -226,8 +305,8 @@ describe('AttendanceMarkingPage', () => {
     const el = f.nativeElement as HTMLElement;
     toggles(el)[0].click();
     f.detectChanges();
-    const router = TestBed.inject(Router);
-    const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    const navSpy = TestBed.inject(Router).navigate as jasmine.Spy;
+    navSpy.calls.reset();
     const confirmSpy = spyOn(window, 'confirm').and.returnValue(true);
     const select = el.querySelector('.fecha-select') as HTMLSelectElement;
     select.value = '12';
@@ -241,8 +320,8 @@ describe('AttendanceMarkingPage', () => {
     const el = f.nativeElement as HTMLElement;
     toggles(el)[0].click();
     f.detectChanges();
-    const router = TestBed.inject(Router);
-    const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    const navSpy = TestBed.inject(Router).navigate as jasmine.Spy;
+    navSpy.calls.reset();
     spyOn(window, 'confirm').and.returnValue(false);
     const select = el.querySelector('.fecha-select') as HTMLSelectElement;
     select.value = '12';
@@ -274,13 +353,14 @@ describe('AttendanceMarkingPage', () => {
     const el = f.nativeElement as HTMLElement;
     await f.whenStable();
     f.detectChanges();
-    // No revienta, no deja body en blanco: estado alert + link de recuperación.
+    // No revienta, no deja body en blanco: estado alert + links al curso.
     const alert = el.querySelector('[role="alert"]');
     expect(alert).not.toBeNull();
     expect(alert?.textContent).toContain('Fecha no encontrada');
-    // Enlace de retorno a Asistencias.
-    const links = Array.from(el.querySelectorAll('a'));
-    expect(links.some((a) => a.getAttribute('routerLink') === '/admin/asistencias')).toBe(true);
+    const hrefs = Array.from(el.querySelectorAll('a')).map((a) => a.getAttribute('href') || '');
+    expect(hrefs.some((h) => h.includes('/admin/cursos/1'))).toBe(true);
+    expect(alert?.textContent).toContain('Ver detalle del curso');
+    expect(alert?.textContent).toContain('Agregar fecha');
     // No hay lista de alumnos (no body de marcado).
     expect(el.querySelectorAll('.alumno-row').length).toBe(0);
   });
@@ -357,6 +437,7 @@ describe('AttendanceMarkingPage', () => {
         provideRouter([]),
         { provide: COURSES_SOURCE, useValue: fakeCourses },
         { provide: ATTENDANCE_SOURCE, useValue: fakeAttendance },
+        { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
       ],
     }).compileComponents();
 
@@ -445,8 +526,8 @@ describe('AttendanceMarkingPage', () => {
     };
     const fakeAttendance: AttendanceService = {
       listarAlumnos: () => Promise.resolve([
-        { id: 1, apellidoNombre: 'A1 B1', dniMostrar: '11****11', estado: 'activo' as const },
-        { id: 2, apellidoNombre: 'A2 B2', dniMostrar: '22****22', estado: 'activo' as const },
+        { id: 1, apellidoNombre: 'A1 B1', dniMostrar: '20111111', estado: 'activo' as const },
+        { id: 2, apellidoNombre: 'A2 B2', dniMostrar: '20222222', estado: 'activo' as const },
       ]),
       listarAsistencias: () => Promise.resolve([]),
       listarAsistenciasPorPar: () => Promise.resolve([]),
@@ -464,6 +545,7 @@ describe('AttendanceMarkingPage', () => {
         provideRouter([]),
         { provide: COURSES_SOURCE, useValue: fakeCourses },
         { provide: ATTENDANCE_SOURCE, useValue: fakeAttendance },
+        { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
       ],
     }).compileComponents();
 
@@ -474,13 +556,15 @@ describe('AttendanceMarkingPage', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // Marcar un presente (toggle) y disparar guardar().
+    // Marcar un presente (toggle) y disparar guardarYGenerar().
     const btns = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll('.toggle-presente'),
     ) as HTMLButtonElement[];
     btns[0].click();
     fixture.detectChanges();
-    const btn = (fixture.nativeElement as HTMLElement).querySelector('.btn-primary') as HTMLButtonElement;
+    const btn = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="cta-guardar-generar"]',
+    ) as HTMLButtonElement;
     btn.click();
     fixture.detectChanges();
     await fixture.whenStable();

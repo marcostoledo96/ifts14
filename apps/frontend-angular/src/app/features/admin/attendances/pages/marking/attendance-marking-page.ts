@@ -10,13 +10,17 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { CERTIFICATIONS_SOURCE } from '../../../certifications/certifications.service';
 import { COURSES_SOURCE } from '../../../courses/courses.service';
 import { CursoDetalle } from '../../../courses/courses.models';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
 import { AsistenciaAlumno } from '../../models/attendance.types';
+import type { ResumenGeneracionNav } from '../date-certificates/date-certificates-page';
 
-// Marcado de presentes por fecha. Reutiliza el patrón F2-04 de effect() +
-// loadGen para descartar cargas stale en route reuse. Sin HTTP/storage.
+export type ResumenGeneracion = ResumenGeneracionNav;
+
+// Hub de fecha: marcar presentes + generar certificados; entrega en página dedicada.
+// effect() + loadGen descartan cargas stale en route reuse.
 @Component({
   selector: 'app-attendance-marking-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,26 +29,26 @@ import { AsistenciaAlumno } from '../../models/attendance.types';
   styleUrl: './attendance-marking-page.css',
 })
 export class AttendanceMarkingPage {
-  // withComponentInputBinding() pasa :id y :fechaId como strings.
   readonly id = input<string>('');
   readonly fechaId = input<string>('');
 
   private readonly courses = inject(COURSES_SOURCE);
   private readonly attendance = inject(ATTENDANCE_SOURCE);
+  private readonly certs = inject(CERTIFICATIONS_SOURCE);
   private readonly router = inject(Router);
 
   readonly detalle = signal<CursoDetalle | null>(null);
   readonly alumnos = signal<readonly AsistenciaAlumno[]>([]);
-  readonly baseline = signal<Set<number>>(new Set()); // presentes guardados
-  readonly seleccion = signal<Set<number>>(new Set()); // presentes en edición
+  readonly baseline = signal<Set<number>>(new Set());
+  readonly seleccion = signal<Set<number>>(new Set());
   readonly cargando = signal(true);
   readonly guardando = signal(false);
   readonly error = signal('');
   readonly ok = signal('');
+  readonly resumenGen = signal<ResumenGeneracion | null>(null);
 
   readonly q = signal('');
 
-  // Ids numéricos validados.
   readonly courseId = computed<number | null>(() => {
     const n = Number(this.id());
     return !this.id() || Number.isNaN(n) || n <= 0 ? null : n;
@@ -54,7 +58,6 @@ export class AttendanceMarkingPage {
     return !this.fechaId() || Number.isNaN(n) || n <= 0 ? null : n;
   });
 
-  // Fecha vigente del detalle.
   readonly fechaActual = computed(() => {
     const d = this.detalle();
     const fid = this.fechaIdNumber();
@@ -62,8 +65,6 @@ export class AttendanceMarkingPage {
     return d.fechas.find((f) => f.id === fid) || null;
   });
 
-  // True cuando el curso cargó pero el fechaId no existe en detalle.fechas.
-  // Evita body en blanco para URLs como /admin/cursos/1/fechas/999/asistencias.
   readonly fechaNoEncontrada = computed(() => {
     if (this.cargando() || this.error()) return false;
     const d = this.detalle();
@@ -72,10 +73,8 @@ export class AttendanceMarkingPage {
     return !d.fechas.some((f) => f.id === fid);
   });
 
-  // Contador de marcados en edición.
   readonly marcadosCount = computed(() => this.seleccion().size);
 
-  // Diferencias respecto de la baseline guardada (resumen "cambios sin guardar").
   readonly agregados = computed(() => {
     const base = this.baseline();
     let n = 0;
@@ -91,10 +90,8 @@ export class AttendanceMarkingPage {
   readonly cambios = computed(() => this.agregados() + this.quitados());
   readonly dirty = computed(() => this.cambios() > 0);
 
-  // Fechas del curso para el selector inline (orden natural del detalle).
   readonly fechasOrdenadas = computed(() => this.detalle()?.fechas ?? []);
 
-  // Alumnos filtrados por búsqueda (nombre o dniMostrar).
   readonly alumnosFiltrados = computed<readonly AsistenciaAlumno[]>(() => {
     const texto = this.q().trim().toLowerCase();
     if (!texto) return this.alumnos();
@@ -105,8 +102,12 @@ export class AttendanceMarkingPage {
     );
   });
 
-  /** True tras un guardado exitoso y sin dirty (feedback verde v0). */
   readonly guardadoOk = computed(() => this.ok().length > 0 && !this.dirty());
+
+  /** Habilitado con cambios pendientes o con presentes para (re)generar. */
+  readonly puedeGuardarYGenerar = computed(
+    () => !this.guardando() && (this.dirty() || this.marcadosCount() > 0),
+  );
 
   private readonly fmtFechaCorta = new Intl.DateTimeFormat('es-AR', {
     day: '2-digit',
@@ -120,14 +121,9 @@ export class AttendanceMarkingPage {
     year: 'numeric',
   });
 
-  // ponytail: generación de carga para descartar resultados stale cuando el
-  // cursoId/fechaId cambia antes de que termine la carga anterior (route reuse).
   private loadGen = 0;
 
   constructor() {
-    // Reacciona a cambios de id()/fechaId() tras la ligadura inicial y
-    // cuando Angular reutiliza la misma instancia al navegar entre URLs de
-    // marcado. ngOnInit no vuelve a correr en route reuse, pero el effect sí.
     effect(() => {
       const id = this.id();
       const fid = this.fechaId();
@@ -139,7 +135,6 @@ export class AttendanceMarkingPage {
     const gen = ++this.loadGen;
     const cid = this.parseId(idStr);
     const fid = this.parseId(fechaIdStr);
-    // Reset stale antes de cargar.
     this.detalle.set(null);
     this.alumnos.set([]);
     this.baseline.set(new Set());
@@ -147,10 +142,8 @@ export class AttendanceMarkingPage {
     this.q.set('');
     this.ok.set('');
     this.error.set('');
+    this.resumenGen.set(null);
     this.cargando.set(true);
-    // Si había un guardado en vuelo de la ruta anterior, cancelar su flag:
-    // cargar() corre por el effect al cambiar de ruta, y el finally de
-    // guardar() de la ruta anterior no debe dejar guardando atascado.
     this.guardando.set(false);
     if (cid === null || fid === null) {
       if (gen === this.loadGen) this.error.set('Curso o fecha no encontrados.');
@@ -163,7 +156,7 @@ export class AttendanceMarkingPage {
         this.attendance.listarAlumnos(cid),
         this.attendance.listarAsistencias(cid, fid),
       ]);
-      if (gen !== this.loadGen) return; // carga stale, ignorar
+      if (gen !== this.loadGen) return;
       this.detalle.set(det);
       this.alumnos.set(alumnos);
       const presentes = new Set(asistencias.map((a) => a.alumnoId));
@@ -179,6 +172,12 @@ export class AttendanceMarkingPage {
   private parseId(s: string): number | null {
     const n = Number(s);
     return !s || Number.isNaN(n) || n <= 0 ? null : n;
+  }
+
+  private hoyIso(): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+    }).format(new Date());
   }
 
   onSearch(event: Event): void {
@@ -229,10 +228,6 @@ export class AttendanceMarkingPage {
     return this.seleccion().has(alumnoId);
   }
 
-  // Cambio de fecha vía selector inline. Navega al mismo patrón de ruta para
-  // reutilizar el componente (el effect() recarga y resetea baseline/selección).
-  // Si hay cambios sin guardar, confirma el descarte; al cancelar, revierte el
-  // <select> a la fecha vigente y no navega.
   onFechaSeleccionada(event: Event): void {
     const select = event.target as HTMLSelectElement;
     const nuevoId = select.value;
@@ -244,7 +239,7 @@ export class AttendanceMarkingPage {
         'Hay cambios sin guardar que se descartarán al cambiar de fecha. ¿Continuar?',
       )
     ) {
-      select.value = this.fechaId(); // revertir selección visual
+      select.value = this.fechaId();
       return;
     }
     void this.router.navigate([
@@ -256,35 +251,87 @@ export class AttendanceMarkingPage {
     ]);
   }
 
+  /** Alias de compatibilidad para tests/specs previos. */
   async guardar(): Promise<void> {
+    return this.guardarYGenerar();
+  }
+
+  async guardarYGenerar(): Promise<void> {
     const cid = this.courseId();
     const fid = this.fechaIdNumber();
     if (cid === null || fid === null) {
       this.error.set('Curso o fecha no encontrados.');
       return;
     }
+    if (!this.puedeGuardarYGenerar()) return;
+
     this.guardando.set(true);
     this.error.set('');
     this.ok.set('');
-    // Generación de guardado: si la ruta cambia (route reuse) mientras
-    // marcar() está en vuelo, el resultado es stale y no debe mutar
-    // baseline/ok/guardando de la pantalla vigente. Guard el par (cid, fid)
-    // vigente al iniciar el guardado.
+    this.resumenGen.set(null);
     const saveCid = cid;
     const saveFid = fid;
     try {
-      // Contrato: enviamos todos los alumnos con su estado presente/ausente.
-      // marcar() solo registra presentes, pero recibimos el set completo
-      // para mantener el contrato de reemplazo y permitir auditoría futura.
       const todosMarcados = this.alumnos().map((a) => ({
         alumnoId: a.id,
         presente: this.seleccion().has(a.id),
       }));
       const asistencias = await this.attendance.marcar(cid, fid, todosMarcados);
-      // Si la ruta cambió durante el guardado, descartar el resultado stale.
       if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
       this.baseline.set(new Set(asistencias.map((a) => a.alumnoId)));
-      this.ok.set('Asistencia guardada en memoria (demo). No persiste al recargar.');
+      this.seleccion.set(new Set(asistencias.map((a) => a.alumnoId)));
+
+      const presentesIds = [...this.baseline()];
+      let emitidos = 0;
+      let actualizados = 0;
+      let fallidos = 0;
+      const issuedAt = this.hoyIso();
+
+      for (const alumnoId of presentesIds) {
+        if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
+        try {
+          const vigentes = await this.certs.listar({
+            cursoId: cid,
+            alumnoId,
+            estado: 'vigente',
+          });
+          const vigente = vigentes[0];
+          if (vigente) {
+            await this.certs.regenerarPdf(vigente.id);
+            actualizados++;
+          } else {
+            await this.certs.emitir({
+              alumnoId,
+              cursoId: cid,
+              issuedAt,
+              expiresAt: null,
+            });
+            emitidos++;
+          }
+        } catch {
+          fallidos++;
+        }
+      }
+
+      if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
+      const resumen: ResumenGeneracion = { emitidos, actualizados, fallidos };
+      this.resumenGen.set(resumen);
+
+      const partes = [
+        'Asistencias guardadas.',
+        emitidos > 0 ? `${emitidos} certificado${emitidos === 1 ? '' : 's'} emitido${emitidos === 1 ? '' : 's'}` : null,
+        actualizados > 0
+          ? `${actualizados} actualizado${actualizados === 1 ? '' : 's'}`
+          : null,
+        fallidos > 0 ? `${fallidos} con error` : null,
+      ].filter(Boolean);
+      const mensaje = partes.join(' ');
+      this.ok.set(mensaje);
+
+      await this.router.navigate(
+        ['/admin/cursos', saveCid, 'fechas', saveFid, 'asistencias', 'certificados'],
+        { state: { resumenGen: resumen, mensaje } },
+      );
     } catch (e) {
       if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
       this.error.set((e as Error).message);
@@ -299,5 +346,6 @@ export class AttendanceMarkingPage {
     this.seleccion.set(new Set(this.baseline()));
     this.ok.set('');
     this.error.set('');
+    this.resumenGen.set(null);
   }
 }

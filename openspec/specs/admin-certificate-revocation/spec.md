@@ -15,7 +15,7 @@ La API MUST exponer `POST /certificados/api/admin/certificados/{id}/revocar` par
 - **Given** un request autorizado y un certificado revocable
 - **When** se solicita su revocación
 - **Then** la API MUST marcar el certificado como revocado e invalidar sus tokens activos.
-- **And** MUST responder `200` con DTO seguro sin DNI completo ni token completo.
+- **And** MUST responder `200` con DTO seguro sin token completo; logs/auditoría sin DNI completo.
 
 #### Scenario: Certificado inexistente o no revocable
 

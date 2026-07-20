@@ -93,7 +93,7 @@ Antes de cualquier ciclo F0-F6, Matías debe:
 | Fuente documental | `AGENTS.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/frontend/00-angular20-port-v0.md` y specs OpenSpec vigentes. |
 | Backend/API | No inventar contratos. Usar solo lo documentado por Marcos. |
 | Seguridad | No tocar `material_privado_no_versionar/`, dumps, logs, credenciales ni archivos `.env`. |
-| Decisiones D0 | QR/token permanente (reenvío no rota); DNI completo visible en validación pública; certificado de curso con fechas asistidas; **auth admin = sesión PHP + CSRF** (no `X-Admin-Key` en Angular); firmantes PDF Rector/a y Asesor/a Pedagógica; staging `/certificados_staging/`. |
+| Decisiones D0 | QR/token permanente (reenvío no rota); DNI completo en validación pública y UI admin (listados/detalle/expediente); certificado de curso con fechas asistidas; logs/auditoría/errores/dumps sin DNI ni token completos; **auth admin = sesión PHP + CSRF** (no `X-Admin-Key` en Angular); firmantes PDF Rector/a y Asesor/a Pedagógica; staging `/certificados_staging/`. |
 | Cierre admin | Matías puede avanzar sistema visual y componentes base sin backend final, pero **no debe cerrar pantallas admin como "done"** hasta que Marcos provea contratos/mocks aprobados para cada flujo. El trabajo visual puede quedar "in progress / pending contract". |
 | Git | Trabajar con ramas por unidad revisable/deployable, no necesariamente una rama por ciclo SDD. **Para el flujo de Matías**: OpenCode PUEDE ejecutar operaciones Git con aprobación explícita de Matías en el mismo turno, comando exacto, evidencia previa, diff-confirmation gate cuando corresponda, árbol limpio o decisión explícita de stash/commit/abortar; la única prohibición dura es `git push` directo a `main`; ver sección "Ruta rápida" punto 8. **Para el flujo de Marcos**: ver `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` — Marcos mantiene autoridad total sobre su propio workflow. |
 
@@ -278,8 +278,8 @@ Si un comando no existe, no lo inventes como evidencia. Informá: “No hay runn
 - [ ] Consola del navegador sin errores nuevos.
 - [ ] Comparación visual contra `muestra_pagina/` cuando exista.
 - [ ] No regresión visual en pantallas tocadas.
-- [ ] Validación pública con DNI completo por decisión institucional (D0); logs, auditoría, errores y respuestas administrativas sin DNI completo; mocks solo con DNI ficticios; sin tokens completos ni datos sensibles reales.
-- [ ] El DNI completo en validación pública aplica solo como respuesta de autenticidad (D0); no se usa DNI como input de búsqueda pública.
+- [ ] Validación pública y UI admin con DNI completo (D0, 2026-07-20); logs, auditoría, errores y dumps no-UI sin DNI ni token completos; mocks solo con DNI ficticios; sin datos sensibles reales.
+- [ ] El DNI completo en validación pública aplica solo como respuesta de autenticidad (D0); en admin se muestra en listados/detalle/expediente; no se usa DNI como input de búsqueda pública.
 
 ## Errores comunes y límites
 
@@ -741,7 +741,7 @@ Documentación a actualizar en `sdd-archive`:
 
 Qué NO hacer:
 - No crear flujo de validación real sin contrato API.
-- No exponer DNI completo fuera de la validación pública (D0); logs, auditoría, errores y respuestas administrativas sin DNI completo; sin tokens ni datos sensibles reales.
+- No exponer DNI completo en logs, auditoría, errores ni dumps no-UI (D0); UI admin y validación pública sí muestran DNI completo; sin tokens ni datos sensibles reales.
 - No convertir placeholders en pantallas finales sin diseño aprobado.
 
 Mensaje de commit sugerido: `feat(frontend): crear layout base publico admin`.
@@ -780,7 +780,7 @@ Trabajemos el ciclo F2-01 — Pantalla pública de validación válida.
 Usá SDD completo. Leé AGENTS.md, apps/frontend-angular/AGENTS.md, docs/frontend/00-angular20-port-v0.md,
 docs/backend/01-contrato-api-certificados.md, hallazgos F1-01/F1-02 y la spec del ciclo.
 Implementá solo la pantalla pública para un caso válido con datos mock o contrato documentado.
-No inventes endpoints, no consultes backend real si no está aprobado y mostrá DNI completo solo en la validación pública (D0); sin token completo en UI, logs ni consola.
+No inventes endpoints, no consultes backend real si no está aprobado; DNI completo en validación pública y UI admin (D0); sin token completo en logs ni consola.
 Si muestra_pagina/ no tiene diseño utilizable, usá una estructura accesible mínima y reportá el bloqueo visual.
 No toques PHP, base de datos, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, si existe `origin/<rama>`, corré `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`; si es primer push, declaralo y compará contra la base aprobada con `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat`; esperá confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. La única prohibición dura es `git push` directo a `main`; PR, `git merge`, `git rebase` y merge de PR requieren aprobación explícita de Matías, comando exacto y evidencia previa.
 Cerrá con tests/build disponibles, QA manual, sdd-archive y reporte final.
@@ -790,7 +790,7 @@ Validaciones automáticas:
 - [ ] `npm test` pasa o se reporta que no hay runner disponible.
 - [ ] `npm run build` pasa o queda bloqueo verificable.
 - [ ] La pantalla no depende de un endpoint no documentado.
-- [ ] La validación pública muestra DNI completo (D0); logs, auditoría, errores y respuestas administrativas no exponen DNI completo; sin token completo ni datos sensibles reales.
+- [ ] Validación pública y UI admin muestran DNI completo (D0); logs, auditoría, errores y dumps no-UI no exponen DNI ni token completos; sin datos sensibles reales.
 
 QA manual:
 - [ ] La ruta pública de validación muestra estado válido con jerarquía clara.
@@ -831,7 +831,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 docs/backend/01-contrato-api-certificados.md, lo hecho en F2-01 y la spec del ciclo.
 Implementá estados públicos diferenciados para certificación revocada, certificación no encontrada y error técnico.
 Tratá 404/CERTIFICATE_NOT_FOUND como certificado no verificable, no como error de sistema.
-No inventes backend, no expongas DNI completo fuera de la validación pública (D0) ni token completo en UI, y no agregues dependencias.
+No inventes backend, no expongas token completo en UI/logs ni DNI completo fuera de validación pública y admin (D0), y no agregues dependencias.
 No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, si existe `origin/<rama>`, corré `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`; si es primer push, declaralo y compará contra la base aprobada con `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat`; esperá confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. La única prohibición dura es `git push` directo a `main`; PR, `git merge`, `git rebase` y merge de PR requieren aprobación explícita de Matías, comando exacto y evidencia previa.
 ```
 
@@ -973,7 +973,7 @@ Trabajemos el ciclo F2-05 — Asistencias presentes.
 Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angular20-port-v0.md,
 documentación backend disponible, lo hecho en F2-04 y la spec del ciclo.
 Prepará UI para marcar o revisar asistencias presentes con datos mock explícitos.
-No persistas datos reales, no inventes API y no muestres DNI completo salvo que una spec privada o administrativa lo apruebe.
+No persistas datos reales, no inventes API; DNI completo permitido en UI admin y validación pública (D0).
 No toques PHP, base, deploy ni material_privado_no_versionar/. No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, si existe `origin/<rama>`, corré `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`; si es primer push, declaralo y compará contra la base aprobada con `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat`; esperá confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. La única prohibición dura es `git push` directo a `main`; PR, `git merge`, `git rebase` y merge de PR requieren aprobación explícita de Matías, comando exacto y evidencia previa.
 ```
 
@@ -981,7 +981,7 @@ Validaciones automáticas:
 - [ ] `npm test` pasa o se reporta ausencia de runner.
 - [ ] `npm run build` pasa o queda bloqueo verificable.
 - [ ] La UI no persiste datos reales.
-- [ ] No hay datos sensibles reales en mocks; DNI completo solo si una spec administrativa lo exige.
+- [ ] No hay datos sensibles reales en mocks; DNI completo en UI admin y validación pública (D0).
 
 QA manual:
 - [ ] Marcar/desmarcar presente es claro y accesible.
@@ -1021,7 +1021,7 @@ Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angula
 docs/backend/01-contrato-api-certificados.md, lo hecho en F2-04/F2-05 y la spec del ciclo.
 Prepará UI administrativa para listar/previsualizar certificaciones con mocks explícitos.
 No generes PDF real, no generes QR real y no inventes emisión backend si no está aprobada.
-No expongas DNI completo en pantallas públicas ni token completo. No toques PHP, base, deploy ni material_privado_no_versionar/.
+No expongas DNI completo en pantallas públicas (salvo validación); UI admin sí muestra DNI completo; no expongas token completo. No toques PHP, base, deploy ni material_privado_no_versionar/.
 No hagas commit ni push por tu cuenta. **Pre-commit safety (diff-confirmation gate)**: previo al `git add`, debés correr `git status --short` y `git diff --name-only`, presentar el resultado a Matías y esperar su confirmación de que el diff es correcto. **Pre-push safety**: previo al `git push`, si existe `origin/<rama>`, corré `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`; si es primer push, declaralo y compará contra la base aprobada con `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat`; esperá confirmación. Tras `sdd-verify` PASS, podés ejecutar `git add` + `git commit` + `git push` (a la rama de trabajo actual, nunca a `main`) SOLO cuando Matías lo apruebe explícitamente en el mismo turno del chat, con el mensaje y comando exactos que indique. La única prohibición dura es `git push` directo a `main`; PR, `git merge`, `git rebase` y merge de PR requieren aprobación explícita de Matías, comando exacto y evidencia previa.
 ```
 
@@ -1131,7 +1131,7 @@ Validaciones automáticas:
 QA manual:
 - [ ] La app sigue funcionando con mocks.
 - [ ] Errores de servicio están previstos sin romper UI.
-- [ ] No se exponen tokens completos, DNI completo fuera de la validación pública (D0), ni errores técnicos crudos.
+- [ ] No se exponen tokens completos ni DNI completo en logs/auditoría/errores (D0); UI admin y validación pública muestran DNI completo; sin errores técnicos crudos.
 - [ ] Consola sin errores nuevos.
 
 Documentación a actualizar en `sdd-archive`:
@@ -1226,7 +1226,7 @@ QA manual:
 - [ ] Contraste y legibilidad revisados.
 - [ ] Estados carga/vacío/error/éxito revisados.
 - [ ] Consola sin errores nuevos.
-- [ ] La validación pública muestra DNI completo (D0) y no muestra tokens completos ni datos sensibles reales; logs, auditoría, errores y respuestas administrativas sin DNI completo.
+- [ ] Validación pública y UI admin muestran DNI completo (D0); logs, auditoría, errores y dumps no-UI sin DNI ni token completos; sin datos sensibles reales.
 
 Documentación a actualizar en `sdd-archive`:
 - `docs/frontend/00-angular20-port-v0.md` con resumen de QA, pendientes y riesgos.
@@ -1410,8 +1410,8 @@ Antes de pedir revisión a Marcos, completá esta lista.
 
 - [ ] No se tocó `material_privado_no_versionar/`.
 - [ ] No se copiaron dumps, logs, credenciales ni datos reales a documentación o código.
-- [ ] La validación pública muestra DNI completo (D0) y no muestra tokens completos ni datos sensibles; logs, auditoría, errores y respuestas administrativas sin DNI completo.
-- [ ] El DNI completo solo aparece en contextos privados o de entrega al estudiante si una spec aprobada lo exige.
+- [ ] Validación pública y UI admin muestran DNI completo (D0); logs, auditoría, errores y dumps no-UI sin DNI ni token completos; sin datos sensibles reales.
+- [ ] El DNI completo aparece en validación pública y UI admin (D0, 2026-07-20); no en logs/auditoría/errores.
 - [ ] No se instalaron dependencias nuevas sin aprobación.
 - [ ] No se inventaron endpoints ni contratos API.
 - [ ] OpenCode no ejecutó `git push` directo a `main` ni deploy. `git add` + `git commit` + `git push` (a la rama de trabajo actual), PR, merge, rebase y creación/cambio de rama solo se ejecutan con aprobación explícita de Matías en el mismo turno, comando exacto, evidencia previa, `sdd-verify` PASS/`sdd-archive` cuando corresponda, y árbol limpio o decisión explícita de stash/commit/abortar.
@@ -1428,7 +1428,7 @@ Usá esta tabla como control común para cada pantalla o estado visual tocado.
 | Error técnico | Sugiere reintentar o contactar, no muestra detalles internos, mantiene navegación y foco. |
 | Login/admin shell | No promete autenticación real si no existe, no hardcodea credenciales, formulario accesible, estados visuales claros. |
 | Cursos y fechas | Estados vacío/carga/error/éxito, formularios con labels, listas legibles en móvil, sin persistencia real no aprobada. |
-| Asistencias presentes | Marcar/desmarcar es claro, tabla/lista usable con teclado, sin datos reales; DNI completo solo con spec administrativa aprobada. |
+| Asistencias presentes | Marcar/desmarcar es claro, tabla/lista usable con teclado, sin datos reales; DNI completo en UI admin (D0). |
 | Certificaciones admin | Acciones habilitadas vs. placeholders diferenciadas, no genera PDF/QR real sin contrato, mocks explícitos. |
 
 ## Checklist de `sdd-archive`
@@ -1608,7 +1608,7 @@ Commit sugerido: `feat(frontend): listado de certificaciones admin`.
 
 ### Ciclo F5-02 — Listado de alumnos
 
-Objetivo: implementar el listado administrativo de alumnos con datos visibles definidos por spec; DNI completo solo si la spec lo exige en contexto privado/administrativo.
+Objetivo: implementar el listado administrativo de alumnos con DNI completo visible (D0, 2026-07-20); email opcional al crear.
 Rama sugerida: `frontend/admin-students`.
 Archivos a leer: `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/backend/01-contrato-api-certificados.md`, referencia visual v0 de `muestra_pagina/app/admin/alumnos` y spec del ciclo activo.
 
@@ -1617,14 +1617,14 @@ Prompt exacto para OpenCode:
 Trabajemos el ciclo F5-02 — Listado de alumnos.
 Usá SDD completo. Leé apps/frontend-angular/AGENTS.md, docs/frontend/00-angular20-port-v0.md,
 docs/backend/01-contrato-api-certificados.md, la referencia visual v0 de muestra_pagina y la spec del ciclo.
-Implementá el listado de alumnos con datos visibles definidos por spec. DNI completo solo si la spec lo exige en contexto privado/administrativo.
+Implementá el listado de alumnos con DNI completo en admin (campo `dniMostrar`/`documentMasked` con dígitos completos). Email opcional al crear.
 No inventes endpoints ni datos sensibles. No copies React/Next literalmente.
 No toques PHP, base, deploy ni material_privado_no_versionar/. Commit/push/PR solo con aprobación explícita.
 ```
 
 Validaciones automáticas: `npm test` y `npm run build` pasan o se reportan bloqueos.
 QA manual: responsive, teclado/foco, estados vacío/carga/error/éxito, consola limpia, sin datos sensibles en mocks.
-No hacer: no exponer DNI completo fuera de contextos aprobados por spec; no usar datos reales.
+No hacer: no exponer DNI completo en logs/auditoría; no usar datos reales.
 Archive: `docs/frontend/00-angular20-port-v0.md`, spec del ciclo.
 Commit sugerido: `feat(frontend): listado de alumnos admin`.
 

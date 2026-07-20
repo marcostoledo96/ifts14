@@ -100,12 +100,11 @@ describe('CertificationsListPage', () => {
     expect(el.querySelector('a[href$="/pdf"]')).not.toBeNull();
   });
 
-  it('no expone token completo ni DNI completo en el listado', async () => {
+  it('no expone token completo en el listado y muestra DNI completo ficticio', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-    // documentMasked cumple XX****XX: no hay DNI completo de 7-8 dígitos.
-    expect(el.textContent).not.toMatch(/\b\d{7,8}\b/);
+    expect(el.textContent).toMatch(/\b12345678\b/);
   });
 
   it('filtra por validez y búsqueda de forma combinada y limpia filtros', async () => {
@@ -271,7 +270,7 @@ describe('CertificationsListPage', () => {
   });
 
   it('reintenta errores reales en producción sin habilitar controles QA', async () => {
-    const recovered = [{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', documentMasked: '12****34', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }] satisfies readonly Certificacion[];
+    const recovered = [{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', documentMasked: '12345678', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }] satisfies readonly Certificacion[];
     const listarSpy = jasmine.createSpy('listar').and.returnValues(
       Promise.reject(new Error('fallo real')),
       Promise.resolve(recovered),
@@ -342,9 +341,9 @@ describe('CertificationsListPage', () => {
     fixture.detectChanges();
     const page = fixture.componentInstance;
     void page.recargar();
-    resolveSecond([{ id: 2, numero: 'IFTS14-CERT-0002', nombreAlumno: 'Alumno Demo Dos', cursoNombre: 'Curso', estado: 'vigente', documentMasked: '34****56', tokenPrefix: 'prefijo_demo_c2d', emitidoEn: null, venceEn: null }]);
+    resolveSecond([{ id: 2, numero: 'IFTS14-CERT-0002', nombreAlumno: 'Alumno Demo Dos', cursoNombre: 'Curso', estado: 'vigente', documentMasked: '23456789', tokenPrefix: 'prefijo_demo_c2d', emitidoEn: null, venceEn: null }]);
     await fixture.whenStable();
-    resolveFirst([{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', documentMasked: '12****34', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }]);
+    resolveFirst([{ id: 1, numero: 'IFTS14-CERT-0001', nombreAlumno: 'Alumno Demo Uno', cursoNombre: 'Curso', estado: 'vigente', documentMasked: '12345678', tokenPrefix: 'prefijo_demo_a1b', emitidoEn: null, venceEn: null }]);
     await fixture.whenStable();
     expect(page.certificados()[0].id).toBe(2);
   });

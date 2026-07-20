@@ -120,9 +120,9 @@ export class CourseDetailPage {
     return this.metricas().get(fechaId) ?? { status: 'unavailable', reason: 'missing-seam' };
   }
 
-  accionPorFecha(fechaId: number): 'Cargar' | 'Ver' {
+  accionPorFecha(fechaId: number): 'Cargar' | 'Ver y entregar' {
     const metric = this.presentesPorFecha(fechaId);
-    return metric.status === 'known' && metric.present > 0 ? 'Ver' : 'Cargar';
+    return metric.status === 'known' && metric.present > 0 ? 'Ver y entregar' : 'Cargar';
   }
 
   estadoAsistencia(fechaId: number): string {

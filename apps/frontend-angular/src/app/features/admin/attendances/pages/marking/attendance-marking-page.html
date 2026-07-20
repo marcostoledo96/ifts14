@@ -18,7 +18,7 @@
 
       <div class="page-header-row">
         <div class="page-header-main">
-          <p class="kicker">Registro de presentes</p>
+          <p class="kicker">Fecha de cursada · Asistencias y certificados</p>
           <h1 id="marcado-title" class="title">{{ d.nombre }}</h1>
           <div class="meta-curso">
             <span class="meta-item">
@@ -86,7 +86,7 @@
                     [value]="q()"
                     (input)="onSearch($event)"
                     placeholder="Apellido, nombre o documento…"
-                    aria-label="Buscar alumno por nombre o documento enmascarado"
+                    aria-label="Buscar alumno por nombre o documento"
                   />
                   @if (q()) {
                     <button
@@ -125,7 +125,7 @@
                   </svg>
                 </span>
                 <p class="roster-empty-title">Sin resultados para “{{ q() }}”</p>
-                <p class="roster-empty-copy">Revisá la ortografía o probá con el documento enmascarado.</p>
+                <p class="roster-empty-copy">Revisá la ortografía o probá con el número de documento.</p>
                 <button type="button" class="btn-secondary btn-compact" (click)="onLimpiarBusqueda()">
                   Limpiar búsqueda
                 </button>
@@ -247,35 +247,41 @@
               <button
                 type="button"
                 class="btn-primary"
-                (click)="guardar()"
-                [disabled]="!dirty() || guardando()"
+                data-testid="cta-guardar-generar"
+                (click)="guardarYGenerar()"
+                [disabled]="!puedeGuardarYGenerar()"
               >
                 <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
                   <path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
-                {{ guardando() ? 'Guardando…' : 'Guardar asistencias' }}
+                {{ guardando() ? 'Guardando y generando…' : 'Guardar y generar certificados' }}
               </button>
               <button
                 type="button"
                 class="btn-secondary"
                 (click)="descartar()"
-                [disabled]="!dirty()"
+                [disabled]="!dirty() || guardando()"
               >
                 Cancelar
               </button>
             </div>
           </section>
 
-          @if (guardadoOk()) {
-            <p class="guardado-ok" role="status">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
-                <path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Presentes guardados correctamente
-            </p>
-          }
-
           <output class="guardado-feedback" aria-live="polite">{{ ok() }}</output>
+
+          <section class="certs-cta-panel" aria-labelledby="certs-cta-titulo">
+            <h2 id="certs-cta-titulo" class="certs-cta-title">Certificados del curso</h2>
+            <p class="certs-hint">
+              Tras guardar y generar, se abren en una página dedicada para copiar link, descargar QR y PDF.
+            </p>
+            <a
+              class="btn-secondary btn-certs-link"
+              data-testid="cta-ver-certificados"
+              [routerLink]="['/admin/cursos', d.id, 'fechas', fechaId(), 'asistencias', 'certificados']"
+            >
+              Ver certificados del curso
+            </a>
+          </section>
         </aside>
       </div>
     } @else if (fechaNoEncontrada()) {
@@ -284,7 +290,7 @@
         <p>La fecha indicada no pertenece al curso.</p>
         <div class="error-actions">
           <a class="btn-primary" [routerLink]="['/admin/cursos', courseId()]">Ver detalle del curso</a>
-          <a class="btn-secondary" routerLink="/admin/asistencias">Ir a Asistencias</a>
+          <a class="btn-secondary" [routerLink]="['/admin/cursos', courseId(), 'editar']">Agregar fecha</a>
         </div>
       </div>
     }

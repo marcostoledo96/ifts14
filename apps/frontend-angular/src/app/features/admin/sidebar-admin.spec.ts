@@ -19,7 +19,9 @@ describe('SidebarAdmin', () => {
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('IFTS N.° 14');
     expect(el.textContent).toContain('Bedelía · Panel');
-    expect(el.querySelector('.sidebar-brand svg')).not.toBeNull();
+    const brandImg = el.querySelector('.sidebar-brand-img') as HTMLImageElement | null;
+    expect(brandImg).not.toBeNull();
+    expect(brandImg?.getAttribute('src')).toContain('logo-ifts.webp');
   });
 
   it('usa heading Operación y NO Secciones', async () => {

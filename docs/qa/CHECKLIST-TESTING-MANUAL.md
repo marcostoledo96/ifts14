@@ -1,5 +1,33 @@
 # Checklist de testing manual — IFTS14 Certificados
 
+
+PARA LEVANTAR EN LOCAL
+
+# Api:
+cd ~/Escritorio/ifts14
+
+sudo docker run -d --rm \
+  --name ifts14-php84-local \
+  -p 8080:8080 \
+  -v "$PWD/apps/backend-php":/app \
+  -w /app \
+  -e CERTIFICADOS_CONFIG_PATH=/app/config/certificados-config.example.php \
+  ifts14-php84 \
+  php -S 0.0.0.0:8080 -t /app /app/router.php
+# Verificar
+curl -s http://127.0.0.1:8080/health
+
+# Frontend:
+cd ~/Escritorio/ifts14/apps/frontend-angular
+npm start  
+
+# USUARIO
+* bedelia
+
+# PASSWORD
+* password-demo-auth
+
+
 Documento operativo para pasadas manuales con checkpoints marcables. Cubre flujos, datos, estados, seguridad, API, UI, accesibilidad, responsive, PDF/QR y staging.
 
 | Campo | Valor |
@@ -30,17 +58,17 @@ Documento operativo para pasadas manuales con checkpoints marcables. Cubre flujo
 Completar al iniciar cada corrida:
 
 ```txt
-Fecha: _______________
-Tester: _______________
-Entorno: [ ] Local  [ ] Staging  [ ] Producción (autorizada)
-Base URL SPA: ________________________________
-Base URL API: ________________________________
-useRealApi / build: __________________________
-Navegador + versión: _________________________
-SO / dispositivo: ____________________________
-Credenciales usadas: (NO pegar claves reales; solo rol, ej. bedelía demo)
-Datos de prueba: ficticios / seed staging / otros: ________
-Commit / build: ______________________________
+Fecha: 20/07/2026
+Tester: Marcos Toledo
+Entorno: [X] Local  [ ] Staging  [ ] Producción (autorizada)
+Base URL SPA: http://localhost:4200/
+Base URL API: http://127.0.0.1:8080/
+useRealApi / build: pendiente confirmar
+Navegador + versión: pendiente confirmar
+SO / dispositivo: Linux (local)
+Credenciales usadas: rol bedelía demo (sin claves en el doc)
+Datos de prueba: ficticios / seed local
+Commit / build: rama integration/admin-session-http
 ```
 
 ### 0.3 Severidad de hallazgos
@@ -55,7 +83,7 @@ Commit / build: ______________________________
 ### 0.4 Reglas de evidencia
 
 - No pegar en este archivo ni en chats: DNI reales, tokens completos, CSRF, cookies, claves, SQL dumps, logs con datos sensibles.
-- En evidencias usar: código de certificado, prefijo de token, DNI enmascarado (`12****34`), requestId, status HTTP.
+- En evidencias usar: código de certificado, prefijo de token, DNI ficticio (no pegar DNI reales), requestId, status HTTP.
 - Capturas: recortar o pixelar datos sensibles antes de adjuntar.
 - Preferir checklist + 1–2 líneas de nota por FAIL.
 
@@ -84,22 +112,22 @@ Objetivo: confirmar que el entorno responde antes de invertir tiempo en UI.
 
 | ID | Checkpoint | Resultado | Notas |
 |---|---|---|---|
-| S-01 | `GET …/api/health` → 200 JSON (`status: ok`) | `[ ]` | |
-| S-02 | SPA carga en la base href correcta (`/certificados/` o `/certificados_staging/`) | `[ ]` | |
-| S-03 | Sin errores rojos en consola al cargar login | `[ ]` | |
-| S-04 | Rutas internas de API bloqueadas (ej. `/api/src/…`) → 403/404, no exponen código | `[ ]` | |
-| S-05 | `favicon` / assets estáticos 200 (sin 404 masivos) | `[ ]` | |
-| S-06 | Extensión PHP `gd` disponible (QR PNG) — o documentar `CONFIGURATION_ERROR` esperado | `[ ]` | |
+| S-01 | `GET …/api/health` → 200 JSON (`status: ok`) | `[x]` | `status:ok` service certificados-api |
+| S-02 | SPA carga en la base href correcta (`/certificados/` o `/certificados_staging/`) | `[x]` | Local: carga OK en localhost:4200 |
+| S-03 | Sin errores rojos en consola al cargar login | `[x]` | Consola limpia en login |
+| S-04 | Rutas internas de API bloqueadas (ej. `/api/src/…`) → 403/404, no exponen código | `[x]` | `/api/src/` 404; `/api/src/Config.php` NOT_FOUND. `/src/Config.php` 200 vacío (ejecuta PHP local, sin dump) |
+| S-05 | `favicon` / assets estáticos 200 (sin 404 masivos) | `[x]` | Favicon + brand/*.webp OK tras hardcode de logos |
+| S-06 | Extensión PHP `gd` disponible (QR PNG) — o documentar `CONFIGURATION_ERROR` esperado | `[x]` | `gd=OK` en contenedor ifts14-php84-local |
 
 ### 1.2 Auth mínima
 
 | ID | Checkpoint | Resultado | Notas |
 |---|---|---|---|
-| S-10 | Login correcto → redirige a `/admin/dashboard` | `[ ]` | |
-| S-11 | Login incorrecto → mensaje claro, no 500 | `[ ]` | |
-| S-12 | Sin sesión: `/admin/dashboard` → login | `[ ]` | |
-| S-13 | Logout cierra sesión; F5 no reabre admin | `[ ]` | |
-| S-14 | Cookie de sesión `HttpOnly` (DevTools → Application) | `[ ]` | |
+| S-10 | Login correcto → redirige a `/admin/dashboard` | `[x]` | Login bedelía demo OK |
+| S-11 | Login incorrecto → mensaje claro, no 500 | `[x]` | 401 + mensaje genérico en UI |
+| S-12 | Sin sesión: `/admin/dashboard` → login | `[x]` | Redirect a login OK |
+| S-13 | Logout cierra sesión; F5 no reabre admin | `[x]` | Logout + F5 OK |
+| S-14 | Cookie de sesión `HttpOnly` (DevTools → Application) | `[x]` | Cookie sesión admin HttpOnly OK |
 
 ---
 
@@ -119,12 +147,12 @@ Usar **datos ficticios**. Anotar IDs internos solo si hacen falta para re-prueba
 
 | ID | Paso | Criterio de aceptación | Resultado | Evidencia segura |
 |---|---|---|---|---|
-| E-01 | Crear / abrir curso certificable | Curso visible en listado con nombre y código | `[ ]` | |
-| E-02 | Agregar ≥2 fechas al curso | Fechas listadas, estados coherentes | `[ ]` | |
-| E-03 | Crear / seleccionar alumno | Aparece en listado; **DNI enmascarado en admin** | `[ ]` | |
-| E-04 | Marcar asistencias presentes en fechas | Guardado OK; conteos actualizados | `[ ]` | |
-| E-05 | Emitir certificación (alumno + curso) | 201 / UI éxito; código visible; **sin token completo ni DNI completo en admin** | `[ ]` | |
-| E-06 | Abrir expediente / preview | Datos curso, alumno (máscara), estado `vigente` | `[ ]` | |
+| E-01 | Crear / abrir curso certificable | Curso visible en listado con nombre y código | `[x]` | SyE · Sociedad y Estado (mock id 100) |
+| E-02 | Agregar ≥2 fechas al curso | Fechas listadas, estados coherentes | `[x]` | ≥2 fechas en curso de prueba |
+| E-03 | Crear / seleccionar alumno | Aparece en listado; **DNI completo visible en admin**; email opcional al crear/perfil | `[x]` | Alta OK; DNI completo; email opcional; DNI duplicado bloqueado con link a perfil |
+| E-04 | Marcar asistencias en hub de fecha (Curso → Fecha) | Guardar y generar OK; redirige a `…/asistencias/certificados` | `[ ]` | Camino: detalle curso → Abrir fecha |
+| E-05 | Entregar desde página de certificados de la fecha | Lista completa; Copiar link → Descargar QR → Descargar PDF; volver a asistencias; **sin token completo** | `[ ]` | Hub solo tiene CTA «Ver certificados del curso» |
+| E-06 | Abrir expediente / preview | Datos curso, alumno (DNI completo en admin), estado `vigente` | `[ ]` | |
 | E-07 | Descargar / previsualizar PDF | PDF abre; QR presente; firmantes institucionales | `[ ]` | |
 | E-08 | Entrega manual: copiar link público | Link válido; feedback “copiado”; **mismo token/QR (no rota)** | `[ ]` | |
 | E-09 | Entrega manual: descargar QR PNG | Archivo `…-qr.png`; escaneable | `[ ]` | |
@@ -199,9 +227,9 @@ Usar **datos ficticios**. Anotar IDs internos solo si hacen falta para re-prueba
 | ID | Checkpoint | Resultado | Notas |
 |---|---|---|---|
 | F-S01 | Listado `/admin/alumnos` con búsqueda/filtros | `[ ]` | |
-| F-S02 | **Nunca** DNI completo en listado/detalle admin | `[ ]` | Máscara tipo `12****34` |
-| F-S03 | No mostrar email literal / legajo si el producto no los expone | `[ ]` | |
-| F-S04 | Nuevo alumno (`/admin/alumnos/nuevo`) con DNI válido ficticio | `[ ]` | |
+| F-S02 | DNI completo en listado/detalle admin (campo `dniMostrar`/`documentMasked` con dígitos completos) | `[ ]` | D0 2026-07-20 |
+| F-S03 | Email opcional al crear/editar alumno; legajo solo si el producto lo expone | `[ ]` | |
+| F-S04 | Nuevo alumno (`/admin/alumnos/nuevo`) con DNI válido ficticio; con y sin email | `[ ]` | |
 | F-S05 | DNI inválido (letras, corto, vacío) → rechazo | `[ ]` | |
 | F-S06 | Duplicar DNI → error controlado | `[ ]` | |
 | F-S07 | Detalle `/admin/alumnos/:id` | `[ ]` | |
@@ -232,7 +260,7 @@ Usar **datos ficticios**. Anotar IDs internos solo si hacen falta para re-prueba
 | F-K04 | Emisión sin requisitos (sin asistencias) → rechazo o advertencia según reglas | `[ ]` |
 | F-K05 | Emisión OK → redirect a expediente o confirmación | `[ ]` |
 | F-K06 | Admin muestra `tokenPrefix`, no token completo | `[ ]` |
-| F-K07 | Admin muestra documento enmascarado, no DNI completo | `[ ]` |
+| F-K07 | Admin muestra DNI completo en listados/expediente (no token completo) | `[ ]` |
 
 ### 3.8 Expediente / preview
 
@@ -339,7 +367,7 @@ Solo con acceso autorizado a DB staging/local. **No** copiar dumps.
 
 | ID | Checkpoint | Resultado |
 |---|---|---|
-| D-30 | Tras crear alumno, fila en `cert_alumnos` (DNI cifrado/hash; UI máscara) | `[ ]` |
+| D-30 | Tras crear alumno, fila en `cert_alumnos` (DNI cifrado/hash en DB; UI admin DNI completo) | `[ ]` |
 | D-31 | Tras emisión: `cert_certificados` + token hash/cifrado | `[ ]` |
 | D-32 | Snapshot `cert_certificado_fechas` coincide con asistencias al emitir | `[ ]` |
 | D-33 | Revocación: estado cert + token + `revocado_en` | `[ ]` |
@@ -385,8 +413,8 @@ Cómo forzar (ideas):
 | ID | Regla | Checkpoint | Resultado |
 |---|---|---|---|
 | SEC-01 | Token/QR permanente | Reenvío/entrega no rota URL | `[ ]` |
-| SEC-02 | DNI completo solo en validación pública vigente | Visible en `/validar/…` vigente | `[ ]` |
-| SEC-03 | Admin sin DNI completo | Listados/expediente/máscara | `[ ]` |
+| SEC-02 | DNI completo en validación pública vigente y UI admin | Visible en `/validar/…` vigente y listados/detalle/expediente admin | `[ ]` |
+| SEC-03 | Admin muestra DNI completo en UI | Listados, detalle alumno y expediente con dígitos completos | `[ ]` |
 | SEC-04 | Logs/auditoría/errores sin DNI ni token completos | Revisar Network response admin + mensajes UI | `[ ]` |
 | SEC-05 | Auth sesión + CSRF en mutaciones | POST sin CSRF falla; con sesión OK | `[ ]` |
 | SEC-06 | `X-Admin-Key` no autoriza HTTP desde browser | Header inventado no abre admin | `[ ]` |
@@ -429,7 +457,7 @@ Base: `…/certificados/api/` o staging equivalente. No pegar bodies con datos r
 | API-10 | Login / session / logout | 200 + cookie | `[ ]` |
 | API-11 | Mutación sin CSRF | 403/419 según contrato | `[ ]` |
 | API-12 | CRUD cursos | 2xx + listado | `[ ]` |
-| API-13 | CRUD alumnos (DTO máscara) | sin DNI completo | `[ ]` |
+| API-13 | CRUD alumnos (DTO `dniMostrar`/`documentMasked`) | DNI completo en respuesta admin; email opcional al crear | `[ ]` |
 | API-14 | Fechas + asistencias | OK | `[ ]` |
 | API-15 | `POST /admin/certificados` | 201 + urls + tokenPrefix | `[ ]` |
 | API-16 | `GET …/entrega-manual` | 200; no rota token | `[ ]` |
@@ -450,7 +478,7 @@ Solo staging/local con seed ficticio. Registrar **qué** se verificó, no dumps.
 | DB-02 | Migraciones aplicadas en orden (001…N) | `[ ]` |
 | DB-03 | Prefijo `cert_` en tablas nuevas | `[ ]` |
 | DB-04 | Token: hash + cifrado; no texto plano del token | `[ ]` |
-| DB-05 | DNI alumno cifrado/hash; UI admin máscara | `[ ]` |
+| DB-05 | DNI alumno cifrado/hash en DB; UI admin DNI completo | `[ ]` |
 | DB-06 | Índice anti-duplicado vigente alumno+curso | `[ ]` |
 | DB-07 | Soft-delete / anulación de asistencias coherente | `[ ]` |
 | DB-08 | Eventos de auditoría sin PII completa | `[ ]` |
@@ -637,7 +665,7 @@ Usar cuando no hay tiempo para el documento completo:
 [ ] QR PNG descarga
 [ ] Revocar en un cert de prueba → pública deja de validar
 [ ] Consola limpia en el camino
-[ ] Admin sin DNI completo
+[ ] Admin con DNI completo en listados/detalle/expediente
 ```
 
 ---
@@ -646,8 +674,8 @@ Usar cuando no hay tiempo para el documento completo:
 
 | ID | Sev | Pantalla / API | Pasos | Esperado | Obtenido | Entorno | Estado |
 |---|---|---|---|---|---|---|---|
-| H-001 | | | | | | | abierto / fijo |
-| H-002 | | | | | | | |
+| H-001 | P2 | Editar curso | Abrir `/admin/cursos/:id/editar` | Botón Cancelar dentro del card | Cancelar desbordaba el casillero (anchor sin border-box) | Local | fijo |
+| H-002 | P1 | Marcado asistencias | Crear curso mock → agregar fecha → Cargar | Abre marcado con roster | `Curso no encontrado` (mock solo seed 1..6) | Local | fijo |
 
 ---
 

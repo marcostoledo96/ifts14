@@ -201,13 +201,15 @@ describe('InstitutionalConfigPage', () => {
       (n) => n.textContent?.replace(/\s+/g, ' ').trim() ?? '',
     );
     expect(labels[0]).toContain('Nombre visible del instituto');
-    expect(labels[1]).toContain('Logos y sellos');
+    expect(labels[1]).toContain('Logos institucionales');
     expect(labels.some((l) => /Texto institucional base/i.test(l))).toBeTrue();
-    expect(el(f).querySelector('.logos-grid')?.children.length).toBe(5);
-    expect(el(f).querySelector('.logos-badge')?.textContent).toContain('1 sin cargar');
+    expect(el(f).querySelector('.logos-grid')?.children.length).toBe(4);
+    expect(el(f).querySelector('.logos-badge')?.textContent).toContain('Fijos del sistema');
+    expect(el(f).querySelectorAll('.logos-grid img').length).toBe(4);
+    expect(el(f).querySelector('.logos-grid button')).toBeNull();
   });
 
-  it('certificados sigue el orden v0: título, texto base, formato, QR, sello', async () => {
+  it('certificados sigue el orden: título, texto base, formato, QR (sin sello)', async () => {
     const f = await render();
     const body = el(f).querySelector('#certificados .cfg-section-body');
     expect(body).not.toBeNull();
@@ -218,8 +220,8 @@ describe('InstitutionalConfigPage', () => {
     expect(ids[1]).toBe('certificate-text');
     expect(ids).toContain('formato-numero');
     expect(ids).toContain('texto-qr');
-    const sello = el(f).querySelector('#certificados [role="switch"]') as HTMLButtonElement;
-    expect(sello.disabled).toBeTrue();
+    expect(el(f).querySelector('#certificados [role="switch"]')).toBeNull();
+    expect(el(f).querySelector('.sello-row')).toBeNull();
     expect(input(f, '#certificate-text').disabled).toBeFalse();
     expect(input(f, '#titulo-cert').disabled).toBeTrue();
   });

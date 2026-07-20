@@ -55,12 +55,13 @@ describe('CertificationDeliveryPage', () => {
     expect(url).toBe(component.entrega()?.publicValidationUrl ?? '');
   });
 
-  it('should mask DNI for privacy (Rule D0)', async () => {
+  it('should show full fictional DNI in admin UI (Rule D0)', async () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const maskedDni = component.alumnoDniEnmascarado();
-    expect(maskedDni).toContain('****');
+    const dni = component.alumnoDniEnmascarado();
+    expect(dni).toMatch(/^\d{7,8}$/);
+    expect(dni).toBe('12345678');
   });
 
   it('should format dates correctly', () => {

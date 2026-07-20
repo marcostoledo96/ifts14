@@ -19,7 +19,7 @@ Resumen operativo del ciclo `backend-emision-desde-asistencias`. El contrato com
 }
 ```
 
-La respuesta administrativa conserva `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`. No devuelve DNI completo ni token completo como campo separado.
+La respuesta administrativa conserva `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`. No devuelve token completo como campo separado. Los DTOs admin de alumno/certificado incluyen DNI completo en `dniMostrar`/`documentMasked` (D0 2026-07-20). Logs/auditoría/errores sin DNI ni token completos.
 
 ## Validación pública
 

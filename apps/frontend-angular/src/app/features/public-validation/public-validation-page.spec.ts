@@ -177,7 +177,9 @@ describe('PublicValidationPage', () => {
     expect(sello).not.toBeNull();
     expect(sello?.getAttribute('aria-hidden')).toBe('true');
     expect(aside?.textContent ?? '').toMatch(/\d{2}\/\d{2}\/\d{4} · \d{2}:\d{2} ART/);
-    expect(el.querySelector('.pie-control .pie-mono')?.textContent?.trim()).toBe('14');
+    const pieLogo = el.querySelector('.pie-control .pie-logo') as HTMLImageElement | null;
+    expect(pieLogo).not.toBeNull();
+    expect(pieLogo?.getAttribute('src')).toContain('logo-ifts.webp');
   });
 
   it('no dibuja QR decorativo', async () => {

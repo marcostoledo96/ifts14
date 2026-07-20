@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Definir la UI administrativa Angular 20 para listar y previsualizar certificaciones ficticias, navegable, mock-only, contract-ready y testeable. Habilita la base de integración con emisión, PDF, entrega manual, revocación y listado real (F4-01/F4-02/F5-01/F5-04/F6-01) sin exponer DNI completo administrativo, tokens completos, datos reales, red, storage ni auth real.
+Definir la UI administrativa Angular 20 para listar y previsualizar certificaciones ficticias, navegable, mock-only, contract-ready y testeable. Habilita la base de integración con emisión, PDF, entrega manual, revocación y listado real (F4-01/F4-02/F5-01/F5-04/F6-01). La UI admin DEBE mostrar DNI completo en `documentMasked`/`dniMostrar` (D0 2026-07-20). NO DEBE exponer tokens completos, datos reales, red, storage ni auth real. Logs, auditoría, errores y dumps NO DEBEN incluir DNI completo ni token completo.
 
 ## Requirements
 
@@ -42,8 +42,8 @@ El sistema DEBE mostrar un listado navegable de certificaciones ficticias, filtr
 
 - **Given** una certificación aparece en el listado
 - **When** se revisan sus datos visibles
-- **Then** DEBE mostrar `documentMasked` y datos ficticios.
-- **And** NO DEBE mostrar DNI completo, token completo, email, matrícula, legajo, UUID ni datos reales.
+- **Then** DEBE mostrar `documentMasked` con dígitos completos y datos ficticios.
+- **And** NO DEBE mostrar token completo, matrícula, legajo, UUID ni datos reales de personas.
 
 #### Scenario: Filtros y búsqueda combinables
 
@@ -89,12 +89,13 @@ En desarrollo y tests, el sistema DEBE ofrecer un harness QA explícito y no per
 
 - **Given** se ejecuta el checker contra listado, detalle y PDF mock existentes
 - **When** inspecciona texto visible y solicitudes de red
-- **Then** NO DEBE encontrar DNI completo, token completo, email, UUID, datos reales ni requests de datos o API mediante `fetch`, XHR, `/api/`, storage o backend.
+- **Then** NO DEBE encontrar token completo, UUID, datos reales de personas ni requests de datos o API mediante `fetch`, XHR, `/api/`, storage o backend.
+- **And** DEBE permitir `documentMasked`/`dniMostrar` con DNI completo visible en UI admin (D0).
 - **And** PUEDE observar la navegación `document` local y los assets estáticos necesarios para servir la SPA.
 
 ### Requirement: Previsualización segura y handoff explícito
 
-El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente con estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada decorativa. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Revocar certificación` DEBE navegar a `/admin/certificaciones/:id/revocar`; `Entrega manual` DEBE navegar al flujo de entrega vigente. `Copiar link` y `Compartir` DEBEN usar la URL canónica de `obtenerEntregaManual().publicValidationUrl` (deshabilitados si revocado o sin URL). Las autoridades de la réplica DEBEN venir de configuración institucional (`rectorName`/`advisorName` + roles); si la config falla o ambos nombres están vacíos, DEBE mostrar “Configuración institucional pendiente” sin bloquear Copiar/Compartir. El QR/token DEBE permanecer permanente. NO DEBE exponer DNI/token completos, email, legajo ni matrícula.
+El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente con estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada decorativa. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Revocar certificación` DEBE navegar a `/admin/certificaciones/:id/revocar`; `Entrega manual` DEBE navegar al flujo de entrega vigente. `Copiar link` y `Compartir` DEBEN usar la URL canónica de `obtenerEntregaManual().publicValidationUrl` (deshabilitados si revocado o sin URL). Las autoridades de la réplica DEBEN venir de configuración institucional (`rectorName`/`advisorName` + roles); si la config falla o ambos nombres están vacíos, DEBE mostrar “Configuración institucional pendiente” sin bloquear Copiar/Compartir. El QR/token DEBE permanecer permanente. NO DEBE exponer token completo, legajo ni matrícula. DEBE mostrar DNI completo en `documentMasked`/`dniMostrar` (D0).
 
 #### Scenario: Expediente de una certificación
 
@@ -121,7 +122,8 @@ El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente con estado
 
 - **Given** el expediente se renderiza en la UI admin
 - **When** se inspecciona la información visible
-- **Then** NO DEBE exponer DNI completo, token completo, email, legajo ni matrícula.
+- **Then** NO DEBE exponer token completo, legajo ni matrícula.
+- **And** DEBE mostrar DNI completo en campos de documento del expediente (D0).
 
 ### Requirement: Paridad visual, folio imprimible y evidencia de verificación
 
@@ -166,7 +168,8 @@ El sistema DEBE mantener paridad visual igual o mejor que la referencia v0 del e
 - **Given** el checker se ejecuta contra la aplicación Angular real para los ids `1`, `3`, `4` y `5`
 - **When** inspecciona cada folio y su salida de impresión
 - **Then** DEBE comprobar fechas, estado, privacidad y una única página A4 completa, sin clipping ni chrome administrativo.
-- **And** NO DEBE encontrar DNI completo, token completo, email, matrícula ni legajo.
+- **And** NO DEBE encontrar token completo, matrícula ni legajo.
+- **And** DEBE permitir DNI completo visible en UI admin (D0).
 
 #### Scenario: Evidencia de checks en verify
 
@@ -176,7 +179,7 @@ El sistema DEBE mantener paridad visual igual o mejor que la referencia v0 del e
 
 ### Requirement: Documentación y archivo del ciclo
 
-El sistema DEBE documentar durante `sdd-archive` que F4-02 agrega una vista imprimible mock-only y habilita sus enlaces desde F4-01. DEBE mantener fuera de alcance PDF/QR reales, backend, entrega, revocación, HTTP, storage, auth real y exposición de DNI/token completos.
+El sistema DEBE documentar durante `sdd-archive` que F4-02 agrega una vista imprimible mock-only y habilita sus enlaces desde F4-01. DEBE mantener fuera de alcance PDF/QR reales, backend, entrega, revocación, HTTP, storage, auth real y exposición de tokens completos. Logs/auditoría/errores sin DNI ni token completos; UI admin con DNI completo (D0).
 
 #### Scenario: Cierre documental
 
@@ -186,7 +189,7 @@ El sistema DEBE documentar durante `sdd-archive` que F4-02 agrega una vista impr
 
 ### Requirement: Emisión directa de certificación (pantalla nueva)
 
-El sistema DEBE exponer la ruta estática `/admin/certificaciones/nueva` **antes** de `/admin/certificaciones/:id`, con una pantalla única de emisión (no wizard) que orquesta seams existentes. El body de emisión DEBE ser exactamente `{ alumnoId, cursoId, issuedAt, expiresAt }`. Tras HTTP 201, DEBE navegar al expediente `/admin/certificaciones/:id`. NO DEBE inventar email, DNI completo admin, logos, firmas archivo ni folio definitivo antes del POST.
+El sistema DEBE exponer la ruta estática `/admin/certificaciones/nueva` **antes** de `/admin/certificaciones/:id`, con una pantalla única de emisión (no wizard) que orquesta seams existentes. El body de emisión DEBE ser exactamente `{ alumnoId, cursoId, issuedAt, expiresAt }`. Tras HTTP 201, DEBE navegar al expediente `/admin/certificaciones/:id`. NO DEBE inventar logos, firmas archivo ni folio definitivo antes del POST. El DNI completo en expediente proviene del DTO admin posterior al POST (D0).
 
 #### Scenario: Ruta estática precede a :id
 
@@ -200,3 +203,14 @@ El sistema DEBE exponer la ruta estática `/admin/certificaciones/nueva` **antes
 - **When** Bedelía confirma Emitir
 - **Then** DEBE enviarse `POST /admin/certificados` con el body de cuatro campos
 - **And** DEBE navegar al detalle del `data.id` recibido.
+
+### Requirement: Emisión desde hub de fecha (camino feliz)
+
+El camino operativo habitual del directivo DEBE ser Curso → Fecha → «Guardar y generar certificados» → página `…/asistencias/certificados` (spec `admin-attendances-frontend`). Esa orquestación reutiliza `CERTIFICATIONS_SOURCE.emitir` / `regenerarPdf` / `listar({ cursoId })` / `obtenerEntregaManual` / `descargarQrPng` / `descargarPdf`. La pantalla «Nueva certificación» permanece para casos edge. Entrega: Copiar link, Descargar QR, Descargar PDF (sin SMTP). Regenerar NO DEBE rotar token/QR.
+
+#### Scenario: Generación desde presentes de una fecha
+
+- **Given** Bedelía marcó presentes en el hub de fecha
+- **When** confirma «Guardar y generar certificados»
+- **Then** cada presente sin vigente DEBE emitir; cada presente con vigente DEBE regenerar PDF sin rotar token
+- **And** DEBE redirigir a la página de certificados del curso con acciones link, QR y PDF.

@@ -132,7 +132,8 @@ El sistema DEBE permitir abrir la pantalla de marcado de asistencia desde cada f
 - **Given** existe una sesión mock activa y se visualiza el detalle de un curso
 - **When** se activa “Tomar asistencia” en una fecha
 - **Then** DEBE navegar a `/admin/cursos/:id/fechas/:fechaId/asistencias`.
-- **And** NO DEBE mostrar DNI completo, email, token, legajo ni matrícula.
+- **And** DEBE mostrar DNI completo en filas de asistencia (D0).
+- **And** NO DEBE mostrar token completo, legajo ni matrícula.
 
 ### Requirement: Paridad verificable y frontera del listado F4-03
 

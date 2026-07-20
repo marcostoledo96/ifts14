@@ -7,6 +7,7 @@ import {
   resource,
   signal,
 } from '@angular/core';
+import { INSTITUTIONAL_BRAND } from '../../shared/brand/institutional-brand';
 import { ValidationService } from '../../shared/certificates/validation.service';
 import {
   studentDocumentDisplay,
@@ -28,6 +29,8 @@ import { CampoDato } from '../../shared/ui/campo-dato';
 export class PublicValidationPage {
   readonly tokenCertificacion = input.required<string>();
   private readonly validation = inject(ValidationService);
+
+  readonly logoSrc = INSTITUTIONAL_BRAND.logoIfts;
 
   readonly verification = resource<ValidationViewState, { token: string }>({
     params: () => ({ token: this.tokenCertificacion() }),

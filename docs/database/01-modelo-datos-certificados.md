@@ -83,7 +83,7 @@ La migración `database/migrations/003_cursos_alumnos_asistencias.sql` agrega el
 
 | Tabla | Regla principal |
 |---|---|
-| `cert_alumnos` | Guarda `dni_hash BINARY(32)` como HMAC-SHA-256 con `dni_cipher_key`, `dni_cifrado VARBINARY(512)` y `dni_mostrar VARCHAR(20) NULL`. La clave de cifrado vive fuera de Git. No hay DNI plano obligatorio. |
+| `cert_alumnos` | Guarda `dni_hash BINARY(32)` como HMAC-SHA-256 con `dni_cipher_key`, `dni_cifrado VARBINARY(512)`, `dni_mostrar VARCHAR(20) NULL` (dígitos completos en DTO admin; D0) y `email VARCHAR(180) NULL` opcional (migración `011`). La clave de cifrado vive fuera de Git. No hay DNI plano obligatorio en DB. |
 | `cert_cursos` | Cursos certificables con `codigo` único, `nombre`, `estado` y timestamps. |
 | `cert_curso_fechas` | Fechas normalizadas por curso, con `fecha`, `descripcion`, `orden SMALLINT UNSIGNED` acotado por API a `1..65535` y FK a `cert_cursos`. |
 | `cert_asistencias` | La presencia se representa por existencia de fila. No existe booleano `presente`. `eliminado_en` permite correcciones y `asistencia_activa` bloquea duplicados activos. |

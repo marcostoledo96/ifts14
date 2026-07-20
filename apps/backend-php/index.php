@@ -856,7 +856,13 @@ function respondToAdmin(callable $handler, string $requestId): void
         $result = $handler();
         Response::json($result['status'], $result['data'], $requestId);
     } catch (AdminCertificateException $exception) {
-        Response::error($exception->status, $exception->errorCode, $exception->getMessage(), $requestId);
+        Response::error(
+            $exception->status,
+            $exception->errorCode,
+            $exception->getMessage(),
+            $requestId,
+            $exception->details,
+        );
     }
 }
 
@@ -976,7 +982,13 @@ function streamQrPng(array $config, int $certificateId, string $requestId, strin
         $data = $service->deliveryTokenData($certificateId);
         $png = (new CertificateQrImageService())->render((string) $data['publicValidationUrl']);
     } catch (AdminCertificateException $exception) {
-        Response::error($exception->status, $exception->errorCode, $exception->getMessage(), $requestId);
+        Response::error(
+            $exception->status,
+            $exception->errorCode,
+            $exception->getMessage(),
+            $requestId,
+            $exception->details,
+        );
         return;
     } catch (RuntimeException) {
         Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);

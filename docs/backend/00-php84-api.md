@@ -31,14 +31,14 @@ Implementar la API del módulo de certificaciones QR usando PHP 8.4.21.
 | `GET` | `/certificados/api/health` | Estado técnico básico, sin abrir configuración ni PDO. |
 | `GET` | `/certificados/api/certificados/{token}/verificacion` | Valida token público por hash `SHA-256(token + token_pepper)` y devuelve DTO público mínimo. |
 | `POST` | `/certificados/api/certificados/consulta` | Lee JSON `{ "token": "..." }` y reutiliza la misma validación que el GET. |
-| `POST` | `/certificados/api/admin/certificados` | Emite certificado desde `alumnoId` + `cursoId` y asistencias activas; requiere sesión admin y CSRF, y devuelve DTO seguro con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; sin DNI ni token completos como campos separados. |
+| `POST` | `/certificados/api/admin/certificados` | Emite certificado desde `alumnoId` + `cursoId` y asistencias activas certificables (fecha `realizada`); requiere sesión admin y CSRF, y devuelve DTO seguro con `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`; sin DNI ni token completos como campos separados. |
 | `POST` | `/certificados/api/admin/certificados/{id}/revocar` | Revoca certificado e invalida tokens activos; requiere sesión admin y CSRF. |
 | `GET` | `/certificados/api/admin/certificados/{id}/entrega-manual` | Entrega manual de solo lectura: devuelve `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix` para copia/descarga externa por Bedelía; sin email, sin rotación, sin escritura. |
 | `GET` | `/certificados/api/admin/certificados/{id}/qr.png` | Descarga administrativa del QR como PNG aislado (`image/png`, `attachment`) generado on-demand desde el mismo `publicValidationUrl`. No rota token, no persiste PNG, no envía email; requiere extensión PHP `gd` (o equivalente) en hosting. |
 | `POST/GET/PATCH` | `/certificados/api/admin/cursos`, `/admin/cursos/{id}`, `/admin/cursos/{id}/estado` | CRUD mínimo de cursos para datos maestros; requiere sesión admin; las mutaciones exigen CSRF. |
-| `POST/GET/PATCH` | `/certificados/api/admin/alumnos`, `/admin/alumnos/{id}`, `/admin/alumnos/{id}/estado` | CRUD mínimo de alumnos con DNI cifrado/hash y DTO administrativo enmascarado; requiere sesión admin; las mutaciones exigen CSRF. |
+| `POST/GET/PATCH` | `/certificados/api/admin/alumnos`, `/admin/alumnos/{id}`, `/admin/alumnos/{id}/estado` | CRUD mínimo de alumnos con DNI cifrado/hash y DTO admin con DNI completo en `dniMostrar`/`documentMasked`; email opcional; requiere sesión admin; las mutaciones exigen CSRF. |
 | `POST/GET/PATCH` | `/certificados/api/admin/cursos/{cursoId}/fechas`, `/admin/cursos/{cursoId}/fechas/{fechaId}` | Carga y mantenimiento de fechas de curso ordenadas. |
-| `POST/GET/DELETE` | `/certificados/api/admin/asistencias`, `/admin/asistencias/{id}` | Registro, listado y anulación lógica de asistencias activas. |
+| `POST/GET/DELETE` | `/certificados/api/admin/asistencias`, `/admin/asistencias/{id}` | Registro, listado y anulación lógica de asistencias activas; tras escritura recalcula `cert_curso_fechas.estado` (`programada`↔`realizada`, nunca `cancelada`) con día local AR. |
 
 La validación pública acepta tokens de 32 a 128 caracteres alfanuméricos, `_` o `-`. Los casos inexistentes, revocados, vencidos o fuera de ventana responden `404 CERTIFICATE_NOT_FOUND` sin revelar la causa. Los endpoints públicos aplican rate limiting mínimo por origen y responden `429 RATE_LIMITED` al superar el umbral configurado.
 
