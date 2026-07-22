@@ -246,8 +246,9 @@ if ($path === '/admin/alumnos') {
     if ($config === null) {
         return;
     }
-    $dniCipherKey = $method === 'POST' ? loadDniCipherKey($config, $requestId) : null;
-    if ($method === 'POST' && $dniCipherKey === null) {
+    // GET y POST necesitan dni_cipher_key: listado D0 puede descifrar filas legacy enmascaradas.
+    $dniCipherKey = loadDniCipherKey($config, $requestId);
+    if ($dniCipherKey === null) {
         return;
     }
     $body = $method === 'POST' ? readJsonBody($requestId) : null;
@@ -276,8 +277,15 @@ if (preg_match('#^/admin/alumnos/(\d+)$#', $path, $matches) === 1) {
     }
 
     if ($method === 'GET') {
-        respondToAdmin(static function () use ($config, $requestId, $matches): array {
-            return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->getStudent((int) $matches[1])];
+        $dniCipherKey = loadDniCipherKey($config, $requestId);
+        if ($dniCipherKey === null) {
+            return;
+        }
+        respondToAdmin(static function () use ($config, $requestId, $matches, $dniCipherKey): array {
+            return [
+                'status' => 200,
+                'data' => (new AdminMasterDataService(Database::pdo($config), $requestId, $dniCipherKey))->getStudent((int) $matches[1]),
+            ];
         }, $requestId);
         return;
     }

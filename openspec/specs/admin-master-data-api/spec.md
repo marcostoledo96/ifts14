@@ -132,17 +132,17 @@ La API DEBE registrar presencia por existencia de fila activa, listar asistencia
 
 ### Requirement: Auto-gestión de estado de fecha tras escritura de asistencias
 
-Tras registrar o anular lógicamente una asistencia, si la fecha no está `cancelada`, la API DEBE recalcular y persistir su `estado` con día local `America/Argentina/Buenos_Aires` (`Y-m-d`): `realizada` solo si hay ≥1 asistencia activa y `fecha < hoy`; si no, `programada`. NO DEBE inferir ni modificar `cancelada`. Si el estado entra o sale de `realizada`, DEBE conservar el sync de snapshots / `pdf_estado=desactualizado` vigente. NO DEBE agregar cron ni refresh en `emitir` en este ciclo. Un write de asistencia posterior DEBE reaplicar la regla (p. ej. same-day vuelve a `programada` tras override manual).
+Tras registrar o anular lógicamente una asistencia, si la fecha no está `cancelada`, la API DEBE recalcular y persistir su `estado` con día local `America/Argentina/Buenos_Aires` (`Y-m-d`): `realizada` solo si hay ≥1 asistencia activa y `fecha <= hoy`; si no, `programada`. NO DEBE inferir ni modificar `cancelada`. Si el estado entra o sale de `realizada`, DEBE conservar el sync de snapshots / `pdf_estado=desactualizado` vigente. NO DEBE agregar cron ni refresh en `emitir` en este ciclo. Un write de asistencia posterior DEBE reaplicar la regla (p. ej. futura vuelve a `programada` tras override manual).
 
-#### Scenario: Fecha pasada con presente → realizada
+#### Scenario: Fecha pasada o same-day con presente → realizada
 
-- DADO fecha no cancelada con `fecha < hoy` AR
+- DADO fecha no cancelada con `fecha <= hoy` AR
 - CUANDO se registra ≥1 asistencia activa
 - ENTONCES el estado DEBE ser `realizada` y DEBE correr sync si hay certificados vigentes afectados
 
-#### Scenario: Same-day o futura → programada
+#### Scenario: Futura → programada
 
-- DADO fecha no cancelada con `fecha >= hoy` AR
+- DADO fecha no cancelada con `fecha > hoy` AR
 - CUANDO se registra ≥1 asistencia activa
 - ENTONCES el estado DEBE ser `programada`
 

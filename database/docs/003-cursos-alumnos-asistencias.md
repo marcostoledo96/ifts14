@@ -25,7 +25,7 @@ No modifica endpoints, PDF, frontend ni autenticación. No incluye datos reales.
 - `dni_cifrado` depende de clave externa a Git; no debe documentarse ni versionarse el valor real.
 - `dni_mostrar`/`documentMasked` en DTO admin contiene DNI completo visible (D0); la columna legacy `documento_enmascarado` en certificados antiguos conserva nombre histórico.
 - `email` es opcional desde migración `011`; ver `database/docs/011-alumnos-email-opcional.md`.
-- `cert_curso_fechas.estado` (`programada` | `realizada` | `cancelada`): `cancelada` solo manual. Tras registrar/anular asistencias, el backend auto-ajusta `programada`↔`realizada` con día local `America/Argentina/Buenos_Aires`: `realizada` solo si hay ≥1 asistencia activa y `fecha < hoy`; si no, `programada` (incluye same-day). Sin migración ENUM adicional.
+- `cert_curso_fechas.estado` (`programada` | `realizada` | `cancelada`): `cancelada` solo manual. Tras registrar/anular asistencias, el backend auto-ajusta `programada`↔`realizada` con día local `America/Argentina/Buenos_Aires`: `realizada` solo si hay ≥1 asistencia activa y `fecha <= hoy`; si no, `programada` (futuras sin presentes o sin asistencia). Sin migración ENUM adicional.
 
 ## Verificación local ejecutada
 

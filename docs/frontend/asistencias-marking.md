@@ -15,7 +15,7 @@ Verify: PASS WITH WARNINGS — `test:ci` 734/734, `tsc` exit 0, `build` exit 0 (
 
 ## Paridad mock de estado de fecha (2026-07-20)
 
-Ciclo `auto-estado-fecha-curso`: el mock de `ATTENDANCE_SOURCE` aplica la misma regla que el backend al marcar presentes (`realizada` solo con ≥1 presente y `fecha < hoy` AR; si no, `programada`; `cancelada` rechazada). La fuente HTTP hereda `fechaEstado` del API. Archive: `openspec/changes/archive/2026-07-20-auto-estado-fecha-curso/`.
+Ciclo `auto-estado-fecha-curso` (ajustado): el mock de `ATTENDANCE_SOURCE` aplica la misma regla que el backend al marcar presentes (`realizada` con ≥1 presente y `fecha <= hoy` AR; si no, `programada`; `cancelada` rechazada). La fuente HTTP hereda `fechaEstado` del API. Archive: `openspec/changes/archive/2026-07-20-auto-estado-fecha-curso/`.
 
 ## Referencias
 

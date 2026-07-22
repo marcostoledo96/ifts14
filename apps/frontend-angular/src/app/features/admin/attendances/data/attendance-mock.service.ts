@@ -256,7 +256,7 @@ export class AttendanceMockService implements AttendanceService {
     }
     const hoy = this.hoyIsoAr();
     const nuevoEstado: 'programada' | 'realizada' =
-      activas >= 1 && fechaIso < hoy ? 'realizada' : 'programada';
+      activas >= 1 && fechaIso <= hoy ? 'realizada' : 'programada';
     if (nuevoEstado !== fecha.estado) {
       await this.courses.guardarFecha(cursoId, {
         id: fecha.id,

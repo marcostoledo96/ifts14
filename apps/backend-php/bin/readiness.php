@@ -108,13 +108,15 @@ check('Migraciones', function() use ($config) {
         $stmt = $pdo->query(
             "SELECT COUNT(DISTINCT version)
              FROM cert_schema_migrations
-             WHERE version IN ('008', '009', '010')"
+             WHERE version IN ('008', '009', '010', '011', '012', '013')"
         );
-        if (((int) $stmt->fetchColumn()) !== 3) {
+        if (((int) $stmt->fetchColumn()) !== 6) {
             return false;
         }
 
         $pdo->query("SELECT contenido_revision, pdf_estado, pdf_generado_revision FROM cert_certificados LIMIT 1");
+        $pdo->query("SELECT apellido, nombre FROM cert_alumnos LIMIT 1");
+        $pdo->query("SELECT clave, valor FROM cert_parametros_sistema LIMIT 1");
         return true;
     } catch (PDOException $e) {
         return false;

@@ -101,7 +101,7 @@ El sistema DEBE actualizar datos al navegar entre URLs de marcado reutilizando c
 
 ### Requirement: Paridad de estado de fecha en fuente mock de asistencias
 
-El mock de `ATTENDANCE_SOURCE`, al marcar presentes de una fecha, DEBE aplicar la misma regla auto que el backend: si no está `cancelada`, `realizada` solo con ≥1 presente y `fecha < hoy` (`America/Argentina/Buenos_Aires`); si no, `programada`. DEBE actualizar `fechaEstado` en la respuesta y el estado de la fecha en memoria del curso. DEBE rechazar fechas `cancelada`. La fuente HTTP hereda `fechaEstado` del API sin reimplementar la regla.
+El mock de `ATTENDANCE_SOURCE`, al marcar presentes de una fecha, DEBE aplicar la misma regla auto que el backend: si no está `cancelada`, `realizada` solo con ≥1 presente y `fecha <= hoy` (`America/Argentina/Buenos_Aires`); si no, `programada`. DEBE actualizar `fechaEstado` en la respuesta y el estado de la fecha en memoria del curso. DEBE rechazar fechas `cancelada`. La fuente HTTP hereda `fechaEstado` del API sin reimplementar la regla.
 
 #### Scenario: Mock fecha pasada → realizada
 
@@ -109,11 +109,11 @@ El mock de `ATTENDANCE_SOURCE`, al marcar presentes de una fecha, DEBE aplicar l
 - CUANDO se marca ≥1 presente
 - ENTONCES `fechaEstado` y la fecha del curso DEBEN ser `realizada`
 
-#### Scenario: Mock same-day → programada
+#### Scenario: Mock same-day → realizada
 
 - DADO fecha mock con `fecha == hoy` AR
 - CUANDO se marca ≥1 presente
-- ENTONCES `fechaEstado` DEBE ser `programada`
+- ENTONCES `fechaEstado` DEBE ser `realizada`
 
 #### Scenario: Mock sin presentes → programada
 
