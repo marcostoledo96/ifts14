@@ -3,12 +3,13 @@ import { RouterLink, Router } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle } from '../../certifications.models';
 import { FormsModule } from '@angular/forms';
+import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 @Component({
   selector: 'app-certification-revoke-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule, UiSpinner],
+  imports: [RouterLink, FormsModule, UiBackLink, UiSpinner],
   templateUrl: './certification-revoke-page.html',
   styleUrl: './certification-revoke-page.css',
 })

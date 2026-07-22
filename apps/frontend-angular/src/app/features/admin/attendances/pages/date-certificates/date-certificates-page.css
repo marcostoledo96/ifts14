@@ -26,41 +26,6 @@
 
 .page-header { margin-bottom: var(--space-1); }
 
-.btn-volver {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.5rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--color-ink, #0f172a);
-  border-radius: var(--radius-sm);
-  background: var(--color-ink, #0f172a);
-  color: var(--color-ink-foreground, #fff);
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background-color 0.15s ease, transform 0.1s ease;
-}
-
-.btn-volver:hover {
-  background: color-mix(in srgb, var(--color-ink, #0f172a) 88%, white);
-}
-
-.btn-volver:active {
-  transform: scale(0.99);
-}
-
-.btn-volver:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-.volver-icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  flex: 0 0 auto;
-}
-
 .page-header-row {
   margin-top: var(--space-4);
 }

@@ -183,16 +183,13 @@ describe('CertificationPdfPreviewPage', () => {
     expect(feedback?.getAttribute('aria-live')).toBe('polite');
   });
 
-  it('breadcrumb tiene enlace a certificaciones y al expediente', async () => {
+  it('muestra botón Volver al expediente', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    const breadcrumb = el.querySelector('nav[aria-label="Migas de pan"]');
-    expect(breadcrumb).not.toBeNull();
-    // Los routerLink con interpolación se aplican como directivas; verificamos
-    // que hay al menos dos enlaces navegables en el breadcrumb.
-    const links = breadcrumb?.querySelectorAll('a') || [];
-    expect(links.length).toBeGreaterThanOrEqual(2);
-    expect(breadcrumb?.textContent).toContain('IFTS14-CERT-');
+    const back = el.querySelector('[data-testid="volver-expediente"]') as HTMLAnchorElement;
+    expect(back).toBeTruthy();
+    expect(back.getAttribute('href')).toBe('/admin/certificaciones/1');
+    expect(back.textContent).toMatch(/Volver al expediente/i);
   });
 
   // --- Ids robustos ---

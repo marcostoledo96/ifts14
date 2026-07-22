@@ -9,6 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
 import type { EstadoFecha } from '../../../courses/courses.models';
@@ -36,7 +37,7 @@ const fmtFecha = new Intl.DateTimeFormat('es-AR', {
 @Component({
   selector: 'app-attendance-course-dates-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, UiSpinner],
+  imports: [RouterLink, UiBackLink, UiSpinner],
   templateUrl: './attendance-course-dates-page.html',
   styleUrl: './attendance-course-dates-page.css',
 })

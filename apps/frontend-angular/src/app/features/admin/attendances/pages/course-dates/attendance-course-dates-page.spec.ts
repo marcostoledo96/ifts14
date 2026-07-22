@@ -45,6 +45,15 @@ describe('AttendanceCourseDatesPage', () => {
     expect(estados.every((e) => e !== 'cancelada')).toBeTrue();
   });
 
+  it('muestra botón claro Volver a Asistencias hacia el hub', async () => {
+    const f = await render('3');
+    const el = f.nativeElement as HTMLElement;
+    const back = el.querySelector('[data-testid="volver-asistencias"]') as HTMLAnchorElement;
+    expect(back).toBeTruthy();
+    expect(back.getAttribute('href')).toBe('/admin/asistencias');
+    expect(back.textContent).toMatch(/Volver a Asistencias/i);
+  });
+
   it('expone chips programada/realizada y filtra por estado', async () => {
     const f = await render('6');
     const el = f.nativeElement as HTMLElement;
