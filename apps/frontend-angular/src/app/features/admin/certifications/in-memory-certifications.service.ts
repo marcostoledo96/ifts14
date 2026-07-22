@@ -25,6 +25,9 @@ import {
 import { registerMockAdminLiveEstadoResolver } from '../../../shared/certificates/mock-admin-bridge';
 import { qrPngBlobFromUrl } from './qr-png';
 import { buildMockCertificatePdf } from './mock-certificate-pdf';
+import { truncarUrl } from './url-publica';
+
+export { URL_PUBLICA_MAX, truncarUrl } from './url-publica';
 
 /** URL pública canónica mock (dominio de producción; en local reemplazar host). */
 function mockPublicValidationUrl(tokenPrefix: string): string {
@@ -150,15 +153,6 @@ export function seed(): CertificacionDetalle[] {
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
-}
-
-// Límite de visualización de la URL pública mock para no exponer el token completo.
-export const URL_PUBLICA_MAX = 60;
-// Espacio reservado para el ellipsis al truncar.
-const URL_PUBLICA_SLICE = URL_PUBLICA_MAX - 3;
-
-export function truncarUrl(url: string): string {
-  return url.length <= URL_PUBLICA_MAX ? url : url.slice(0, URL_PUBLICA_SLICE) + '…';
 }
 
 @Injectable({ providedIn: 'root' })

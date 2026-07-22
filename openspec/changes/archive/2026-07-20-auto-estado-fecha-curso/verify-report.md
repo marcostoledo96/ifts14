@@ -16,8 +16,8 @@ build_output_hash: sha256:9636e1d7b8c1607f4fe80b92c2822e2e87e7149faf88854c34379f
 
 ## Verification Report
 
-**Change**: `auto-estado-fecha-curso`  
-**Version**: N/A (delta change)  
+**Change**: `auto-estado-fecha-curso`
+**Version**: N/A (delta change)
 **Mode**: Standard (strict_tdd: false)
 
 ### Completeness
@@ -98,7 +98,7 @@ FE:
 | Sin migración ENUM | ✅ Yes | |
 
 ### Issues Found
-**CRITICAL**: None  
+**CRITICAL**: None
 **WARNING**:
 - Escenario emission «Solo programada no certifica» sin fixture dedicada (asistencia activa en fecha `programada`); el filtro SQL + rechazo 400 sin certificables cubre el mismo path.
 - Escenario «Snapshot inmutable / anulación» tensiona con sync master-data (preexistente): los tests verifican sync/actualización, no inmutabilidad absoluta post-void.

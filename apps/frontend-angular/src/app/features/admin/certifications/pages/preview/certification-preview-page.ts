@@ -12,6 +12,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EstadoCertificado, RegenerarPdfResult } from '../../certifications.models';
+import { truncarUrl } from '../../url-publica';
 import {
   INSTITUTIONAL_CONFIG_SOURCE,
   InstitutionalConfig,
@@ -60,6 +61,11 @@ export class CertificationPreviewPage {
 
   // URL canónica desde entrega-manual (nunca detalle.publicValidationUrl).
   readonly entregaUrl = signal<string | null>(null);
+  /** Vista truncada para UI; copiar/QR usan la canónica completa. */
+  readonly entregaUrlMostrada = computed(() => {
+    const url = this.entregaUrl()?.trim();
+    return url ? truncarUrl(url) : '';
+  });
   /** Motivo visible si Copiar link / QR no están disponibles. */
   readonly entregaError = signal('');
   readonly configPendiente = signal(false);

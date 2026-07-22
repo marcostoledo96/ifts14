@@ -5,9 +5,11 @@ import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
 import { Certificacion, CertificacionesFiltros, EntregaManualDto } from '../../certifications.models';
 import { CertificationsService } from '../../certifications.service';
+import { resetMockAdminPublicStatus } from '../../../../../shared/certificates/mock-tokens';
 
 describe('CertificationsListPage', () => {
   async function render(qaEnabled?: boolean) {
+    resetMockAdminPublicStatus();
     await TestBed.configureTestingModule({
       imports: [CertificationsListPage],
       providers: [

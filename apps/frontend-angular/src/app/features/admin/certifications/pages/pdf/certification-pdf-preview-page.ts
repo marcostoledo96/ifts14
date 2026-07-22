@@ -17,6 +17,7 @@ import { jsPDF } from 'jspdf';
 import { INSTITUTIONAL_BRAND } from '../../../../../shared/brand/institutional-brand';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EstadoCertificado } from '../../certifications.models';
+import { truncarUrl } from '../../url-publica';
 import { qrPngBlobFromUrl } from '../../qr-png';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
@@ -58,6 +59,13 @@ export class CertificationPdfPreviewPage {
   readonly qrSrc = signal<string | null>(null);
   /** URL canónica de validación (entrega-manual), no la truncada del detalle. */
   readonly validacionUrl = signal('');
+  /** Vista truncada para UI; QR usa la canónica completa. */
+  readonly validacionUrlMostrada = computed(() => {
+    const canonica = this.validacionUrl().trim();
+    if (canonica) return truncarUrl(canonica);
+    const detalleUrl = this.detalle()?.publicValidationUrl?.trim() ?? '';
+    return detalleUrl ? truncarUrl(detalleUrl) : '';
+  });
   readonly qrError = signal('');
 
   // Id numérico validado. Replica el patrón de F4-01: rechaza "0x1", "1e0",
