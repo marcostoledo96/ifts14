@@ -98,7 +98,7 @@ El sistema DEBE documentar el alcance F2-06, sus límites mock-only y el handoff
 
 - **Given** se cierra el ciclo F2-06
 - **When** se actualiza la documentación frontend
-- **Then** DEBE constar que quedan excluidos backend, deploy, base, material privado, auth real, HTTP/API, storage, datos reales, DNI completo administrativo, tokens completos, Tailwind/deps nuevas y copia React/Next.
+- **Then** DEBE constar que quedan excluidos backend, deploy, base, material privado, auth real, HTTP/API, storage, datos reales de personas, tokens completos, Tailwind/deps nuevas y copia React/Next. La UI admin muestra DNI completo (D0); logs/auditoría/errores sin DNI ni token completos.
 
 #### Scenario: Handoff a fases posteriores
 

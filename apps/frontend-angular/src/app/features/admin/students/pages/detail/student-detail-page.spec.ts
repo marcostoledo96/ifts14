@@ -42,7 +42,7 @@ describe('StudentDetailPage', () => {
     }).compileComponents();
   });
 
-  it('debe renderizar la información de un alumno del seed con privacidad rígida', async () => {
+  it('debe renderizar la información de un alumno del seed con DNI completo', async () => {
     const harness = await RouterTestingHarness.create('/admin/alumnos/1');
     await harness.detectChanges();
     await harness.fixture.whenStable();
@@ -52,15 +52,14 @@ describe('StudentDetailPage', () => {
     const textContent = rootElement.textContent || '';
 
     expect(textContent).toContain('Persona Uno');
-    expect(textContent).toContain('00****01');
+    expect(textContent).toContain('20111222');
+    expect(textContent).toContain('persona.uno@example.invalid');
     expect(textContent).toContain('2021');
     expect(textContent).toContain('Legajo');
     expect(textContent).toContain('#1');
 
-    // Privacidad: pan "Legajo" OK; códigos LEG-* e emails inventados NO.
+    // Sin legajo inventado LEG-* ni tokens.
     expect(textContent.toLowerCase()).not.toContain('leg-');
-    expect(textContent.toLowerCase()).not.toContain('email@');
-    expect(textContent.toLowerCase()).not.toContain('example.invalid');
 
     expect(textContent).toContain('Curso de introducción a la gestión');
     expect(textContent).toContain('CUR-001');

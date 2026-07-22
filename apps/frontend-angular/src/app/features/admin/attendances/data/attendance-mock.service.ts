@@ -1,7 +1,7 @@
 // Implementación en memoria de AttendanceService.
-// Seed ficticio: 12–15 personas por curso, dniMostrar enmascarado (XX****XX).
-// Sin email, DNI completo, token, legajo ni matrícula. Mutaciones solo en
-// instancia; se pierden al recargar. Ver spec admin-attendances-frontend.
+// Seed ficticio: 12–15 personas por curso, dniMostrar = DNI completo ficticio.
+// Sin token, legajo ni matrícula. Mutaciones solo en instancia; se pierden al
+// recargar. Ver spec admin-attendances-frontend.
 import { Injectable, inject } from '@angular/core';
 import {
   Asistencia,
@@ -24,9 +24,8 @@ const Nombres = [
 ];
 
 function dniMostrar(n: number): string {
-  // XX****XX: 2 dígitos, 4 asteriscos, 2 dígitos. Sin DNI completo.
-  const s = String(n).padStart(8, '0');
-  return `${s.slice(0, 2)}****${s.slice(-2)}`;
+  // DNI ficticio completo (8 dígitos) para UI admin (D0 2026-07-20).
+  return String(20_000_000 + (n % 10_000_000)).padStart(8, '0');
 }
 
 function seedAlumnos(cursoId: number): AsistenciaAlumno[] {
@@ -83,10 +82,19 @@ export class AttendanceMockService implements AttendanceService {
     };
   }
 
-  listarAlumnos(cursoId: number): Promise<readonly AsistenciaAlumno[]> {
-    const list = this.state.alumnos.get(cursoId);
+  async listarAlumnos(cursoId: number): Promise<readonly AsistenciaAlumno[]> {
+    let list = this.state.alumnos.get(cursoId);
     if (!list) {
-      return Promise.reject(new Error(`Curso no encontrado: ${cursoId}`));
+      // Cursos creados en la sesión (más allá del seed 1..6): generar roster
+      // solo si el curso existe en COURSES_SOURCE. Evita “Curso no encontrado”
+      // al marcar asistencias en un curso nuevo del mock.
+      try {
+        await this.courses.obtener(cursoId);
+      } catch {
+        return Promise.reject(new Error(`Curso no encontrado: ${cursoId}`));
+      }
+      list = seedAlumnos(cursoId);
+      this.state.alumnos.set(cursoId, list);
     }
     return Promise.resolve(clone(list));
   }
@@ -136,16 +144,22 @@ export class AttendanceMockService implements AttendanceService {
     this.state.asistencias = this.state.asistencias.filter(
       (a) => !(a.cursoId === cursoId && a.cursoFechaId === fechaId),
     );
+    const presentes = marcados.filter((m) => m.presente);
+    const nuevoEstado = await this.applyFechaEstado(
+      cursoId,
+      fechaId,
+      fecha.fecha,
+      presentes.length,
+    );
     const nuevas: Asistencia[] = [];
-    for (const m of marcados) {
-      if (!m.presente) continue; // solo registrar presentes
+    for (const m of presentes) {
       const a: Asistencia = {
         id: this.state.nextAsistenciaId++,
         alumnoId: m.alumnoId,
         cursoId,
         cursoFechaId: fechaId,
         fecha: fecha.fecha,
-        fechaEstado: fecha.estado,
+        fechaEstado: nuevoEstado,
         registradoEn: new Date().toISOString(),
       };
       this.state.asistencias.push(a);
@@ -154,13 +168,65 @@ export class AttendanceMockService implements AttendanceService {
     return Promise.resolve(clone(nuevas));
   }
 
-  anular(asistenciaId: number): Promise<void> {
+  async anular(asistenciaId: number): Promise<void> {
     const idx = this.state.asistencias.findIndex((a) => a.id === asistenciaId);
     if (idx < 0) {
       return Promise.reject(new Error(`Asistencia no encontrada: ${asistenciaId}`));
     }
+    const target = this.state.asistencias[idx];
     this.state.asistencias.splice(idx, 1);
+    const det = await this.courses.obtener(target.cursoId);
+    const fecha = det.fechas.find((f) => f.id === target.cursoFechaId);
+    if (fecha && fecha.estado !== 'cancelada') {
+      const restantes = this.state.asistencias.filter(
+        (a) => a.cursoId === target.cursoId && a.cursoFechaId === target.cursoFechaId,
+      );
+      const nuevoEstado = await this.applyFechaEstado(
+        target.cursoId,
+        target.cursoFechaId,
+        fecha.fecha,
+        restantes.length,
+      );
+      this.state.asistencias = this.state.asistencias.map((a) =>
+        a.cursoId === target.cursoId && a.cursoFechaId === target.cursoFechaId
+          ? { ...a, fechaEstado: nuevoEstado }
+          : a,
+      );
+    }
     return Promise.resolve();
+  }
+
+  /** Misma regla que AdminMasterDataService::refreshCourseDateEstado (TZ AR). */
+  private hoyIsoAr(): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+    }).format(new Date());
+  }
+
+  private async applyFechaEstado(
+    cursoId: number,
+    fechaId: number,
+    fechaIso: string,
+    activas: number,
+  ): Promise<'programada' | 'realizada'> {
+    const det = await this.courses.obtener(cursoId);
+    const fecha = det.fechas.find((f) => f.id === fechaId);
+    if (!fecha || fecha.estado === 'cancelada') {
+      return 'programada';
+    }
+    const hoy = this.hoyIsoAr();
+    const nuevoEstado: 'programada' | 'realizada' =
+      activas >= 1 && fechaIso < hoy ? 'realizada' : 'programada';
+    if (nuevoEstado !== fecha.estado) {
+      await this.courses.guardarFecha(cursoId, {
+        id: fecha.id,
+        fecha: fecha.fecha,
+        descripcion: fecha.descripcion,
+        orden: fecha.orden,
+        estado: nuevoEstado,
+      });
+    }
+    return nuevoEstado;
   }
 }
 

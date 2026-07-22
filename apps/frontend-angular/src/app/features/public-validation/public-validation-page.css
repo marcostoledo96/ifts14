@@ -464,18 +464,12 @@ dl {
   gap: var(--space-3);
   min-width: 0;
 }
-.pie-mono {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.pie-logo {
+  display: block;
   width: 2rem;
   height: 2rem;
   flex: 0 0 auto;
-  background: var(--color-ink);
-  color: var(--color-ink-foreground);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
+  object-fit: contain;
 }
 .pie-leyenda,
 .pie-derecha {

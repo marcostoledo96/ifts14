@@ -19,7 +19,7 @@ El objetivo es mantener el trabajo ordenado, seguro y guiado por Spec-Driven Dev
 - Aplicar `Ponytail` y `karpathy-guidelines` para cambios chicos o quirúrgicos.
 - No procesar material privado, dumps, logs ni secretos fuera de auditorías explícitamente autorizadas.
 - **Token/QR permanente**: el reenvío normal NO rota token/QR. Solo revocación explícita o regeneración excepcional auditada.
-- **DNI completo en UI pública**: visible por decisión institucional aprobada. Logs, auditoría, errores y respuestas administrativas NO deben exponer DNI completo.
+- **DNI completo en UI pública y admin** (D0, 2026-07-20): visible en validación pública y en listados/detalle/expediente admin; el campo puede llamarse `dniMostrar`/`documentMasked` pero muestra dígitos completos. Logs, auditoría, errores y dumps no-UI NO deben exponer DNI completo ni token completo.
 - **Auth admin simple** con `X-Admin-Key` es temporal; login real es fase posterior.
 - **Paridad visual con `muestra_pagina`**: todo trabajo frontend debe mantener paridad visual igual o mejor que la referencia en `muestra_pagina/` (o `proyecto_muestra` si existe). La vía preferida es copiar o simular el diseño/estilo de `muestra_pagina` al portar a Angular 20; no portar React/Next literalmente. La paridad visual es criterio de aceptación obligatorio en specs y verify de UI.
 - **`.codegraph/`** es metadata local de indexado: no se versiona ni se incluye en stage.
@@ -80,7 +80,7 @@ Reglas:
 - mejorar accesibilidad, rendimiento y estructura;
 - respetar identidad institucional del IFTS 14;
 - las credenciales demo de `login-form.tsx` son mock visual: no portarlas ni usarlas en el producto;
-- respetar D0: QR permanente, DNI completo público, fechas asistidas, auth simple temporal;
+- respetar D0: QR permanente, DNI completo público y admin, fechas asistidas, auth simple temporal;
 - `muestra_pagina/` contiene la referencia visual v0 final y completa (export de Next.js/React con capturas para todos los flujos 4-22). El `MANIFIESTO_V0.md` histórico fue retirado al reemplazar la carpeta por el export final; el inventario se completa contra el listado seguro de la carpeta.
 
 ## Frontend

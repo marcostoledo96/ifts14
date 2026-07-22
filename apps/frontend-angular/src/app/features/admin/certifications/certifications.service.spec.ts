@@ -71,12 +71,12 @@ describe('InMemoryCertificationsService', () => {
     res.forEach((c) => expect(c.estado).toBe('vigente'));
   });
 
-  it('listar combina búsqueda por número o documento enmascarado', async () => {
+  it('listar combina búsqueda por número o documento (DNI completo ficticio)', async () => {
     const svc = setup();
     const byNumber = await svc.listar({ q: '0001' });
     expect(byNumber.map((c) => c.numero)).toEqual(['IFTS14-CERT-0001']);
 
-    const byDocument = await svc.listar({ q: '34****56' });
+    const byDocument = await svc.listar({ q: '23456789' });
     expect(byDocument.map((c) => c.id)).toEqual([2]);
   });
 
@@ -174,11 +174,11 @@ describe('InMemoryCertificationsService', () => {
     });
   }
 
-  it('documentMasked cumple formato XX****XX', async () => {
+  it('documentMasked cumple formato DNI completo ficticio (7-8 dígitos)', async () => {
     const svc = setup();
     const list = await svc.listar();
     for (const c of list) {
-      expect(c.documentMasked).toMatch(/^\d{2}\*{4}\d{2}$/);
+      expect(c.documentMasked).toMatch(/^\d{7,8}$/);
     }
   });
 
@@ -220,6 +220,7 @@ describe('InMemoryCertificationsService', () => {
     });
     expect(result.id).toBeGreaterThan(0);
     expect(result.status).toBe('vigente');
+    expect(result.student.documentMasked).toMatch(/^\d{7,8}$/);
     expect(result.expiresAt).toBeNull();
     expect(await svc.contar()).toBe(before + 1);
     const det = await svc.obtener(result.id);

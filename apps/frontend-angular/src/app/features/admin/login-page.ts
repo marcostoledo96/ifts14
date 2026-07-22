@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import {
+  INSTITUTIONAL_BRAND,
+  INSTITUTIONAL_PARTNER_LOGOS,
+} from '../../shared/brand/institutional-brand';
 import { ADMIN_AUTH, AdminAuthCredentials } from './admin-auth.service';
 import { LoginForm } from './login-form';
 
@@ -17,6 +21,8 @@ export class LoginPage {
   readonly errorMsg = signal('');
   readonly loading = signal(false);
   readonly anioActual = new Date().getFullYear();
+  readonly logoSrc = INSTITUTIONAL_BRAND.logoIfts;
+  readonly partnerLogos = INSTITUTIONAL_PARTNER_LOGOS;
 
   async onAccesoSimulado(credentials: AdminAuthCredentials): Promise<void> {
     this.errorMsg.set('');

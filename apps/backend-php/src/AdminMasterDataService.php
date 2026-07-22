@@ -86,28 +86,70 @@ final class AdminMasterDataService
         $state = isset($body['estado']) ? $this->enum($body['estado'], self::STUDENT_STATES) : 'activo';
         $dniHash = $this->hashDni($dni, $key);
         $dniCipher = DniCipher::encrypt($dni, $key);
-        $dniDisplay = $this->maskDni($dni);
+        // D0 2026-07-20: UI admin muestra DNI completo (dni_mostrar = dígitos).
+        $dniDisplay = $dni;
+        $email = $this->optionalEmail($body['email'] ?? null);
+
+        $existingId = $this->findStudentIdByDniHash($dniHash);
+        if ($existingId !== null) {
+            throw new AdminCertificateException(
+                409,
+                'CONFLICT',
+                'El recurso ya existe.',
+                ['existingStudentId' => $existingId],
+            );
+        }
 
         try {
-            $statement = $this->pdo->prepare('INSERT INTO cert_alumnos (apellido_nombre, dni_hash, dni_cifrado, dni_mostrar, estado) VALUES (?, ?, ?, ?, ?)');
+            $statement = $this->pdo->prepare(
+                'INSERT INTO cert_alumnos (apellido_nombre, email, dni_hash, dni_cifrado, dni_mostrar, estado) VALUES (?, ?, ?, ?, ?, ?)'
+            );
             $statement->bindValue(1, $name);
-            $statement->bindValue(2, $dniHash, PDO::PARAM_LOB);
-            $statement->bindValue(3, $dniCipher, PDO::PARAM_LOB);
-            $statement->bindValue(4, $dniDisplay);
-            $statement->bindValue(5, $state);
+            $email === null
+                ? $statement->bindValue(2, null, PDO::PARAM_NULL)
+                : $statement->bindValue(2, $email);
+            $statement->bindValue(3, $dniHash, PDO::PARAM_LOB);
+            $statement->bindValue(4, $dniCipher, PDO::PARAM_LOB);
+            $statement->bindValue(5, $dniDisplay);
+            $statement->bindValue(6, $state);
             $statement->execute();
         } catch (PDOException $exception) {
-            $this->throwConflictForUnique($exception, 'uq_cert_alumnos_dni_hash');
+            if ($this->isUniqueConstraint($exception, 'uq_cert_alumnos_dni_hash')) {
+                $raceId = $this->findStudentIdByDniHash($dniHash);
+                throw new AdminCertificateException(
+                    409,
+                    'CONFLICT',
+                    'El recurso ya existe.',
+                    $raceId !== null ? ['existingStudentId' => $raceId] : [],
+                );
+            }
             throw $exception;
         }
 
         return $this->getStudent((int) $this->pdo->lastInsertId());
     }
 
+    private function findStudentIdByDniHash(string $dniHash): ?int
+    {
+        $statement = $this->pdo->prepare('SELECT id FROM cert_alumnos WHERE dni_hash = ? LIMIT 1');
+        $statement->bindValue(1, $dniHash, PDO::PARAM_LOB);
+        $statement->execute();
+        $id = $statement->fetchColumn();
+        if ($id === false) {
+            return null;
+        }
+
+        $int = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        return is_int($int) ? $int : null;
+    }
+
     /** @return array<string, mixed> */
     public function listStudents(): array
     {
-        $statement = $this->pdo->query('SELECT id, apellido_nombre, dni_mostrar, estado FROM cert_alumnos ORDER BY id ASC');
+        $statement = $this->pdo->query(
+            'SELECT id, apellido_nombre, email, dni_mostrar, dni_cifrado, estado FROM cert_alumnos ORDER BY id ASC'
+        );
 
         return ['items' => array_map(fn (array $row): array => $this->studentDto($row), $statement->fetchAll())];
     }
@@ -115,7 +157,9 @@ final class AdminMasterDataService
     /** @return array<string, mixed> */
     public function getStudent(int $id): array
     {
-        $statement = $this->pdo->prepare('SELECT id, apellido_nombre, dni_mostrar, estado FROM cert_alumnos WHERE id = ? LIMIT 1');
+        $statement = $this->pdo->prepare(
+            'SELECT id, apellido_nombre, email, dni_mostrar, dni_cifrado, estado FROM cert_alumnos WHERE id = ? LIMIT 1'
+        );
         $statement->execute([$this->positiveId($id)]);
         $row = $statement->fetch();
 
@@ -223,8 +267,8 @@ final class AdminMasterDataService
             $statement->execute([$studentId, $dateId]);
             $attendanceId = (int) $this->pdo->lastInsertId();
 
-            $courseDate = $this->getCourseDate($courseId, $dateId);
-            if ($courseDate['estado'] === 'realizada') {
+            $refresh = $this->refreshCourseDateEstado($courseId, $dateId);
+            if ($refresh['previous'] === 'realizada' || $refresh['current'] === 'realizada') {
                 $this->syncCertificateSnapshot($studentId, $courseId, 'Se agregó/restauró una asistencia.');
             }
             $this->pdo->commit();
@@ -279,7 +323,8 @@ final class AdminMasterDataService
                 throw new AdminCertificateException(404, 'ATTENDANCE_NOT_FOUND', 'Asistencia no encontrada.');
             }
 
-            if ($attendance['fechaEstado'] === 'realizada') {
+            $refresh = $this->refreshCourseDateEstado((int) $attendance['cursoId'], (int) $attendance['cursoFechaId']);
+            if ($refresh['previous'] === 'realizada' || $refresh['current'] === 'realizada') {
                 $this->syncCertificateSnapshot($attendance['alumnoId'], $attendance['cursoId'], 'Se anuló una asistencia viva.');
             }
             $this->pdo->commit();
@@ -305,6 +350,41 @@ final class AdminMasterDataService
         }
 
         return $this->courseDateDto($row);
+    }
+
+    /**
+     * Auto-gestión programada/realizada tras escritura de asistencias.
+     * Nunca modifica cancelada. Día local America/Argentina/Buenos_Aires.
+     *
+     * @return array{previous: string, current: string, changed: bool}
+     */
+    private function refreshCourseDateEstado(int $courseId, int $dateId): array
+    {
+        $courseDate = $this->getCourseDate($courseId, $dateId);
+        $previous = (string) $courseDate['estado'];
+        if ($previous === 'cancelada') {
+            return ['previous' => $previous, 'current' => $previous, 'changed' => false];
+        }
+
+        $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+        $countStatement = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM cert_asistencias WHERE curso_fecha_id = ? AND eliminado_en IS NULL'
+        );
+        $countStatement->execute([$dateId]);
+        $activeCount = (int) $countStatement->fetchColumn();
+
+        $fecha = (string) $courseDate['fecha'];
+        $current = ($activeCount >= 1 && $fecha < $today) ? 'realizada' : 'programada';
+        if ($current === $previous) {
+            return ['previous' => $previous, 'current' => $current, 'changed' => false];
+        }
+
+        $update = $this->pdo->prepare(
+            'UPDATE cert_curso_fechas SET estado = ? WHERE id = ? AND curso_id = ? AND estado <> \'cancelada\''
+        );
+        $update->execute([$current, $dateId, $courseId]);
+
+        return ['previous' => $previous, 'current' => $current, 'changed' => true];
     }
 
     private function syncAllCourseCertificatesSnapshots(int $courseId, int $dateId, string $auditReason): void
@@ -428,12 +508,60 @@ final class AdminMasterDataService
     /** @param array<string, mixed> $row @return array<string, mixed> */
     private function studentDto(array $row): array
     {
+        $email = is_string($row['email'] ?? null) && trim($row['email']) !== ''
+            ? trim((string) $row['email'])
+            : null;
+
         return [
             'id' => (int) $row['id'],
             'apellidoNombre' => (string) $row['apellido_nombre'],
-            'dniMostrar' => (string) $row['dni_mostrar'],
+            'dniMostrar' => $this->adminDniDisplay($row),
+            'email' => $email,
             'estado' => (string) $row['estado'],
         ];
+    }
+
+    /** DNI completo para UI admin (D0 2026-07-20). Filas históricas enmascaradas se descifran. */
+    /** @param array<string, mixed> $row */
+    private function adminDniDisplay(array $row): string
+    {
+        $display = (string) ($row['dni_mostrar'] ?? '');
+        if ($display !== '' && !str_contains($display, '*')) {
+            return $display;
+        }
+        $cipher = $row['dni_cifrado'] ?? null;
+        if ($cipher === null) {
+            return $display;
+        }
+        try {
+            $blob = is_resource($cipher) ? stream_get_contents($cipher) : (string) $cipher;
+            if (!is_string($blob) || $blob === '') {
+                return $display;
+            }
+
+            return DniCipher::decrypt($blob, $this->validDniKey());
+        } catch (Throwable) {
+            return $display;
+        }
+    }
+
+    private function optionalEmail(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_string($value)) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+        $email = trim($value);
+        if ($email === '') {
+            return null;
+        }
+        if (strlen($email) > 180 || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        return $email;
     }
 
     /** @param array<string, mixed> $row @return array<string, mixed> */
@@ -483,11 +611,6 @@ final class AdminMasterDataService
         }
 
         return $dni;
-    }
-
-    private function maskDni(string $dni): string
-    {
-        return substr($dni, 0, 2) . str_repeat('*', max(strlen($dni) - 4, 0)) . substr($dni, -2);
     }
 
     private function hashDni(string $dni, string $key): string
@@ -563,14 +686,20 @@ final class AdminMasterDataService
         return $value;
     }
 
-    private function throwConflictForUnique(PDOException $exception, string ...$constraints): void
+    private function isUniqueConstraint(PDOException $exception, string $constraint): bool
     {
         if (($exception->errorInfo[0] ?? $exception->getCode()) !== '23000') {
-            return;
+            return false;
         }
         $message = $exception->errorInfo[2] ?? $exception->getMessage();
+
+        return is_string($message) && str_contains($message, $constraint);
+    }
+
+    private function throwConflictForUnique(PDOException $exception, string ...$constraints): void
+    {
         foreach ($constraints as $constraint) {
-            if (is_string($message) && str_contains($message, $constraint)) {
+            if ($this->isUniqueConstraint($exception, $constraint)) {
                 throw new AdminCertificateException(409, 'CONFLICT', 'El recurso ya existe.');
             }
         }

@@ -16,7 +16,7 @@ const forbidden = [
   'http://',
   'https://',
   // DNI/token como literales sospechosos en código fuente. `dniMostrar`
-  // (enmascarado, D0) aparece legítimamente; se valida en no-real-data.
+  // dniMostrar completo (D0 2026-07-20) aparece legítimamente; se valida en no-real-data.
   'documentNumber',
   'dniCompleto',
   'X-Admin-Token',

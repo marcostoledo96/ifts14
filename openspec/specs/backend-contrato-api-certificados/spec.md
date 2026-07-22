@@ -152,7 +152,8 @@ La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` a
 - DADO un request autorizado con `alumnoId` y `cursoId` válidos
 - CUANDO se invoca `POST /certificados/api/admin/certificados`
 - ENTONCES la API DEBE responder `201` con certificado emitido, PDF/QR generado, snapshot, `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`.
-- Y NO DEBE incluir token completo como campo separado ni DNI completo administrativo.
+- Y NO DEBE incluir token completo como campo separado.
+- Y los DTOs admin de alumno/certificado DEBEN incluir DNI completo en `dniMostrar`/`documentMasked` (D0); logs y auditoría NO DEBEN registrar DNI completo.
 
 #### Scenario: Certificado vigente duplicado documentado
 
@@ -201,7 +202,7 @@ La API DEBE sostener endpoints administrativos bajo `/certificados/api/admin/` a
 
 ### Requirement: Contrato administrativo de datos maestros
 
-La API DEBE exponer endpoints administrativos bajo `/certificados/api/admin/` para crear, listar, consultar y actualizar estado de cursos y alumnos; crear, listar y actualizar fechas de curso; registrar, listar y anular asistencias. Todos DEBEN requerir autorización según `admin-auth`; `POST` y `PATCH` DEBEN exigir JSON y, si están autenticados por cookie, CSRF válido. Las respuestas administrativas DEBEN usar DTOs seguros: alumnos con `dniMostrar` enmascarado, nunca DNI completo, `dni_hash`, `dni_cifrado`, token completo, SQL, secretos ni rutas internas. La creación de alumno DEBE fallar cerrado con `500 CONFIGURATION_ERROR` antes de persistir si `dni_cipher_key` falta o es inválida. No DEBE agregar frontend, SMTP, email automático ni migraciones nuevas.
+La API DEBE exponer endpoints administrativos bajo `/certificados/api/admin/` para crear, listar, consultar y actualizar estado de cursos y alumnos; crear, listar y actualizar fechas de curso; registrar, listar y anular asistencias. Todos DEBEN requerir autorización según `admin-auth`; `POST` y `PATCH` DEBEN exigir JSON y, si están autenticados por cookie, CSRF válido. Las respuestas administrativas DEBEN usar DTOs con DNI completo visible en `dniMostrar`/`documentMasked` (D0 2026-07-20); email opcional (nullable) al crear/editar alumno. NO DEBEN exponer `dni_hash`, `dni_cifrado`, token completo, SQL, secretos ni rutas internas. Logs, auditoría y errores NO DEBEN incluir DNI completo ni token completo. La creación de alumno DEBE fallar cerrado con `500 CONFIGURATION_ERROR` antes de persistir si `dni_cipher_key` falta o es inválida. No DEBE agregar frontend, SMTP, email automático de entrega ni migraciones nuevas fuera de ciclo.
 
 #### Scenario: CRUD mínimo de cursos
 
@@ -215,7 +216,8 @@ La API DEBE exponer endpoints administrativos bajo `/certificados/api/admin/` pa
 - DADO un request admin autorizado con `dni_cipher_key` válida
 - CUANDO crea un alumno con DNI válido
 - ENTONCES la API DEBE persistir `dni_hash` binario y `dni_cifrado`.
-- Y DEBE responder solo `{id, apellidoNombre, dniMostrar, estado}` sin DNI completo ni columnas internas.
+- Y DEBE responder `{id, apellidoNombre, dniMostrar, email?, estado}` con `dniMostrar`/`documentMasked` en dígitos completos, sin columnas internas.
+- Y el email PUEDE omitirse (nullable).
 
 #### Scenario: Clave DNI ausente falla cerrado
 
@@ -379,7 +381,8 @@ El cambio de contenido del PDF DEBE conservar sin cambios los contratos administ
 - DADO un request autorizado a `POST /certificados/api/admin/certificados`
 - CUANDO la emisión genera el PDF institucional
 - ENTONCES la respuesta DEBE conservar `201`, `publicValidationUrl`, `pdfDownloadUrl` y `tokenPrefix`.
-- Y NO DEBE incluir token completo independiente, DNI completo administrativo ni campos nuevos de configuración institucional.
+- Y NO DEBE incluir token completo independiente ni campos nuevos de configuración institucional.
+- Y los DTOs admin de consulta PUEDEN incluir DNI completo en `documentMasked`/`dniMostrar` (D0); logs/auditoría sin DNI completo.
 
 #### Scenario: Descarga PDF conserva contrato
 
@@ -437,14 +440,15 @@ Las respuestas JSON sensibles y descargas PDF/QR DEBEN usar anti-cache; PDF/QR D
 
 ### Requirement: Checklist compartido post-merge Angular/API
 
-El contrato backend DEBE registrar el checklist M3-06 final como cierre documental post-merge: DTO público D0, DTO administrativo enmascarado, códigos de error, estados no verificables, privacidad, evidencia CI Docker/MariaDB y restricciones D0. Este checkpoint NO DEBE agregar deploy, cPanel, rotación de token/QR, email, SMTP/PHPMailer ni vendor versionado.
+El contrato backend DEBE registrar el checklist M3-06 final como cierre documental post-merge: DTO público D0, DTO administrativo con DNI completo en UI/API admin (D0 2026-07-20), email opcional en alumnos, códigos de error, estados no verificables, privacidad en logs/auditoría/errores, evidencia CI Docker/MariaDB y restricciones D0. Este checkpoint NO DEBE agregar deploy, cPanel, rotación de token/QR, email automático de entrega, SMTP/PHPMailer ni vendor versionado.
 
 #### Scenario: Privacidad preservada
 
 - **Dado** respuestas públicas y administrativas del contrato de certificados
 - **Cuando** se documenta el checkpoint compartido
-- **Entonces** DEBE constar que el DNI completo sólo pertenece al DTO/UI pública.
-- **Y** las respuestas administrativas DEBEN usar `documentMasked` y no exponer token completo.
+- **Entonces** DEBE constar que el DNI completo es visible en DTO/UI pública y en DTO/UI admin (`dniMostrar`/`documentMasked` con dígitos completos; D0 2026-07-20).
+- **Y** logs, auditoría y errores NO DEBEN exponer DNI completo ni token completo.
+- **Y** las respuestas admin NO DEBEN exponer token completo como campo separado.
 
 #### Scenario: Invariantes D0 preservados
 

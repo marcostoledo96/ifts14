@@ -1,8 +1,9 @@
 // Verifica que el seed ficticio de certificaciones no contiene datos
-// plausibles reales: documentMasked enmascarado, sin emails, sin DNI
-// completo, sin nombres propios, sin tokens tipo UUID, sin URL con token
+// plausibles reales: documentMasked con DNI completo ficticio, sin emails,
+// sin nombres propios, sin tokens tipo UUID, sin URL con token
 // completo. Además valida que el DOM renderizado por el expediente no
-// expone DNI completo, token completo, email, legajo ni matrícula.
+// expone token completo, email, legajo ni matrícula (D0: admin UI sí
+// muestra DNI completo ficticio).
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../certifications.service';
@@ -23,11 +24,10 @@ describe('no-real-data en seed de certificaciones', () => {
     return { svc, list: await svc.listar() };
   }
 
-  it('documentMasked cumple formato XX****XX (no DNI completo)', async () => {
+  it('documentMasked cumple formato DNI completo ficticio (7-8 dígitos)', async () => {
     const { list } = await setup();
     for (const c of list) {
-      expect(c.documentMasked).toMatch(/^\d{2}\*{4}\d{2}$/);
-      expect(c.documentMasked).not.toMatch(/^\d{7,8}$/);
+      expect(c.documentMasked).toMatch(/^\d{7,8}$/);
     }
   });
 
@@ -98,14 +98,14 @@ describe('no-real-data en seed de certificaciones', () => {
       const det = await svc.obtener(c.id);
       for (const ev of det.auditEvents) {
         expect(ev.detalle).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
-        expect(ev.detalle).not.toMatch(/\b\d{7,8}\b/); // no DNI numérico
+        expect(ev.detalle).not.toMatch(/\b\d{7,8}\b/); // no DNI numérico en auditoría
       }
     }
   });
 
   // --- Frontera de datos en el DOM renderizado (F4-01) ---
-  // El expediente admin no DEBE exponer DNI completo, token completo,
-  // email, legajo ni matrícula en el HTML renderizado.
+  // El expediente admin no DEBE exponer token completo, email, legajo
+  // ni matrícula en el HTML renderizado. D0: sí muestra DNI completo ficticio.
 
   async function renderExpediente(id: string) {
     await TestBed.configureTestingModule({
@@ -124,9 +124,9 @@ describe('no-real-data en seed de certificaciones', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('DOM del expediente no expone DNI completo (7-8 dígitos contiguos)', async () => {
+  it('DOM del expediente muestra documentMasked con DNI completo ficticio', async () => {
     const el = await renderExpediente('1');
-    expect(el.textContent).not.toMatch(/\b\d{7,8}\b/);
+    expect(el.textContent).toMatch(/\b12345678\b/);
   });
 
   it('DOM del expediente no expone token completo (UUID)', async () => {
@@ -154,7 +154,7 @@ describe('no-real-data en seed de certificaciones', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('DOM del listado no expone DNI, token, email ni UUID y no llama fetch', async () => {
+  it('DOM del listado muestra DNI completo ficticio y no expone token ni email', async () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();
     await TestBed.configureTestingModule({
       imports: [CertificationsListPage],
@@ -165,7 +165,8 @@ describe('no-real-data en seed de certificaciones', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     const text = fixture.nativeElement.textContent || '';
-    expect(text).not.toMatch(/\b\d{7,8}\b/);
+    // textContent concatena nodos sin espacio: no usar \b entre dígito y letra.
+    expect(text).toContain('12345678');
     expect(text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
     expect(text).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
     expect(text).not.toMatch(/prefijo_demo_/i);
@@ -173,8 +174,8 @@ describe('no-real-data en seed de certificaciones', () => {
   });
 
   // --- Frontera de datos en el DOM del PDF preview (F4-02) ---
-  // La vista imprimible admin NO DEBE exponer DNI completo, token completo,
-  // email, legajo ni matrícula en el HTML renderizado.
+  // La vista imprimible admin NO DEBE exponer token completo, email,
+  // legajo ni matrícula. D0: sí muestra DNI completo ficticio.
 
   async function renderPdfPreview(id: string) {
     await TestBed.configureTestingModule({
@@ -192,16 +193,21 @@ describe('no-real-data en seed de certificaciones', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  for (const id of ['1', '3', '4', '5']) {
-    it(`DOM del PDF preview ${id} conserva la frontera de privacidad`, async () => {
+  for (const [id, dni] of [
+    ['1', '12345678'],
+    ['3', '34567890'],
+    ['4', '45678901'],
+    ['5', '56789012'],
+  ] as const) {
+    it(`DOM del PDF preview ${id} conserva la frontera de privacidad y muestra DNI ficticio`, async () => {
       const el = await renderPdfPreview(id);
       const text = el.textContent || '';
-      expect(text).not.toMatch(/\b\d{7,8}\b/);
+      expect(text).toMatch(new RegExp(`\\b${dni}\\b`));
       expect(text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
       expect(text).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
       expect(text).not.toMatch(/legajo/i);
       expect(text).not.toMatch(/matr[íi]cula/i);
-      expect(el.querySelector('.cert-doc')?.textContent).toMatch(/Documento\s+\d{2}\*{4}\d{2}/);
+      expect(el.querySelector('.cert-doc')?.textContent).toMatch(new RegExp(`Documento\\s+${dni}`));
       expect((el.querySelector('.cert-val-url')?.textContent?.trim().length || 0)).toBeLessThanOrEqual(
         URL_PUBLICA_MAX,
       );
@@ -214,10 +220,10 @@ describe('no-real-data en seed de certificaciones', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('DOM del PDF preview muestra documentMasked (XX****XX), no DNI completo', async () => {
+  it('DOM del PDF preview muestra documentMasked con DNI completo ficticio', async () => {
     const el = await renderPdfPreview('1');
     const doc = el.querySelector('.cert-doc');
-    expect(doc?.textContent).toMatch(/^\s*Documento\s+\d{2}\*{4}\d{2}/);
+    expect(doc?.textContent).toMatch(/^\s*Documento\s+12345678/);
   });
 
   it('DOM del PDF preview muestra URL truncada (<= URL_PUBLICA_MAX) sin UUID', async () => {
@@ -248,12 +254,12 @@ describe('no-real-data en seed de certificaciones', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('DOM de revocación no expone DNI completo, token completo, email ni llama a fetch', async () => {
+  it('DOM de revocación muestra DNI ficticio y no expone token completo, email ni llama a fetch', async () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();
     const el = await renderRevokePage('1');
     const text = el.textContent || '';
-    
-    expect(text).not.toMatch(/\b\d{7,8}\b/);
+
+    expect(text).toContain('12345678');
     expect(text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
     expect(text).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
     expect(text).not.toMatch(/legajo/i);
@@ -261,4 +267,3 @@ describe('no-real-data en seed de certificaciones', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
-

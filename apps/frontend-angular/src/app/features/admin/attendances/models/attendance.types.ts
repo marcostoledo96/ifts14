@@ -1,6 +1,6 @@
 // Modelos de asistencias — admin frontend.
-// Tipan el contrato de marcado por fecha. Sin DNI completo, email, token,
-// legajo ni matrícula: dniMostrar es enmascarado (XX****XX).
+// Tipan el contrato de marcado por fecha. Sin email, token,
+// legajo ni matrícula: dniMostrar es DNI completo ficticio en UI admin (D0 2026-07-20).
 
 import { EstadoFecha } from '../../courses/courses.models';
 
@@ -9,7 +9,7 @@ export type EstadoAlumno = 'activo' | 'inactivo';
 export interface AsistenciaAlumno {
   readonly id: number;
   readonly apellidoNombre: string;
-  readonly dniMostrar: string; // XX****XX
+  readonly dniMostrar: string; // DNI completo ficticio (7–8 dígitos)
   readonly estado: EstadoAlumno;
 }
 

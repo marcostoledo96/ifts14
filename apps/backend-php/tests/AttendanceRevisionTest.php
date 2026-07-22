@@ -134,8 +134,9 @@ if (($verifiedAfterRestore['status'] ?? 0) !== 200 || ($verifiedAfterRestore['da
     throw new RuntimeException('La validación pública no refleja la asistencia agregada');
 }
 
-// 7. Fechas programadas (no deberían afectar revisiones)
-$date3 = $masterData->createCourseDate($course['id'], ['fecha' => '2026-06-15', 'estado' => 'programada']);
+// 7. Fechas futuras/programadas (no certificables) no deben afectar revisiones.
+// Usar fecha futura para que el auto-estado no pase a realizada (fecha < hoy AR).
+$date3 = $masterData->createCourseDate($course['id'], ['fecha' => '2099-06-15', 'estado' => 'programada']);
 $attendance3 = $masterData->recordAttendance(['alumnoId' => $student['id'], 'cursoId' => $course['id'], 'cursoFechaId' => $date3['id']]);
 
 $statement = $pdo->query("SELECT contenido_revision FROM cert_certificados WHERE id = $certificateId");

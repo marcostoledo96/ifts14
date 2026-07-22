@@ -24,13 +24,20 @@ La API DEBE permitir crear, listar, consultar detalle y actualizar estado de cur
 
 ### Requirement: Administración de alumnos con DNI seguro
 
-La API DEBE crear alumnos cifrando DNI con `dni_cipher_key`, guardar HMAC-SHA-256 binario de búsqueda usando esa misma clave y responder DTOs administrativos con DNI enmascarado, nunca completo.
+La API DEBE crear alumnos cifrando DNI con `dni_cipher_key`, guardar HMAC-SHA-256 binario de búsqueda usando esa misma clave y responder DTOs administrativos con DNI completo visible en `dniMostrar`/`documentMasked` (todos los dígitos; D0 2026-07-20). El email DEBE ser opcional (nullable) al crear o editar alumno. NO DEBE exponer `dni_hash`, `dni_cifrado`, token completo, SQL ni secretos. Logs, auditoría y errores NO DEBEN incluir DNI completo ni token completo.
 
 #### Scenario: Alumno creado con DNI cifrado
 
 - DADO un request autorizado con DNI válido y `dni_cipher_key` válida
 - CUANDO se crea el alumno
-- ENTONCES la API DEBE persistir hash/cifrado y responder solo `dniMostrar` o máscara.
+- ENTONCES la API DEBE persistir hash/cifrado y responder `dniMostrar`/`documentMasked` con dígitos completos.
+- Y el email PUEDE omitirse sin error de validación.
+
+#### Scenario: Alumno creado sin email
+
+- DADO un request autorizado con DNI válido y sin campo `email`
+- CUANDO se crea el alumno
+- ENTONCES la API DEBE responder `201` con DTO admin que incluye DNI completo y `email` null o ausente.
 
 #### Scenario: Clave DNI ausente falla cerrado
 
@@ -93,6 +100,34 @@ La API DEBE registrar presencia por existencia de fila activa, listar asistencia
 - DADO un request autorizado a listar asistencias
 - CUANDO `cursoId` o `alumnoId` no son enteros positivos
 - ENTONCES la API DEBE responder `400 VALIDATION_ERROR` sin ampliar el listado.
+
+### Requirement: Auto-gestión de estado de fecha tras escritura de asistencias
+
+Tras registrar o anular lógicamente una asistencia, si la fecha no está `cancelada`, la API DEBE recalcular y persistir su `estado` con día local `America/Argentina/Buenos_Aires` (`Y-m-d`): `realizada` solo si hay ≥1 asistencia activa y `fecha < hoy`; si no, `programada`. NO DEBE inferir ni modificar `cancelada`. Si el estado entra o sale de `realizada`, DEBE conservar el sync de snapshots / `pdf_estado=desactualizado` vigente. NO DEBE agregar cron ni refresh en `emitir` en este ciclo. Un write de asistencia posterior DEBE reaplicar la regla (p. ej. same-day vuelve a `programada` tras override manual).
+
+#### Scenario: Fecha pasada con presente → realizada
+
+- DADO fecha no cancelada con `fecha < hoy` AR
+- CUANDO se registra ≥1 asistencia activa
+- ENTONCES el estado DEBE ser `realizada` y DEBE correr sync si hay certificados vigentes afectados
+
+#### Scenario: Same-day o futura → programada
+
+- DADO fecha no cancelada con `fecha >= hoy` AR
+- CUANDO se registra ≥1 asistencia activa
+- ENTONCES el estado DEBE ser `programada`
+
+#### Scenario: Anular todos → programada
+
+- DADO fecha `realizada` con una asistencia activa
+- CUANDO se anula esa asistencia
+- ENTONCES el estado DEBE ser `programada` y DEBE correr sync de snapshots afectados
+
+#### Scenario: Cancelada intacta
+
+- DADO fecha `cancelada`
+- CUANDO se intenta registrar asistencia
+- ENTONCES DEBE rechazarse y el estado DEBE permanecer `cancelada`
 
 ### Requirement: Seguridad, envelopes y auditoría
 

@@ -479,13 +479,17 @@ select:disabled {
 }
 
 .btn-block {
+  box-sizing: border-box;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   justify-content: center;
 }
 
 .btn-primary {
   display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-ink);
   border-radius: var(--radius-sm);
@@ -505,6 +509,7 @@ select:disabled {
 .btn-secondary {
   display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);

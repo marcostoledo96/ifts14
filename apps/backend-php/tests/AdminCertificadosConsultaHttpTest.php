@@ -31,6 +31,8 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/006_reconciliar_esqu
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/007_schema_migrations.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_revision_contenido.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/010_backfill_pdf_revision.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/011_alumnos_email_opcional.sql');
 
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-consulta-http-' . bin2hex(random_bytes(4));
@@ -227,8 +229,9 @@ try {
         throw new RuntimeException('detalle: faltan links administrativos relativos.');
     }
     assertNoSensitiveAdminCertificateData($detail['body']);
-    if (str_contains($detail['body'], $dni)) {
-        throw new RuntimeException('detalle expuso DNI completo.');
+    // D0: documentMasked en admin expone DNI completo; no debe existir documentNumber.
+    if (($detailBody['student']['documentMasked'] ?? '') !== $dni) {
+        throw new RuntimeException('detalle: documentMasked debe ser el DNI completo (D0).');
     }
 
     assertError(request($port, 'GET', '/admin/certificados/999999', $authHeaders), 404, 'CERTIFICATE_NOT_FOUND', 'detalle inexistente');

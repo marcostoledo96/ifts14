@@ -9,6 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { INSTITUTIONAL_BRAND } from '../../../../../shared/brand/institutional-brand';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EstadoCertificado } from '../../certifications.models';
 
@@ -31,6 +32,8 @@ type EstadoPresentacion = {
 export class CertificationPdfPreviewPage {
   readonly id = input<string>('');
   private readonly certs = inject(CERTIFICATIONS_SOURCE);
+
+  readonly brand = INSTITUTIONAL_BRAND;
 
   readonly detalle = signal<CertificacionDetalle | null>(null);
   readonly error = signal('');

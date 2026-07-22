@@ -1,6 +1,5 @@
 // Verifica que el seed ficticio de asistencias no contiene datos plausibles
-// reales: dniMostrar enmascarado, sin emails, sin DNI completo, sin nombres
-// propios, sin tokens tipo UUID.
+// reales: DNI completo ficticio, sin emails, sin nombres propios, sin tokens tipo UUID.
 import { TestBed } from '@angular/core/testing';
 import { ATTENDANCE_SOURCE } from '../data/attendance.token';
 import { AttendanceMockService } from '../data/attendance-mock.service';
@@ -25,11 +24,10 @@ describe('no-real-data en seed de asistencias', () => {
     return svc.listarAlumnos(cursoId);
   }
 
-  it('dniMostrar cumple formato XX****XX (no DNI completo)', async () => {
+  it('dniMostrar expone DNI completo ficticio (7–8 dígitos)', async () => {
     const list = await listarAlumnos(1);
     for (const a of list) {
-      expect(a.dniMostrar).toMatch(/^\d{2}\*{4}\d{2}$/);
-      expect(a.dniMostrar).not.toMatch(/^\d{7,8}$/);
+      expect(a.dniMostrar).toMatch(/^\d{7,8}$/);
     }
   });
 

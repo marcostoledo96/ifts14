@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { existingStudentIdOf } from '../../student-duplicate.error';
 import { AlumnoDraft } from '../../students.models';
 import { STUDENTS_SOURCE } from '../../students.service';
 
@@ -42,21 +43,36 @@ export class StudentEditorPage {
 
   readonly apellidoNombre = signal('');
   readonly dni = signal('');
+  readonly email = signal('');
   readonly errorApellido = signal('');
   readonly errorDni = signal('');
+  readonly errorEmail = signal('');
   readonly errorSubmit = signal('');
+  /** Id del alumno existente cuando el DNI ya está registrado. */
+  readonly alumnoExistenteId = signal<number | null>(null);
   readonly guardando = signal(false);
 
   onApellidoNombre(event: Event): void {
     this.apellidoNombre.set((event.target as HTMLInputElement).value);
     this.errorApellido.set('');
-    this.errorSubmit.set('');
+    this.clearSubmitError();
   }
 
   onDni(event: Event): void {
     this.dni.set((event.target as HTMLInputElement).value);
     this.errorDni.set('');
+    this.clearSubmitError();
+  }
+
+  onEmail(event: Event): void {
+    this.email.set((event.target as HTMLInputElement).value);
+    this.errorEmail.set('');
+    this.clearSubmitError();
+  }
+
+  private clearSubmitError(): void {
     this.errorSubmit.set('');
+    this.alumnoExistenteId.set(null);
   }
 
   private validar(): boolean {
@@ -73,25 +89,33 @@ export class StudentEditorPage {
       this.errorDni.set('Ingresá un DNI válido (7 u 8 dígitos).');
       ok = false;
     }
+    const email = this.email().trim();
+    if (email !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.errorEmail.set('Ingresá un email válido o dejá el campo vacío.');
+      ok = false;
+    }
     return ok;
   }
 
   async guardar(): Promise<void> {
-    this.errorSubmit.set('');
+    this.clearSubmitError();
     if (this.guardando()) return;
     if (!this.validar()) return;
 
     this.guardando.set(true);
     try {
       const digits = this.dni().trim().replace(/\D/g, '');
+      const email = this.email().trim();
       const draft: AlumnoDraft = {
         apellidoNombre: this.apellidoNombre().trim(),
         dni: digits,
+        email: email === '' ? null : email,
       };
       const created = await this.students.crear(draft);
       await this.router.navigate(['/admin/alumnos', created.id]);
     } catch (err) {
       this.errorSubmit.set(mensajeErrorAlta(err));
+      this.alumnoExistenteId.set(existingStudentIdOf(err));
     } finally {
       this.guardando.set(false);
     }

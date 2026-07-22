@@ -15,8 +15,9 @@ $mask = new ReflectionMethod(AdminCertificateService::class, 'maskDocument');
 $hash = new ReflectionMethod(AdminCertificateService::class, 'hashDocument');
 $validate = new ReflectionMethod(AdminCertificateService::class, 'validatePayload');
 
-if ($mask->invoke($service, '00000000') !== '00****00') {
-    throw new RuntimeException('Máscara de documento inválida.');
+// D0 2026-07-20: maskDocument preserva DNI completo (columna histórica documento_enmascarado).
+if ($mask->invoke($service, '00000000') !== '00000000') {
+    throw new RuntimeException('Persistencia de documento completo inválida.');
 }
 
 $first = $hash->invoke($service, '00000000');
@@ -103,7 +104,7 @@ $pdfServiceProp = new ReflectionProperty(AdminCertificateService::class, 'pdfSer
 $pdfServiceProp->setValue($service, null);
 
 try {
-    $generateWithinTx->invoke($service, 'CERT-2026-AB12CD34', '12****78', [
+    $generateWithinTx->invoke($service, 'CERT-2026-AB12CD34', '12345678', [
         'studentDisplayName' => 'Alumno Demo',
         'courseName' => 'Curso Demo',
         'issuedAt' => $twoDaysAgo,

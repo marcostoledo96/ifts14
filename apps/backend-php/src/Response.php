@@ -19,8 +19,14 @@ final class Response
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    public static function error(int $status, string $code, string $message, ?string $requestId = null): void
-    {
+    /** @param list<mixed>|array<string, mixed> $details */
+    public static function error(
+        int $status,
+        string $code,
+        string $message,
+        ?string $requestId = null,
+        array $details = [],
+    ): void {
         http_response_code($status);
         self::noStoreSecurityHeaders();
         header('Content-Type: application/json; charset=utf-8');
@@ -29,7 +35,7 @@ final class Response
             'error' => [
                 'code' => $code,
                 'message' => $message,
-                'details' => [],
+                'details' => $details,
             ],
             'meta' => [
                 'requestId' => $requestId ?? self::requestId(),

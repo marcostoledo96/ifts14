@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { INSTITUTIONAL_BRAND } from '../../shared/brand/institutional-brand';
 
 /** Identificadores de iconos Lucide-like (SVG inline multi-path en template). */
 export type NavIconId =
@@ -45,6 +46,7 @@ export class SidebarAdmin {
   readonly active = input<string>('/admin/dashboard');
   readonly items = ITEMS;
   readonly configItem = CONFIG_ITEM;
+  readonly logoSrc = INSTITUTIONAL_BRAND.logoIfts;
   readonly cerrarSesion = output<void>();
 
   // Inicio usa igualdad exacta; Cursos, Asistencias y Certificaciones usan

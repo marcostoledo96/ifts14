@@ -27,15 +27,27 @@ describe('HttpStudentsService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('listar hace GET a /admin/alumnos y mapea apellidoNombre→apellido+nombre', async () => {
+  it('listar hace GET a /admin/alumnos y mapea apellidoNombre→apellido+nombre y email', async () => {
     const p = service.listar();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     expect(req.request.method).toBe('GET');
     req.flush({
       data: {
         items: [
-          { id: 1, apellidoNombre: 'Pérez Juan', dniMostrar: '12****78', estado: 'activo' },
-          { id: 2, apellidoNombre: 'García María Luz', dniMostrar: '34****56', estado: 'activo' },
+          {
+            id: 1,
+            apellidoNombre: 'Pérez Juan',
+            dniMostrar: '12345678',
+            email: 'juan.perez@example.invalid',
+            estado: 'activo',
+          },
+          {
+            id: 2,
+            apellidoNombre: 'García María Luz',
+            dniMostrar: '34567890',
+            email: null,
+            estado: 'activo',
+          },
         ],
       },
       meta: { requestId: 'r1' },
@@ -46,45 +58,105 @@ describe('HttpStudentsService', () => {
     expect(result[0].nombre).toBe('Juan');
     expect(result[1].apellido).toBe('García');
     expect(result[1].nombre).toBe('María Luz');
-    expect(result[0].dniMostrar).toBe('12****78');
-    expect(result[0].tieneEmail).toBeNull();
+    expect(result[0].dniMostrar).toBe('12345678');
+    expect(result[0].email).toBe('juan.perez@example.invalid');
+    expect(result[0].tieneEmail).toBeTrue();
+    expect(result[1].email).toBeNull();
+    expect(result[1].tieneEmail).toBeFalse();
     expect(result[0].cursosConAsistencia).toBeNull();
     expect(result[0].certificacionesValidas).toBeNull();
   });
 
   it('crear hace POST a /admin/alumnos con body exacto y mapea 201', async () => {
-    const p = service.crear({ apellidoNombre: 'Nuevo Alumno', dni: '30111222' });
+    const p = service.crear({
+      apellidoNombre: 'Nuevo Alumno',
+      dni: '30111222',
+      email: 'nuevo.alumno@example.invalid',
+    });
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ apellidoNombre: 'Nuevo Alumno', dni: '30111222' });
-    expect(Object.keys(req.request.body).sort()).toEqual(['apellidoNombre', 'dni']);
+    expect(req.request.body).toEqual({
+      apellidoNombre: 'Nuevo Alumno',
+      dni: '30111222',
+      email: 'nuevo.alumno@example.invalid',
+    });
     req.flush({
-      data: { id: 42, apellidoNombre: 'Nuevo Alumno', dniMostrar: '30****22', estado: 'activo' },
+      data: {
+        id: 42,
+        apellidoNombre: 'Nuevo Alumno',
+        dniMostrar: '30111222',
+        email: 'nuevo.alumno@example.invalid',
+        estado: 'activo',
+      },
       meta: { requestId: 'r-create' },
     });
     const created = await p;
     expect(created.id).toBe(42);
     expect(created.apellido).toBe('Nuevo');
     expect(created.nombre).toBe('Alumno');
-    expect(created.dniMostrar).toBe('30****22');
-    expect(created.tieneEmail).toBeNull();
+    expect(created.dniMostrar).toBe('30111222');
+    expect(created.email).toBe('nuevo.alumno@example.invalid');
+    expect(created.tieneEmail).toBeTrue();
   });
 
-  it('crear propaga 409 sin inventar campos', async () => {
+  it('crear omite email vacío del body POST', async () => {
+    const p = service.crear({ apellidoNombre: 'Sin Email', dni: '30111223', email: null });
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
+    expect(req.request.body).toEqual({ apellidoNombre: 'Sin Email', dni: '30111223' });
+    expect(Object.keys(req.request.body).sort()).toEqual(['apellidoNombre', 'dni']);
+    req.flush({
+      data: { id: 43, apellidoNombre: 'Sin Email', dniMostrar: '30111223', estado: 'activo' },
+      meta: { requestId: 'r-create-no-email' },
+    });
+    const created = await p;
+    expect(created.email).toBeNull();
+    expect(created.tieneEmail).toBeFalse();
+  });
+
+  it('crear en 409 con existingStudentId lanza StudentDuplicateError', async () => {
     const p = service.crear({ apellidoNombre: 'Dup', dni: '30111222' });
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     req.flush(
-      { error: { code: 'CONFLICT', message: 'Duplicado', details: [] }, meta: { requestId: 'r409' } },
+      {
+        error: {
+          code: 'CONFLICT',
+          message: 'Duplicado',
+          details: { existingStudentId: 12 },
+        },
+        meta: { requestId: 'r409' },
+      },
       { status: 409, statusText: 'Conflict' },
     );
-    await expectAsync(p).toBeRejected();
+    await expectAsync(p).toBeRejectedWith(
+      jasmine.objectContaining({ status: 409, existingStudentId: 12 }),
+    );
+  });
+
+  it('crear en 409 sin id resuelve por listado', async () => {
+    const p = service.crear({ apellidoNombre: 'Dup', dni: '30111222' });
+    const createReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
+    createReq.flush(
+      { error: { code: 'CONFLICT', message: 'Duplicado', details: [] }, meta: { requestId: 'r409b' } },
+      { status: 409, statusText: 'Conflict' },
+    );
+    await Promise.resolve();
+    const listReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
+    listReq.flush({
+      data: {
+        items: [{ id: 9, apellidoNombre: 'Ya Existe', dniMostrar: '30111222', estado: 'activo' }],
+      },
+      meta: { requestId: 'r409-list' },
+    });
+    await expectAsync(p).toBeRejectedWith(
+      jasmine.objectContaining({ status: 409, existingStudentId: 9 }),
+    );
   });
 
   it('apellidoNombre sin espacio → apellido lleno, nombre vacío', async () => {
     const p = service.listar();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     req.flush({
-      data: { items: [{ id: 1, apellidoNombre: 'Mononombre', dniMostrar: '00****00', estado: 'activo' }] },
+      data: { items: [{ id: 1, apellidoNombre: 'Mononombre', dniMostrar: '20000000', estado: 'activo' }] },
       meta: { requestId: 'r2' },
     });
     const result = await p;
@@ -97,9 +169,9 @@ describe('HttpStudentsService', () => {
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     req.flush({
       data: { items: [
-        { id: 1, apellidoNombre: 'A B', dniMostrar: '1', estado: 'activo' },
-        { id: 2, apellidoNombre: 'C D', dniMostrar: '2', estado: 'activo' },
-        { id: 3, apellidoNombre: 'E F', dniMostrar: '3', estado: 'activo' },
+        { id: 1, apellidoNombre: 'A B', dniMostrar: '20111111', estado: 'activo' },
+        { id: 2, apellidoNombre: 'C D', dniMostrar: '20222222', estado: 'activo' },
+        { id: 3, apellidoNombre: 'E F', dniMostrar: '20333333', estado: 'activo' },
       ] },
       meta: { requestId: 'r3' },
     });
@@ -111,7 +183,13 @@ describe('HttpStudentsService', () => {
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos/5`);
     expect(req.request.method).toBe('GET');
     req.flush({
-      data: { id: 5, apellidoNombre: 'López Diego', dniMostrar: '99****99', estado: 'activo' },
+      data: {
+        id: 5,
+        apellidoNombre: 'López Diego',
+        dniMostrar: '99556677',
+        email: 'diego.lopez@example.invalid',
+        estado: 'activo',
+      },
       meta: { requestId: 'r4' },
     });
     const result = await p;
@@ -119,6 +197,8 @@ describe('HttpStudentsService', () => {
     expect(result!.id).toBe(5);
     expect(result!.apellido).toBe('López');
     expect(result!.nombre).toBe('Diego');
+    expect(result!.dniMostrar).toBe('99556677');
+    expect(result!.email).toBe('diego.lopez@example.invalid');
     expect(result!.ingreso).toBe('');
     expect(result!.cursos).toEqual([]);
   });

@@ -92,25 +92,35 @@
       <svg class="lineas-circuito lineas-der" viewBox="0 0 120 240" aria-hidden="true"></svg>
 
       <div class="folio-contenido">
-        <!-- Encabezado: logos institucionales -->
+        <!-- Encabezado: logos institucionales fijos -->
         <header class="folio-header">
-          <div class="escudo-circular" title="Escudo institucional (logo oficial)">
-            <span class="escudo-icon" aria-hidden="true">⚙</span>
-            <span class="sr-only">Escudo institucional</span>
+          <div class="folio-logo folio-logo--escudo">
+            <img
+              [src]="brand.escudoCaba"
+              alt="Escudo de la Ciudad Autónoma de Buenos Aires"
+              decoding="async"
+            />
           </div>
-          <div class="marca-programa">
-            <p class="marca-programa-titulo">
-              Buenos Aires <span class="marca-italic">aprende</span>
-            </p>
-            <p class="marca-programa-sub">
-              Agencia de Habilidades para el Futuro
-            </p>
+          <div class="folio-logo folio-logo--programa">
+            <img
+              [src]="brand.buenosAiresAprende"
+              alt="Buenos Aires Aprende"
+              decoding="async"
+            />
           </div>
-          <div class="marca-ifts" title="IFTS N.° 14 (logo oficial)">
-            <span class="marca-ifts-bracket" aria-hidden="true">[</span>
-            IFTS
-            <span class="marca-ifts-bracket" aria-hidden="true">]</span>
-            <sup class="marca-ifts-sup">14</sup>
+          <div class="folio-logo folio-logo--ciudad">
+            <img
+              [src]="brand.buenosAiresCiudad"
+              alt="Ciudad de Buenos Aires"
+              decoding="async"
+            />
+          </div>
+          <div class="folio-logo folio-logo--ifts">
+            <img
+              [src]="brand.logoIfts"
+              alt="Instituto de Formación Técnica Superior N.° 14"
+              decoding="async"
+            />
           </div>
         </header>
 

@@ -6,6 +6,10 @@ import {
   INSTITUTIONAL_CONFIG_SOURCE,
   InstitutionalConfig,
 } from '../../../institutional-config/institutional-config.service';
+import {
+  INSTITUTIONAL_BRAND,
+  INSTITUTIONAL_PARTNER_LOGOS,
+} from '../../../../../shared/brand/institutional-brand';
 
 type AutoridadesVista = {
   rectorName: string;
@@ -32,6 +36,9 @@ export class CertificationPreviewPage {
 
   private readonly certs = inject(CERTIFICATIONS_SOURCE);
   private readonly config = inject(INSTITUTIONAL_CONFIG_SOURCE);
+
+  readonly logoSrc = INSTITUTIONAL_BRAND.logoIfts;
+  readonly partnerLogos = INSTITUTIONAL_PARTNER_LOGOS;
 
   readonly detalle = signal<CertificacionDetalle | null>(null);
   readonly error = signal('');

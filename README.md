@@ -25,10 +25,10 @@ Decisiones confirmadas por Marcos, fuente de verdad del proyecto hasta nueva ord
 | Tema | Decisión |
 |---|---|
 | QR / token | Permanente. El reenvío normal NO rota token/QR. Solo revocación explícita o regeneración excepcional auditada invalidan el token. |
-| DNI en validación pública | DNI completo visible públicamente por decisión institucional. Logs, auditoría y errores no exponen DNI completo. |
+| DNI en validación pública y UI admin | DNI completo visible en `/validar/…` vigente y en listados/detalle/expediente admin (`dniMostrar`/`documentMasked` con dígitos completos). Logs, auditoría, errores y dumps no exponen DNI completo. |
 | Tipo de documento | Certificado de curso. Debajo muestra las fechas del curso a las que asistió el alumno. |
 | Auth admin | Sesión PHP nativa con cookie segura y CSRF. `X-Admin-Key` solo CLI/smokes server-side; no autoriza HTTP. |
-| Email | Fuera del MVP. La entrega es manual; cualquier email futuro queda gated hasta aprobación. |
+| Email alumno | Opcional (nullable) al crear/editar alumno. Entrega manual sin SMTP automático; email de notificación queda gated hasta aprobación. |
 | Composer en cPanel | Gate: si no está disponible, `vendor/` se genera localmente y se sube como artefacto operativo, nunca versionado. |
 | Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |
 | Staging | `/certificados_staging/` separado de producción `/certificados/`. |
