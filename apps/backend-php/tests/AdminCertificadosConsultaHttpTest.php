@@ -227,8 +227,9 @@ try {
         throw new RuntimeException('detalle: faltan links administrativos relativos.');
     }
     assertNoSensitiveAdminCertificateData($detail['body']);
-    if (str_contains($detail['body'], $dni)) {
-        throw new RuntimeException('detalle expuso DNI completo.');
+    // D0: documentMasked en admin expone DNI completo; no debe existir documentNumber.
+    if (($detailBody['student']['documentMasked'] ?? '') !== $dni) {
+        throw new RuntimeException('detalle: documentMasked debe ser el DNI completo (D0).');
     }
 
     assertError(request($port, 'GET', '/admin/certificados/999999', $authHeaders), 404, 'CERTIFICATE_NOT_FOUND', 'detalle inexistente');

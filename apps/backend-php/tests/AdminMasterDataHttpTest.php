@@ -115,7 +115,7 @@ try {
     if ($studentId < 1 || ($studentBody['data']['dniMostrar'] ?? '') !== '12345678') {
         throw new RuntimeException('Alumno creado con DTO inválido.');
     }
-    if (($studentBody['data']['email'] ?? 'x') !== null) {
+    if (!array_key_exists('email', $studentBody['data']) || $studentBody['data']['email'] !== null) {
         throw new RuntimeException('Alumno sin email debía devolver email null.');
     }
     $withEmail = postJson($port, '/admin/alumnos', $adminKey, [
