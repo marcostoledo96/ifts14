@@ -19,6 +19,7 @@ import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EstadoCertificado } from '../../certifications.models';
 import { truncarUrl } from '../../url-publica';
 import { qrPngBlobFromUrl } from '../../qr-png';
+import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 type EstadoPresentacion = {
@@ -33,7 +34,7 @@ type EstadoPresentacion = {
 @Component({
   selector: 'app-certification-pdf-preview-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, UiSpinner],
+  imports: [RouterLink, UiBackLink, UiSpinner],
   templateUrl: './certification-pdf-preview-page.html',
   styleUrl: './certification-pdf-preview-page.css',
 })

@@ -1,8 +1,14 @@
 <section aria-labelledby="curso-fechas-title">
+  <app-ui-back-link
+    to="/admin/asistencias"
+    label="Volver a Asistencias"
+    testId="volver-asistencias"
+  />
+
   <div class="header-row">
     <div>
       <p class="kicker">
-        <a routerLink="/admin/asistencias">Asistencias</a>
+        Fechas del curso
         @if (cursoCodigo()) {
           <span aria-hidden="true"> · </span>
           <span class="mono">{{ cursoCodigo() }}</span>

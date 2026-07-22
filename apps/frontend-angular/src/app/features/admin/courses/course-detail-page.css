@@ -2,25 +2,6 @@
   display: block;
 }
 
-.volver {
-  margin: 0 0 var(--space-3);
-}
-
-.volver a {
-  color: var(--color-muted-foreground);
-  font-size: 0.8125rem;
-  text-decoration: none;
-}
-
-.volver a:hover {
-  text-decoration: underline;
-}
-
-.volver a:focus-visible {
-  box-shadow: var(--focus-ring);
-  outline: none;
-}
-
 .kicker {
   margin: 0 0 var(--space-1);
   font-family: var(--font-mono);

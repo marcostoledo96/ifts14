@@ -1,15 +1,9 @@
 <section aria-labelledby="student-editor-title">
-  <nav class="breadcrumb" aria-label="Migas de pan">
-    <a routerLink="/admin/alumnos" class="breadcrumb-link">Alumnos</a>
-    <span class="sep" aria-hidden="true">/</span>
-    @if (mode() === 'edit') {
-      <a [routerLink]="['/admin/alumnos', id()]" class="breadcrumb-link">Legajo</a>
-      <span class="sep" aria-hidden="true">/</span>
-      <span class="active">Editar</span>
-    } @else {
-      <span class="active">Nuevo alumno</span>
-    }
-  </nav>
+  <app-ui-back-link
+    to="/admin/alumnos"
+    label="Volver a Alumnos"
+    testId="volver-alumnos"
+  />
 
   <header class="header-row">
     <div>

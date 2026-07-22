@@ -29,7 +29,7 @@ describe('DateCertificatesPage', () => {
     const f = await render(1, 11);
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Certificados del curso');
-    expect(el.textContent).toContain('Volver a asistencias');
+    expect(el.textContent).toMatch(/Volver a [Aa]sistencias/);
     const volver = el.querySelector('[data-testid="volver-asistencias"]') as HTMLAnchorElement;
     expect(volver.getAttribute('href')).toContain('/admin/cursos/1/fechas/11/asistencias');
     expect(el.querySelectorAll('[data-testid="cert-copiar-link"]').length).toBeGreaterThan(0);

@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ATTENDANCE_SOURCE } from '../attendances/data/attendance.token';
 import { COURSES_SOURCE } from './courses.service';
 import { CursoDetalle } from './courses.models';
+import { UiBackLink } from '../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../shared/ui/ui-spinner';
 
 type AttendanceMetric =
@@ -14,7 +15,7 @@ type AttendanceMetric =
 @Component({
   selector: 'app-course-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, DatePipe, UiSpinner],
+  imports: [RouterLink, DatePipe, UiBackLink, UiSpinner],
   templateUrl: './course-detail-page.html',
   styleUrl: './course-detail-page.css',
 })

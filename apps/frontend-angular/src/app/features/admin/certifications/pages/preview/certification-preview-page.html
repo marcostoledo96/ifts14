@@ -43,23 +43,19 @@
   }
   @if (error()) {
     <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
-    <p class="volver">
-      <a routerLink="/admin/certificaciones">← Volver al listado</a>
-    </p>
+    <app-ui-back-link
+      to="/admin/certificaciones"
+      label="Volver a Certificaciones"
+      testId="volver-certificaciones"
+    />
   }
 
   @if (detalle(); as d) {
-    <nav aria-label="Migas de pan" class="breadcrumb">
-      <a routerLink="/admin/certificaciones" class="breadcrumb-link">
-        <svg class="breadcrumb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="m12 19-7-7 7-7" />
-          <path d="M19 12H5" />
-        </svg>
-        Certificaciones
-      </a>
-      <span class="breadcrumb-sep" aria-hidden="true">/</span>
-      <span class="breadcrumb-current">{{ numeroExpediente() }}</span>
-    </nav>
+    <app-ui-back-link
+      to="/admin/certificaciones"
+      label="Volver a Certificaciones"
+      testId="volver-certificaciones"
+    />
 
     <header class="expediente-header">
       <div class="header-main">
@@ -508,8 +504,10 @@
       </div>
     </div>
 
-    <p class="volver footer-volver">
-      <a routerLink="/admin/certificaciones">← Volver al listado</a>
-    </p>
+    <app-ui-back-link
+      to="/admin/certificaciones"
+      label="Volver a Certificaciones"
+      testId="volver-certificaciones-footer"
+    />
   }
 </section>
