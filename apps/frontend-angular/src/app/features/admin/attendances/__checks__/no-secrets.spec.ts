@@ -2,6 +2,7 @@
 // ni red ni storage. Se ejecuta en browser (Karma): importa las clases y las
 // serializa con toString() para inspeccionar su código fuente.
 import { AttendanceMockService } from '../data/attendance-mock.service';
+import { AttendanceCourseDatesPage } from '../pages/course-dates/attendance-course-dates-page';
 import { AttendancesListPage } from '../pages/list/attendances-list-page';
 import { AttendanceMarkingPage } from '../pages/marking/attendance-marking-page';
 
@@ -33,6 +34,8 @@ function sources(): string[] {
     AttendanceMockService.prototype.marcar.toString(),
     AttendanceMockService.prototype.anular.toString(),
     AttendancesListPage.prototype.constructor.toString(),
+    AttendanceCourseDatesPage.prototype.constructor.toString(),
+    AttendanceCourseDatesPage.prototype.cargar.toString(),
     AttendanceMarkingPage.prototype.constructor.toString(),
     AttendanceMarkingPage.prototype.guardar.toString(),
     AttendanceMarkingPage.prototype.descartar.toString(),

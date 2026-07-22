@@ -105,4 +105,24 @@ describe('AttendanceCourseDatesPage', () => {
     expect(el.querySelector('.estado-error')).toBeTruthy();
     expect(el.textContent).toMatch(/no encontrad/i);
   });
+
+  it('al cambiar de curso resetea búsqueda y filtro de estado', async () => {
+    const f = await render('6');
+    const el = f.nativeElement as HTMLElement;
+    const chipRealizada = el.querySelector(
+      'button[data-estado="realizada"]',
+    ) as HTMLButtonElement;
+    chipRealizada.click();
+    f.detectChanges();
+    expect(el.textContent).toMatch(/Ninguna fecha coincide|No hay fechas que coincidan/i);
+
+    f.componentRef.setInput('id', '1');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(tableRows(el).length).toBe(3);
+    expect(el.querySelector('button[data-estado="realizada"]')?.getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+  });
 });
