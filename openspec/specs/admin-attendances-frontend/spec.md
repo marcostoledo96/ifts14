@@ -37,7 +37,7 @@ El sistema DEBE exponer `/admin/asistencias`, `/admin/asistencias/curso/:id` y `
 
 ### Requirement: Listado global solo por curso
 
-En `/admin/asistencias` el sistema DEBE listar una fila por curso (no curso×fecha). DEBE buscar por nombre o código. NO DEBE ofrecer chips de estado de fecha. Por fila DEBE mostrar N fechas asistibles (≠ `cancelada`) y PUEDE mostrar cuántas tienen ≥1 presente; NO DEBE usar `alumnosActivos` como total por fila. Cursos sin fechas asistibles DEBEN verse. El CTA DEBE ir a `/admin/asistencias/curso/:id`.
+En `/admin/asistencias` el sistema DEBE listar una fila por curso (no curso×fecha). DEBE buscar por nombre o código. NO DEBE ofrecer chips de estado de fecha. Por fila DEBE mostrar N fechas asistibles (≠ `cancelada`) y PUEDE mostrar cuántas tienen ≥1 presente; NO DEBE usar `alumnosActivos` como total por fila. Cursos sin fechas asistibles DEBEN verse. El CTA DEBE ir a `/admin/asistencias/curso/:id`. DEBE paginar client-side de a 20 cursos (reset al buscar).
 
 #### Scenario: Filas = cursos
 
@@ -68,6 +68,13 @@ En `/admin/asistencias` el sistema DEBE listar una fila por curso (no curso×fec
 - **Given** curso sin fechas o solo `cancelada`
 - **When** se abre el listado y su CTA
 - **Then** el curso DEBE verse y la intermedia DEBE mostrar empty claro.
+
+#### Scenario: Paginación de 20
+
+- **Given** hay más de 20 cursos en el resultado filtrado
+- **When** se renderiza `/admin/asistencias`
+- **Then** DEBE mostrar como máximo 20 filas/cards por página con pager accesible
+- **And** al buscar DEBE volver a la página 1.
 
 ### Requirement: Página intermedia de fechas del curso
 

@@ -5,6 +5,7 @@ import { COURSES_SOURCE } from '../../../courses/courses.service';
 import { InMemoryCoursesService } from '../../../courses/in-memory-courses.service';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
 import { AttendanceMockService } from '../../data/attendance-mock.service';
+import { ATTENDANCES_PAGE_SIZE, HubAsistencias } from '../../models/attendance.types';
 
 describe('AttendancesListPage', () => {
   async function render() {
@@ -205,5 +206,60 @@ describe('AttendancesListPage', () => {
     expect(el.querySelector('.estado-error')).toBeNull();
     expect(el.textContent).toContain('VACIO');
     expect(tableRows(el).length).toBe(7);
+  });
+
+  it('pagina de a 20 y resetea página al buscar', async () => {
+    const hub: HubAsistencias = {
+      cursos: Array.from({ length: ATTENDANCES_PAGE_SIZE + 5 }, (_, i) => ({
+        id: i + 1,
+        codigo: `CUR-${String(i + 1).padStart(3, '0')}`,
+        nombre: `Curso hub ${i + 1}`,
+        estado: 'activo',
+      })),
+      fechas: [],
+      asistencias: [],
+      alumnosActivos: 0,
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [AttendancesListPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        {
+          provide: ATTENDANCE_SOURCE,
+          useValue: {
+            listarHub: () => Promise.resolve(hub),
+            listarAlumnos: () => Promise.resolve([]),
+            listarAsistencias: () => Promise.resolve([]),
+            listarAsistenciasPorPar: () => Promise.resolve([]),
+            listarAsistenciasPorAlumno: () => Promise.resolve([]),
+            marcar: () => Promise.resolve([]),
+            anular: () => Promise.resolve(),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const f = TestBed.createComponent(AttendancesListPage);
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const page = f.componentInstance;
+    const el = f.nativeElement as HTMLElement;
+
+    expect(page.itemsVisibles().length).toBe(ATTENDANCES_PAGE_SIZE);
+    expect(tableRows(el).length).toBe(ATTENDANCES_PAGE_SIZE);
+    expect(el.querySelector('[aria-label="Paginación de asistencias"]')).not.toBeNull();
+
+    page.onPagina(2);
+    f.detectChanges();
+    expect(page.itemsVisibles().length).toBe(5);
+    expect(tableRows(el).length).toBe(5);
+
+    page.onSearch({ target: { value: 'Curso hub 3' } } as unknown as Event);
+    f.detectChanges();
+    expect(page.paginaSegura()).toBe(1);
+    expect(page.itemsVisibles().length).toBe(1);
   });
 });

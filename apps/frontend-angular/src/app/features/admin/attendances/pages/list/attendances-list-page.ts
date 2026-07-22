@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
+import { ATTENDANCES_PAGE_SIZE } from '../../models/attendance.types';
 
 interface FilaCurso {
   readonly id: number;
@@ -33,6 +34,7 @@ export class AttendancesListPage {
   private loadGen = 0;
 
   readonly q = signal('');
+  readonly pagina = signal(1);
   readonly filas = signal<readonly FilaCurso[]>([]);
   readonly cargando = signal(true);
   readonly error = signal('');
@@ -45,6 +47,27 @@ export class AttendancesListPage {
       (f) =>
         f.nombre.toLowerCase().includes(texto) || f.codigo.toLowerCase().includes(texto),
     );
+  });
+
+  readonly totalPaginas = computed(() =>
+    Math.max(1, Math.ceil(this.filtradas().length / ATTENDANCES_PAGE_SIZE)),
+  );
+  readonly paginaSegura = computed(() => Math.min(this.pagina(), this.totalPaginas()));
+  readonly itemsVisibles = computed(() => {
+    const page = this.paginaSegura();
+    return this.filtradas().slice(
+      (page - 1) * ATTENDANCES_PAGE_SIZE,
+      page * ATTENDANCES_PAGE_SIZE,
+    );
+  });
+  /** Páginas visibles en el pager numerado (máx. 5 botones + elipsis). */
+  readonly paginasVisibles = computed(() => {
+    const total = this.totalPaginas();
+    const actual = this.paginaSegura();
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
+    if (actual <= 3) return [1, 2, 3, 4, 5];
+    if (actual >= total - 2) return [total - 4, total - 3, total - 2, total - 1, total];
+    return [actual - 2, actual - 1, actual, actual + 1, actual + 2];
   });
 
   readonly hayFiltrosActivos = computed(() => this.q().trim().length > 0);
@@ -107,6 +130,7 @@ export class AttendancesListPage {
 
       filas.sort((a, b) => a.codigo.localeCompare(b.codigo));
       this.filas.set(filas);
+      this.pagina.set(Math.min(this.pagina(), this.totalPaginas()));
     } catch {
       if (gen !== this.loadGen) return;
       this.error.set('No se pudo cargar el registro de asistencias. Reintentá.');
@@ -117,10 +141,16 @@ export class AttendancesListPage {
 
   onSearch(event: Event): void {
     this.q.set((event.target as HTMLInputElement).value);
+    this.pagina.set(1);
+  }
+
+  onPagina(page: number): void {
+    this.pagina.set(Math.min(Math.max(1, page), this.totalPaginas()));
   }
 
   onLimpiarFiltros(): void {
     this.q.set('');
+    this.pagina.set(1);
   }
 
   onReintentar(): void {
