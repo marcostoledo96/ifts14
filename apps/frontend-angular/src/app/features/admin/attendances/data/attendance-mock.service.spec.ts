@@ -129,8 +129,8 @@ describe('AttendanceMockService', () => {
     const result = await svc.marcar(1, nueva.id, marcados);
     expect(result.length).toBe(2);
     expect(result[0].fecha).toBe(hoyAr);
-    // Same-day (hoy AR) permanece programada según auto-estado.
-    expect(result[0].fechaEstado).toBe('programada');
+    // Same-day (hoy AR) con presentes → realizada (permite emitir el mismo día).
+    expect(result[0].fechaEstado).toBe('realizada');
     const after = await svc.listarAsistencias(1, nueva.id);
     expect(after.length).toBe(2);
   });

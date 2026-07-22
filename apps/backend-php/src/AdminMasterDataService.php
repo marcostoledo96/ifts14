@@ -540,6 +540,7 @@ final class AdminMasterDataService
     /**
      * Auto-gestión programada/realizada tras escritura de asistencias.
      * Nunca modifica cancelada. Día local America/Argentina/Buenos_Aires.
+     * `realizada` si ≥1 asistencia activa y fecha <= hoy (incluye same-day).
      *
      * @return array{previous: string, current: string, changed: bool}
      */
@@ -558,8 +559,9 @@ final class AdminMasterDataService
         $countStatement->execute([$dateId]);
         $activeCount = (int) $countStatement->fetchColumn();
 
+        // Same-day con presentes cuenta como realizada (permite emitir el día de la clase).
         $fecha = (string) $courseDate['fecha'];
-        $current = ($activeCount >= 1 && $fecha < $today) ? 'realizada' : 'programada';
+        $current = ($activeCount >= 1 && $fecha <= $today) ? 'realizada' : 'programada';
         if ($current === $previous) {
             return ['previous' => $previous, 'current' => $current, 'changed' => false];
         }

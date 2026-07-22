@@ -83,15 +83,15 @@ if (($attPast['fechaEstado'] ?? '') !== 'realizada') {
     throw new RuntimeException('1.1 DTO asistencia debía reportar fechaEstado=realizada');
 }
 
-// 1.2 Same-day y futura → programada
+// 1.2 Same-day → realizada; futura → programada
 $dateToday = $masterData->createCourseDate($course['id'], ['fecha' => $hoy, 'estado' => 'programada']);
 $attToday = $masterData->recordAttendance([
     'alumnoId' => $student['id'],
     'cursoId' => $course['id'],
     'cursoFechaId' => $dateToday['id'],
 ]);
-if (($attToday['fechaEstado'] ?? '') !== 'programada') {
-    throw new RuntimeException('1.2 Same-day debía quedar programada, got ' . ($attToday['fechaEstado'] ?? 'null'));
+if (($attToday['fechaEstado'] ?? '') !== 'realizada') {
+    throw new RuntimeException('1.2 Same-day debía quedar realizada, got ' . ($attToday['fechaEstado'] ?? 'null'));
 }
 
 $dateFuture = $masterData->createCourseDate($course['id'], ['fecha' => $futura, 'estado' => 'programada']);

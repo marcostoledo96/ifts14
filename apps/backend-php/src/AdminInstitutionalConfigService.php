@@ -72,26 +72,39 @@ final class AdminInstitutionalConfigService
             ]);
 
             if ($paramWrites !== []) {
-                $upsert = $this->pdo->prepare(<<<'SQL'
-                    INSERT INTO cert_parametros_sistema (clave, valor, tipo, grupo, etiqueta)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE
-                      valor = VALUES(valor),
-                      updated_at = CURRENT_TIMESTAMP
-                    SQL);
-                foreach ($paramWrites as $clave => $valor) {
-                    $meta = SystemParameters::CATALOG[$clave];
-                    $upsert->execute([
-                        $clave,
-                        $valor,
-                        $meta['type'],
-                        $meta['group'],
-                        $meta['label'],
-                    ]);
+                try {
+                    $upsert = $this->pdo->prepare(<<<'SQL'
+                        INSERT INTO cert_parametros_sistema (clave, valor, tipo, grupo, etiqueta)
+                        VALUES (?, ?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE
+                          valor = VALUES(valor),
+                          updated_at = CURRENT_TIMESTAMP
+                        SQL);
+                    foreach ($paramWrites as $clave => $valor) {
+                        $meta = SystemParameters::CATALOG[$clave];
+                        $upsert->execute([
+                            $clave,
+                            $valor,
+                            $meta['type'],
+                            $meta['group'],
+                            $meta['label'],
+                        ]);
+                    }
+                } catch (PDOException) {
+                    throw new AdminCertificateException(
+                        500,
+                        'CONFIGURATION_ERROR',
+                        'No se pudo procesar la solicitud.',
+                    );
                 }
             }
 
             $this->pdo->commit();
+        } catch (AdminCertificateException $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
         } catch (Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
@@ -110,8 +123,12 @@ final class AdminInstitutionalConfigService
                 'SELECT clave, valor FROM cert_parametros_sistema'
             );
         } catch (PDOException) {
-            // Tabla ausente (migración 013 pendiente): fallback a defaults del catálogo.
-            return [];
+            // Sin migración 013 no hay defaults silenciosos: GET y PUT fallan igual.
+            throw new AdminCertificateException(
+                500,
+                'CONFIGURATION_ERROR',
+                'No se pudo procesar la solicitud.',
+            );
         }
 
         $stored = [];

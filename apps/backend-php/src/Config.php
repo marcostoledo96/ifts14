@@ -11,6 +11,12 @@ final class Config
     private const int ADMIN_SESSION_IDLE_SECONDS = 1800;
     private const int ADMIN_SESSION_ABSOLUTE_SECONDS = 28800;
 
+    /** Hashes bcrypt públicos conocidos (p. ej. Laravel "password") — no admitir en deploy. */
+    private const array FORBIDDEN_ADMIN_PASSWORD_HASHES = [
+        '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.',
+        '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.',
+    ];
+
     /** @return array<string, mixed> */
     public static function load(): array
     {
@@ -127,6 +133,7 @@ final class Config
             $username === ''
             || !is_string($hashInfo['algo'] ?? null)
             || password_verify('', $passwordHash)
+            || in_array($passwordHash, self::FORBIDDEN_ADMIN_PASSWORD_HASHES, true)
             || self::positiveInt($config['admin_session_idle_seconds'] ?? 0, 0) !== self::ADMIN_SESSION_IDLE_SECONDS
             || self::positiveInt($config['admin_session_absolute_seconds'] ?? 0, 0) !== self::ADMIN_SESSION_ABSOLUTE_SECONDS
         ) {

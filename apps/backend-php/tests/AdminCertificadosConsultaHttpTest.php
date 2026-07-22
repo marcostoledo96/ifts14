@@ -31,6 +31,9 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/006_reconciliar_esqu
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/007_schema_migrations.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_revision_contenido.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/010_backfill_pdf_revision.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/011_alumnos_email_opcional.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/012_alumnos_apellido_nombre_separados.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/013_parametros_sistema.sql');
 
 $root = dirname(__DIR__);
