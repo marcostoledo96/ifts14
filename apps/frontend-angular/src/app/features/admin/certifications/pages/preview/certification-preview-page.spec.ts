@@ -27,7 +27,7 @@ function detalleFixture(
     nombreAlumno: 'Alumno Demo Uno',
     cursoNombre: 'Curso Demo',
     estado: 'vigente',
-    documentMasked: '12****34',
+    documentMasked: '12345678',
     tokenPrefix: 'prefijo_demo_a1b',
     emitidoEn: '2026-03-01',
     venceEn: '2027-03-01',
@@ -110,14 +110,14 @@ describe('CertificationPreviewPage', () => {
 
   // --- Frontera de datos administrativa ---
 
-  it('muestra datos seguros en la ficha (documentMasked, tokenPrefix, URL truncada)', async () => {
+  it('muestra datos seguros en la ficha (documentMasked completo, tokenPrefix, URL truncada)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const ficha = el.querySelector('.ficha-expediente');
     expect(ficha).not.toBeNull();
     const text = ficha?.textContent || '';
-    // documentMasked visible como XX****XX (formato mascarado).
-    expect(text).toMatch(/\d{2}\*{4}\d{2}/);
+    // documentMasked visible con DNI completo ficticio (D0 admin UI).
+    expect(text).toMatch(/\b12345678\b/);
     // tokenPrefix visible (prefijo_demo_xxx), no token completo.
     expect(text).toMatch(/prefijo_demo_[a-z0-9]{3}/);
   });
@@ -626,10 +626,10 @@ describe('CertificationPreviewPage', () => {
     );
   });
 
-  it('no expone DNI completo (7-8 dígitos) en el DOM', async () => {
+  it('muestra documentMasked (DNI completo ficticio) en la ficha', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).not.toMatch(/\b\d{7,8}\b/);
+    expect(el.textContent).toMatch(/\b12345678\b/);
   });
 
   it('no expone email en el DOM', async () => {

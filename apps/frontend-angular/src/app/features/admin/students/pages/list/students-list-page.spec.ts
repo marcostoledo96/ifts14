@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Alumno } from '../../students.models';
+import { Alumno, STUDENTS_PAGE_SIZE } from '../../students.models';
 import { STUDENTS_SOURCE, StudentsService } from '../../students.service';
 import { StudentsListPage, STUDENTS_QA_ENABLED } from './students-list-page';
 
@@ -8,10 +8,24 @@ const alumnos: Alumno[] = Array.from({ length: 7 }, (_, i) => ({
   id: i + 1,
   apellido: 'Ficticia',
   nombre: `Persona ${i + 1}`,
-  dniMostrar: `${String(i + 11).padStart(2, '0')}****${String(i + 21).padStart(2, '0')}`,
+  dniMostrar: String(20_111_111 + i),
   estado: 'activo' as const,
+  email: i % 2 === 0 ? `persona.${i + 1}@example.invalid` : null,
   tieneEmail: i % 2 === 0,
   cursosConAsistencia: i,
+  certificacionesValidas: i % 3,
+}));
+
+/** Fixture > page size para ejercitar página 2. */
+const alumnosMuchos: Alumno[] = Array.from({ length: STUDENTS_PAGE_SIZE + 5 }, (_, i) => ({
+  id: i + 1,
+  apellido: 'Ficticia',
+  nombre: `Persona ${i + 1}`,
+  dniMostrar: String(20_111_111 + i),
+  estado: 'activo' as const,
+  email: i % 2 === 0 ? `persona.${i + 1}@example.invalid` : null,
+  tieneEmail: i % 2 === 0,
+  cursosConAsistencia: i % 4,
   certificacionesValidas: i % 3,
 }));
 
@@ -64,28 +78,33 @@ describe('StudentsListPage', () => {
     expect(root.querySelector('th')?.textContent).not.toContain('Legajo');
   });
 
-  it('busca por nombre, apellido o documento; filtra chips v0 y pagina de a cinco', async () => {
-    const f = await render();
+  it('busca por nombre, apellido o documento; filtra chips v0 y pagina de a veinte', async () => {
+    const f = await render(
+      stubSource({
+        listar: () => Promise.resolve(alumnosMuchos),
+        contar: () => Promise.resolve(alumnosMuchos.length),
+      }),
+    );
     const page = f.componentInstance;
     const search = (f.nativeElement as HTMLElement).querySelector<HTMLInputElement>('#buscar-alumno');
     const label = (f.nativeElement as HTMLElement).querySelector<HTMLLabelElement>('label[for="buscar-alumno"]');
     expect(label?.textContent?.trim()).toBe('Buscar alumno');
     expect(search?.placeholder).toContain('Nombre, apellido o documento');
-    expect(page.itemsVisibles().length).toBe(5);
+    expect(page.itemsVisibles().length).toBe(STUDENTS_PAGE_SIZE);
 
     page.onSearch({ target: { value: 'Persona 7' } } as unknown as Event);
     expect(page.resultadosFiltrados().length).toBe(1);
 
-    page.onSearch({ target: { value: alumnos[6].dniMostrar } } as unknown as Event);
-    expect(page.resultadosFiltrados()).toEqual([alumnos[6]]);
+    page.onSearch({ target: { value: alumnosMuchos[6].dniMostrar } } as unknown as Event);
+    expect(page.resultadosFiltrados()).toEqual([alumnosMuchos[6]]);
 
     // Apellido (paridad v0): todos comparten "Ficticia".
     page.onSearch({ target: { value: 'Ficticia' } } as unknown as Event);
-    expect(page.resultadosFiltrados().length).toBe(7);
+    expect(page.resultadosFiltrados().length).toBe(alumnosMuchos.length);
 
     page.onLimpiar();
     page.onPagina(2);
-    expect(page.itemsVisibles()).toEqual(alumnos.slice(5));
+    expect(page.itemsVisibles()).toEqual(alumnosMuchos.slice(STUDENTS_PAGE_SIZE));
     page.onContacto('sin-email');
     expect(page.paginaSegura()).toBe(1);
     expect(page.resultadosFiltrados().every((a) => a.tieneEmail === false)).toBeTrue();
@@ -115,7 +134,7 @@ describe('StudentsListPage', () => {
     expect(search.value).toBe('');
     expect(page.q()).toBe('');
     expect(page.resultadosFiltrados()).toEqual(alumnos);
-    expect(page.itemsVisibles()).toEqual(alumnos.slice(0, 5));
+    expect(page.itemsVisibles()).toEqual(alumnos);
   });
 
   it('combina búsqueda y Sin email; no encuentra email ni legajo inventados', async () => {
@@ -166,7 +185,12 @@ describe('StudentsListPage', () => {
   });
 
   it('reinicia y acota la página al buscar, filtrar y navegar', async () => {
-    const f = await render();
+    const f = await render(
+      stubSource({
+        listar: () => Promise.resolve(alumnosMuchos),
+        contar: () => Promise.resolve(alumnosMuchos.length),
+      }),
+    );
     const page = f.componentInstance;
     page.onPagina(99);
     expect(page.paginaSegura()).toBe(2);
@@ -220,7 +244,7 @@ describe('StudentsListPage', () => {
     await error.whenStable();
     error.detectChanges();
     expect(errorRoot.querySelector('[role="alert"]')).toBeNull();
-    expect(errorRoot.querySelectorAll('tbody tr').length).toBe(5);
+    expect(errorRoot.querySelectorAll('tbody tr').length).toBe(alumnos.length);
 
     error.componentInstance.onSearch({ target: { value: 'nadie' } } as unknown as Event);
     error.detectChanges();
@@ -261,20 +285,20 @@ describe('StudentsListPage', () => {
     expect(caption?.classList.contains('sr-only')).toBeTrue();
     expect(caption?.textContent?.trim()).toContain('Registro de alumnos');
     expect(root.querySelectorAll('table th[scope="col"]').length).toBe(6);
-    expect(root.querySelectorAll('tbody tr').length).toBe(5);
-    expect(root.querySelectorAll('ul.alumnos-cards > li').length).toBe(5);
+    expect(root.querySelectorAll('tbody tr').length).toBe(alumnos.length);
+    expect(root.querySelectorAll('ul.alumnos-cards > li').length).toBe(alumnos.length);
     expect(root.querySelector('.results-summary')?.textContent).toContain('en el registro');
     expect(root.querySelector('.pager-num[aria-current="page"]')?.textContent?.trim()).toBe('1');
   });
 
-  it('asocia Documento con el valor enmascarado en cada tarjeta mobile', async () => {
+  it('asocia Documento con el DNI completo en cada tarjeta mobile', async () => {
     const f = await render();
     const cards = [...(f.nativeElement as HTMLElement).querySelectorAll<HTMLLIElement>('ul.alumnos-cards > li')];
 
     expect(cards.map((card) => ({
       label: card.querySelector('dt')?.textContent?.trim(),
       value: card.querySelector('dt + dd')?.textContent?.trim(),
-    }))).toEqual(alumnos.slice(0, 5).map((alumno) => ({ label: 'Documento', value: alumno.dniMostrar })));
+    }))).toEqual(alumnos.map((alumno) => ({ label: 'Documento', value: alumno.dniMostrar })));
   });
 
   it('no modifica QA fuera de desarrollo y expone los enlaces de detalle habilitados', async () => {
@@ -289,10 +313,10 @@ describe('StudentsListPage', () => {
       [...root.querySelectorAll<HTMLElement>('table .detalle-accion')],
       [...root.querySelectorAll<HTMLElement>('ul.alumnos-cards .detalle-accion')],
     ]) {
-      expect(actions.length).toBe(5);
+      expect(actions.length).toBe(alumnos.length);
       const details = actions.map((action) => action.querySelector<HTMLAnchorElement>('a'));
       expect(details.map((a) => a?.getAttribute('aria-label'))).toEqual(
-        alumnos.slice(0, 5).map((alumno) => `Ver detalle de ${alumno.apellido}, ${alumno.nombre}`),
+        alumnos.map((alumno) => `Ver detalle de ${alumno.apellido}, ${alumno.nombre}`),
       );
       expect(details.every((a) => a?.getAttribute('href') !== null)).toBeTrue();
       expect(details.every((a, index) => a?.getAttribute('href')?.includes(`/admin/alumnos/${alumnos[index].id}`))).toBeTrue();

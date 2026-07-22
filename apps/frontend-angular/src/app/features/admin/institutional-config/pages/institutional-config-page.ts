@@ -11,10 +11,11 @@ import {
   INSTITUTIONAL_CONFIG_SOURCE,
   InstitutionalConfigWrite,
 } from '../institutional-config.service';
+import { INSTITUTIONAL_LOGOS } from '../../../../shared/brand/institutional-brand';
 
 // Página de configuración institucional: layout calca v0 (nav sticky +
-// secciones). Solo campos del DTO backend son editables; logos/firmas/
-// SMTP/sello/textos extra son presentacionales (disabled, sin persistencia).
+// secciones). Solo campos del DTO backend son editables; logos son assets
+// fijos del frontend; firmas/SMTP/textos extra son presentacionales.
 @Component({
   selector: 'app-institutional-config-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,16 +28,8 @@ export class InstitutionalConfigPage {
 
   readonly limits = INSTITUTIONAL_CONFIG_LIMITS;
 
-  /** Logos de muestra (paridad v0). Sin API de archivos: solo UI. */
-  readonly logos = [
-    { id: 'ifts', nombre: 'Logo IFTS N.° 14', detalle: 'Marca principal · SVG/PNG', cargado: true },
-    { id: 'escudo', nombre: 'Escudo institucional', detalle: 'Sello del instituto', cargado: true },
-    { id: 'ba-aprende', nombre: 'Buenos Aires Aprende', detalle: 'Programa de formación', cargado: true },
-    { id: 'agencia', nombre: 'Agencia de Habilidades para el Futuro', detalle: 'Organismo', cargado: false },
-    { id: 'ba-ciudad', nombre: 'GCBA · BA Ciudad', detalle: 'Gobierno de la Ciudad', cargado: true },
-  ] as const;
-
-  readonly logosPendientes = this.logos.filter((l) => !l.cargado).length;
+  /** Logos institucionales hardcodeados (sin upload ni persistencia). */
+  readonly logos = INSTITUTIONAL_LOGOS;
 
   /** Valores presentacionales (no DTO / no dirty / no PUT). */
   readonly demo = {

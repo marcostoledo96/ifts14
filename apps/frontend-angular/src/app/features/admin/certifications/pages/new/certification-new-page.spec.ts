@@ -56,7 +56,8 @@ describe('CertificationNewPage', () => {
     id: 46,
     apellido: 'Demo',
     nombre: 'Alumno',
-    dniMostrar: '46****01',
+    dniMostrar: '46000001',
+    email: null,
     estado: 'activo',
     tieneEmail: false,
     cursosConAsistencia: 2,
@@ -73,6 +74,7 @@ describe('CertificationNewPage', () => {
     id: 47,
     apellido: 'Conmail',
     nombre: 'Persona',
+    email: 'persona@example.invalid',
     tieneEmail: true,
   };
 
@@ -133,7 +135,7 @@ describe('CertificationNewPage', () => {
                 id: 77,
                 certificateCode: 'IFTS14-CERT-0077',
                 status: 'vigente',
-                student: { displayName: 'Demo Alumno', documentMasked: '46****01' },
+                student: { displayName: 'Demo Alumno', documentMasked: '46000001' },
                 course: { name: cursoActivo.nombre },
                 issuedAt: '2026-07-16',
                 expiresAt: null,
@@ -244,7 +246,7 @@ describe('CertificationNewPage', () => {
     expect(text).toContain('Clase 1');
     expect(text).toContain('Presente');
     expect(text).toContain('Alumno Demo');
-    expect(text).toContain('46****01');
+    expect(text).toContain('46000001');
     expect(text).toContain('Curso de procedimientos básicos');
     expect(text).toContain('2025-2');
     expect(text).toContain('Rector Demo');
@@ -370,7 +372,7 @@ describe('CertificationNewPage', () => {
       id: 77,
       certificateCode: 'IFTS14-CERT-0077',
       status: 'vigente',
-      student: { displayName: 'Demo Alumno', documentMasked: '46****01' },
+      student: { displayName: 'Demo Alumno', documentMasked: '46000001' },
       course: { name: cursoActivo.nombre },
       issuedAt: hoyBuenosAires(),
       expiresAt: null,

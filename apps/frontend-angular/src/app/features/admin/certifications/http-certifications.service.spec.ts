@@ -31,7 +31,7 @@ describe('HttpCertificationsService', () => {
     id: 1,
     certificateCode: 'CERT-2026-0001',
     status: 'vigente',
-    student: { displayName: 'Juan Pérez', documentMasked: '12****78' },
+    student: { displayName: 'Juan Pérez', documentMasked: '12345678' },
     course: { id: 10, name: 'Curso Demo' },
     alumnoId: 1,
     cursoId: 10,
@@ -53,7 +53,7 @@ describe('HttpCertificationsService', () => {
     expect(result[0].nombreAlumno).toBe('Juan Pérez');
     expect(result[0].cursoNombre).toBe('Curso Demo');
     expect(result[0].estado).toBe('vigente');
-    expect(result[0].documentMasked).toBe('12****78');
+    expect(result[0].documentMasked).toBe('12345678');
     expect(result[0].tokenPrefix).toBe('prefijo_demo');
     expect(result[0].emitidoEn).toBe('2026-01-01');
     expect(result[0].venceEn).toBeNull();
@@ -82,7 +82,7 @@ describe('HttpCertificationsService', () => {
         id: 99,
         certificateCode: 'CERT-2026-0099',
         status: 'vigente',
-        student: { displayName: 'Demo', documentMasked: '12****34' },
+        student: { displayName: 'Demo', documentMasked: '12345678' },
         course: { name: 'Curso Demo' },
         issuedAt: '2026-07-16',
         expiresAt: null,

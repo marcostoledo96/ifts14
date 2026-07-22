@@ -3,10 +3,11 @@
 // POST /admin/alumnos → body { apellidoNombre, dni, estado? }.
 // Mapeo: apellidoNombre se divide en apellido+nombre (primer espacio).
 // tieneEmail / cursos / certs → null (backend no los expone).
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { StudentDuplicateError } from './student-duplicate.error';
 import { Alumno, AlumnoDetalle, AlumnoDraft } from './students.models';
 import { StudentsService } from './students.service';
 
@@ -14,6 +15,7 @@ interface AlumnoDto {
   id: number;
   apellidoNombre: string;
   dniMostrar: string;
+  email?: string | null;
   estado: string;
 }
 
@@ -62,17 +64,55 @@ export class HttpStudentsService implements StudentsService {
 
   async crear(draft: AlumnoDraft): Promise<AlumnoDetalle> {
     const url = `${environment.apiBaseUrl}/admin/alumnos`;
-    const body: { apellidoNombre: string; dni: string; estado?: string } = {
+    const body: { apellidoNombre: string; dni: string; email?: string; estado?: string } = {
       apellidoNombre: draft.apellidoNombre,
       dni: draft.dni,
     };
+    const email = (draft.email ?? '').trim();
+    if (email !== '') {
+      body.email = email;
+    }
     if (draft.estado !== undefined) {
       body.estado = draft.estado;
     }
-    const envelope = await firstValueFrom(
-      this.http.post<ApiEnvelope<AlumnoDto>>(url, body),
-    );
-    return this.toAlumnoDetalle(envelope.data);
+    try {
+      const envelope = await firstValueFrom(
+        this.http.post<ApiEnvelope<AlumnoDto>>(url, body),
+      );
+      return this.toAlumnoDetalle(envelope.data);
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 409) {
+        const fromApi = this.existingIdFromConflict(err);
+        if (fromApi !== null) {
+          throw new StudentDuplicateError(fromApi);
+        }
+        const dni = draft.dni.trim().replace(/\D/g, '');
+        const fromList = await this.findIdByDni(dni);
+        if (fromList !== null) {
+          throw new StudentDuplicateError(fromList);
+        }
+      }
+      throw err;
+    }
+  }
+
+  private existingIdFromConflict(err: HttpErrorResponse): number | null {
+    const details = (err.error as { error?: { details?: { existingStudentId?: unknown } } } | null)
+      ?.error?.details;
+    const id = details?.existingStudentId;
+    return typeof id === 'number' && Number.isInteger(id) && id > 0 ? id : null;
+  }
+
+  /** Fallback si el 409 no trae existingStudentId. */
+  private async findIdByDni(dni: string): Promise<number | null> {
+    if (!dni) return null;
+    try {
+      const list = await this.listar();
+      const found = list.find((a) => a.dniMostrar === dni);
+      return found?.id ?? null;
+    } catch {
+      return null;
+    }
   }
 
   private splitApellidoNombre(apellidoNombre: string): { apellido: string; nombre: string } {
@@ -86,14 +126,16 @@ export class HttpStudentsService implements StudentsService {
 
   private toAlumno(dto: AlumnoDto): Alumno {
     const { apellido, nombre } = this.splitApellidoNombre(dto.apellidoNombre);
+    const email =
+      typeof dto.email === 'string' && dto.email.trim() !== '' ? dto.email.trim() : null;
     return {
       id: dto.id,
       apellido,
       nombre,
       dniMostrar: dto.dniMostrar,
+      email,
       estado: dto.estado === 'inactivo' ? 'inactivo' : 'activo',
-      // Honest placeholders: API no expone estos campos.
-      tieneEmail: null,
+      tieneEmail: email !== null,
       cursosConAsistencia: null,
       certificacionesValidas: null,
     };

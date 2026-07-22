@@ -38,7 +38,7 @@ El sistema MUST validar formato de token, calcular `SHA-256(token + token_pepper
 
 ### Requirement: Respuesta pública segura
 
-El sistema MUST devolver solo autenticidad, estado, código, nombre visible, DNI completo aprobado, curso, fecha de emisión, fechas asistidas del snapshot y `requestId`; MUST NOT exponer token completo, SQL, rutas internas ni configuración. Para certificados nuevos con `alumno_id`, `curso_id` y snapshot, el DNI completo MUST obtenerse desde `cert_alumnos.dni_cifrado` con clave externa y `attendedDates` MUST obtenerse de `cert_certificado_fechas`. Para certificados legacy sin FKs/snapshot, el sistema MUST conservar compatibilidad con datos heredados disponibles y MUST NOT inventar fechas. Logs, auditoría, errores y respuestas administrativas MUST NOT incluir DNI completo ni token completo.
+El sistema MUST devolver solo autenticidad, estado, código, nombre visible, DNI completo aprobado, curso, fecha de emisión, fechas asistidas del snapshot y `requestId`; MUST NOT exponer token completo, SQL, rutas internas ni configuración. Para certificados nuevos con `alumno_id`, `curso_id` y snapshot, el DNI completo MUST obtenerse desde `cert_alumnos.dni_cifrado` con clave externa y `attendedDates` MUST obtenerse de `cert_certificado_fechas`. Para certificados legacy sin FKs/snapshot, el sistema MUST conservar compatibilidad con datos heredados disponibles y MUST NOT inventar fechas. Logs, auditoría y errores MUST NOT incluir DNI completo ni token completo.
 
 #### Scenario: DTO válido desde snapshot
 

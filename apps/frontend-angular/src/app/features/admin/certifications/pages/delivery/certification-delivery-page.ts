@@ -79,7 +79,7 @@ export class CertificationDeliveryPage {
     return `cert-${safe}.pdf`;
   });
 
-  // Regla D0: el DNI ya viene enmascarado del DTO
+  // Regla D0: documentMasked contiene DNI completo ficticio en UI admin
   readonly alumnoDniEnmascarado = computed(() => {
     const d = this.detalle();
     if (!d) return '';

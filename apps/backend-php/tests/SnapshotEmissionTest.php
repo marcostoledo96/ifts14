@@ -45,6 +45,8 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/006_reconciliar_esqu
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/007_schema_migrations.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_revision_contenido.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/010_backfill_pdf_revision.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/011_alumnos_email_opcional.sql');
 
 $tokenKey = str_repeat('t', 32);
 $dniKey = str_repeat('d', 32);
@@ -57,7 +59,7 @@ $dniCipher = DniCipher::encrypt($dni, $dniKey);
 $dniHash = hash('sha256', $dni, true);
 
 $pdo->prepare('INSERT INTO cert_alumnos (apellido_nombre, dni_hash, dni_cifrado, dni_mostrar, estado) VALUES (?, ?, ?, ?, \'activo\')')
-    ->execute(['Alumno Demo', $dniHash, $dniCipher, '12******78']);
+    ->execute(['Alumno Demo', $dniHash, $dniCipher, '12345678']);
 $alumnoId = (int) $pdo->lastInsertId();
 
 $pdo->prepare('INSERT INTO cert_cursos (codigo, nombre, estado) VALUES (?, ?, \'activo\')')
@@ -88,7 +90,7 @@ $result = $service->emitir([
     'expiresAt' => null,
 ]);
 
-if (($result['student']['documentMasked'] ?? '') !== '12****78' || !isset($result['publicValidationUrl'], $result['pdfDownloadUrl'], $result['tokenPrefix'])) {
+if (($result['student']['documentMasked'] ?? '') !== '12345678' || !isset($result['publicValidationUrl'], $result['pdfDownloadUrl'], $result['tokenPrefix'])) {
     throw new RuntimeException('DTO administrativo seguro inválido.');
 }
 
@@ -143,7 +145,7 @@ $beforeDuplicate = tableCounts($pdo);
 $directDuplicateRejected = false;
 try {
     $pdo->prepare('INSERT INTO cert_certificados (alumno_id, curso_id, codigo_certificado, estado, alumno_nombre_mostrar, documento_enmascarado, curso_nombre, emitido_en) VALUES (?, ?, ?, \'vigente\', ?, ?, ?, ?)')
-        ->execute([$alumnoId, $cursoId, 'CERT-DIRECT-DUP', 'Alumno Demo', '12****78', 'Curso Demo', '2026-07-02']);
+        ->execute([$alumnoId, $cursoId, 'CERT-DIRECT-DUP', 'Alumno Demo', '12345678', 'Curso Demo', '2026-07-02']);
 } catch (PDOException $e) {
     $directDuplicateRejected = ($e->errorInfo[0] ?? $e->getCode()) === '23000';
 }

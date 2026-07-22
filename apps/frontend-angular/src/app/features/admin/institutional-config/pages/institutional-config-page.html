@@ -188,63 +188,29 @@
 
               <div class="logos-block">
                 <div class="logos-head">
-                  <span class="cfg-label">Logos y sellos</span>
-                  @if (logosPendientes > 0) {
-                    <span class="logos-badge">{{ logosPendientes }} sin cargar</span>
-                  }
+                  <span class="cfg-label">Logos institucionales</span>
+                  <span class="logos-badge logos-badge--ok">Fijos del sistema</span>
                 </div>
                 <p class="cfg-ayuda">
-                  Formato recomendado SVG o PNG con fondo transparente. Se ubican en el
-                  encabezado según el diseño del certificado. La carga de archivos no está
-                  disponible en esta versión.
+                  Identidad visual embebida en la aplicación. Se muestran en login, panel,
+                  validación pública y vista previa del certificado. No se cargan ni editan
+                  desde esta pantalla.
                 </p>
                 <ul class="logos-grid">
                   @for (logo of logos; track logo.id) {
                     <li>
-                      <div class="logo-card" [class.logo-card--ok]="logo.cargado">
-                        <div class="logo-preview" aria-hidden="true">
-                          @if (logo.cargado) {
-                            <span class="logo-status logo-status--ok">
-                              <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-                                <path
-                                  d="M20 6 9 17l-5-5"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                />
-                              </svg>
-                              <span>Cargado</span>
-                            </span>
-                          } @else {
-                            <span class="logo-status">
-                              <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-                                <rect
-                                  x="3"
-                                  y="5"
-                                  width="18"
-                                  height="14"
-                                  rx="2"
-                                  stroke="currentColor"
-                                  stroke-width="1.5"
-                                />
-                                <circle cx="9" cy="11" r="1.5" fill="currentColor" />
-                                <path
-                                  d="m21 16-4.5-4.5L9 19"
-                                  stroke="currentColor"
-                                  stroke-width="1.5"
-                                  stroke-linecap="round"
-                                />
-                              </svg>
-                              <span>Sin logo</span>
-                            </span>
-                          }
+                      <div class="logo-card logo-card--ok">
+                        <div class="logo-preview">
+                          <img
+                            class="logo-img"
+                            [src]="logo.src"
+                            [alt]="logo.nombre"
+                            loading="lazy"
+                            decoding="async"
+                          />
                         </div>
                         <p class="logo-name">{{ logo.nombre }}</p>
                         <p class="logo-detail">{{ logo.detalle }}</p>
-                        <button type="button" class="btn-ghost" disabled>
-                          {{ logo.cargado ? 'Reemplazar' : 'Subir logo' }}
-                        </button>
                       </div>
                     </li>
                   }
@@ -271,7 +237,7 @@
             </div>
           </section>
 
-          <!-- 02 Certificados: título → texto base → formato/link → QR → sello -->
+          <!-- 02 Certificados: título → texto base → formato/link → QR -->
           <section id="certificados" class="cfg-section" aria-labelledby="certificados-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
@@ -377,26 +343,6 @@
                   aria-disabled="true"
                 ></textarea>
                 <p class="cfg-ayuda">Leyenda impresa junto al código QR. Solo referencia visual.</p>
-              </div>
-
-              <div class="sello-row">
-                <div class="sello-copy">
-                  <p class="sello-title">Incluir sello institucional</p>
-                  <p class="cfg-ayuda">
-                    Estampa el escudo del instituto sobre el documento. No configurable
-                    desde esta pantalla.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="sello-switch"
-                  role="switch"
-                  aria-checked="true"
-                  aria-label="Incluir sello institucional"
-                  disabled
-                >
-                  <span class="sello-knob" aria-hidden="true"></span>
-                </button>
               </div>
             </div>
           </section>

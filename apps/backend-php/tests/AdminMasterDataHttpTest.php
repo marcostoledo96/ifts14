@@ -29,7 +29,9 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/005_prevenir_certifi
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/006_reconciliar_esquema_m4_02.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/007_schema_migrations.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_revision_contenido.sql');
-applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
+    applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
+    applySqlFile($pdo, __DIR__ . '/../../../database/migrations/010_backfill_pdf_revision.sql');
+    applySqlFile($pdo, __DIR__ . '/../../../database/migrations/011_alumnos_email_opcional.sql');
 
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-master-data-http-' . bin2hex(random_bytes(4));
@@ -110,9 +112,23 @@ try {
     $studentBody = assertJson($student, 'crear alumno');
     $studentId = (int) ($studentBody['data']['id'] ?? 0);
     assertNoSensitiveStudentData($student['body']);
-    if ($studentId < 1 || ($studentBody['data']['dniMostrar'] ?? '') !== '12****78') {
+    if ($studentId < 1 || ($studentBody['data']['dniMostrar'] ?? '') !== '12345678') {
         throw new RuntimeException('Alumno creado con DTO inválido.');
     }
+    if (!array_key_exists('email', $studentBody['data']) || $studentBody['data']['email'] !== null) {
+        throw new RuntimeException('Alumno sin email debía devolver email null.');
+    }
+    $withEmail = postJson($port, '/admin/alumnos', $adminKey, [
+        'apellidoNombre' => 'Alumno Email Demo',
+        'dni' => '87654321',
+        'email' => 'alumno.demo@example.invalid',
+    ]);
+    assertStatus($withEmail, 201, 'crear alumno con email');
+    $withEmailBody = assertJson($withEmail, 'crear alumno con email');
+    if (($withEmailBody['data']['email'] ?? '') !== 'alumno.demo@example.invalid') {
+        throw new RuntimeException('Email opcional no persistió en DTO.');
+    }
+    assertNoSensitiveStudentData($withEmail['body']);
     assertError(postJson($port, '/admin/alumnos', $adminKey, ['apellidoNombre' => 'Alumno Dup', 'dni' => '12345678']), 409, 'CONFLICT', 'alumno duplicado');
     $studentDetail = request($port, 'GET', '/admin/alumnos/' . $studentId, $authHeaders);
     assertStatus($studentDetail, 200, 'detalle alumno');
@@ -298,7 +314,8 @@ function assertError(array $response, int $status, string $code, string $label):
 
 function assertNoSensitiveStudentData(string $body): void
 {
-    foreach (['12345678', 'dni_hash', 'dni_cifrado'] as $forbidden) {
+    // D0: DNI completo en UI admin está permitido; no deben filtrarse hash/cifrado ni token.
+    foreach (['dni_hash', 'dni_cifrado', 'token_cifrado'] as $forbidden) {
         if (str_contains($body, $forbidden)) {
             throw new RuntimeException('DTO administrativo expuso dato sensible: ' . $forbidden);
         }

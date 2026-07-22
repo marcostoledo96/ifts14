@@ -43,23 +43,20 @@
             </p>
           </div>
           <div class="asistencias-ctas">
-            <a class="btn-secondary" [routerLink]="['/admin/cursos', d.id, 'editar']">Agregar fecha</a>
+            <a
+              class="btn-secondary"
+              [routerLink]="['/admin/cursos', d.id, 'editar']"
+              data-testid="cta-agregar-fecha"
+            >
+              Agregar fecha
+            </a>
             @if (primeraFechaAsistencia(d); as fechaId) {
               <a
                 class="btn-primary"
                 [routerLink]="['/admin/cursos', d.id, 'fechas', fechaId, 'asistencias']"
                 data-testid="cta-cargar-asistencias"
               >
-                Cargar asistencias
-              </a>
-            } @else {
-              <a
-                class="btn-primary"
-                routerLink="/admin/asistencias"
-                data-testid="cta-cargar-asistencias"
-                title="Sin fechas disponibles en este curso; abrir hub de asistencias"
-              >
-                Cargar asistencias
+                Abrir primera fecha
               </a>
             }
           </div>
@@ -75,8 +72,11 @@
     <section aria-labelledby="asistencias-titulo" class="fechas">
       @if (d.fechas.length === 0) {
         <div class="vacio">
-          <p>Este curso no tiene fechas programadas.</p>
-          <a class="btn-primary" [routerLink]="['/admin/cursos', d.id, 'editar']">Agregar fecha</a>
+          <p>Todavía no hay fechas cargadas.</p>
+          <p class="vacio-hint">Agregá la primera fecha de cursada para registrar asistencias y generar certificados.</p>
+          <a class="btn-primary" [routerLink]="['/admin/cursos', d.id, 'editar']" data-testid="cta-agregar-fecha-vacio">
+            Agregar fecha
+          </a>
         </div>
       } @else {
         <table class="fechas-tabla">

@@ -1,14 +1,19 @@
 import { seed } from '../in-memory-students.service';
 
 describe('students privacy', () => {
-  it('el seed no contiene identificadores o datos personales prohibidos', () => {
+  it('el seed usa DNI completo ficticio y emails @example.invalid opcionales', () => {
     const value = JSON.stringify(seed).toLowerCase();
-    expect(value).not.toMatch(/"email"\s*:/);
-    for (const forbidden of ['legajo', 'token', 'matricula', 'matrícula', 'uuid', '@']) {
+    for (const forbidden of ['legajo', 'token', 'matricula', 'matrícula', 'uuid']) {
       expect(value).not.toContain(forbidden);
     }
-    expect(value).not.toMatch(/\d{8}/);
-    expect(seed.every((alumno) => /^\d{2}\*{4}\d{2}$/.test(alumno.dniMostrar))).toBeTrue();
+    expect(seed.every((alumno) => /^\d{7,8}$/.test(alumno.dniMostrar))).toBeTrue();
     expect(new Set(seed.map((alumno) => alumno.dniMostrar)).size).toBe(seed.length);
+    expect(
+      seed.every(
+        (alumno) =>
+          alumno.email === null ||
+          (typeof alumno.email === 'string' && alumno.email.endsWith('@example.invalid')),
+      ),
+    ).toBeTrue();
   });
 });

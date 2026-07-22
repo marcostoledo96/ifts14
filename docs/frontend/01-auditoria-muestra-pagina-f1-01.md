@@ -60,7 +60,7 @@ El scaffold de Marcos en `apps/frontend-angular/` está verificado: 35/35 tests 
 - **Lockfile incompatible**: `pnpm-lock.yaml` de v0 no aplica al proyecto Angular; no instalar dependencias desde `muestra_pagina/`.
 - **Capturas no etiquetadas por prompt**: 25 PNG sin metadato que las vincule directamente a cada prompt; requiere mapeo manual.
 - **Tokens de Tailwind/shadcn**: si v0 usa tokens no aprobados para Angular, hay que convertirlos a criterios visuales del sistema de Matías.
-- **Datos personales**: la validación pública muestra DNI completo por decisión D0; logs, auditoría, errores y respuestas administrativas no exponen DNI completo. Si v0 lo enmascara, prevalece D0; no portar capturas con datos reales de personas.
+- **Datos personales**: la validación pública y la UI admin muestran DNI completo (D0 2026-07-20); logs, auditoría, errores y dumps no-UI no exponen DNI completo ni token completo. Si v0 enmascara en capturas, prevalece D0 en producto; no portar datos reales de personas.
 - **Scope creep**: prompts 11-22 requieren spec, PDF, QR, permisos, auditoría o configuración previa; no implementarlos en Fase 1.
 
 ## 7. Próximos pasos

@@ -37,11 +37,11 @@ describe('CertificationPdfPreviewPage', () => {
     expect(prota?.textContent).toContain('Alumno Demo Uno');
   });
 
-  it('muestra documentMasked (no DNI completo) debajo del nombre', async () => {
+  it('muestra documentMasked (DNI completo ficticio) debajo del nombre', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const doc = el.querySelector('.cert-doc');
-    expect(doc?.textContent).toMatch(/\d{2}\*{4}\d{2}/);
+    expect(doc?.textContent).toMatch(/\b12345678\b/);
   });
 
   it('muestra el nombre del curso en el cuerpo del certificado', async () => {
@@ -272,10 +272,10 @@ describe('CertificationPdfPreviewPage', () => {
     expect(el.textContent).not.toMatch(/tokenPrefix/i);
   });
 
-  it('no expone DNI completo (7-8 dígitos contiguos) en el DOM', async () => {
+  it('muestra DNI completo ficticio en el DOM del folio PDF', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).not.toMatch(/\b\d{7,8}\b/);
+    expect(el.textContent).toMatch(/\b12345678\b/);
   });
 
   it('no expone email en el DOM', async () => {
@@ -446,7 +446,7 @@ describe('CertificationPdfPreviewPage', () => {
       nombreAlumno: 'Alumno Demo Dos',
       cursoNombre: 'Curso de herramientas administrativas',
       estado: 'vigente',
-      documentMasked: '34****56',
+      documentMasked: '23456789',
       tokenPrefix: 'prefijo_demo_c2d',
       emitidoEn: '2026-04-05',
       venceEn: '2027-04-05',
@@ -465,7 +465,7 @@ describe('CertificationPdfPreviewPage', () => {
       nombreAlumno: 'Alumno Demo Uno',
       cursoNombre: 'Curso de introducción a la gestión',
       estado: 'vigente',
-      documentMasked: '12****34',
+      documentMasked: '12345678',
       tokenPrefix: 'prefijo_demo_a1b',
       emitidoEn: '2026-03-01',
       venceEn: '2027-03-01',

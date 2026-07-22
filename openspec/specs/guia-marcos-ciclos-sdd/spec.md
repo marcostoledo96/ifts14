@@ -8,7 +8,7 @@ Definir los requisitos documentales para mejorar `MARCOS_PROMPTS_SDD_3_SEMANAS_C
 
 ### Requirement: Rol y límites
 
-La guía DEBE recordar el rol de Marcos (PHP 8.4.21, MariaDB 10.6.27, integración, deploy cPanel, arquitectura, seguridad, modelo de datos y desbloqueos frontend técnicos) y la división operativa con Matías: Marcos lidera backend, MariaDB, integración, deploy, arquitectura, seguridad y desbloqueos frontend técnicos; Matías lidera UI/UX Angular 20, adaptación de `muestra_pagina/`, sistema visual, responsive, accesibilidad, admin y QA visual. La guía DEBE enumerar las prohibiciones explícitas: no tocar Angular fuera de los desbloqueos frontend autorizados o coordinación explícita, no modificar `material_privado_no_versionar/`, no exponer credenciales ni DNI completo en logs/auditoría/errores/respuestas administrativas, no ejecutar commit/push/merge/rebase automáticamente.
+La guía DEBE recordar el rol de Marcos (PHP 8.4.21, MariaDB 10.6.27, integración, deploy cPanel, arquitectura, seguridad, modelo de datos y desbloqueos frontend técnicos) y la división operativa con Matías: Marcos lidera backend, MariaDB, integración, deploy, arquitectura, seguridad y desbloqueos frontend técnicos; Matías lidera UI/UX Angular 20, adaptación de `muestra_pagina/`, sistema visual, responsive, accesibilidad, admin y QA visual. La guía DEBE enumerar las prohibiciones explícitas: no tocar Angular fuera de los desbloqueos frontend autorizados o coordinación explícita, no modificar `material_privado_no_versionar/`, no exponer credenciales ni DNI completo en logs/auditoría/errores/dumps (D0: UI admin y validación pública sí muestran DNI completo), no ejecutar commit/push/merge/rebase automáticamente.
 
 #### Scenario: Lectura inicial
 

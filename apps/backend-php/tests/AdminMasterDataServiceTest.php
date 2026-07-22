@@ -5,15 +5,23 @@ declare(strict_types=1);
 require_once __DIR__ . '/../src/AdminMasterDataService.php';
 
 $service = (new ReflectionClass(AdminMasterDataService::class))->newInstanceWithoutConstructor();
-$mask = new ReflectionMethod(AdminMasterDataService::class, 'maskDni');
 $hash = new ReflectionMethod(AdminMasterDataService::class, 'hashDni');
 $order = new ReflectionMethod(AdminMasterDataService::class, 'courseDateOrder');
-
-if ($mask->invoke($service, '00000000') !== '00****00') {
-    throw new RuntimeException('Máscara de DNI inválida.');
-}
+$email = new ReflectionMethod(AdminMasterDataService::class, 'optionalEmail');
 
 $key = str_repeat('d', 32);
+
+if ($email->invoke($service, null) !== null || $email->invoke($service, '') !== null) {
+    throw new RuntimeException('Email opcional vacío inválido.');
+}
+if ($email->invoke($service, 'demo@example.invalid') !== 'demo@example.invalid') {
+    throw new RuntimeException('Email opcional válido rechazado.');
+}
+try {
+    $email->invoke($service, 'no-es-email');
+    throw new RuntimeException('Email inválido aceptado.');
+} catch (ReflectionException|AdminCertificateException) {
+}
 $dniHash = $hash->invoke($service, '00000000', $key);
 if (!is_string($dniHash) || strlen($dniHash) !== 32) {
     throw new RuntimeException('Hash de DNI inválido.');

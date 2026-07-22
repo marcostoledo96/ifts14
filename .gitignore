@@ -34,6 +34,7 @@ composer.lock
 # Configuraciones reales sensibles
 **/config.php
 **/config.local.php
+**/certificados-config.local.php
 **/database.php
 **/db.php
 **/conexion.php

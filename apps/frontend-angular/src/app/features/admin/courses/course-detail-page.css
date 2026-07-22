@@ -168,6 +168,7 @@
 .fechas-cards { display: none; padding: 0; margin: 0; list-style: none; }
 .fechas-cards li { display: grid; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-card); }
 .vacio { padding: var(--space-5); border: 1px dashed var(--color-border); border-radius: var(--radius-sm); }
+.vacio-hint { margin: 0.35rem 0 0.85rem; font-size: 0.875rem; color: var(--color-muted-foreground); }
 
 .fecha-estado {
   padding: var(--space-1) var(--space-2);

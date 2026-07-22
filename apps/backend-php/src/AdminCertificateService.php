@@ -16,10 +16,12 @@ if (!interface_exists('LoggerInterface')) {
 
 final class AdminCertificateException extends RuntimeException
 {
+    /** @param list<mixed>|array<string, mixed> $details */
     public function __construct(
         public readonly int $status,
         public readonly string $errorCode,
-        string $message
+        string $message,
+        public readonly array $details = [],
     ) {
         parent::__construct($message);
     }
@@ -881,9 +883,10 @@ final class AdminCertificateService
         return $value;
     }
 
+    /** Persistencia/DTO admin: DNI completo (D0 2026-07-20). Columna histórica `documento_enmascarado`. */
     private function maskDocument(string $document): string
     {
-        return substr($document, 0, 2) . str_repeat('*', max(strlen($document) - 4, 0)) . substr($document, -2);
+        return $document;
     }
 
     private function hashDocument(string $document): string

@@ -182,6 +182,8 @@ export class HttpCertificationsService implements CertificationsService {
       tokenPrefix: dto.tokenPrefix ?? '',
       emitidoEn: dto.issuedAt,
       venceEn: dto.expiresAt,
+      alumnoId: dto.alumnoId,
+      cursoId: dto.cursoId ?? dto.course.id,
     };
   }
 
