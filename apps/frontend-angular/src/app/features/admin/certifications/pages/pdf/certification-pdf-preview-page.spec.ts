@@ -4,9 +4,11 @@ import { CertificationPdfPreviewPage } from './certification-pdf-preview-page';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
 import { CertificacionDetalle, EntregaManualDto } from '../../certifications.models';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
+import { resetMockAdminPublicStatus } from '../../../../../shared/certificates/mock-tokens';
 
 describe('CertificationPdfPreviewPage', () => {
   async function render(id: string) {
+    resetMockAdminPublicStatus();
     await TestBed.configureTestingModule({
       imports: [CertificationPdfPreviewPage],
       providers: [

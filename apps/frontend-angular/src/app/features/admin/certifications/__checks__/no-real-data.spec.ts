@@ -14,8 +14,13 @@ import { InMemoryInstitutionalConfigService } from '../../institutional-config/i
 import { CertificationPdfPreviewPage } from '../pages/pdf/certification-pdf-preview-page';
 import { CertificationsListPage } from '../pages/list/certifications-list-page';
 import { CertificationRevokePage } from '../pages/revoke/certification-revoke-page';
+import { resetMockAdminPublicStatus } from '../../../../shared/certificates/mock-tokens';
 
 describe('no-real-data en seed de certificaciones', () => {
+  beforeEach(() => {
+    resetMockAdminPublicStatus();
+  });
+
   async function setup() {
     TestBed.configureTestingModule({
       providers: [{ provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService }],

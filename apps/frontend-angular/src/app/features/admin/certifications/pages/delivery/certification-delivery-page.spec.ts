@@ -4,12 +4,14 @@ import { provideRouter } from '@angular/router';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
 import { EntregaManualDto } from '../../certifications.models';
+import { resetMockAdminPublicStatus } from '../../../../../shared/certificates/mock-tokens';
 
 describe('CertificationDeliveryPage', () => {
   let component: CertificationDeliveryPage;
   let fixture: ComponentFixture<CertificationDeliveryPage>;
 
   beforeEach(async () => {
+    resetMockAdminPublicStatus();
     await TestBed.configureTestingModule({
       imports: [CertificationDeliveryPage],
       providers: [

@@ -16,6 +16,7 @@ import {
   InstitutionalConfigService,
 } from '../../../institutional-config/institutional-config.service';
 import { InMemoryInstitutionalConfigService } from '../../../institutional-config/in-memory-institutional-config.service';
+import { resetMockAdminPublicStatus } from '../../../../../shared/certificates/mock-tokens';
 
 const CANONICA_CERT1 =
   'https://ifts14.edu.ar/certificados/validar/prefijo_demo_a1b-completo';
@@ -82,6 +83,10 @@ function configFixture(
 }
 
 describe('CertificationPreviewPage', () => {
+  beforeEach(() => {
+    resetMockAdminPublicStatus();
+  });
+
   async function render(
     id: string,
     opts?: {

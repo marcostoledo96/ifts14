@@ -101,17 +101,17 @@ Commit / build: rama integration/admin-session-http
 
 ### 0.5 Orden recomendado de pasada
 
-1. Smoke técnico (sección 1)  
-2. Flujo E2E feliz (sección 2)  
-3. Flujos por pantalla (sección 3)  
-4. Datos y límites (sección 4)  
-5. Estados UI (sección 5)  
-6. Seguridad D0 (sección 6)  
-7. API/backend (sección 7)  
-8. Integridad DB (sección 8)  
-9. Responsive + a11y + navegadores (secciones 9–11)  
-10. PDF / QR / impresión (sección 12)  
-11. Staging / deploy (sección 13)  
+1. Smoke técnico (sección 1)
+2. Flujo E2E feliz (sección 2)
+3. Flujos por pantalla (sección 3)
+4. Datos y límites (sección 4)
+5. Estados UI (sección 5)
+6. Seguridad D0 (sección 6)
+7. API/backend (sección 7)
+8. Integridad DB (sección 8)
+9. Responsive + a11y + navegadores (secciones 9–11)
+10. PDF / QR / impresión (sección 12)
+11. Staging / deploy (sección 13)
 12. Cierre y veredicto (sección 14)
 
 ---
@@ -411,9 +411,9 @@ Para cada feature marcar los cuatro estados:
 
 Cómo forzar (ideas):
 
-- **Carga**: DevTools → Network → Slow 3G / throttling.  
-- **Vacío**: DB/seed sin registros o filtros que no matchean.  
-- **Error**: Offline, 500 simulado, token inválido, API caída.  
+- **Carga**: DevTools → Network → Slow 3G / throttling.
+- **Vacío**: DB/seed sin registros o filtros que no matchean.
+- **Error**: Offline, 500 simulado, token inválido, API caída.
 - **Éxito**: camino feliz.
 
 ---

@@ -4,6 +4,7 @@ import { By } from '@angular/platform-browser';
 import { CertificationRevokePage } from './certification-revoke-page';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
 import { InMemoryCertificationsService, seed } from '../../in-memory-certifications.service';
+import { resetMockAdminPublicStatus } from '../../../../../shared/certificates/mock-tokens';
 import { ComponentRef } from '@angular/core';
 
 describe('CertificationRevokePage', () => {
@@ -12,6 +13,7 @@ describe('CertificationRevokePage', () => {
   let router: Router;
 
   beforeEach(async () => {
+    resetMockAdminPublicStatus();
     await TestBed.configureTestingModule({
       imports: [CertificationRevokePage],
       providers: [
