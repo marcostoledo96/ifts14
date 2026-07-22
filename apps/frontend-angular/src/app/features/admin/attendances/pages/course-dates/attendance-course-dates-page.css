@@ -20,6 +20,24 @@
   color: var(--color-muted-foreground);
 }
 
+.kicker a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.kicker a:hover {
+  color: var(--color-foreground);
+}
+
+.estado-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-3);
+}
+
 .title {
   margin: var(--space-1) 0 0;
   font-size: 1.75rem;

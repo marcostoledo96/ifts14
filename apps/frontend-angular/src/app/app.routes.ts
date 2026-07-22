@@ -113,6 +113,15 @@ export const routes: Routes = [
           import('./features/admin/students/pages/list/students-list-page').then((m) => m.StudentsListPage),
       },
       {
+        // Más específica que `asistencias`: intermedia de fechas del curso.
+        path: 'asistencias/curso/:id',
+        title: 'Admin · Fechas del curso · Asistencias — IFTS 14',
+        loadComponent: () =>
+          import(
+            './features/admin/attendances/pages/course-dates/attendance-course-dates-page'
+          ).then((m) => m.AttendanceCourseDatesPage),
+      },
+      {
         path: 'asistencias',
         title: 'Admin · Asistencias — IFTS 14',
         loadComponent: () =>
