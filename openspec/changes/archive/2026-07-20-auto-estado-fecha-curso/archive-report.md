@@ -1,8 +1,8 @@
 # Archive report — auto-estado-fecha-curso
 
-**Fecha**: 2026-07-20  
-**Veredicto verify**: PASS WITH WARNINGS (autoriza archive)  
-**Destino**: `openspec/changes/archive/2026-07-20-auto-estado-fecha-curso/`  
+**Fecha**: 2026-07-20
+**Veredicto verify**: PASS WITH WARNINGS (autoriza archive)
+**Destino**: `openspec/changes/archive/2026-07-20-auto-estado-fecha-curso/`
 **Modo**: hybrid (OpenSpec + Engram)
 
 ## Gate de cierre

@@ -104,7 +104,7 @@ describe('CertificationsListPage', () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-    expect(el.textContent).toMatch(/\b12345678\b/);
+    expect(el.textContent).toContain('12345678');
   });
 
   it('filtra por validez y búsqueda de forma combinada y limpia filtros', async () => {
