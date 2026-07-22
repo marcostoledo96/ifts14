@@ -32,7 +32,8 @@ La API DEBE exponer `GET /admin/certificados/{id}` con snapshot de fechas asisti
 - DADO un certificado existente con snapshot
 - CUANDO se consulta su detalle autorizado
 - ENTONCES la API DEBE responder `200` con `attendedDates`, `auditEvents` y `links`.
-- Y NO DEBE incluir token completo ni DNI completo.
+- Y DEBE incluir `documentMasked` con DNI completo (D0 2026-07-20).
+- Y NO DEBE incluir token completo ni el campo `documentNumber`.
 
 #### Scenario: Certificado inexistente
 
