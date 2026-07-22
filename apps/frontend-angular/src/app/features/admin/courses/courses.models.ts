@@ -2,6 +2,9 @@
 // Tipan el contrato backend actual (borrador/activo/cerrado/archivado)
 // sin crear deuda de tipos. Sin DNI, email, token ni datos de estudiantes.
 
+/** Tamaño de página del listado admin de cursos (paridad alumnos/certificaciones). */
+export const COURSES_PAGE_SIZE = 20;
+
 export type EstadoCurso = 'borrador' | 'activo' | 'cerrado' | 'archivado';
 export type EstadoFecha = 'programada' | 'realizada' | 'cancelada';
 

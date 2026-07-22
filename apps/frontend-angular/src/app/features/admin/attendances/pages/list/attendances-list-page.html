@@ -121,7 +121,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (fila of filtradas(); track fila.id) {
+          @for (fila of itemsVisibles(); track fila.id) {
             <tr>
               <td>
                 <span class="curso-nombre">{{ fila.nombre }}</span>
@@ -152,10 +152,47 @@
           }
         </tbody>
       </table>
+      <div class="list-footer">
+        <p class="footer-count">
+          Mostrando
+          <span class="count-mono">{{ itemsVisibles().length }}</span>
+          de
+          <span class="count-mono">{{ filtradas().length }}</span>
+          registros
+        </p>
+        <nav class="pager" aria-label="Paginación de asistencias">
+          <button
+            type="button"
+            class="pager-btn"
+            aria-label="Página anterior"
+            (click)="onPagina(paginaSegura() - 1)"
+            [disabled]="paginaSegura() === 1"
+          >‹</button>
+          @for (p of paginasVisibles(); track p) {
+            <button
+              type="button"
+              class="pager-btn pager-num"
+              [attr.aria-current]="p === paginaSegura() ? 'page' : null"
+              [attr.aria-label]="'Página ' + p"
+              (click)="onPagina(p)"
+            >{{ p }}</button>
+          }
+          @if (totalPaginas() > 5 && paginaSegura() < totalPaginas() - 2) {
+            <span class="pager-ellipsis" aria-hidden="true">…</span>
+          }
+          <button
+            type="button"
+            class="pager-btn"
+            aria-label="Página siguiente"
+            (click)="onPagina(paginaSegura() + 1)"
+            [disabled]="paginaSegura() === totalPaginas()"
+          >›</button>
+        </nav>
+      </div>
     </div>
 
     <ul class="lista-asis" data-testid="asistencias-cards">
-      @for (fila of filtradas(); track fila.id) {
+      @for (fila of itemsVisibles(); track fila.id) {
         <li>
           <article class="card-asis">
             <header class="card-asis-header">
@@ -186,5 +223,39 @@
         </li>
       }
     </ul>
+    <div class="cards-footer">
+      <p class="footer-count">
+        Mostrando
+        <span class="count-mono">{{ itemsVisibles().length }}</span>
+        de
+        <span class="count-mono">{{ filtradas().length }}</span>
+        registros
+      </p>
+      <nav class="pager" aria-label="Paginación de asistencias (móvil)">
+        <button
+          type="button"
+          class="pager-btn"
+          aria-label="Página anterior"
+          (click)="onPagina(paginaSegura() - 1)"
+          [disabled]="paginaSegura() === 1"
+        >‹</button>
+        @for (p of paginasVisibles(); track p) {
+          <button
+            type="button"
+            class="pager-btn pager-num"
+            [attr.aria-current]="p === paginaSegura() ? 'page' : null"
+            [attr.aria-label]="'Página ' + p"
+            (click)="onPagina(p)"
+          >{{ p }}</button>
+        }
+        <button
+          type="button"
+          class="pager-btn"
+          aria-label="Página siguiente"
+          (click)="onPagina(paginaSegura() + 1)"
+          [disabled]="paginaSegura() === totalPaginas()"
+        >›</button>
+      </nav>
+    </div>
   }
 </section>
