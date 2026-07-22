@@ -645,12 +645,21 @@ describe('app.routes', () => {
 
   // --- Rutas admin/asistencias F2-05 ---
 
-  it("admin children define asistencias, marcado y certificados de fecha", () => {
+  it("admin children define asistencias, intermedia, marcado y certificados de fecha", () => {
     const children = adminChildren();
     const paths = children.map((c) => c.path);
     expect(paths).toContain('asistencias');
+    expect(paths).toContain('asistencias/curso/:id');
     expect(paths).toContain('cursos/:id/fechas/:fechaId/asistencias');
     expect(paths).toContain('cursos/:id/fechas/:fechaId/asistencias/certificados');
+  });
+
+  it("orden seguro: asistencias/curso/:id ANTES que asistencias", () => {
+    const children = adminChildren();
+    const idxInter = children.findIndex((c) => c.path === 'asistencias/curso/:id');
+    const idxAsis = children.findIndex((c) => c.path === 'asistencias');
+    expect(idxInter).toBeGreaterThanOrEqual(0);
+    expect(idxAsis).toBeGreaterThan(idxInter);
   });
 
   it("orden seguro: …/asistencias/certificados ANTES que …/asistencias", () => {
@@ -668,10 +677,12 @@ describe('app.routes', () => {
   it("orden seguro: asistencias va después de dashboard y antes de cursos/nuevo", () => {
     const children = adminChildren();
     const idxDash = children.findIndex((c) => c.path === 'dashboard');
+    const idxInter = children.findIndex((c) => c.path === 'asistencias/curso/:id');
     const idxAsis = children.findIndex((c) => c.path === 'asistencias');
     const idxNuevo = children.findIndex((c) => c.path === 'cursos/nuevo');
     expect(idxDash).toBeGreaterThanOrEqual(0);
-    expect(idxAsis).toBeGreaterThan(idxDash);
+    expect(idxInter).toBeGreaterThan(idxDash);
+    expect(idxAsis).toBeGreaterThan(idxInter);
     expect(idxNuevo).toBeGreaterThan(idxAsis);
   });
 
@@ -725,6 +736,31 @@ describe('app.routes', () => {
     const harness = await RouterTestingHarness.create('/admin/asistencias');
     const cmp = harness.routeNativeElement?.querySelector('app-attendances-list-page');
     expect(cmp).not.toBeNull();
+  });
+
+  it("navegación real /admin/asistencias/curso/1 con sesión carga intermedia", async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes, withComponentInputBinding()),
+        { provide: ADMIN_AUTH, useClass: FakeAdminAuthService },
+      ],
+    }).compileComponents();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/admin/asistencias/curso/1');
+    expect(router.url).toBe('/admin/asistencias/curso/1');
+  });
+
+  it("runtime: /admin/asistencias/curso/1 instancia AttendanceCourseDatesPage", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/asistencias/curso/1');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-attendance-course-dates-page');
+    expect(cmp).not.toBeNull();
+    expect(cmp?.textContent).toContain('Curso de introducción a la gestión');
   });
 
   it("runtime: /admin/cursos/1/fechas/11/asistencias instancia AttendanceMarkingPage via route injector", async () => {
