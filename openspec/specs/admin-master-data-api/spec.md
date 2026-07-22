@@ -8,7 +8,7 @@ Definir la API administrativa mínima para cargar cursos, alumnos, fechas y asis
 
 ### Requirement: Administración de cursos
 
-La API DEBE permitir crear, listar, consultar detalle y actualizar estado de cursos mediante endpoints admin autorizados según `admin-auth`.
+La API DEBE permitir crear, listar, consultar detalle, actualizar estado y actualizar código/nombre de cursos mediante endpoints admin autorizados según `admin-auth`. `PATCH /admin/cursos/{id}` DEBE aceptar `codigo` y/o `nombre`; cuerpo vacío DEBE responder `400 VALIDATION_ERROR`; código duplicado DEBE responder `409 CONFLICT`.
 
 #### Scenario: Curso creado y consultable
 
@@ -22,9 +22,16 @@ La API DEBE permitir crear, listar, consultar detalle y actualizar estado de cur
 - CUANDO se actualiza su estado a un valor permitido
 - ENTONCES la API DEBE persistirlo y rechazar estados inválidos con `400 VALIDATION_ERROR`.
 
+#### Scenario: Código y nombre de curso actualizados
+
+- DADO un curso existente
+- CUANDO se envía `PATCH /admin/cursos/{id}` con `codigo` y/o `nombre` válidos
+- ENTONCES la API DEBE persistir los campos enviados y responder el DTO actualizado.
+- Y si el `codigo` ya pertenece a otro curso, DEBE responder `409 CONFLICT`.
+
 ### Requirement: Administración de alumnos con DNI seguro
 
-La API DEBE crear alumnos cifrando DNI con `dni_cipher_key`, guardar HMAC-SHA-256 binario de búsqueda usando esa misma clave y responder DTOs administrativos con DNI completo visible en `dniMostrar`/`documentMasked` (todos los dígitos; D0 2026-07-20). El email DEBE ser opcional (nullable) al crear o editar alumno. NO DEBE exponer `dni_hash`, `dni_cifrado`, token completo, SQL ni secretos. Logs, auditoría y errores NO DEBEN incluir DNI completo ni token completo.
+La API DEBE crear alumnos cifrando DNI con `dni_cipher_key`, guardar HMAC-SHA-256 binario de búsqueda usando esa misma clave y responder DTOs administrativos con DNI completo visible en `dniMostrar`/`documentMasked` (todos los dígitos; D0 2026-07-20). El alta DEBE exigir `apellido` y `nombre` separados; el DTO DEBE incluir `apellido`, `nombre` y `apellidoNombre` compuesto. El email DEBE ser opcional (nullable) al crear o editar alumno. La API DEBE permitir actualizar datos personales con `PATCH /admin/alumnos/{id}` (`apellido`, `nombre`, `email`, `estado` y/o `dni`); cambiar `dni` DEBE exigir `dni_cipher_key` válida y rechazar conflictos con `409 CONFLICT`. NO DEBE exponer `dni_hash`, `dni_cifrado`, token completo, SQL ni secretos. Logs, auditoría y errores NO DEBEN incluir DNI completo ni token completo.
 
 #### Scenario: Alumno creado con DNI cifrado
 
@@ -50,6 +57,28 @@ La API DEBE crear alumnos cifrando DNI con `dni_cipher_key`, guardar HMAC-SHA-25
 - DADO un alumno existente y configuración sin `dni_cipher_key`
 - CUANDO se actualiza su estado a un valor permitido
 - ENTONCES la API DEBE responder éxito porque no cifra ni descifra DNI.
+
+#### Scenario: Datos personales editados sin rotar DNI
+
+- DADO un alumno existente
+- CUANDO se envía `PATCH /admin/alumnos/{id}` con `apellido` y/o `nombre` y/o `email` (sin `dni`)
+- ENTONCES la API DEBE persistir los cambios y responder el DTO admin actualizado (`apellido`, `nombre`, `apellidoNombre` compuesto) sin exigir `dni_cipher_key`.
+
+#### Scenario: Cambio de DNI exige clave
+
+- DADO un alumno existente y configuración sin `dni_cipher_key`
+- CUANDO se envía `PATCH /admin/alumnos/{id}` con `dni`
+- ENTONCES la API DEBE responder `500 CONFIGURATION_ERROR` sin persistir el cambio de documento.
+
+### Requirement: Hub de asistencias admin
+
+La API DEBE exponer `GET /admin/hub/asistencias` autorizado que devuelva en un solo payload `cursos` (con `cantidadFechas`), `fechas`, `asistencias` activas y `alumnosActivos`, para evitar N+1 de fechas/asistencias por curso en el hub admin.
+
+#### Scenario: Hub consolidado
+
+- DADO un admin autorizado
+- CUANDO consulta `GET /admin/hub/asistencias`
+- ENTONCES la API DEBE responder `200` con las cuatro claves y DTOs seguros (sin DNI/token completos fuera de los campos admin previstos).
 
 ### Requirement: Administración de fechas de curso
 

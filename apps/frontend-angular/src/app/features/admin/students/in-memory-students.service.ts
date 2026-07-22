@@ -22,7 +22,7 @@ export const seed: readonly SeedAlumnoRaw[] = initialSeed;
 const CURSOS_MOCK_MAP: Record<number, CursoPresente[]> = {
   1: [
     { id: '1', nombre: 'Curso de introducción a la gestión', codigo: 'CUR-001', presentes: ['2026-03-02', '2026-03-09', '2026-03-16'], estadoCert: 'emitida', certificacionId: '1' },
-    { id: '2', nombre: 'Curso de herramientas administrativas', codigo: 'CUR-002', presentes: ['2026-04-05', '2026-04-12'], estadoCert: 'emitida', certificacionId: '2' },
+    { id: '2', nombre: 'Curso de herramientas administrativas', codigo: 'CUR-002', presentes: ['2026-04-05', '2026-04-12'], estadoCert: 'en-curso', certificacionId: null },
     { id: '3', nombre: 'Curso de prácticas documentales', codigo: 'CUR-003', presentes: ['2026-05-04'], estadoCert: 'pendiente', certificacionId: null },
     { id: '6', nombre: 'Curso de atención al público', codigo: 'CUR-006', presentes: ['2026-06-01'], estadoCert: 'en-curso', certificacionId: null },
   ],
@@ -57,15 +57,6 @@ const CURSOS_MOCK_MAP: Record<number, CursoPresente[]> = {
     { id: '6', nombre: 'Curso de atención al público', codigo: 'CUR-006', presentes: ['2026-06-01', '2026-06-08', '2026-06-15'], estadoCert: 'emitida', certificacionId: '6' },
   ],
 };
-
-function splitApellidoNombre(apellidoNombre: string): { apellido: string; nombre: string } {
-  const trimmed = apellidoNombre.trim();
-  const idx = trimmed.indexOf(' ');
-  if (idx === -1) {
-    return { apellido: trimmed, nombre: '' };
-  }
-  return { apellido: trimmed.slice(0, idx), nombre: trimmed.slice(idx + 1).trim() };
-}
 
 function normalizeEmail(email: string | null | undefined): string | null {
   const trimmed = (email ?? '').trim();
@@ -116,17 +107,17 @@ export class InMemoryStudentsService implements StudentsService {
   }
 
   async crear(draft: AlumnoDraft): Promise<AlumnoDetalle> {
-    const apellidoNombre = draft.apellidoNombre.trim();
+    const apellido = draft.apellido.trim();
+    const nombre = draft.nombre.trim();
     const dni = draft.dni.trim().replace(/\D/g, '');
-    if (!apellidoNombre || !dni) {
-      throw new Error('apellidoNombre y dni son requeridos');
+    if (!apellido || !nombre || !dni) {
+      throw new Error('apellido, nombre y dni son requeridos');
     }
     const existente = this.rows.find((alumno) => alumno.dniMostrar === dni);
     if (existente) {
       throw new StudentDuplicateError(existente.id);
     }
     const email = normalizeEmail(draft.email);
-    const { apellido, nombre } = splitApellidoNombre(apellidoNombre);
     const id = this.nextId++;
     const row: SeedAlumnoRaw = {
       id,
@@ -144,6 +135,40 @@ export class InMemoryStudentsService implements StudentsService {
     return {
       ...row,
       cursos: [],
+    };
+  }
+
+  async actualizar(id: number, draft: AlumnoDraft): Promise<AlumnoDetalle> {
+    const idx = this.rows.findIndex((alumno) => alumno.id === id);
+    if (idx < 0) {
+      throw new Error('Alumno no encontrado.');
+    }
+    const apellido = draft.apellido.trim();
+    const nombre = draft.nombre.trim();
+    const dni = draft.dni.trim().replace(/\D/g, '');
+    if (!apellido || !nombre || !dni) {
+      throw new Error('apellido, nombre y dni son requeridos');
+    }
+    const conflicto = this.rows.find((alumno) => alumno.dniMostrar === dni && alumno.id !== id);
+    if (conflicto) {
+      throw new StudentDuplicateError(conflicto.id);
+    }
+    const email = normalizeEmail(draft.email);
+    const prev = this.rows[idx];
+    const row: SeedAlumnoRaw = {
+      ...prev,
+      apellido,
+      nombre,
+      dniMostrar: dni,
+      email,
+      estado: draft.estado ?? prev.estado,
+      tieneEmail: email !== null,
+    };
+    this.rows = this.rows.map((r, i) => (i === idx ? row : r));
+    const cursos = CURSOS_MOCK_MAP[id] || [];
+    return {
+      ...row,
+      cursos: JSON.parse(JSON.stringify(cursos)) as CursoPresente[],
     };
   }
 }

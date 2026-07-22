@@ -36,6 +36,7 @@ function stubSource(
     contar: () => Promise.resolve(0),
     obtener: () => Promise.resolve(null),
     crear: () => Promise.reject(new Error('not used')),
+    actualizar: () => Promise.reject(new Error('not used')),
     ...source,
   };
 }

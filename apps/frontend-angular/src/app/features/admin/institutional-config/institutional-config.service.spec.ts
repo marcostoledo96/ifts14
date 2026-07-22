@@ -24,6 +24,14 @@ const DTO = {
   advisorName: 'Asesor Demo',
   advisorRole: 'Secretario Académico',
   updatedAt: '2026-01-01T00:00:00Z',
+  parameters: {
+    titulo_certificado: {
+      value: 'Certificado de Aprobación',
+      type: 'texto',
+      group: 'certificados',
+      label: 'Título del certificado',
+    },
+  },
 };
 
 describe('HttpInstitutionalConfigService', () => {
@@ -57,6 +65,8 @@ describe('HttpInstitutionalConfigService', () => {
     expect(result.advisorName).toBe('Asesor Demo');
     expect(result.advisorRole).toBe('Secretario Académico');
     expect(result.updatedAt).toBe('2026-01-01T00:00:00Z');
+    expect(result.parameters.titulo_certificado.value).toBe('Certificado de Aprobación');
+    expect(result.parameters.email_contacto.value).toContain('@');
   });
 
   it('obtener normaliza campos null del backend a string vacío (updatedAt queda null)', async () => {
@@ -82,6 +92,7 @@ describe('HttpInstitutionalConfigService', () => {
     expect(result.advisorName).toBe('');
     expect(result.advisorRole).toBe('');
     expect(result.updatedAt).toBeNull();
+    expect(result.parameters.titulo_certificado.value).toBe('Certificado de Aprobación');
   });
 
   it('guardar hace PUT con el payload del contrato y devuelve data de la respuesta', async () => {
@@ -92,17 +103,30 @@ describe('HttpInstitutionalConfigService', () => {
       rectorRole: 'Directora',
       advisorName: 'Nueva Asesora',
       advisorRole: 'Secretaria',
+      parameters: { titulo_certificado: 'Título editado' },
     };
     const p = service.guardar(payload);
     const req = httpMock.expectOne(API_URL);
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual(payload);
     req.flush({
-      data: { ...payload, updatedAt: '2026-02-02T10:00:00Z' },
+      data: {
+        ...payload,
+        parameters: {
+          titulo_certificado: {
+            value: 'Título editado',
+            type: 'texto',
+            group: 'certificados',
+            label: 'Título del certificado',
+          },
+        },
+        updatedAt: '2026-02-02T10:00:00Z',
+      },
       meta: { requestId: 'r3' },
     });
     const result = await p;
     expect(result.institutionName).toBe('IFTS N.° 14 editado');
+    expect(result.parameters.titulo_certificado.value).toBe('Título editado');
     expect(result.updatedAt).toBe('2026-02-02T10:00:00Z');
   });
 
@@ -133,6 +157,7 @@ describe('HttpInstitutionalConfigService', () => {
       rectorRole: '',
       advisorName: '',
       advisorRole: '',
+      parameters: {},
     });
     const req = httpMock.expectOne(API_URL);
     req.flush(
@@ -151,6 +176,7 @@ describe('HttpInstitutionalConfigService', () => {
       rectorRole: '',
       advisorName: '',
       advisorRole: '',
+      parameters: {},
     });
     const req = httpMock.expectOne(API_URL);
     req.flush('Server crash', { status: 500, statusText: 'Internal Server Error' });
@@ -175,6 +201,7 @@ describe('InMemoryInstitutionalConfigService', () => {
     expect(config.institutionName).toBe('Instituto de Formación Técnica Superior N.° 14');
     expect(config.rectorRole).toBeTruthy();
     expect(config.advisorRole).toBeTruthy();
+    expect(config.parameters.titulo_certificado.value).toBe('Certificado de Aprobación');
   });
 
   it('guardar muta el seed y setea updatedAt', async () => {
@@ -186,11 +213,14 @@ describe('InMemoryInstitutionalConfigService', () => {
       rectorRole: 'Cargo editado',
       advisorName: 'Asesor editado',
       advisorRole: 'Cargo asesor editado',
+      parameters: { titulo_certificado: 'Título mock' },
     });
     expect(saved.institutionName).toBe('Instituto editado');
+    expect(saved.parameters.titulo_certificado.value).toBe('Título mock');
     expect(saved.updatedAt).not.toBe(before.updatedAt);
     const after = await service.obtener();
     expect(after.institutionName).toBe('Instituto editado');
     expect(after.certificateText).toBe('texto editado');
+    expect(after.parameters.titulo_certificado.value).toBe('Título mock');
   });
 });

@@ -23,11 +23,11 @@ describe('CertificationsListPage', () => {
     return fixture;
   }
 
-  it('muestra título Certificaciones y banner demo', async () => {
+  it('muestra título Certificaciones y oculta banner demo con API real', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Certificaciones');
-    expect(el.textContent).toContain('Datos de demostración');
+    expect(el.textContent).not.toContain('Datos de demostración');
   });
 
   it('expone CTA Nueva certificación hacia /admin/certificaciones/nueva', async () => {
@@ -73,7 +73,8 @@ describe('CertificationsListPage', () => {
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('table caption')).not.toBeNull();
     expect(el.querySelectorAll('th[scope="col"]').length).toBe(6);
-    expect(el.querySelectorAll('.cards-mobile article').length).toBe(5);
+    // Seed mock: 6 ítems; con PAGINA_TAMANO=20 caben todos en la primera página.
+    expect(el.querySelectorAll('.cards-mobile article').length).toBe(6);
     expect(el.querySelector('.cards-mobile dl')).not.toBeNull();
   });
 
@@ -104,7 +105,8 @@ describe('CertificationsListPage', () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-    expect(el.textContent).toMatch(/\b12345678\b/);
+    // textContent concatena celdas sin espacio (…12345678Curso…); no usar \b.
+    expect(el.textContent).toContain('12345678');
   });
 
   it('filtra por validez y búsqueda de forma combinada y limpia filtros', async () => {
@@ -155,13 +157,9 @@ describe('CertificationsListPage', () => {
     );
   });
 
-  it('pagina de a cinco y vuelve a la primera página al cambiar filtros', async () => {
+  it('pagina de a 20 y vuelve a la primera página al cambiar filtros', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const next = el.querySelector('nav[aria-label="Paginación"] button[aria-label="Página siguiente"]') as HTMLButtonElement;
-    next.click();
-    f.detectChanges();
-    expect(el.querySelector('[aria-current="page"]')?.textContent).toContain('2');
     const input = el.querySelector('input[type="search"]') as HTMLInputElement;
     input.value = 'Uno';
     input.dispatchEvent(new Event('input'));

@@ -1,12 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map } from 'rxjs';
+import { filter, map, tap } from 'rxjs';
 import { ADMIN_AUTH } from './admin-auth.service';
 import { SidebarAdmin } from './sidebar-admin';
 
 // Shell admin: sidebar fija desktop / drawer mobile, main#contenido y footer.
-// F2-04: rutas hijas con <router-outlet> (dashboard, cursos/*).
+// Barra de progreso al navegar entre rutas lazy (links del menú y internos).
 @Component({
   selector: 'app-admin-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -18,14 +25,8 @@ export class AdminShell {
   private readonly auth = inject(ADMIN_AUTH);
   private readonly router = inject(Router);
 
-  // Drawer mobile: cerrado por defecto. El botón hamburguesa abre;
-  // click en overlay cierra. Render condicional para evitar exponer
-  // nav/logout a teclado/screen readers cuando está cerrado.
   readonly menuAbierto = signal(false);
 
-
-  // Ruta actual del router (string post-NavigationEnd). Se pasa como
-  // [active] a SidebarAdmin para que marque la sección vigente.
   readonly rutaActual = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -33,6 +34,32 @@ export class AdminShell {
     ),
     { initialValue: this.router.url },
   );
+
+  private readonly navTransit = toSignal(
+    this.router.events.pipe(
+      tap((e) => {
+        if (e instanceof NavigationStart) this.menuAbierto.set(false);
+      }),
+      map((e) => {
+        if (e instanceof NavigationStart) {
+          return { active: true as const, url: e.url };
+        }
+        if (
+          e instanceof NavigationEnd ||
+          e instanceof NavigationCancel ||
+          e instanceof NavigationError
+        ) {
+          return { active: false as const, url: null as string | null };
+        }
+        return null;
+      }),
+      filter((v): v is NonNullable<typeof v> => v !== null),
+    ),
+    { initialValue: { active: false as const, url: null as string | null } },
+  );
+
+  readonly navegando = computed(() => this.navTransit().active);
+  readonly rutaPendiente = computed(() => this.navTransit().url);
 
   abrirMenu(): void {
     this.menuAbierto.set(true);

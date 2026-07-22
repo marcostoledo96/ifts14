@@ -35,7 +35,31 @@
   </aside>
 
   @if (cargando()) {
-    <p class="estado-linea">Cargando configuración…</p>
+    <div class="config-skeleton" aria-busy="true" aria-label="Cargando configuración">
+      <div class="sk-head-row">
+        <app-ui-spinner size="sm" [decorative]="false" label="Cargando configuración" />
+        <span class="sk-label">Cargando configuración…</span>
+      </div>
+      <div class="config-layout">
+        <nav class="config-nav" aria-hidden="true">
+          <div class="config-nav-sticky sk-nav">
+            @for (_ of [1, 2, 3, 4, 5]; track $index) {
+              <span class="sk-bar sk-pulse sk-bar--nav"></span>
+            }
+          </div>
+        </nav>
+        <div class="config-sections">
+          @for (_ of [1, 2]; track $index) {
+            <section class="cfg-section sk-section">
+              <span class="sk-bar sk-pulse sk-bar--section-title"></span>
+              <span class="sk-bar sk-pulse sk-bar--field"></span>
+              <span class="sk-bar sk-pulse sk-bar--field"></span>
+              <span class="sk-bar sk-pulse sk-bar--textarea"></span>
+            </section>
+          }
+        </div>
+      </div>
+    </div>
   }
 
   @if (error()) {
@@ -59,7 +83,11 @@
             <p class="config-nav-kicker">Secciones</p>
             <ul class="config-nav-list">
               <li>
-                <a href="#identidad" class="config-nav-link">
+                <a
+                  href="#identidad"
+                  class="config-nav-link"
+                  (click)="irASeccion($event, 'identidad')"
+                >
                   <span class="config-nav-num">01</span>
                   <svg class="config-nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path
@@ -74,7 +102,11 @@
                 </a>
               </li>
               <li>
-                <a href="#certificados" class="config-nav-link">
+                <a
+                  href="#certificados"
+                  class="config-nav-link"
+                  (click)="irASeccion($event, 'certificados')"
+                >
                   <span class="config-nav-num">02</span>
                   <svg class="config-nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.75" />
@@ -90,7 +122,11 @@
                 </a>
               </li>
               <li>
-                <a href="#autoridades" class="config-nav-link">
+                <a
+                  href="#autoridades"
+                  class="config-nav-link"
+                  (click)="irASeccion($event, 'autoridades')"
+                >
                   <span class="config-nav-num">03</span>
                   <svg class="config-nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path
@@ -112,7 +148,11 @@
                 </a>
               </li>
               <li>
-                <a href="#contacto" class="config-nav-link">
+                <a
+                  href="#contacto"
+                  class="config-nav-link"
+                  (click)="irASeccion($event, 'contacto')"
+                >
                   <span class="config-nav-num">04</span>
                   <svg class="config-nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.75" />
@@ -127,7 +167,11 @@
                 </a>
               </li>
               <li>
-                <a href="#validacion" class="config-nav-link">
+                <a
+                  href="#validacion"
+                  class="config-nav-link"
+                  (click)="irASeccion($event, 'validacion')"
+                >
                   <span class="config-nav-num">05</span>
                   <svg class="config-nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <rect x="4" y="4" width="6" height="6" stroke="currentColor" stroke-width="1.75" />
@@ -147,7 +191,7 @@
 
         <div class="config-sections">
           <!-- 01 Identidad: nombre → logos → texto institucional (orden v0) -->
-          <section id="identidad" class="cfg-section" aria-labelledby="identidad-titulo">
+          <section id="identidad" class="cfg-section" tabindex="-1" aria-labelledby="identidad-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
@@ -225,20 +269,19 @@
                 <textarea
                   id="texto-institucional"
                   rows="3"
-                  [value]="demo.textoInstitucional"
-                  disabled
-                  aria-disabled="true"
+                  [value]="textoInstitucional()"
+                  (input)="onParameterInput('texto_institucional', $event)"
+                  [attr.maxlength]="limits.parameterTextarea"
                 ></textarea>
                 <p class="cfg-ayuda">
-                  Descripción breve del instituto. No forma parte del contrato persistido;
-                  se muestra acá solo como referencia visual.
+                  Descripción breve del instituto. Se guarda en parámetros de sistema.
                 </p>
               </div>
             </div>
           </section>
 
-          <!-- 02 Certificados: título → texto base → formato/link → QR -->
-          <section id="certificados" class="cfg-section" aria-labelledby="certificados-titulo">
+          <!-- 02 Certificados: título → texto base → QR -->
+          <section id="certificados" class="cfg-section" tabindex="-1" aria-labelledby="certificados-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
@@ -258,7 +301,7 @@
                   <h2 id="certificados-titulo" class="cfg-section-title">Certificados</h2>
                 </div>
                 <p class="cfg-section-desc">
-                  Textos base y numeración que estructuran cada documento emitido.
+                  Textos base que estructuran cada documento emitido.
                 </p>
               </div>
             </header>
@@ -268,13 +311,12 @@
                 <input
                   id="titulo-cert"
                   type="text"
-                  [value]="demo.tituloCert"
-                  disabled
-                  aria-disabled="true"
+                  [value]="tituloCertificado()"
+                  (input)="onParameterInput('titulo_certificado', $event)"
+                  [attr.maxlength]="limits.parameterText"
                 />
                 <p class="cfg-ayuda">
-                  Encabezado del documento. No editable: no forma parte del contrato
-                  persistido.
+                  Encabezado del documento. Se guarda en parámetros de sistema.
                 </p>
               </div>
 
@@ -295,60 +337,22 @@
                 </p>
               </div>
 
-              <div class="campo-grid">
-                <div class="campo">
-                  <label class="cfg-label" for="formato-numero">Formato de número</label>
-                  <div class="input-affix">
-                    <span class="input-affix-icon" aria-hidden="true">#</span>
-                    <input
-                      id="formato-numero"
-                      type="text"
-                      class="input-mono"
-                      [value]="demo.formatoNumero"
-                      disabled
-                      aria-disabled="true"
-                    />
-                  </div>
-                  <p class="cfg-ayuda">
-                    Variables
-                    <code>{{ '{' }}CURSO{{ '}' }}</code>,
-                    <code>{{ '{' }}AÑO{{ '}' }}</code> y
-                    <code>{{ '{' }}SEC{{ '}' }}</code>. Solo referencia visual.
-                  </p>
-                </div>
-                <div class="campo">
-                  <label class="cfg-label" for="link-validacion">Link base de validación</label>
-                  <div class="input-prefix">
-                    <span class="input-prefix-label">https://</span>
-                    <input
-                      id="link-validacion"
-                      type="text"
-                      class="input-mono"
-                      [value]="demo.linkValidacion"
-                      disabled
-                      aria-disabled="true"
-                    />
-                  </div>
-                  <p class="cfg-ayuda">Se antepone al ID único del certificado en el QR.</p>
-                </div>
-              </div>
-
               <div class="campo">
                 <label class="cfg-label" for="texto-qr">Texto de validación QR</label>
                 <textarea
                   id="texto-qr"
                   rows="2"
-                  [value]="demo.textoQr"
-                  disabled
-                  aria-disabled="true"
+                  [value]="textoQr()"
+                  (input)="onParameterInput('texto_qr', $event)"
+                  [attr.maxlength]="limits.parameterTextarea"
                 ></textarea>
-                <p class="cfg-ayuda">Leyenda impresa junto al código QR. Solo referencia visual.</p>
+                <p class="cfg-ayuda">Leyenda impresa junto al código QR.</p>
               </div>
             </div>
           </section>
 
           <!-- 03 Autoridades -->
-          <section id="autoridades" class="cfg-section" aria-labelledby="autoridades-titulo">
+          <section id="autoridades" class="cfg-section" tabindex="-1" aria-labelledby="autoridades-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
@@ -481,7 +485,7 @@
           </section>
 
           <!-- 04 Contacto: email presentacional → nota entrega manual -->
-          <section id="contacto" class="cfg-section" aria-labelledby="contacto-titulo">
+          <section id="contacto" class="cfg-section" tabindex="-1" aria-labelledby="contacto-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
@@ -514,9 +518,9 @@
                   <input
                     id="email-contacto"
                     type="email"
-                    [value]="demo.emailContacto"
-                    disabled
-                    aria-disabled="true"
+                    [value]="emailContacto()"
+                    (input)="onParameterInput('email_contacto', $event)"
+                    [attr.maxlength]="limits.parameterText"
                   />
                 </div>
                 <p class="cfg-ayuda">
@@ -544,7 +548,7 @@
           </section>
 
           <!-- 05 Validación: textos presentacionales deshabilitados -->
-          <section id="validacion" class="cfg-section" aria-labelledby="validacion-titulo">
+          <section id="validacion" class="cfg-section" tabindex="-1" aria-labelledby="validacion-titulo">
             <header class="cfg-section-header">
               <span class="cfg-section-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
@@ -573,12 +577,12 @@
                 <textarea
                   id="texto-validacion"
                   rows="2"
-                  [value]="demo.textoValidacion"
-                  disabled
-                  aria-disabled="true"
+                  [value]="textoValidacion()"
+                  (input)="onParameterInput('texto_validacion', $event)"
+                  [attr.maxlength]="limits.parameterTextarea"
                 ></textarea>
                 <p class="cfg-ayuda">
-                  Introducción en la página pública. No se edita desde esta pantalla.
+                  Introducción en la página pública. Se guarda en parámetros de sistema.
                 </p>
               </div>
 
@@ -590,9 +594,9 @@
                     id="sitio-instituto"
                     type="text"
                     class="input-mono"
-                    [value]="demo.sitioInstituto"
-                    disabled
-                    aria-disabled="true"
+                    [value]="sitioInstituto()"
+                    (input)="onParameterInput('sitio_instituto', $event)"
+                    [attr.maxlength]="limits.parameterText"
                   />
                 </div>
                 <p class="cfg-ayuda">Referencia oficial en la validación pública.</p>
@@ -605,9 +609,9 @@
                   <textarea
                     id="msg-valido"
                     rows="2"
-                    [value]="demo.msgValido"
-                    disabled
-                    aria-disabled="true"
+                    [value]="msgValido()"
+                    (input)="onParameterInput('msg_valido', $event)"
+                    [attr.maxlength]="limits.parameterTextarea"
                     aria-label="Mensaje para Certificado válido"
                   ></textarea>
                 </div>
@@ -616,9 +620,9 @@
                   <textarea
                     id="msg-revocado"
                     rows="2"
-                    [value]="demo.msgRevocado"
-                    disabled
-                    aria-disabled="true"
+                    [value]="msgRevocado()"
+                    (input)="onParameterInput('msg_revocado', $event)"
+                    [attr.maxlength]="limits.parameterTextarea"
                     aria-label="Mensaje para Certificado revocado"
                   ></textarea>
                 </div>
@@ -627,19 +631,19 @@
                   <textarea
                     id="msg-no-encontrado"
                     rows="2"
-                    [value]="demo.msgNoEncontrado"
-                    disabled
-                    aria-disabled="true"
+                    [value]="msgNoEncontrado()"
+                    (input)="onParameterInput('msg_no_encontrado', $event)"
+                    [attr.maxlength]="limits.parameterTextarea"
                     aria-label="Mensaje para Token no encontrado"
                   ></textarea>
                 </div>
               </div>
 
               <div class="honest-block static-info" role="note">
-                <p class="honest-title">Mensajes fijos en la aplicación</p>
+                <p class="honest-title">Mensajes de validación pública</p>
                 <p class="honest-text">
-                  Estos textos no se editan desde esta pantalla. Ante cambios, contactar al
-                  equipo técnico.
+                  Los textos de esta sección se guardan en parámetros de sistema. El cableado
+                  a la página pública de validación queda para un ciclo posterior.
                 </p>
               </div>
             </div>

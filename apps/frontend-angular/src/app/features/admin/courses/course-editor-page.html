@@ -8,7 +8,35 @@
   </a>
 
   @if (cargando()) {
-    <p class="estado-linea">Cargando editor…</p>
+    <div class="editor-skeleton" aria-busy="true" aria-label="Cargando editor">
+      <header class="editor-header">
+        <div class="header-text">
+          <span class="sk-bar sk-pulse sk-bar--kicker"></span>
+          <span class="sk-bar sk-pulse sk-bar--title"></span>
+        </div>
+      </header>
+      <div class="sk-head-row">
+        <app-ui-spinner size="sm" [decorative]="false" label="Cargando editor" />
+        <span class="sk-label">Cargando editor…</span>
+      </div>
+      <section class="panel sk-panel">
+        <span class="sk-bar sk-pulse sk-bar--panel-title"></span>
+        <div class="sk-fields">
+          <span class="sk-bar sk-pulse sk-bar--field"></span>
+          <span class="sk-bar sk-pulse sk-bar--field"></span>
+        </div>
+      </section>
+      <section class="panel sk-panel">
+        <span class="sk-bar sk-pulse sk-bar--panel-title"></span>
+        @for (_ of [1, 2, 3]; track $index) {
+          <div class="sk-fecha-row">
+            <span class="sk-bar sk-pulse sk-bar--idx"></span>
+            <span class="sk-bar sk-pulse sk-bar--field"></span>
+            <span class="sk-bar sk-pulse sk-bar--field sk-bar--desc"></span>
+          </div>
+        }
+      </section>
+    </div>
   }
 
   @if (!cargando()) {
@@ -38,10 +66,6 @@
       }
     </header>
 
-    <p class="demo-banner" role="status">
-      Datos de demostración: en modo mock los cambios viven en memoria hasta recargar.
-    </p>
-
     @if (error()) {
       <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
     }
@@ -58,7 +82,7 @@
               @if (mode() === 'create') {
                 Código y nombre obligatorios. El curso se crea en estado activo.
               } @else {
-                Código y nombre no se pueden editar (sin endpoint de actualización).
+                Podés corregir código y nombre. El código debe ser único.
               }
             </p>
           </header>
@@ -70,7 +94,6 @@
                 type="text"
                 [value]="codigo()"
                 (input)="onCodigo($event)"
-                [disabled]="mode() === 'edit'"
                 autocomplete="off"
                 required
               />
@@ -82,7 +105,6 @@
                 type="text"
                 [value]="nombre()"
                 (input)="onNombre($event)"
-                [disabled]="mode() === 'edit'"
                 placeholder="ej. Introducción a Redes de Datos"
                 required
               />

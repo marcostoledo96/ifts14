@@ -10,14 +10,6 @@
     </div>
   </div>
 
-  <p class="demo-banner" role="status">
-    <svg class="demo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-      <circle cx="12" cy="12" r="9"/>
-      <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-    </svg>
-    Datos de demostración: los cambios no se persisten al recargar.
-  </p>
-
   <section class="filtros" aria-label="Buscar y filtrar fechas de asistencia">
     <div class="filtros-main">
       <label class="filtro-search" for="buscar-asistencia">
@@ -81,6 +73,7 @@
   @if (cargando()) {
     <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando asistencias">
       <div class="skeleton-head">
+        <app-ui-spinner size="sm" />
         <span class="skeleton-label">Cargando fechas…</span>
       </div>
       <ul class="skeleton-rows">

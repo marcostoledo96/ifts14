@@ -5,11 +5,12 @@ import { ATTENDANCE_SOURCE } from '../../../attendances/data/attendance.token';
 import { Asistencia, AttendanceService } from '../../../attendances/models/attendance.types';
 import { AlumnoDetalle, CursoPresente } from '../../students.models';
 import { STUDENTS_SOURCE } from '../../students.service';
+import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 @Component({
   selector: 'app-student-detail-page',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, UiSpinner],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './student-detail-page.html',
   styleUrl: './student-detail-page.css',

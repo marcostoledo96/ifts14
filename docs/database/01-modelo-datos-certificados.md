@@ -89,12 +89,13 @@ La migración `database/migrations/003_cursos_alumnos_asistencias.sql` agrega el
 | `cert_asistencias` | La presencia se representa por existencia de fila. No existe booleano `presente`. `eliminado_en` permite correcciones y `asistencia_activa` bloquea duplicados activos. |
 | `cert_certificado_fechas` | Snapshot de fechas certificadas: conserva FK a `cert_curso_fechas` y materializa `fecha`, `descripcion` y `orden` para estabilidad histórica. |
 | `cert_configuracion_institucional` | Configuración institucional de una sola fila (`CHECK id = 1`) para firmantes y texto del certificado, sin secretos. |
+| `cert_parametros_sistema` | KV tipado (migración `013`) para textos de Configuración admin (identidad extra, certificados, contacto, validación). Complementa la fila única; no reemplaza firmantes/PDF. |
 
 #### Reglas de integridad relevantes
 
 - `cert_asistencias` usa `asistencia_activa TINYINT AS (CASE WHEN eliminado_en IS NULL THEN 1 ELSE NULL END) STORED` y `UNIQUE(alumno_id, curso_fecha_id, asistencia_activa)`; MariaDB permite múltiples `NULL`, por eso se conserva historial eliminado y se impide una sola asistencia activa duplicada.
 - `cert_certificado_fechas` es una copia materializada. Las modificaciones realizadas mediante los servicios administrativos reconstruyen el snapshot dentro de la misma transacción e invalidan el PDF. Los cambios directos en base de datos, fuera del servicio, no disparan sincronización automática.
-- `cert_configuracion_institucional` es single-row para evitar una tabla KV innecesaria en el MVP.
+- `cert_configuracion_institucional` es single-row para firmantes y texto del PDF. Los textos adicionales de UI viven en `cert_parametros_sistema` (migración `013`).
 
 ### M4-04 — Vínculo certificado-alumno-curso
 

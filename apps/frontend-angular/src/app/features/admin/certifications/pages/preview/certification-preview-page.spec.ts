@@ -10,6 +10,7 @@ import {
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
 import { URL_PUBLICA_MAX } from '../../in-memory-certifications.service';
 import {
+  emptyParameters,
   INSTITUTIONAL_CONFIG_SOURCE,
   InstitutionalConfig,
   InstitutionalConfigService,
@@ -66,6 +67,7 @@ function mockClipboard(writeText: jasmine.Spy): () => void {
 function configFixture(
   overrides: Partial<InstitutionalConfig> = {},
 ): InstitutionalConfig {
+  const { parameters: paramOverride, ...rest } = overrides;
   return {
     institutionName: 'IFTS N.° 14',
     certificateText: 'Texto demo',
@@ -74,7 +76,8 @@ function configFixture(
     advisorName: 'Asesor Real',
     advisorRole: 'Asesor/a pedagógico/a',
     updatedAt: '2026-01-01T00:00:00Z',
-    ...overrides,
+    ...rest,
+    parameters: paramOverride ?? emptyParameters(),
   };
 }
 
@@ -151,9 +154,9 @@ describe('CertificationPreviewPage', () => {
     expect(urlText).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
   });
 
-  // --- REQ-CPREV: Copiar / Compartir habilitados ---
+  // --- REQ-CPREV: Copiar / Descargar QR habilitados ---
 
-  it('REQ-CPREV-003: Copiar y Compartir quedan habilitados con URL canónica (sin F6-03)', async () => {
+  it('REQ-CPREV-003: Copiar y Descargar QR quedan habilitados con URL canónica (sin F6-03)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).not.toContain('F6-03');
@@ -161,13 +164,13 @@ describe('CertificationPreviewPage', () => {
     const copiar = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
       b.textContent?.includes('Copiar link'),
     );
-    const compartir = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
-      b.textContent?.includes('Compartir'),
+    const descargarQr = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Descargar QR'),
     );
     expect(copiar).toBeTruthy();
-    expect(compartir).toBeTruthy();
+    expect(descargarQr).toBeTruthy();
     expect((copiar as HTMLButtonElement).disabled).toBeFalse();
-    expect((compartir as HTMLButtonElement).disabled).toBeFalse();
+    expect((descargarQr as HTMLButtonElement).disabled).toBeFalse();
   });
 
   it('REQ-CPREV-002: Copiar usa URL de entrega-manual, no la truncada de detalle', async () => {
@@ -199,18 +202,18 @@ describe('CertificationPreviewPage', () => {
     restoreClipboard();
   });
 
-  it('REQ-CPREV-003: revocado deshabilita Copiar y Compartir', async () => {
+  it('REQ-CPREV-003: revocado deshabilita Copiar y Descargar QR', async () => {
     const f = await render('5');
     const el = f.nativeElement as HTMLElement;
     const acciones = el.querySelector('.acciones-panel');
     const copiar = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
       b.textContent?.includes('Copiar link'),
     );
-    const compartir = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
-      b.textContent?.includes('Compartir'),
+    const descargarQr = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Descargar QR'),
     );
     expect((copiar as HTMLButtonElement).disabled).toBeTrue();
-    expect((compartir as HTMLButtonElement).disabled).toBeTrue();
+    expect((descargarQr as HTMLButtonElement).disabled).toBeTrue();
     expect(copiar?.getAttribute('aria-disabled')).toBe('true');
   });
 
@@ -233,44 +236,15 @@ describe('CertificationPreviewPage', () => {
     const copiar = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
       b.textContent?.includes('Copiar link'),
     );
-    const compartir = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
-      b.textContent?.includes('Compartir'),
+    const descargarQr = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Descargar QR'),
     );
     expect((copiar as HTMLButtonElement).disabled).toBeTrue();
-    expect((compartir as HTMLButtonElement).disabled).toBeTrue();
+    expect((descargarQr as HTMLButtonElement).disabled).toBeTrue();
   });
 
-  it('REQ-CPREV-004: AbortError de Web Share no dispara clipboard ni error', async () => {
-    const writeText = jasmine.createSpy('writeText').and.resolveTo(undefined);
-    const restoreClipboard = mockClipboard(writeText);
-    const abort = Object.assign(new Error('cancel'), { name: 'AbortError' });
-    const shareSpy = jasmine.createSpy('share').and.rejectWith(abort);
-    Object.defineProperty(navigator, 'share', {
-      configurable: true,
-      writable: true,
-      value: shareSpy,
-    });
-
-    const f = await render('1');
-    const el = f.nativeElement as HTMLElement;
-    await f.componentInstance.compartir();
-    f.detectChanges();
-    expect(shareSpy).toHaveBeenCalled();
-    expect(writeText).not.toHaveBeenCalled();
-    expect(el.querySelector('[role="alert"]')).toBeNull();
-    expect(f.componentInstance.copiado()).toBeFalse();
-    restoreClipboard();
-  });
-
-  it('REQ-CPREV-004: sin Web Share, Compartir cae a clipboard canónico', async () => {
-    const writeText = jasmine.createSpy('writeText').and.resolveTo(undefined);
-    const restoreClipboard = mockClipboard(writeText);
-    Object.defineProperty(navigator, 'share', {
-      configurable: true,
-      writable: true,
-      value: undefined,
-    });
-
+  it('REQ-CPREV-004: Descargar QR desde Acciones obtiene PNG y dispara download', async () => {
+    const blob = new Blob(['qr'], { type: 'image/png' });
     const fakeCerts: CertificationsService = {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
@@ -278,16 +252,25 @@ describe('CertificationPreviewPage', () => {
       emitir: () => Promise.reject(new Error('N/A')),
       obtener: (id) => Promise.resolve(detalleFixture({ id })),
       obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id, CANONICA_CERT1)),
-      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarQrPng: jasmine.createSpy('descargarQrPng').and.resolveTo(blob),
       descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
       regenerarPdf: () => Promise.resolve({ regenerado: false }),
     };
 
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:qr');
+    spyOn(URL, 'revokeObjectURL');
+    let downloadedName = '';
+    spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) {
+      downloadedName = this.download;
+    });
+
     const f = await render('1', { certs: fakeCerts });
-    await f.componentInstance.compartir();
-    expect(writeText).toHaveBeenCalledWith(CANONICA_CERT1);
-    expect(f.componentInstance.copiado()).toBeTrue();
-    restoreClipboard();
+    await f.componentInstance.descargarQr();
+    f.detectChanges();
+
+    expect(fakeCerts.descargarQrPng).toHaveBeenCalledWith(1);
+    expect(downloadedName).toBe('cert-IFTS14-CERT-0001-qr.png');
+    expect(f.componentInstance.qrError()).toBe('');
   });
 
   it('REQ-CPREV-005: muestra autoridades reales desde config', async () => {
@@ -329,10 +312,10 @@ describe('CertificationPreviewPage', () => {
     const f = await render('1', { config });
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Configuración institucional pendiente');
-    const compartir = Array.from(el.querySelectorAll('.acciones-panel button')).find((b) =>
-      b.textContent?.includes('Compartir'),
+    const descargarQr = Array.from(el.querySelectorAll('.acciones-panel button')).find((b) =>
+      b.textContent?.includes('Descargar QR'),
     );
-    expect((compartir as HTMLButtonElement).disabled).toBeFalse();
+    expect((descargarQr as HTMLButtonElement).disabled).toBeFalse();
   });
 
   // --- F4-02 / P6-01 / F6-01: enlaces funcionales ---
@@ -361,17 +344,21 @@ describe('CertificationPreviewPage', () => {
     expect(regenerarBtn?.getAttribute('aria-disabled')).toBe('false');
   });
 
-  it('P6-01: "Entrega manual" es un enlace (routerLink) a :id/entrega, no disabled', async () => {
+  it('no muestra CTA "Entrega manual" ni Compartir; Descargar QR en Acciones y validación', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const acciones = el.querySelector('.acciones-panel');
-    const links = acciones?.querySelectorAll('a') || [];
-    const entregaLink = Array.from(links).find((a) =>
-      a.textContent?.includes('Entrega manual'),
+    expect(acciones?.textContent).not.toContain('Entrega manual');
+    expect(acciones?.textContent).not.toContain('Compartir');
+    const qrAcciones = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Descargar QR'),
     );
-    expect(entregaLink).toBeTruthy();
-    expect(entregaLink?.getAttribute('disabled')).toBeNull();
-    expect(entregaLink?.getAttribute('href')).toContain('/entrega');
+    const qrVal = Array.from(el.querySelectorAll('.validacion-panel button') || []).find((b) =>
+      b.textContent?.includes('Descargar QR'),
+    );
+    expect(qrAcciones).toBeTruthy();
+    expect(qrVal).toBeTruthy();
+    expect((qrAcciones as HTMLButtonElement).disabled).toBeFalse();
   });
 
   it('F6-01: "Revocar certificación" es un enlace (routerLink) a :id/revocar, no disabled', async () => {
@@ -383,25 +370,53 @@ describe('CertificationPreviewPage', () => {
     expect(revocarLink?.getAttribute('disabled')).toBeNull();
   });
 
-  for (const [id, estado] of [
-    ['3', 'borrador'],
-    ['4', 'vencido'],
-    ['5', 'revocado'],
-  ]) {
-    it(`no permite navegar a revocación cuando el certificado está ${estado}`, async () => {
+  it('no permite navegar a revocación cuando el certificado está borrador', async () => {
+    const f = await render('3');
+    const riesgo = (f.nativeElement as HTMLElement).querySelector('.riesgo-panel');
+    const boton = riesgo?.querySelector('button.btn-revocar') as HTMLButtonElement | null;
+    const navigateSpy = spyOn(TestBed.inject(Router), 'navigateByUrl');
+
+    expect(riesgo?.querySelector('a.btn-revocar')).toBeNull();
+    expect(boton?.disabled).toBeTrue();
+    expect(boton?.getAttribute('aria-describedby')).toBe('revocacion-no-disponible');
+    expect(riesgo?.textContent).toContain('Solo las certificaciones vigentes pueden revocarse.');
+    boton?.click();
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  for (const [id, estado, alumno, curso] of [
+    ['4', 'vencido', '4', '4'],
+    ['5', 'revocado', '5', '5'],
+  ] as const) {
+    it(`ofrece Emitir nuevamente (no revocar) cuando el certificado está ${estado}`, async () => {
       const f = await render(id);
-      const riesgo = (f.nativeElement as HTMLElement).querySelector('.riesgo-panel');
-      const boton = riesgo?.querySelector('button.btn-revocar') as HTMLButtonElement | null;
-      const navigateSpy = spyOn(TestBed.inject(Router), 'navigateByUrl');
+      const el = f.nativeElement as HTMLElement;
+      const riesgo = el.querySelector('.riesgo-panel');
+      const acciones = el.querySelector('.acciones-panel');
+      const cta = el.querySelector(
+        '[data-testid="cta-emitir-nuevamente"]',
+      ) as HTMLAnchorElement | null;
+      const ctaRiesgo = el.querySelector(
+        '[data-testid="cta-emitir-nuevamente-riesgo"]',
+      ) as HTMLAnchorElement | null;
 
       expect(riesgo?.querySelector('a.btn-revocar')).toBeNull();
-      expect(boton?.disabled).toBeTrue();
-      expect(boton?.getAttribute('aria-describedby')).toBe('revocacion-no-disponible');
-      expect(riesgo?.textContent).toContain('Solo las certificaciones vigentes pueden revocarse.');
-      boton?.click();
-      expect(navigateSpy).not.toHaveBeenCalled();
+      expect(riesgo?.querySelector('button.btn-revocar')).toBeNull();
+      expect(cta).not.toBeNull();
+      expect(ctaRiesgo).not.toBeNull();
+      expect(cta?.getAttribute('href')).toContain('/admin/certificaciones/nueva');
+      expect(cta?.getAttribute('href')).toContain(`alumno=${alumno}`);
+      expect(cta?.getAttribute('href')).toContain(`curso=${curso}`);
+      expect(acciones?.textContent).toContain('certificado nuevo');
+      expect(riesgo?.textContent).toContain('dar de alta nuevamente');
     });
   }
+
+  it('no muestra Emitir nuevamente en certificado vigente', async () => {
+    const f = await render('1');
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="cta-emitir-nuevamente"]')).toBeNull();
+  });
 
   it('botones deshabilitados en acciones tienen aria-disabled="true"', async () => {
     const f = await render('5');
@@ -482,12 +497,16 @@ describe('CertificationPreviewPage', () => {
     expect(autoridades?.textContent).not.toContain('Autoridad Demo');
   });
 
-  it('QR decorativo visible sin datos personales', async () => {
+  it('muestra QR real (img) en panel de validación', async () => {
     const f = await render('1');
+    await f.whenStable();
+    await new Promise((r) => setTimeout(r, 50));
+    f.detectChanges();
     const el = f.nativeElement as HTMLElement;
-    const qr = el.querySelector('.qr-decorativo');
+    const qr = el.querySelector('.validacion-panel img.qr-real') as HTMLImageElement | null;
     expect(qr).not.toBeNull();
-    expect(qr?.getAttribute('aria-hidden')).toBe('true');
+    expect(qr?.src).toMatch(/^blob:/);
+    expect(el.querySelector('.qr-decorativo')).toBeNull();
   });
 
   // --- REQ-PAR-EXP: densidad visual P-12 ---
@@ -508,36 +527,40 @@ describe('CertificationPreviewPage', () => {
     expect(padL).toBeGreaterThanOrEqual(14);
   });
 
-  it('REQ-PAR-EXP-002: QR decorativo 64 celdas y note footer muted', async () => {
+  it('REQ-PAR-EXP-002: QR real en validación y note footer muted', async () => {
     const f = await render('1');
+    await f.whenStable();
+    await new Promise((r) => setTimeout(r, 50));
+    f.detectChanges();
     const el = f.nativeElement as HTMLElement;
-    const qr = el.querySelector('.validacion-panel .qr-decorativo');
-    expect(qr?.getAttribute('aria-hidden')).toBe('true');
-    expect(qr?.querySelectorAll('.qr-cell').length).toBe(64);
+    const qr = el.querySelector('.validacion-panel img.qr-real');
+    expect(qr).not.toBeNull();
+    expect(el.querySelector('.qr-decorativo')).toBeNull();
     const note = el.querySelector('.validacion-panel .panel-note-footer');
     expect(note?.textContent).toContain('no contiene datos personales');
   });
 
-  it('REQ-PAR-EXP-003: PDF primary ink; Entrega secondary; Copiar/Compartir intactos', async () => {
+  it('REQ-PAR-EXP-003: PDF primary ink; sin Entrega manual; Copiar/Descargar QR OK', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).not.toContain('F6-03');
     const acciones = el.querySelector('.acciones-panel');
     const pdf = acciones?.querySelector('a.btn-pdf');
     expect(pdf?.textContent?.trim()).toBe('Descargar PDF');
-    const entrega = Array.from(acciones?.querySelectorAll('a.btn-accion') || []).find((a) =>
-      a.textContent?.includes('Entrega manual'),
-    );
-    expect(entrega).toBeTruthy();
-    expect(entrega?.classList.contains('btn-pdf')).toBeFalse();
+    expect(acciones?.textContent).not.toContain('Entrega manual');
+    expect(acciones?.textContent).not.toContain('Compartir');
     const copiar = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
       b.textContent?.includes('Copiar link'),
     );
-    const compartir = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
-      b.textContent?.includes('Compartir'),
+    const descargarQr = Array.from(acciones?.querySelectorAll('button') || []).find((b) =>
+      b.textContent?.includes('Descargar QR'),
     );
     expect((copiar as HTMLButtonElement).disabled).toBeFalse();
-    expect((compartir as HTMLButtonElement).disabled).toBeFalse();
+    expect((descargarQr as HTMLButtonElement).disabled).toBeFalse();
+    const qrBtn = Array.from(el.querySelectorAll('.validacion-panel button') || []).find((b) =>
+      b.textContent?.includes('Descargar QR'),
+    );
+    expect(qrBtn).toBeTruthy();
   });
 
   it('REQ-PAR-EXP-004: documento sin radius; firmas con SVG y copy v0', async () => {

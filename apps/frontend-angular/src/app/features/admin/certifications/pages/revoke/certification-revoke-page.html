@@ -1,8 +1,31 @@
-@if (cargando()) {
-  <div class="fixed-overlay" aria-live="polite">
-    <p class="estado-linea text-white">Cargando datos de revocación…</p>
-  </div>
-}
+  @if (cargando()) {
+    <div class="fixed-overlay fixed-overlay--loading" aria-busy="true" aria-label="Cargando datos de revocación">
+      <div class="dialog-card dialog-card-skeleton" aria-hidden="true">
+        <div class="dialog-strip"></div>
+        <header class="dialog-header">
+          <span class="sk-bar sk-pulse sk-bar--icon"></span>
+          <div class="header-text">
+            <span class="sk-bar sk-pulse sk-bar--kicker"></span>
+            <span class="sk-bar sk-pulse sk-bar--title"></span>
+          </div>
+        </header>
+        <div class="dialog-body">
+          <span class="sk-bar sk-pulse sk-bar--banner"></span>
+          @for (_ of [1, 2, 3, 4]; track $index) {
+            <span class="sk-bar sk-pulse sk-bar--dato"></span>
+          }
+        </div>
+        <footer class="dialog-footer">
+          <span class="sk-bar sk-pulse sk-bar--footer-btn"></span>
+          <span class="sk-bar sk-pulse sk-bar--footer-btn sk-bar--primary"></span>
+        </footer>
+      </div>
+      <p class="sk-loading-label">
+        <app-ui-spinner size="sm" [decorative]="false" label="Cargando datos de revocación" />
+        Cargando datos de revocación…
+      </p>
+    </div>
+  }
 
 @if (error()) {
   <div class="fixed-overlay error-overlay" aria-live="assertive">

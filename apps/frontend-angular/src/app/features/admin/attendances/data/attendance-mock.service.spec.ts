@@ -45,10 +45,11 @@ describe('AttendanceMockService', () => {
     }
   });
 
-  it('listarAsistencias devuelve vacío para fecha sin presentes (curso 1, fecha 11)', async () => {
+  it('listarAsistencias devuelve el seed de fecha 11 (curso 1)', async () => {
     const svc = await setup();
     const list = await svc.listarAsistencias(1, 11);
-    expect(list.length).toBe(0);
+    expect(list.length).toBe(1);
+    expect(list[0].alumnoId).toBe(1);
   });
 
   it('listarAsistencias devuelve presentes para fecha realizada (curso 4, fecha 41)', async () => {
@@ -232,7 +233,7 @@ describe('AttendanceMockService', () => {
     expect(before.length).toBe(3);
     (svc as unknown as { __reset: () => void }).__reset();
     const after = await svc.listarAsistencias(1, 11);
-    expect(after.length).toBe(0);
+    expect(after.length).toBe(1); // seed curso 1 / fecha 11
   });
 
   it('no llama fetch', async () => {

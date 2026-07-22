@@ -145,7 +145,13 @@
                   class="pendiente-badge"
                   [attr.title]="item.sinFuente"
                   [attr.aria-label]="item.sinFuente ?? 'Conteo de ' + item.label"
-                >{{ badgePendiente(item) }}</span>
+                >
+                  @if (item.id === 'sin-fechas' && metricasCargando()) {
+                    <span class="pendiente-badge-pulse sk-pulse" aria-hidden="true"></span>
+                  } @else {
+                    {{ badgePendiente(item) }}
+                  }
+                </span>
               </span>
               <span class="pendiente-detalle">{{ item.detalle }}</span>
             </span>
@@ -196,22 +202,46 @@
         No se pudieron cargar algunas métricas.
       </p>
     }
-    <div class="resumen-grid" [attr.aria-busy]="metricasCargando()">
+    <div class="resumen-grid" [attr.aria-busy]="metricasCargando() ? 'true' : null" aria-label="Resumen operativo">
       <div class="resumen-cell">
         <span class="resumen-label">Cursos cargados</span>
-        <span class="resumen-value" data-metric="cursos">{{ formatoMetrica(cursosCargados()) }}</span>
+        <span class="resumen-value" data-metric="cursos">
+          @if (metricasCargando()) {
+            <span class="resumen-value-pulse sk-pulse" aria-hidden="true"></span>
+          } @else {
+            {{ formatoMetrica(cursosCargados()) }}
+          }
+        </span>
       </div>
       <div class="resumen-cell">
         <span class="resumen-label">Alumnos registrados</span>
-        <span class="resumen-value" data-metric="alumnos">{{ formatoMetrica(alumnosRegistrados()) }}</span>
+        <span class="resumen-value" data-metric="alumnos">
+          @if (metricasCargando()) {
+            <span class="resumen-value-pulse sk-pulse" aria-hidden="true"></span>
+          } @else {
+            {{ formatoMetrica(alumnosRegistrados()) }}
+          }
+        </span>
       </div>
       <div class="resumen-cell">
         <span class="resumen-label">Certificaciones emitidas</span>
-        <span class="resumen-value resumen-value--valid" data-metric="emitidas">{{ formatoMetrica(certificacionesEmitidas()) }}</span>
+        <span class="resumen-value resumen-value--valid" data-metric="emitidas">
+          @if (metricasCargando()) {
+            <span class="resumen-value-pulse sk-pulse" aria-hidden="true"></span>
+          } @else {
+            {{ formatoMetrica(certificacionesEmitidas()) }}
+          }
+        </span>
       </div>
       <div class="resumen-cell">
         <span class="resumen-label">Certificaciones revocadas</span>
-        <span class="resumen-value resumen-value--destructive" data-metric="revocadas">{{ formatoMetrica(certificacionesRevocadas()) }}</span>
+        <span class="resumen-value resumen-value--destructive" data-metric="revocadas">
+          @if (metricasCargando()) {
+            <span class="resumen-value-pulse sk-pulse" aria-hidden="true"></span>
+          } @else {
+            {{ formatoMetrica(certificacionesRevocadas()) }}
+          }
+        </span>
       </div>
     </div>
   </section>

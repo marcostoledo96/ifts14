@@ -4,8 +4,30 @@
   <main id="contenido" role="main">
     <router-outlet />
   </main>
-  <footer role="contentinfo">
-    <p>Instituto de Formación Técnica Superior N.º 14</p>
+  <footer class="site-footer" role="contentinfo">
+    <div class="site-footer-inner">
+      <ul class="site-footer-partners" aria-label="Instituciones asociadas">
+        @for (logo of partnerLogos; track logo.id) {
+          <li [class.site-footer-partner--featured]="logo.id === 'ba-aprende'">
+            <img
+              [src]="logo.src"
+              [alt]="logo.nombre"
+              width="120"
+              height="40"
+              loading="lazy"
+              decoding="async"
+            />
+          </li>
+        }
+      </ul>
+      <div class="site-footer-copy">
+        <p class="site-footer-title">Instituto de Formación Técnica Superior N.º 14</p>
+        <p class="site-footer-note">
+          Consulta pública de autenticidad · Documento electrónico · No reemplaza al certificado
+          original en PDF
+        </p>
+      </div>
+    </div>
   </footer>
 } @else {
   <router-outlet />

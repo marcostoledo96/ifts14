@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EstadoCertificado, RegenerarPdfResult } from '../../certifications.models';
@@ -10,6 +20,8 @@ import {
   INSTITUTIONAL_BRAND,
   INSTITUTIONAL_PARTNER_LOGOS,
 } from '../../../../../shared/brand/institutional-brand';
+import { qrPngBlobFromUrl } from '../../qr-png';
+import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 type AutoridadesVista = {
   rectorName: string;
@@ -21,12 +33,13 @@ type AutoridadesVista = {
 // Expediente administrativo de una certificación.
 // Paridad visual con muestra_pagina/components/admin/expediente-certificacion.tsx
 // portada a Angular 20 con CSS local y tokens globales.
-// Copiar/Compartir usan URL canónica de obtenerEntregaManual(); autoridades
-// desde INSTITUTIONAL_CONFIG_SOURCE (REQ-CPREV-001…007).
+// Copiar link usa URL canónica de obtenerEntregaManual(); Descargar QR vía
+// descargarQrPng. Autoridades de la réplica desde configuración institucional
+// (REQ-CPREV-001…007).
 @Component({
   selector: 'app-certification-preview-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, UiSpinner],
   templateUrl: './certification-preview-page.html',
   styleUrl: './certification-preview-page.css',
 })
@@ -36,6 +49,7 @@ export class CertificationPreviewPage {
 
   private readonly certs = inject(CERTIFICATIONS_SOURCE);
   private readonly config = inject(INSTITUTIONAL_CONFIG_SOURCE);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly logoSrc = INSTITUTIONAL_BRAND.logoIfts;
   readonly partnerLogos = INSTITUTIONAL_PARTNER_LOGOS;
@@ -46,9 +60,13 @@ export class CertificationPreviewPage {
 
   // URL canónica desde entrega-manual (nunca detalle.publicValidationUrl).
   readonly entregaUrl = signal<string | null>(null);
+  /** Motivo visible si Copiar link / QR no están disponibles. */
+  readonly entregaError = signal('');
   readonly configPendiente = signal(false);
   readonly autoridades = signal<AutoridadesVista | null>(null);
   readonly copiado = signal(false);
+  readonly qrDescargando = signal(false);
+  readonly qrError = signal('');
 
   // Estado de regeneración de PDF.
   readonly regenerando = signal(false);
@@ -93,24 +111,35 @@ export class CertificationPreviewPage {
   readonly estadoRevocado = computed<boolean>(() => this.detalle()?.estado === 'revocado');
   readonly esRevocable = computed<boolean>(() => this.detalle()?.estado === 'vigente');
 
+  /** Reemisión: nuevo certificado (código/QR nuevos). No restaura el revocado. */
+  readonly puedeReemitir = computed(() => {
+    const d = this.detalle();
+    if (!d) return false;
+    if (d.estado !== 'revocado' && d.estado !== 'vencido') return false;
+    return d.alumnoId != null && d.cursoId != null;
+  });
+
+  readonly reemitQueryParams = computed<{ alumno: number; curso: number } | null>(() => {
+    const d = this.detalle();
+    if (!d || d.alumnoId == null || d.cursoId == null) return null;
+    return { alumno: d.alumnoId, curso: d.cursoId };
+  });
+
   readonly puedeCopiarCompartir = computed(
     () => !this.estadoRevocado() && !!this.entregaUrl()?.trim(),
   );
 
-  // QR decorativo: 64 celdas (8x8) sin datos personales. Patrón fijo de
-  // muestra_pagina, portado como intención visual sin dependencias.
-  readonly qrCells: readonly number[] = [
-    1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0,
-    1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0,
-    1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1,
-  ];
+  /** Object URL del QR real (misma URL canónica que Copiar link). */
+  readonly qrSrc = signal<string | null>(null);
 
   // ponytail: generación de carga para descartar resultados stale cuando el
   // id cambia antes de que termine la carga anterior (route reuse).
   private loadGen = 0;
   private copiaTimer: ReturnType<typeof setTimeout> | null = null;
+  private qrObjectUrl: string | null = null;
 
   constructor() {
+    this.destroyRef.onDestroy(() => this.revokeQrUrl());
     // Reacciona a cambios de id() tras la ligadura inicial y cuando Angular
     // reutiliza la misma instancia al navegar entre URLs de previsualización.
     // ngOnInit no vuelve a correr en route reuse, pero el effect sí.
@@ -120,16 +149,49 @@ export class CertificationPreviewPage {
     });
   }
 
+  private revokeQrUrl(): void {
+    if (this.qrObjectUrl) {
+      URL.revokeObjectURL(this.qrObjectUrl);
+      this.qrObjectUrl = null;
+    }
+    this.qrSrc.set(null);
+  }
+
+  private async cargarQr(cid: number, gen: number, urlCanonica: string | null): Promise<void> {
+    const url = urlCanonica?.trim();
+    if (!url) return;
+    try {
+      let blob: Blob | null = null;
+      try {
+        const fromSvc = await this.certs.descargarQrPng(cid);
+        if (fromSvc.size >= 200) blob = fromSvc;
+      } catch {
+        blob = null;
+      }
+      if (!blob) blob = await qrPngBlobFromUrl(url);
+      if (gen !== this.loadGen) return;
+      this.revokeQrUrl();
+      this.qrObjectUrl = URL.createObjectURL(blob);
+      this.qrSrc.set(this.qrObjectUrl);
+    } catch {
+      // Soft: el expediente sigue útil sin PNG.
+    }
+  }
+
   async cargar(): Promise<void> {
     const gen = ++this.loadGen;
     const cid = this.certId();
     // Reset stale antes de cargar.
     this.detalle.set(null);
     this.entregaUrl.set(null);
+    this.entregaError.set('');
     this.autoridades.set(null);
     this.configPendiente.set(false);
     this.error.set('');
     this.copiado.set(false);
+    this.qrDescargando.set(false);
+    this.qrError.set('');
+    this.revokeQrUrl();
     this.cargando.set(true);
     if (cid === null) {
       if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
@@ -152,6 +214,9 @@ export class CertificationPreviewPage {
       this.detalle.set(detR.value);
       this.aplicarConfig(cfgR);
       this.aplicarEntrega(entR);
+      const urlQr =
+        entR.status === 'fulfilled' ? entR.value.publicValidationUrl?.trim() || null : null;
+      void this.cargarQr(cid, gen, urlQr);
     } catch (e) {
       if (gen === this.loadGen) this.error.set((e as Error).message);
     } finally {
@@ -188,10 +253,40 @@ export class CertificationPreviewPage {
   ): void {
     if (entR.status === 'rejected') {
       this.entregaUrl.set(null);
+      const reason = entR.reason as {
+        status?: number;
+        error?: { code?: string; error?: { code?: string } };
+        message?: string;
+      };
+      const code =
+        reason?.error?.error?.code ??
+        reason?.error?.code ??
+        '';
+      if (code === 'TOKEN_NOT_RECOVERABLE' || reason?.status === 409) {
+        this.entregaError.set(
+          'No se pudo recuperar el token de validación. Revisá token_cipher_key en la configuración del servidor.',
+        );
+      } else if (this.detalle()?.estado !== 'vigente') {
+        this.entregaError.set(
+          'Copiar link y QR solo están disponibles para certificaciones vigentes.',
+        );
+      } else {
+        this.entregaError.set(
+          'No se pudo obtener el enlace de validación. Verificá que el certificado tenga token activo y que public_base_url esté configurada.',
+        );
+      }
       return;
     }
     const url = (entR.value.publicValidationUrl ?? '').trim();
-    this.entregaUrl.set(url || null);
+    if (!url) {
+      this.entregaUrl.set(null);
+      this.entregaError.set(
+        'El servidor no devolvió URL de validación. Configurá public_base_url (ej. https://certificados-qa.ifts14.com.ar/certificados_staging).',
+      );
+      return;
+    }
+    this.entregaUrl.set(url);
+    this.entregaError.set('');
   }
 
   async copiarLink(): Promise<void> {
@@ -202,25 +297,33 @@ export class CertificationPreviewPage {
     this.mostrarCopiado();
   }
 
-  async compartir(): Promise<void> {
-    if (!this.puedeCopiarCompartir()) return;
-    const url = this.entregaUrl()?.trim();
-    if (!url) return;
-    const alumno = this.detalle()?.nombreAlumno;
-    const title = alumno ? `Certificado — ${alumno}` : 'Certificado IFTS 14';
+  /** Filename semántico: cert-{codigo}-qr.png */
+  readonly qrFilename = computed(() => {
+    const raw = this.numeroExpediente() || this.detalle()?.numero?.trim() || 'certificado';
+    const safe = raw.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'certificado';
+    return `cert-${safe}-qr.png`;
+  });
 
-    const shareFn = navigator.share?.bind(navigator);
-    if (typeof shareFn === 'function') {
-      try {
-        await shareFn({ url, title });
-        return;
-      } catch (e) {
-        // AbortError = cancelación del usuario: silencio, sin clipboard.
-        if ((e as Error)?.name === 'AbortError') return;
-      }
+  async descargarQr(): Promise<void> {
+    const cid = this.certId();
+    if (cid === null || !this.puedeCopiarCompartir() || this.qrDescargando()) return;
+    this.qrDescargando.set(true);
+    this.qrError.set('');
+    try {
+      const blob = await this.certs.descargarQrPng(cid);
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = this.qrFilename();
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objUrl);
+    } catch (e) {
+      this.qrError.set((e as Error).message || 'No se pudo descargar el QR.');
+    } finally {
+      this.qrDescargando.set(false);
     }
-    await this.escribirClipboard(url);
-    this.mostrarCopiado();
   }
 
   private async escribirClipboard(url: string): Promise<void> {

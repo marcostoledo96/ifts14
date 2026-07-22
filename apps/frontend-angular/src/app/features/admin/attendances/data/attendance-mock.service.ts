@@ -9,6 +9,7 @@ import {
   AsistenciaMarcado,
   AttendanceService,
   EstadoAlumno,
+  HubAsistencias,
 } from '../models/attendance.types';
 import { COURSES_SOURCE } from '../../courses/courses.service';
 
@@ -69,6 +70,11 @@ export class AttendanceMockService implements AttendanceService {
     this.state = this.freshState();
   }
 
+  /** Limpia asistencias seed (útil en marcado, donde el baseline vacío es el contrato). */
+  __clearAsistencias(): void {
+    this.state.asistencias = [];
+  }
+
   private freshState(): State {
     // Alumnos seed para los cursos 1..6 del seed de InMemoryCoursesService.
     const alumnos = new Map<number, AsistenciaAlumno[]>();
@@ -97,6 +103,40 @@ export class AttendanceMockService implements AttendanceService {
       this.state.alumnos.set(cursoId, list);
     }
     return Promise.resolve(clone(list));
+  }
+
+  listarAsistenciasDeCurso(cursoId: number): Promise<readonly Asistencia[]> {
+    const list = this.state.asistencias.filter((a) => a.cursoId === cursoId);
+    return Promise.resolve(clone(list));
+  }
+
+  async listarHub(): Promise<HubAsistencias> {
+    const cursos = await this.courses.listar();
+    const fechasNested = await Promise.all(cursos.map((c) => this.courses.listarFechas(c.id)));
+    const fechas = fechasNested.flat();
+    let alumnosActivos = 0;
+    for (const c of cursos) {
+      const alumnos = await this.listarAlumnos(c.id);
+      alumnosActivos = Math.max(alumnosActivos, alumnos.filter((a) => a.estado === 'activo').length);
+    }
+    return {
+      cursos: cursos.map((c) => ({
+        id: c.id,
+        codigo: c.codigo,
+        nombre: c.nombre,
+        estado: c.estado,
+      })),
+      fechas: fechas.map((f) => ({
+        id: f.id,
+        cursoId: f.cursoId,
+        fecha: f.fecha,
+        descripcion: f.descripcion,
+        orden: f.orden,
+        estado: f.estado,
+      })),
+      asistencias: clone(this.state.asistencias),
+      alumnosActivos,
+    };
   }
 
   listarAsistencias(cursoId: number, fechaId: number): Promise<readonly Asistencia[]> {
@@ -235,6 +275,39 @@ export class AttendanceMockService implements AttendanceService {
 function seedAsistencias(): Asistencia[] {
   const list: Asistencia[] = [];
   let id = 4000;
+  // Curso 1, fechas 11, 12, 13: 3 presentes para alumnoId 1 (Persona Uno)
+  const fechasCurso1 = [
+    { fechaId: 11, fecha: '2026-03-02' },
+    { fechaId: 12, fecha: '2026-03-09' },
+    { fechaId: 13, fecha: '2026-03-16' },
+  ];
+  for (const f of fechasCurso1) {
+    list.push({
+      id: id++,
+      alumnoId: 1,
+      cursoId: 1,
+      cursoFechaId: f.fechaId,
+      fecha: f.fecha,
+      fechaEstado: 'realizada',
+      registradoEn: `${f.fecha}T12:00:00.000Z`,
+    });
+  }
+  // Curso 2, fechas 21, 22: 2 presentes para alumnoId 2 (Persona Dos)
+  const fechasCurso2 = [
+    { fechaId: 21, fecha: '2026-04-05' },
+    { fechaId: 22, fecha: '2026-04-12' },
+  ];
+  for (const f of fechasCurso2) {
+    list.push({
+      id: id++,
+      alumnoId: 2,
+      cursoId: 2,
+      cursoFechaId: f.fechaId,
+      fecha: f.fecha,
+      fechaEstado: 'realizada',
+      registradoEn: `${f.fecha}T12:00:00.000Z`,
+    });
+  }
   // Curso 4 (cerrado), fecha 41 (realizada): 8 presentes
   for (let i = 1; i <= 8; i++) {
     list.push({

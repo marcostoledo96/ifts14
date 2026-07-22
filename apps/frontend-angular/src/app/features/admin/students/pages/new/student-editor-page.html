@@ -1,100 +1,253 @@
-<section aria-labelledby="student-new-title">
+<section aria-labelledby="student-editor-title">
   <nav class="breadcrumb" aria-label="Migas de pan">
     <a routerLink="/admin/alumnos" class="breadcrumb-link">Alumnos</a>
     <span class="sep" aria-hidden="true">/</span>
-    <span class="active">Nuevo alumno</span>
+    @if (mode() === 'edit') {
+      <a [routerLink]="['/admin/alumnos', id()]" class="breadcrumb-link">Legajo</a>
+      <span class="sep" aria-hidden="true">/</span>
+      <span class="active">Editar</span>
+    } @else {
+      <span class="active">Nuevo alumno</span>
+    }
   </nav>
 
   <header class="header-row">
     <div>
       <p class="kicker">Registro académico</p>
-      <h1 id="student-new-title" class="title">Nuevo alumno</h1>
+      <h1 id="student-editor-title" class="title">
+        {{ mode() === 'edit' ? 'Editar alumno' : 'Nuevo alumno' }}
+      </h1>
       <p class="subtitle">
-        Alta: apellido y nombre, documento y email opcional. El estado queda activo por defecto.
+        @if (mode() === 'edit') {
+          Actualizá apellido, nombre, documento y email opcional.
+        } @else {
+          Alta de uno o varios alumnos: apellido, nombre, documento y email opcional.
+          El estado queda activo por defecto.
+        }
       </p>
     </div>
   </header>
 
-  <p class="demo-banner" role="status">
-    Datos de demostración: en modo mock los cambios viven en memoria hasta recargar.
-  </p>
-
-  @if (errorSubmit()) {
+  @if (cargando()) {
+    <div class="form-skeleton" aria-busy="true" aria-label="Cargando datos del alumno">
+      <div class="sk-head-row">
+        <app-ui-spinner size="sm" [decorative]="false" label="Cargando datos del alumno" />
+        <span class="sk-label">Cargando datos del alumno…</span>
+      </div>
+      <div class="form-panel sk-panel">
+        <div class="form-row">
+          <span class="sk-bar sk-pulse sk-bar--field"></span>
+          <span class="sk-bar sk-pulse sk-bar--field"></span>
+        </div>
+        <div class="form-row">
+          <span class="sk-bar sk-pulse sk-bar--field"></span>
+          <span class="sk-bar sk-pulse sk-bar--field"></span>
+        </div>
+      </div>
+    </div>
+  } @else if (errorCarga()) {
     <div class="estado-error" role="alert">
-      <p class="estado-error-msg">{{ errorSubmit() }}</p>
-      @if (alumnoExistenteId(); as idExistente) {
-        <a
-          class="estado-error-link"
-          [routerLink]="['/admin/alumnos', idExistente]"
-        >
-          Ver perfil del alumno
-        </a>
-      }
+      <p class="estado-error-msg">{{ errorCarga() }}</p>
+      <a class="estado-error-link" routerLink="/admin/alumnos">Volver a Alumnos</a>
     </div>
+  } @else {
+    @if (resultadoLote(); as resultado) {
+      <div class="resultado-lote" role="status" aria-live="polite">
+        <h2 class="resultado-lote-titulo">Resultado de la carga</h2>
+
+        @if (resultado.creados.length > 0) {
+          <section class="resultado-bloque resultado-ok" aria-labelledby="creados-title">
+            <h3 id="creados-title" class="resultado-bloque-titulo">
+              Creados correctamente ({{ resultado.creados.length }})
+            </h3>
+            <ul class="resultado-lista">
+              @for (a of resultado.creados; track a.id) {
+                <li>
+                  <a [routerLink]="['/admin/alumnos', a.id]" class="resultado-link">
+                    {{ a.apellido }}, {{ a.nombre }}
+                  </a>
+                  <span class="resultado-meta">DNI {{ a.dniMostrar }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (resultado.yaRegistrados.length > 0) {
+          <section class="resultado-bloque resultado-dup" aria-labelledby="registrados-title">
+            <h3 id="registrados-title" class="resultado-bloque-titulo">
+              Ya estaban registrados ({{ resultado.yaRegistrados.length }})
+            </h3>
+            <ul class="resultado-lista">
+              @for (a of resultado.yaRegistrados; track $index) {
+                <li>
+                  @if (a.existingId; as idExistente) {
+                    <a [routerLink]="['/admin/alumnos', idExistente]" class="resultado-link">
+                      {{ a.apellido }}, {{ a.nombre }}
+                    </a>
+                  } @else {
+                    <span class="resultado-nombre">{{ a.apellido }}, {{ a.nombre }}</span>
+                  }
+                  <span class="resultado-meta">DNI {{ a.dniMostrar }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (resultado.otrosErrores.length > 0) {
+          <section class="resultado-bloque resultado-err" aria-labelledby="otros-title">
+            <h3 id="otros-title" class="resultado-bloque-titulo">No se pudieron procesar</h3>
+            <ul class="resultado-lista">
+              @for (msg of resultado.otrosErrores; track $index) {
+                <li>{{ msg }}</li>
+              }
+            </ul>
+          </section>
+        }
+
+        <p class="resultado-ayuda">
+          Podés corregir o cargar más alumnos abajo, o
+          <a routerLink="/admin/alumnos" class="resultado-link">volver al listado</a>.
+        </p>
+      </div>
+    }
+
+    @if (errorSubmit()) {
+      <div class="estado-error" role="alert">
+        <p class="estado-error-msg">{{ errorSubmit() }}</p>
+        @if (alumnoExistenteId(); as idExistente) {
+          <a
+            class="estado-error-link"
+            [routerLink]="['/admin/alumnos', idExistente]"
+          >
+            Ver perfil del alumno
+          </a>
+        }
+      </div>
+    }
+
+    <form class="form-panel" (ngSubmit)="guardar()" novalidate>
+      @for (fila of filas(); track $index; let i = $index) {
+        <fieldset class="alumno-bloque" [disabled]="guardando()">
+          @if (esAltaMultiple()) {
+            <legend class="alumno-bloque-titulo">
+              Alumno {{ i + 1 }}
+              @if (puedeQuitar()) {
+                <button
+                  type="button"
+                  class="btn-quitar"
+                  (click)="quitarFila(i)"
+                  [attr.aria-label]="'Quitar alumno ' + (i + 1)"
+                >
+                  Quitar
+                </button>
+              }
+            </legend>
+          }
+
+          <div class="form-row">
+            <label class="campo">
+              <span class="campo-label">Apellido</span>
+              <input
+                type="text"
+                [name]="'apellido-' + i"
+                autocomplete="family-name"
+                [value]="fila.apellido"
+                (input)="onCampo(i, 'apellido', $event)"
+                [attr.aria-invalid]="fila.errorApellido ? 'true' : null"
+                [attr.aria-describedby]="fila.errorApellido ? 'err-apellido-' + i : null"
+                required
+              />
+              @if (fila.errorApellido) {
+                <span [id]="'err-apellido-' + i" class="campo-error" role="alert">{{ fila.errorApellido }}</span>
+              }
+            </label>
+
+            <label class="campo">
+              <span class="campo-label">Nombre</span>
+              <input
+                type="text"
+                [name]="'nombre-' + i"
+                autocomplete="given-name"
+                [value]="fila.nombre"
+                (input)="onCampo(i, 'nombre', $event)"
+                [attr.aria-invalid]="fila.errorNombre ? 'true' : null"
+                [attr.aria-describedby]="fila.errorNombre ? 'err-nombre-' + i : null"
+                required
+              />
+              @if (fila.errorNombre) {
+                <span [id]="'err-nombre-' + i" class="campo-error" role="alert">{{ fila.errorNombre }}</span>
+              }
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="campo">
+              <span class="campo-label">DNI</span>
+              <input
+                type="text"
+                [name]="'dni-' + i"
+                inputmode="numeric"
+                autocomplete="off"
+                [value]="fila.dni"
+                (input)="onCampo(i, 'dni', $event)"
+                [attr.aria-invalid]="fila.errorDni ? 'true' : null"
+                [attr.aria-describedby]="fila.errorDni ? 'err-dni-' + i : null"
+                required
+              />
+              @if (fila.errorDni) {
+                <span [id]="'err-dni-' + i" class="campo-error" role="alert">{{ fila.errorDni }}</span>
+              }
+              <span class="campo-ayuda">Se muestra completo en listados y detalle admin.</span>
+            </label>
+
+            <label class="campo">
+              <span class="campo-label">Email <span class="campo-opcional">(opcional)</span></span>
+              <input
+                type="email"
+                [name]="'email-' + i"
+                autocomplete="email"
+                [value]="fila.email"
+                (input)="onCampo(i, 'email', $event)"
+                [attr.aria-invalid]="fila.errorEmail ? 'true' : null"
+                [attr.aria-describedby]="fila.errorEmail ? 'err-email-' + i : 'ayuda-email-' + i"
+              />
+              @if (fila.errorEmail) {
+                <span [id]="'err-email-' + i" class="campo-error" role="alert">{{ fila.errorEmail }}</span>
+              }
+              <span [id]="'ayuda-email-' + i" class="campo-ayuda">Si lo cargás, queda disponible en el legajo del alumno.</span>
+            </label>
+          </div>
+        </fieldset>
+      }
+
+      <div class="acciones">
+        @if (mode() === 'edit') {
+          <a [routerLink]="['/admin/alumnos', id()]" class="btn-secondary">Cancelar</a>
+        } @else {
+          <a routerLink="/admin/alumnos" class="btn-secondary">Cancelar</a>
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="agregarFila()"
+            [disabled]="guardando()"
+          >
+            Agregar otro alumno
+          </button>
+        }
+        <button type="submit" class="btn-primary" [disabled]="guardando()">
+          @if (guardando()) {
+            Guardando…
+          } @else if (mode() === 'edit') {
+            Guardar cambios
+          } @else if (cantidad() === 1) {
+            Crear alumno
+          } @else {
+            Crear alumnos
+          }
+        </button>
+      </div>
+    </form>
   }
-
-  <form class="form-panel" (ngSubmit)="guardar()" novalidate>
-    <label class="campo">
-      <span class="campo-label">Apellido y nombre</span>
-      <input
-        type="text"
-        name="apellidoNombre"
-        autocomplete="name"
-        [value]="apellidoNombre()"
-        (input)="onApellidoNombre($event)"
-        [attr.aria-invalid]="errorApellido() ? 'true' : null"
-        [attr.aria-describedby]="errorApellido() ? 'err-apellido' : null"
-        [disabled]="guardando()"
-        required
-      />
-      @if (errorApellido()) {
-        <span id="err-apellido" class="campo-error" role="alert">{{ errorApellido() }}</span>
-      }
-    </label>
-
-    <label class="campo">
-      <span class="campo-label">DNI</span>
-      <input
-        type="text"
-        name="dni"
-        inputmode="numeric"
-        autocomplete="off"
-        [value]="dni()"
-        (input)="onDni($event)"
-        [attr.aria-invalid]="errorDni() ? 'true' : null"
-        [attr.aria-describedby]="errorDni() ? 'err-dni' : null"
-        [disabled]="guardando()"
-        required
-      />
-      @if (errorDni()) {
-        <span id="err-dni" class="campo-error" role="alert">{{ errorDni() }}</span>
-      }
-      <span class="campo-ayuda">Se muestra completo en listados y detalle admin.</span>
-    </label>
-
-    <label class="campo">
-      <span class="campo-label">Email <span class="campo-opcional">(opcional)</span></span>
-      <input
-        type="email"
-        name="email"
-        autocomplete="email"
-        [value]="email()"
-        (input)="onEmail($event)"
-        [attr.aria-invalid]="errorEmail() ? 'true' : null"
-        [attr.aria-describedby]="errorEmail() ? 'err-email' : 'ayuda-email'"
-        [disabled]="guardando()"
-      />
-      @if (errorEmail()) {
-        <span id="err-email" class="campo-error" role="alert">{{ errorEmail() }}</span>
-      }
-      <span id="ayuda-email" class="campo-ayuda">Si lo cargás, queda disponible en el legajo del alumno.</span>
-    </label>
-
-    <div class="acciones">
-      <a routerLink="/admin/alumnos" class="btn-secondary">Cancelar</a>
-      <button type="submit" class="btn-primary" [disabled]="guardando()">
-        {{ guardando() ? 'Guardando…' : 'Crear alumno' }}
-      </button>
-    </div>
-  </form>
 </section>

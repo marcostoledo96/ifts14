@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * Schema contract test (REQ-MDB-003).
  *
- * Verifica que el esquema aplicado por las migraciones 001-010 coincide con
+ * Verifica que el esquema aplicado por las migraciones 001-013 coincide con
  * lo esperado: tablas presentes, columnas clave, tipos y enums. Hard-fail si
  * la DB no está disponible o el esquema no cumple.
  *
@@ -33,7 +33,7 @@ try {
 }
 
 /**
- * Tablas que DEBEN existir tras las migraciones 001-010.
+ * Tablas que DEBEN existir tras las migraciones 001-013.
  * Derivado de las migraciones versionadas (no hardcodeado de memoria).
  */
 $expectedTables = [
@@ -46,6 +46,7 @@ $expectedTables = [
     'cert_asistencias',
     'cert_certificado_fechas',
     'cert_configuracion_institucional',
+    'cert_parametros_sistema',
     'cert_schema_migrations',
 ];
 
@@ -76,6 +77,9 @@ $expectedColumns = [
     'cert_alumnos' => [
         'dni_hash' => 'binary',
         'dni_cifrado' => 'varbinary',
+        'apellido_nombre' => 'varchar',
+        'apellido' => 'varchar',
+        'nombre' => 'varchar',
         'estado' => 'enum',
     ],
     'cert_cursos' => [
@@ -102,6 +106,14 @@ $expectedColumns = [
         'rector_nombre' => 'varchar',
         'texto_certificado' => 'text',
     ],
+    'cert_parametros_sistema' => [
+        'clave' => 'varchar',
+        'valor' => 'text',
+        'tipo' => 'enum',
+        'grupo' => 'enum',
+        'etiqueta' => 'varchar',
+        'updated_at' => 'datetime',
+    ],
     'cert_schema_migrations' => [
         'version' => 'varchar',
         'aplicado_en' => 'datetime',
@@ -117,6 +129,8 @@ $expectedEnumValues = [
     'cert_certificados.estado' => ['borrador', 'vigente', 'revocado', 'vencido'],
     'cert_certificados.pdf_estado' => ['vigente', 'desactualizado', 'no_generado'],
     'cert_eventos_auditoria.tipo_evento' => ['emision', 'verificacion', 'revocacion', 'reenvio', 'error', 'sync_snapshot'],
+    'cert_parametros_sistema.tipo' => ['texto', 'textarea', 'url', 'email'],
+    'cert_parametros_sistema.grupo' => ['identidad', 'certificados', 'contacto', 'validacion'],
 ];
 
 $failures = [];
