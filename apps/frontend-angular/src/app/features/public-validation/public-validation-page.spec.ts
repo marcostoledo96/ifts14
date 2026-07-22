@@ -2,7 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { VALIDATION_SOURCE } from '../../shared/certificates/validation-source';
 import { ValidationSource, ValidationSourceResult } from '../../shared/certificates/validation-source';
-import { MockValidationSource, VALID_VALID_DTO } from '../../shared/certificates/mock-tokens';
+import {
+  MockValidationSource,
+  resetMockAdminPublicStatus,
+  VALID_VALID_DTO,
+} from '../../shared/certificates/mock-tokens';
+import { clearMockAdminLiveEstadoResolver } from '../../shared/certificates/mock-admin-bridge';
 import { PublicValidationPage } from './public-validation-page';
 
 function configureProviders(source: ValidationSource) {
@@ -20,6 +25,8 @@ class StubSource implements ValidationSource {
 }
 
 async function renderWith(token: string, source: ValidationSource) {
+  resetMockAdminPublicStatus();
+  clearMockAdminLiveEstadoResolver();
   await TestBed.configureTestingModule({
     imports: [PublicValidationPage],
     providers: configureProviders(source),
