@@ -97,7 +97,7 @@ try {
     $cursoId = (int) (assertJson($courseResponse, 'crear curso HTTP')['data']['id'] ?? 0);
 
     $studentResponse = postJson($port, '/admin/alumnos', $adminKey, [
-        'apellidoNombre' => 'Alumno HTTP Demo',
+        'apellido' => 'Alumno', 'nombre' => 'HTTP Demo',
         'dni' => $dni,
     ]);
     assertStatus($studentResponse, 201, 'crear alumno HTTP');

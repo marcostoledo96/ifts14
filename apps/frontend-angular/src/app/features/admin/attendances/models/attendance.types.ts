@@ -28,9 +28,33 @@ export interface AsistenciaMarcado {
   readonly presente: boolean;
 }
 
+/** Payload de GET /admin/hub/asistencias (un round-trip para el listado admin). */
+export interface HubAsistencias {
+  readonly cursos: readonly {
+    readonly id: number;
+    readonly codigo: string;
+    readonly nombre: string;
+    readonly estado: string;
+  }[];
+  readonly fechas: readonly {
+    readonly id: number;
+    readonly cursoId: number;
+    readonly fecha: string;
+    readonly descripcion: string | null;
+    readonly orden: number;
+    readonly estado: EstadoFecha;
+  }[];
+  readonly asistencias: readonly Asistencia[];
+  readonly alumnosActivos: number;
+}
+
 export interface AttendanceService {
   listarAlumnos(cursoId: number): Promise<readonly AsistenciaAlumno[]>;
   listarAsistencias(cursoId: number, fechaId: number): Promise<readonly Asistencia[]>;
+  /** Todas las asistencias de un curso (un solo GET; el hub de fechas agrupa client-side). */
+  listarAsistenciasDeCurso(cursoId: number): Promise<readonly Asistencia[]>;
+  /** Hub consolidado: cursos + fechas + asistencias + conteo alumnos activos. */
+  listarHub(): Promise<HubAsistencias>;
   /** Asistencias del par curso+alumno (backend filtra por query). */
   listarAsistenciasPorPar(cursoId: number, alumnoId: number): Promise<readonly Asistencia[]>;
   /** Asistencias de un alumno (GET /admin/asistencias?alumnoId=). */

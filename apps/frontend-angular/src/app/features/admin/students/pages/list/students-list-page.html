@@ -110,13 +110,16 @@
   @if (mostrandoCarga()) {
     <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando registro">
       <div class="skeleton-head">
+        <app-ui-spinner size="sm" />
         <span class="skeleton-label">Cargando registro…</span>
       </div>
       <ul class="skeleton-rows">
         @for (_ of skeletonRows; track $index) {
           <li class="skeleton-row">
+            <span class="skeleton-bar skeleton-bar--avatar skeleton-pulse"></span>
             <span class="skeleton-bar skeleton-bar--name skeleton-pulse"></span>
             <span class="skeleton-bar skeleton-bar--dni skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--metric skeleton-pulse"></span>
             <span class="skeleton-bar skeleton-bar--metric skeleton-pulse"></span>
             <span class="skeleton-bar skeleton-bar--action skeleton-pulse"></span>
           </li>

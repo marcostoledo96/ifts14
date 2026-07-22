@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { UiSpinner } from '../../../shared/ui/ui-spinner';
 import { COURSES_SOURCE } from './courses.service';
 import { Curso, CursosFiltros, EstadoCurso } from './courses.models';
 
@@ -44,7 +45,7 @@ export const COURSES_QA_ENABLED = new InjectionToken<boolean>('COURSES_QA_ENABLE
 @Component({
   selector: 'app-courses-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, UiSpinner],
   templateUrl: './courses-list-page.html',
   styleUrl: './courses-list-page.css',
 })

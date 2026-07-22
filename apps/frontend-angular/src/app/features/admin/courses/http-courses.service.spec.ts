@@ -123,6 +123,21 @@ describe('HttpCoursesService', () => {
     expect(result.estado).toBe('cerrado');
   });
 
+  it('actualizar hace PATCH a /admin/cursos/:id con body {codigo,nombre}', async () => {
+    const p = service.actualizar(3, { codigo: 'CUR-X', nombre: 'Renombrado' });
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/cursos/3`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ codigo: 'CUR-X', nombre: 'Renombrado' });
+    req.flush({
+      data: cursoDto({ id: 3, codigo: 'CUR-X', nombre: 'Renombrado', cantidadFechas: 2 }),
+      meta: { requestId: 'r5b' },
+    });
+    const result = await p;
+    expect(result.codigo).toBe('CUR-X');
+    expect(result.nombre).toBe('Renombrado');
+    expect(result.cantidadFechas).toBe(2);
+  });
+
   it('listarFechas hace GET a /admin/cursos/:id/fechas', async () => {
     const p = service.listarFechas(7);
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/cursos/7/fechas`);

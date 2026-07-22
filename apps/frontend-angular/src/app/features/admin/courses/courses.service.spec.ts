@@ -125,6 +125,14 @@ describe('InMemoryCoursesService', () => {
     expect(list.find((c) => c.id === 3)).toBeDefined();
   });
 
+  it('actualizar cambia codigo y nombre y rechaza codigo duplicado', async () => {
+    const svc = setup();
+    const det = await svc.actualizar(1, { codigo: 'CUR-REN', nombre: 'Curso renombrado' });
+    expect(det.codigo).toBe('CUR-REN');
+    expect(det.nombre).toBe('Curso renombrado');
+    await expectAsync(svc.actualizar(2, { codigo: 'CUR-REN', nombre: 'Otro' })).toBeRejected();
+  });
+
   it('listarFechas devuelve las fechas del curso', async () => {
     const svc = setup();
     const fechas = await svc.listarFechas(1);

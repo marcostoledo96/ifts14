@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { InstitutionalConfigPage } from './institutional-config-page';
 import {
+  emptyParameters,
+  flattenParameterValues,
   INSTITUTIONAL_CONFIG_SOURCE,
   InstitutionalConfig,
   InstitutionalConfigService,
@@ -14,11 +16,15 @@ const BASE: InstitutionalConfig = {
   rectorRole: 'Rector/a',
   advisorName: 'Asesora Demo',
   advisorRole: 'Asesora pedagógica',
+  parameters: emptyParameters(),
   updatedAt: '2026-01-01T00:00:00Z',
 };
 
 class StubInstitutionalConfigService implements InstitutionalConfigService {
-  config: InstitutionalConfig = { ...BASE };
+  config: InstitutionalConfig = {
+    ...BASE,
+    parameters: emptyParameters(),
+  };
   failGet = false;
   failPut = false;
   obtenerCalls = 0;
@@ -28,15 +34,36 @@ class StubInstitutionalConfigService implements InstitutionalConfigService {
   async obtener(): Promise<InstitutionalConfig> {
     this.obtenerCalls++;
     if (this.failGet) throw new Error('No se pudo cargar la configuración.');
-    return { ...this.config };
+    return {
+      ...this.config,
+      parameters: { ...this.config.parameters },
+    };
   }
 
   async guardar(payload: InstitutionalConfigWrite): Promise<InstitutionalConfig> {
     this.guardarCalls++;
     this.lastPayload = payload;
     if (this.failPut) throw new Error('No se pudo guardar la configuración.');
-    this.config = { ...payload, updatedAt: '2026-02-02T12:00:00Z' };
-    return { ...this.config };
+    const parameters = emptyParameters();
+    const current = flattenParameterValues(this.config.parameters);
+    for (const key of Object.keys(parameters) as (keyof typeof parameters)[]) {
+      const incoming = payload.parameters[key];
+      parameters[key] = {
+        ...parameters[key],
+        value: typeof incoming === 'string' ? incoming : current[key],
+      };
+    }
+    this.config = {
+      institutionName: payload.institutionName,
+      certificateText: payload.certificateText,
+      rectorName: payload.rectorName,
+      rectorRole: payload.rectorRole,
+      advisorName: payload.advisorName,
+      advisorRole: payload.advisorRole,
+      parameters,
+      updatedAt: '2026-02-02T12:00:00Z',
+    };
+    return { ...this.config, parameters: { ...parameters } };
   }
 }
 
@@ -153,7 +180,18 @@ describe('InstitutionalConfigPage', () => {
     expect(el(f).querySelector('#validacion')).not.toBeNull();
   });
 
-  // --- REQ-CFG / CFGLAY-005: sin fantasmas editables ---
+  it('irASeccion evita la navegación del ancla (base href no debe mandar al login)', async () => {
+    const f = await render();
+    const page = f.componentInstance;
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+    const prevented = spyOn(event, 'preventDefault').and.callThrough();
+    const scroll = spyOn(HTMLElement.prototype, 'scrollIntoView');
+    page.irASeccion(event, 'identidad');
+    expect(prevented).toHaveBeenCalled();
+    expect(scroll).toHaveBeenCalled();
+  });
+
+  // --- REQ-CFG / CFGLAY-005: firmas/logos sin upload; parámetros editables ---
 
   it('no ofrece upload real: sin input file; botones de logo/firma deshabilitados', async () => {
     const f = await render();
@@ -167,21 +205,13 @@ describe('InstitutionalConfigPage', () => {
     }
   });
 
-  it('contacto y validación solo tienen controles presentacionales deshabilitados', async () => {
+  it('contacto y validación tienen campos de parámetros editables', async () => {
     const f = await render();
-    const contacto = el(f).querySelector('#contacto');
-    const validacion = el(f).querySelector('#validacion');
-    expect(contacto).not.toBeNull();
-    expect(validacion).not.toBeNull();
-    for (const section of [contacto!, validacion!]) {
-      const controls = Array.from(section.querySelectorAll('input, textarea, select'));
-      expect(controls.length).toBeGreaterThan(0);
-      for (const c of controls) {
-        expect((c as HTMLInputElement).disabled).toBeTrue();
-      }
-    }
-    expect(contacto!.textContent).toContain('SMTP');
-    expect(validacion!.textContent).toContain('no se editan');
+    expect(input(f, '#email-contacto').disabled).toBeFalse();
+    expect(input(f, '#texto-validacion').disabled).toBeFalse();
+    expect(input(f, '#sitio-instituto').disabled).toBeFalse();
+    expect(input(f, '#msg-valido').disabled).toBeFalse();
+    expect(el(f).querySelector('#contacto')!.textContent).toContain('SMTP');
   });
 
   it('muestra preview tipográfica de autoridades que se actualiza al editar', async () => {
@@ -209,7 +239,7 @@ describe('InstitutionalConfigPage', () => {
     expect(el(f).querySelector('.logos-grid button')).toBeNull();
   });
 
-  it('certificados sigue el orden: título, texto base, formato, QR (sin sello)', async () => {
+  it('certificados sigue el orden: título, texto base, QR (sin sello)', async () => {
     const f = await render();
     const body = el(f).querySelector('#certificados .cfg-section-body');
     expect(body).not.toBeNull();
@@ -218,19 +248,21 @@ describe('InstitutionalConfigPage', () => {
     );
     expect(ids[0]).toBe('titulo-cert');
     expect(ids[1]).toBe('certificate-text');
-    expect(ids).toContain('formato-numero');
     expect(ids).toContain('texto-qr');
+    expect(ids).not.toContain('formato-numero');
+    expect(ids).not.toContain('link-validacion');
     expect(el(f).querySelector('#certificados [role="switch"]')).toBeNull();
     expect(el(f).querySelector('.sello-row')).toBeNull();
     expect(input(f, '#certificate-text').disabled).toBeFalse();
-    expect(input(f, '#titulo-cert').disabled).toBeTrue();
+    expect(input(f, '#titulo-cert').disabled).toBeFalse();
   });
 
-  it('incluye bloque estático de contacto/validación; presentacionales no entran al PUT', async () => {
+  it('incluye bloque estático de contacto; parámetros tipados entran al PUT', async () => {
     const f = await render();
     const staticBlocks = el(f).querySelectorAll('.static-info');
     expect(staticBlocks.length).toBeGreaterThanOrEqual(1);
     setValue(f, '#institution-name', 'IFTS editado');
+    setValue(f, '#titulo-cert', 'Título persistido');
     (el(f).querySelector('.sticky-bar button[type="submit"]') as HTMLButtonElement).click();
     await settle(f);
     expect(stub.lastPayload).not.toBeNull();
@@ -242,8 +274,18 @@ describe('InstitutionalConfigPage', () => {
         'rectorRole',
         'advisorName',
         'advisorRole',
+        'parameters',
       ]),
     );
+    expect(stub.lastPayload!.parameters['titulo_certificado']).toBe('Título persistido');
+  });
+
+  it('editar un parámetro marca dirty', async () => {
+    const f = await render();
+    const save = el(f).querySelector('.sticky-bar button[type="submit"]') as HTMLButtonElement;
+    expect(save.disabled).toBeTrue();
+    setValue(f, '#email-contacto', 'nuevo@ifts14.example');
+    expect(save.disabled).toBeFalse();
   });
 
   // --- REQ-CFG-006 / CFGLAY-006: dirty sticky ---

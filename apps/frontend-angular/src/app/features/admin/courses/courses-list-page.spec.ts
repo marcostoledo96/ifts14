@@ -37,10 +37,10 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('.filtros .results-summary')).not.toBeNull();
   });
 
-  it('muestra banner Datos de demostración', async () => {
+  it('no muestra banner de demostración con API real (useRealApi)', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Datos de demostración');
+    expect(el.textContent).not.toContain('Datos de demostración');
   });
 
   it('renderiza tabla accesible, cards móviles y controles de fechas', async () => {
@@ -177,7 +177,7 @@ describe('CoursesListPage', () => {
 
   it('muestra error v0 con título, icono y reintenta la carga', async () => {
     const source = jasmine.createSpyObj<CoursesService>('CoursesService', [
-      'listar', 'obtener', 'crear', 'actualizarEstado', 'listarFechas', 'guardarFecha', 'reemplazarFechas',
+      'listar', 'obtener', 'crear', 'actualizar', 'actualizarEstado', 'listarFechas', 'guardarFecha', 'reemplazarFechas',
     ]);
     source.listar.and.returnValues(
       Promise.reject(new Error('fallo interno')),

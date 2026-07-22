@@ -58,7 +58,7 @@ $hoy = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_
 $pasada = '2020-01-15';
 $futura = '2099-06-01';
 
-$student = $masterData->createStudent(['dni' => '22333444', 'apellidoNombre' => 'Alumno Auto Estado']);
+$student = $masterData->createStudent(['dni' => '22333444', 'apellido' => 'Alumno', 'nombre' => 'Auto Estado']);
 $course = $masterData->createCourse(['codigo' => 'AUTO01', 'nombre' => 'Curso Auto Estado']);
 
 // 1.1 Fecha pasada + presente → realizada
@@ -105,7 +105,7 @@ if (($attFuture['fechaEstado'] ?? '') !== 'programada') {
 }
 
 // 1.3 Anular último presente → programada + sync
-$studentSync = $masterData->createStudent(['dni' => '33444555', 'apellidoNombre' => 'Alumno Sync']);
+$studentSync = $masterData->createStudent(['dni' => '33444555', 'apellido' => 'Alumno', 'nombre' => 'Sync']);
 $courseSync = $masterData->createCourse(['codigo' => 'AUTO02', 'nombre' => 'Curso Sync']);
 $dateSync = $masterData->createCourseDate($courseSync['id'], ['fecha' => $pasada, 'estado' => 'programada', 'orden' => 1]);
 $attSync = $masterData->recordAttendance([

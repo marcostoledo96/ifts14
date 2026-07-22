@@ -1,6 +1,45 @@
 <section class="expediente" aria-labelledby="cert-title">
   @if (cargando()) {
-    <p class="estado-linea">Cargando certificación…</p>
+    <div class="expediente-skeleton" aria-busy="true" aria-label="Cargando certificación">
+      <nav class="breadcrumb" aria-hidden="true">
+        <span class="sk-bar sk-pulse sk-bar--crumb"></span>
+        <span class="sk-bar sk-pulse sk-bar--crumb sk-bar--short"></span>
+      </nav>
+      <header class="expediente-header">
+        <div class="header-main">
+          <span class="sk-bar sk-pulse sk-bar--kicker"></span>
+          <span class="sk-bar sk-pulse sk-bar--title"></span>
+          <span class="sk-bar sk-pulse sk-bar--subtitle"></span>
+        </div>
+        <span class="sk-bar sk-pulse sk-bar--estado"></span>
+      </header>
+      <div class="sk-head-row">
+        <app-ui-spinner size="sm" [decorative]="false" label="Cargando certificación" />
+        <span class="sk-label">Cargando certificación…</span>
+      </div>
+      <div class="expediente-grid">
+        <aside class="control-col">
+          <section class="panel sk-panel">
+            <span class="sk-bar sk-pulse sk-bar--panel-title"></span>
+            @for (_ of [1, 2, 3, 4]; track $index) {
+              <span class="sk-bar sk-pulse sk-bar--dato"></span>
+            }
+          </section>
+          <section class="panel sk-panel">
+            <span class="sk-bar sk-pulse sk-bar--panel-title"></span>
+            <span class="sk-bar sk-pulse sk-bar--btn"></span>
+            <span class="sk-bar sk-pulse sk-bar--btn"></span>
+          </section>
+        </aside>
+        <div class="documento-col">
+          <section class="panel sk-panel sk-doc">
+            <span class="sk-bar sk-pulse sk-bar--doc-header"></span>
+            <span class="sk-bar sk-pulse sk-bar--doc-body"></span>
+            <span class="sk-bar sk-pulse sk-bar--doc-body sk-bar--short"></span>
+          </section>
+        </div>
+      </div>
+    </div>
   }
   @if (error()) {
     <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
@@ -106,8 +145,18 @@
           </header>
           <div class="panel-body">
             <div class="acciones-lista">
+              @if (puedeReemitir()) {
+                <a
+                  class="btn-pdf"
+                  data-testid="cta-emitir-nuevamente"
+                  routerLink="/admin/certificaciones/nueva"
+                  [queryParams]="reemitQueryParams()"
+                >
+                  Emitir nuevamente
+                </a>
+              }
               <a
-                class="btn-pdf"
+                [class]="puedeReemitir() ? 'btn-accion' : 'btn-pdf'"
                 routerLink="/admin/certificaciones/{{ id() }}/pdf"
               >
                 Descargar PDF
@@ -124,18 +173,13 @@
               <button
                 type="button"
                 class="btn-accion"
-                (click)="compartir()"
-                [disabled]="!puedeCopiarCompartir()"
-                [attr.aria-disabled]="!puedeCopiarCompartir()"
+                (click)="descargarQr()"
+                [disabled]="!puedeCopiarCompartir() || qrDescargando()"
+                [attr.aria-disabled]="!puedeCopiarCompartir() || qrDescargando()"
+                aria-label="Descargar código QR en PNG"
               >
-                Compartir
+                {{ qrDescargando() ? 'Descargando…' : 'Descargar QR' }}
               </button>
-              <a
-                class="btn-accion"
-                routerLink="/admin/certificaciones/{{ id() }}/entrega"
-              >
-                Entrega manual
-              </a>
               <button
                 type="button"
                 class="btn-regenerar"
@@ -171,8 +215,15 @@
               }
             </div>
             <p class="acciones-note">
-              El QR es permanente. Si se corrigen fechas o asistencias, se debe
-              compartir el link y el PDF actualizados al alumno con el mismo QR.
+              @if (puedeReemitir()) {
+                Emitir nuevamente crea un certificado nuevo; no reactiva el
+                expediente actual ni reutiliza su token/QR.
+              } @else if (entregaError()) {
+                {{ entregaError() }}
+              } @else {
+                El QR es permanente. Si se corrigen fechas o asistencias, se debe
+                compartir el link y el PDF actualizados al alumno con el mismo QR.
+              }
             </p>
           </div>
         </section>
@@ -183,25 +234,44 @@
           </header>
           <div class="panel-body qr-panel-body">
             <div class="qr-layout">
-              <div class="qr-decorativo" aria-hidden="true">
-                <div class="qr-grid">
-                  @for (c of qrCells; track $index) {
-                    <span class="qr-cell {{ c ? 'qr-on' : 'qr-off' }}"></span>
-                  }
-                </div>
-              </div>
+              @if (qrSrc(); as src) {
+                <img
+                  class="qr-real"
+                  [src]="src"
+                  width="96"
+                  height="96"
+                  alt="Código QR de validación del certificado"
+                />
+              } @else {
+                <div class="qr-placeholder" aria-hidden="true"></div>
+              }
               <div class="qr-info">
                 <p class="group-kicker group-kicker-muted">Verificación pública</p>
-                <p class="public-url mono">{{ d.publicValidationUrl }}</p>
-                <button
-                  type="button"
-                  class="btn-accion btn-accion-compact"
-                  (click)="copiarLink()"
-                  [disabled]="!puedeCopiarCompartir()"
-                  [attr.aria-disabled]="!puedeCopiarCompartir()"
-                >
-                  {{ copiado() ? 'Link copiado' : 'Copiar link' }}
-                </button>
+                <p class="public-url mono">{{ entregaUrl() || '—' }}</p>
+                <div class="validacion-acciones">
+                  <button
+                    type="button"
+                    class="btn-accion btn-accion-compact"
+                    (click)="copiarLink()"
+                    [disabled]="!puedeCopiarCompartir()"
+                    [attr.aria-disabled]="!puedeCopiarCompartir()"
+                  >
+                    {{ copiado() ? 'Link copiado' : 'Copiar link' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-accion btn-accion-compact"
+                    (click)="descargarQr()"
+                    [disabled]="!puedeCopiarCompartir() || qrDescargando()"
+                    [attr.aria-disabled]="!puedeCopiarCompartir() || qrDescargando()"
+                    aria-label="Descargar código QR en PNG"
+                  >
+                    {{ qrDescargando() ? 'Descargando…' : 'Descargar QR' }}
+                  </button>
+                </div>
+                @if (qrError()) {
+                  <p class="qr-error" role="alert">{{ qrError() }}</p>
+                }
               </div>
             </div>
           </div>
@@ -231,14 +301,30 @@
               <p id="revocacion-no-disponible" class="riesgo-texto">
                 Solo las certificaciones vigentes pueden revocarse.
               </p>
-              <button
-                type="button"
-                class="btn-revocar"
-                disabled
-                aria-describedby="revocacion-no-disponible"
-              >
-                Revocación no disponible
-              </button>
+              @if (puedeReemitir()) {
+                <p class="riesgo-texto">
+                  Para dar de alta nuevamente al alumno en este curso, emití un
+                  certificado nuevo (código y QR distintos). El expediente
+                  revocado o vencido permanece en el historial.
+                </p>
+                <a
+                  class="btn-pdf"
+                  data-testid="cta-emitir-nuevamente-riesgo"
+                  routerLink="/admin/certificaciones/nueva"
+                  [queryParams]="reemitQueryParams()"
+                >
+                  Emitir nuevamente
+                </a>
+              } @else {
+                <button
+                  type="button"
+                  class="btn-revocar"
+                  disabled
+                  aria-describedby="revocacion-no-disponible"
+                >
+                  Revocación no disponible
+                </button>
+              }
             }
           </div>
         </section>
@@ -363,13 +449,17 @@
           </div>
 
           <div class="doc-trazabilidad">
-            <div class="qr-decorativo qr-trazabilidad" aria-hidden="true">
-              <div class="qr-grid">
-                @for (c of qrCells; track $index) {
-                  <span class="qr-cell {{ c ? 'qr-on' : 'qr-off' }}"></span>
-                }
-              </div>
-            </div>
+            @if (qrSrc(); as src) {
+              <img
+                class="qr-real qr-trazabilidad"
+                [src]="src"
+                width="88"
+                height="88"
+                alt="Código QR de validación del certificado"
+              />
+            } @else {
+              <div class="qr-placeholder qr-trazabilidad" aria-hidden="true"></div>
+            }
             <div class="doc-traz-info">
               <dl class="doc-traz-dl">
                 <div>
@@ -378,7 +468,7 @@
                 </div>
                 <div>
                   <dt>Verificación</dt>
-                  <dd class="public-url mono">{{ d.publicValidationUrl }}</dd>
+                  <dd class="public-url mono">{{ entregaUrl() || '—' }}</dd>
                 </div>
               </dl>
               <p class="doc-traz-note">

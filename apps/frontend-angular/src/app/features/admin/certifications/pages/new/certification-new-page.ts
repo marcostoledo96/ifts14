@@ -22,6 +22,7 @@ import { STUDENTS_SOURCE } from '../../../students/students.service';
 import { Alumno } from '../../../students/students.models';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { EmitirCertificacionPayload } from '../../certifications.models';
+import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 export interface PresenteVista {
   readonly fecha: string;
@@ -71,7 +72,7 @@ function iniciales(a: Alumno): string {
 @Component({
   selector: 'app-certification-new-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, UiSpinner],
   templateUrl: './certification-new-page.html',
   styleUrl: './certification-new-page.css',
 })
@@ -173,6 +174,7 @@ export class CertificationNewPage implements OnInit {
       !this.emitiendo() &&
       this.fechasRealizadas().length > 0 &&
       this.presentes().length > 0 &&
+      !this.avisoDuplicado() &&
       !this.errorPar(),
   );
 

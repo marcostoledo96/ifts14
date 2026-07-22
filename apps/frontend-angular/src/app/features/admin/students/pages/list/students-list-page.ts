@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 import { Alumno, STUDENTS_PAGE_SIZE } from '../../students.models';
 import { STUDENTS_SOURCE } from '../../students.service';
 
@@ -30,7 +31,7 @@ export const STUDENTS_QA_ENABLED = new InjectionToken<boolean>('STUDENTS_QA_ENAB
 @Component({
   selector: 'app-students-list-page',
   standalone: true,
-  imports: [RouterModule],
+  imports: [RouterModule, UiSpinner],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './students-list-page.html',
   styleUrl: './students-list-page.css',

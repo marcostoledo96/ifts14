@@ -14,14 +14,6 @@
     </a>
   </div>
 
-  <p class="demo-banner" role="status">
-    <svg class="demo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-      <circle cx="12" cy="12" r="9"/>
-      <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
-    </svg>
-    Datos de demostración — No persiste al recargar.
-  </p>
-
   <section class="filtros" aria-label="Buscar y filtrar certificaciones">
     <div class="filtros-top">
       <label class="filtro-search" for="buscar-certificacion">
@@ -117,6 +109,7 @@
   @if (vistaQA() === 'cargando' || cargando()) {
     <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando certificaciones">
       <div class="skeleton-head">
+        <app-ui-spinner size="sm" />
         <span class="skeleton-label">Cargando certificaciones…</span>
       </div>
       <ul class="skeleton-rows">

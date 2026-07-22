@@ -13,8 +13,6 @@
     </a>
   </div>
 
-  <p class="demo-banner" role="status">Datos de demostración: los cambios no se persisten al recargar.</p>
-
   <section class="filtros" aria-label="Buscar y filtrar cursos">
     <div class="filtros-main">
       <label class="filtro-search" for="buscar-curso">
@@ -97,7 +95,8 @@
   @if (mostrandoCarga()) {
     <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando cursos">
       <div class="skeleton-head">
-        <span class="skeleton-bar skeleton-bar--lg"></span>
+        <app-ui-spinner size="sm" />
+        <span class="skeleton-label">Cargando cursos…</span>
       </div>
       <ul class="skeleton-rows">
         @for (_ of [1, 2, 3, 4]; track $index) {

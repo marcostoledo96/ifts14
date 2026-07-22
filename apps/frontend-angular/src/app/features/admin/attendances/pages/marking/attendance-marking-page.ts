@@ -16,6 +16,7 @@ import { CursoDetalle } from '../../../courses/courses.models';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
 import { AsistenciaAlumno } from '../../models/attendance.types';
 import type { ResumenGeneracionNav } from '../date-certificates/date-certificates-page';
+import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 export type ResumenGeneracion = ResumenGeneracionNav;
 
@@ -24,7 +25,7 @@ export type ResumenGeneracion = ResumenGeneracionNav;
 @Component({
   selector: 'app-attendance-marking-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, UiSpinner],
   templateUrl: './attendance-marking-page.html',
   styleUrl: './attendance-marking-page.css',
 })

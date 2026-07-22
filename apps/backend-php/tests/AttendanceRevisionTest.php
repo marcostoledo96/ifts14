@@ -54,7 +54,7 @@ $certificateService = new AdminCertificateService(
 );
 
 // 2. Crear Alumno, Curso, Fechas y Asistencias
-$student = $masterData->createStudent(['dni' => '11222333', 'apellidoNombre' => 'Alumno Test']);
+$student = $masterData->createStudent(['dni' => '11222333', 'apellido' => 'Alumno', 'nombre' => 'Test']);
 $course = $masterData->createCourse(['codigo' => 'TEST01', 'nombre' => 'Curso Test']);
 $date1 = $masterData->createCourseDate($course['id'], ['fecha' => '2026-06-01', 'estado' => 'realizada']);
 $date2 = $masterData->createCourseDate($course['id'], ['fecha' => '2026-06-08', 'estado' => 'realizada']);

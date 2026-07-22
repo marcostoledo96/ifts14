@@ -4,8 +4,24 @@ import {
   CertificationsService,
 } from './certifications.service';
 import { InMemoryCertificationsService, URL_PUBLICA_MAX } from './in-memory-certifications.service';
+import {
+  getMockAdminPublicStatus,
+  MockValidationSource,
+  mockPublicValidationToken,
+  resetMockAdminPublicStatus,
+} from '../../../shared/certificates/mock-tokens';
+import { clearMockAdminLiveEstadoResolver } from '../../../shared/certificates/mock-admin-bridge';
+import {
+  VALIDATION_SOURCE,
+  ValidationSource,
+} from '../../../shared/certificates/validation-source';
 
 describe('InMemoryCertificationsService', () => {
+  afterEach(() => {
+    resetMockAdminPublicStatus();
+    clearMockAdminLiveEstadoResolver();
+  });
+
   function setup(): CertificationsService {
     TestBed.configureTestingModule({
       // Cada TestBed arranca una nueva instancia con su clon del seed:
@@ -13,6 +29,23 @@ describe('InMemoryCertificationsService', () => {
       providers: [{ provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService }],
     });
     return TestBed.inject(CERTIFICATIONS_SOURCE);
+  }
+
+  function setupWithMockAppWiring(): {
+    admin: CertificationsService;
+    publicValidation: ValidationSource;
+  } {
+    TestBed.configureTestingModule({
+      providers: [
+        InMemoryCertificationsService,
+        { provide: CERTIFICATIONS_SOURCE, useExisting: InMemoryCertificationsService },
+        { provide: VALIDATION_SOURCE, useClass: MockValidationSource },
+      ],
+    });
+    return {
+      admin: TestBed.inject(CERTIFICATIONS_SOURCE),
+      publicValidation: TestBed.inject(VALIDATION_SOURCE),
+    };
   }
 
   it('listar devuelve los certificados seed sin argumentos', async () => {
@@ -157,6 +190,55 @@ describe('InMemoryCertificationsService', () => {
     expect(stored.auditEvents[0].detalle).toBe('Motivo de prueba');
   });
 
+  it('revocar alinea validación pública mock (CERTIFICATE_REVOKED)', async () => {
+    const svc = setup();
+    await svc.revocar(2, 'Motivo E-14 prueba alineación mock');
+    const publicSrc = new MockValidationSource();
+    const result = await publicSrc.fetch(mockPublicValidationToken('prefijo_demo_c2d'));
+    expect(result.ok).toBeFalse();
+    if (result.ok) return;
+    expect(result.error?.error.code).toBe('CERTIFICATE_REVOKED');
+  });
+
+  it('revocar alinea admin y validación pública con el wiring useExisting de la app', async () => {
+    const { admin, publicValidation } = setupWithMockAppWiring();
+    expect(admin).toBe(TestBed.inject(InMemoryCertificationsService));
+
+    await admin.revocar(2, 'Motivo de prueba del wiring real');
+
+    const result = await publicValidation.fetch(mockPublicValidationToken('prefijo_demo_c2d'));
+    expect(result.ok).toBeFalse();
+    if (result.ok) return;
+    expect(result.error?.error.code).toBe('CERTIFICATE_REVOKED');
+  });
+
+  it('rehidrata la revocación después de un F5 simulado', async () => {
+    const svc = setup() as InMemoryCertificationsService;
+    await svc.revocar(2, 'Motivo temporal');
+
+    const afterF5 = new InMemoryCertificationsService();
+    expect((await afterF5.obtener(2)).estado).toBe('revocado');
+
+    const publicResult = await new MockValidationSource().fetch(
+      mockPublicValidationToken('prefijo_demo_c2d'),
+    );
+    expect(publicResult.ok).toBeFalse();
+  });
+
+  it('resetToSeed borra la revocación persistida y restaura cert 2 a vigente', async () => {
+    const svc = setup() as InMemoryCertificationsService;
+    await svc.revocar(2, 'Motivo temporal');
+    expect((await svc.obtener(2)).estado).toBe('revocado');
+    svc.resetToSeed();
+    expect((await svc.obtener(2)).estado).toBe('vigente');
+    expect(getMockAdminPublicStatus(mockPublicValidationToken('prefijo_demo_c2d'))).toBeUndefined();
+
+    const publicResult = await new MockValidationSource().fetch(
+      mockPublicValidationToken('prefijo_demo_c2d'),
+    );
+    expect(publicResult.ok).toBeTrue();
+  });
+
   for (const [estado, id] of [
     ['borrador', 3],
     ['vencido', 4],
@@ -243,22 +325,25 @@ describe('InMemoryCertificationsService', () => {
     expect(vacío.length).toBe(0);
   });
 
-  it('descargarQrPng devuelve Blob PNG para id seed', async () => {
+  it('descargarQrPng devuelve Blob PNG escaneable (no stub 1×1) para id seed', async () => {
     const blob = await setup().descargarQrPng(1);
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.type).toBe('image/png');
-    expect(blob.size).toBeGreaterThan(0);
+    // Un QR 256px supera ampliamente el PNG 1×1 (~70 bytes).
+    expect(blob.size).toBeGreaterThan(200);
   });
 
   it('descargarQrPng rechaza id inexistente', async () => {
     await expectAsync(setup().descargarQrPng(999)).toBeRejected();
   });
 
-  it('descargarPdf devuelve Blob PDF para id seed', async () => {
+  it('descargarPdf devuelve Blob PDF abríble (no stub inválido) para id seed', async () => {
     const blob = await setup().descargarPdf(1);
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.type).toBe('application/pdf');
-    expect(blob.size).toBeGreaterThan(0);
+    expect(blob.size).toBeGreaterThan(400);
+    const head = new TextDecoder('latin1').decode(await blob.slice(0, 8).arrayBuffer());
+    expect(head.startsWith('%PDF-1.')).toBeTrue();
   });
 
   it('descargarPdf rechaza id inexistente', async () => {

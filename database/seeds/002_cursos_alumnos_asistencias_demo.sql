@@ -14,10 +14,10 @@ VALUES
 SET @curso_fecha_demo_1_id = LAST_INSERT_ID();
 SET @curso_fecha_demo_2_id = @curso_fecha_demo_1_id + 1;
 
-INSERT INTO cert_alumnos (apellido_nombre, dni_hash, dni_cifrado, dni_mostrar, estado)
+INSERT INTO cert_alumnos (apellido_nombre, apellido, nombre, dni_hash, dni_cifrado, dni_mostrar, estado)
 VALUES
-  ('Alumno Demo Uno', UNHEX(SHA2('DNI_FICTICIO_ALUMNO_DEMO_1', 256)), 'dni_demo_cifrado_placeholder_1', 'DNI-FICTICIO-01', 'activo'),
-  ('Alumna Demo Dos', UNHEX(SHA2('DNI_FICTICIO_ALUMNA_DEMO_2', 256)), 'dni_demo_cifrado_placeholder_2', 'DNI-FICTICIO-02', 'activo');
+  ('Alumno Demo Uno', 'Alumno', 'Demo Uno', UNHEX(SHA2('DNI_FICTICIO_ALUMNO_DEMO_1', 256)), 'dni_demo_cifrado_placeholder_1', 'DNI-FICTICIO-01', 'activo'),
+  ('Alumna Demo Dos', 'Alumna', 'Demo Dos', UNHEX(SHA2('DNI_FICTICIO_ALUMNA_DEMO_2', 256)), 'dni_demo_cifrado_placeholder_2', 'DNI-FICTICIO-02', 'activo');
 
 SET @alumno_demo_1_id = LAST_INSERT_ID();
 SET @alumno_demo_2_id = @alumno_demo_1_id + 1;

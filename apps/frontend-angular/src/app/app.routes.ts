@@ -60,7 +60,11 @@ export const routes: Routes = [
       // useRealApi=false (default) → InMemoryXxx; true → HttpXxx contra environment.apiBaseUrl.
       { provide: COURSES_SOURCE, useClass: environment.useRealApi ? HttpCoursesService : InMemoryCoursesService },
       { provide: ATTENDANCE_SOURCE, useClass: environment.useRealApi ? HttpAttendanceService : AttendanceMockService },
-      { provide: CERTIFICATIONS_SOURCE, useClass: environment.useRealApi ? HttpCertificationsService : InMemoryCertificationsService },
+      // Mock: una sola instancia root (useExisting) para que revocar alinee admin ↔ validación pública.
+      // API real: HttpCertificationsService en el árbol admin.
+      environment.useRealApi
+        ? { provide: CERTIFICATIONS_SOURCE, useClass: HttpCertificationsService }
+        : { provide: CERTIFICATIONS_SOURCE, useExisting: InMemoryCertificationsService },
       { provide: STUDENTS_SOURCE, useClass: environment.useRealApi ? HttpStudentsService : InMemoryStudentsService },
       { provide: INSTITUTIONAL_CONFIG_SOURCE, useClass: environment.useRealApi ? HttpInstitutionalConfigService : InMemoryInstitutionalConfigService },
     ],
@@ -85,24 +89,32 @@ export const routes: Routes = [
         // Estático ANTES de alumnos/:id para que "nuevo" no caiga en detalle.
         path: 'alumnos/nuevo',
         title: 'Admin · Nuevo alumno — IFTS 14',
+        data: { mode: 'create' },
+        loadComponent: () =>
+          import('./features/admin/students/pages/new/student-editor-page').then((m) => m.StudentEditorPage),
+      },
+      {
+        path: 'alumnos/:id/editar',
+        title: 'Admin · Editar alumno — IFTS 14',
+        data: { mode: 'edit' },
         loadComponent: () =>
           import('./features/admin/students/pages/new/student-editor-page').then((m) => m.StudentEditorPage),
       },
       {
         path: 'alumnos/:id',
-        title: 'Admin · Detalle de Alumno (mock) — IFTS 14',
+        title: 'Admin · Detalle de Alumno — IFTS 14',
         loadComponent: () =>
           import('./features/admin/students/pages/detail/student-detail-page').then((m) => m.StudentDetailPage),
       },
       {
         path: 'alumnos',
-        title: 'Admin · Alumnos (mock) — IFTS 14',
+        title: 'Admin · Alumnos — IFTS 14',
         loadComponent: () =>
           import('./features/admin/students/pages/list/students-list-page').then((m) => m.StudentsListPage),
       },
       {
         path: 'asistencias',
-        title: 'Admin · Asistencias (mock) — IFTS 14',
+        title: 'Admin · Asistencias — IFTS 14',
         loadComponent: () =>
           import('./features/admin/attendances/pages/list/attendances-list-page').then(
             (m) => m.AttendancesListPage,
@@ -162,7 +174,7 @@ export const routes: Routes = [
         // F4-02: ruta PDF ANTES de certificaciones/:id para que :id no
         // capture el sufijo /pdf. Orden seguro first-wins.
         path: 'certificaciones/:id/pdf',
-        title: 'Admin · Certificación PDF (mock) — IFTS 14',
+        title: 'Admin · Certificación PDF — IFTS 14',
         loadComponent: () =>
           import(
             './features/admin/certifications/pages/pdf/certification-pdf-preview-page'
@@ -171,7 +183,7 @@ export const routes: Routes = [
       {
         // F5-04: ruta entrega ANTES de certificaciones/:id
         path: 'certificaciones/:id/entrega',
-        title: 'Admin · Entrega manual (mock) — IFTS 14',
+        title: 'Admin · Entrega manual — IFTS 14',
         loadComponent: () =>
           import(
             './features/admin/certifications/pages/delivery/certification-delivery-page'
@@ -180,7 +192,7 @@ export const routes: Routes = [
       {
         // F6-01: ruta revocación ANTES de certificaciones/:id
         path: 'certificaciones/:id/revocar',
-        title: 'Admin · Revocar certificación (mock) — IFTS 14',
+        title: 'Admin · Revocar certificación — IFTS 14',
         loadComponent: () =>
           import(
             './features/admin/certifications/pages/revoke/certification-revoke-page'
@@ -188,7 +200,7 @@ export const routes: Routes = [
       },
       {
         path: 'certificaciones/:id',
-        title: 'Admin · Certificación (mock) — IFTS 14',
+        title: 'Admin · Certificación — IFTS 14',
         loadComponent: () =>
           import('./features/admin/certifications/pages/preview/certification-preview-page').then(
             (m) => m.CertificationPreviewPage,
@@ -196,7 +208,7 @@ export const routes: Routes = [
       },
       {
         path: 'certificaciones',
-        title: 'Admin · Certificaciones (mock) — IFTS 14',
+        title: 'Admin · Certificaciones — IFTS 14',
         loadComponent: () =>
           import('./features/admin/certifications/pages/list/certifications-list-page').then(
             (m) => m.CertificationsListPage,

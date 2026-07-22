@@ -15,10 +15,28 @@
     </p>
   </div>
 
-  <p class="demo-banner" role="status">Datos de demostración — No persiste al recargar.</p>
-
   @if (cargandoCatalogos()) {
-    <output class="loading-block" aria-busy="true">Cargando catálogos…</output>
+    <div class="catalogos-skeleton" aria-busy="true" aria-label="Cargando catálogos">
+      <div class="sk-head-row">
+        <app-ui-spinner size="sm" [decorative]="false" label="Cargando catálogos" />
+        <span class="sk-label">Cargando catálogos…</span>
+      </div>
+      <section class="selection-grid sk-selection">
+        <div class="field">
+          <span class="sk-bar sk-pulse sk-bar--label"></span>
+          <span class="sk-bar sk-pulse sk-bar--input"></span>
+        </div>
+        <div class="field">
+          <span class="sk-bar sk-pulse sk-bar--label"></span>
+          <span class="sk-bar sk-pulse sk-bar--input"></span>
+        </div>
+      </section>
+      <section class="sk-preview">
+        <span class="sk-bar sk-pulse sk-bar--preview-title"></span>
+        <span class="sk-bar sk-pulse sk-bar--preview-body"></span>
+        <span class="sk-bar sk-pulse sk-bar--preview-body sk-bar--short"></span>
+      </section>
+    </div>
   } @else if (errorCatalogos()) {
     <div class="estado-error" role="alert">
       <p>{{ errorCatalogos() }}</p>
@@ -118,10 +136,6 @@
         </div>
       </label>
 
-      <div class="field">
-        <span class="filtro-label">Ciclo lectivo</span>
-        <div class="ciclo-box" aria-live="polite">{{ cicloLectivo() }}</div>
-      </div>
     </section>
 
     @if (avisoQuery()) {

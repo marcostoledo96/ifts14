@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { CertificationPdfPreviewPage } from './certification-pdf-preview-page';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
 import { CertificacionDetalle, EntregaManualDto } from '../../certifications.models';
-import { InMemoryCertificationsService, URL_PUBLICA_MAX } from '../../in-memory-certifications.service';
+import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
 
 describe('CertificationPdfPreviewPage', () => {
   async function render(id: string) {
@@ -18,6 +18,10 @@ describe('CertificationPdfPreviewPage', () => {
     fixture.componentRef.setInput('id', id);
     fixture.detectChanges();
     await fixture.whenStable();
+    fixture.detectChanges();
+    // QR + entrega-manual cargan en paralelo tras el detalle.
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 30));
     fixture.detectChanges();
     return fixture;
   }
@@ -71,28 +75,35 @@ describe('CertificationPdfPreviewPage', () => {
     expect(cierre?.textContent).toMatch(/marzo.*2026/i);
   });
 
-  it('muestra la URL pública truncada (<= URL_PUBLICA_MAX chars) sin token completo', async () => {
+  it('muestra la URL canónica de validación (entrega-manual) sin UUID real', async () => {
     const f = await render('1');
+    await f.whenStable();
+    f.detectChanges();
     const el = f.nativeElement as HTMLElement;
     const urlEl = el.querySelector('.cert-val-url');
     expect(urlEl).not.toBeNull();
     const urlText = urlEl?.textContent?.trim() || '';
-    expect(urlText.length).toBeLessThanOrEqual(URL_PUBLICA_MAX);
+    expect(urlText).toContain('/validar/');
     expect(urlText).not.toMatch(
       /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
     );
   });
 
-  // --- QR decorativo 8×8 ---
+  // --- QR real (PNG vía descargarQrPng) ---
 
-  it('QR decorativo tiene 64 celdas (8x8) y aria-hidden', async () => {
+  it('muestra img.qr-real con object URL del PNG de validación', async () => {
     const f = await render('1');
+    // Esperar Promise.allSettled de QR + entrega.
+    await f.whenStable();
+    f.detectChanges();
+    await new Promise((r) => setTimeout(r, 50));
+    f.detectChanges();
     const el = f.nativeElement as HTMLElement;
-    const qr = el.querySelector('.qr-decorativo');
+    const qr = el.querySelector('img.qr-real') as HTMLImageElement | null;
     expect(qr).not.toBeNull();
-    expect(qr?.getAttribute('aria-hidden')).toBe('true');
-    const cells = qr?.querySelectorAll('.qr-cell') || [];
-    expect(cells.length).toBe(64);
+    expect(qr?.getAttribute('alt')).toContain('QR');
+    expect(qr?.src).toMatch(/^blob:/);
+    expect(el.querySelector('.qr-decorativo')).toBeNull();
   });
 
   // --- Autoridades neutras ---
@@ -139,7 +150,7 @@ describe('CertificationPdfPreviewPage', () => {
     expect(feedback?.getAttribute('aria-live')).toBe('polite');
   });
 
-  it('REQ-PAR-PDF-001: muestra Descargar PDF y descarga vía seam Blob', async () => {
+  it('REQ-PAR-PDF-001: Descargar PDF exporta el folio visible (no el stub API)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const btn = Array.from(el.querySelectorAll('button')).find((b) =>
@@ -147,24 +158,19 @@ describe('CertificationPdfPreviewPage', () => {
     ) as HTMLButtonElement;
     expect(btn).toBeTruthy();
     expect(btn.classList.contains('btn-descargar-pdf')).toBeTrue();
+    expect(el.querySelector('.certificado-folio')).not.toBeNull();
 
     const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
-    const pdfSpy = spyOn(svc, 'descargarPdf').and.resolveTo(
-      new Blob(['%PDF'], { type: 'application/pdf' }),
-    );
-    spyOn(URL, 'createObjectURL').and.returnValue('blob:pdf');
-    spyOn(URL, 'revokeObjectURL');
-    let downloadedName = '';
-    spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) {
-      downloadedName = this.download;
-    });
+    const pdfSpy = spyOn(svc, 'descargarPdf');
+    const exportSpy = spyOn(f.componentInstance, 'exportarFolioVisibleComoPdf').and.resolveTo();
 
     await f.componentInstance.descargarPdf();
     f.detectChanges();
 
-    expect(pdfSpy).toHaveBeenCalledWith(1);
-    expect(downloadedName).toBe('cert-IFTS14-CERT-0001.pdf');
-    expect(f.componentInstance.downloadFeedback()).toContain('PDF');
+    expect(exportSpy).toHaveBeenCalled();
+    expect(pdfSpy).not.toHaveBeenCalled();
+    expect(f.componentInstance.pdfFilename()).toBe('cert-IFTS14-CERT-0001.pdf');
+    expect(f.componentInstance.downloadFeedback()).toContain('A4');
   });
 
   it('live region de impresión tiene role="status" y aria-live="polite"', async () => {

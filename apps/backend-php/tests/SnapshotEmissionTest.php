@@ -56,8 +56,8 @@ $dni = '12345678';
 $dniCipher = DniCipher::encrypt($dni, $dniKey);
 $dniHash = hash('sha256', $dni, true);
 
-$pdo->prepare('INSERT INTO cert_alumnos (apellido_nombre, dni_hash, dni_cifrado, dni_mostrar, estado) VALUES (?, ?, ?, ?, \'activo\')')
-    ->execute(['Alumno Demo', $dniHash, $dniCipher, '12345678']);
+$pdo->prepare('INSERT INTO cert_alumnos (apellido_nombre, apellido, nombre, dni_hash, dni_cifrado, dni_mostrar, estado) VALUES (?, ?, ?, ?, ?, ?, \'activo\')')
+    ->execute(['Alumno Demo', 'Alumno', 'Demo', $dniHash, $dniCipher, '12345678']);
 $alumnoId = (int) $pdo->lastInsertId();
 
 $pdo->prepare('INSERT INTO cert_cursos (codigo, nombre, estado) VALUES (?, ?, \'activo\')')

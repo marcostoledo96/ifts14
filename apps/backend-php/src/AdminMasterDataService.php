@@ -43,11 +43,15 @@ final class AdminMasterDataService
         $where = '';
         if ($state !== null && $state !== '') {
             $state = $this->enum($state, self::COURSE_STATES);
-            $where = 'WHERE estado = ?';
+            $where = 'WHERE c.estado = ?';
             $params[] = $state;
         }
 
-        $statement = $this->pdo->prepare("SELECT id, codigo, nombre, estado, created_at, updated_at FROM cert_cursos {$where} ORDER BY id ASC");
+        $statement = $this->pdo->prepare(
+            'SELECT c.id, c.codigo, c.nombre, c.estado, c.created_at, c.updated_at,'
+            . ' (SELECT COUNT(*) FROM cert_curso_fechas f WHERE f.curso_id = c.id) AS cantidad_fechas'
+            . " FROM cert_cursos c {$where} ORDER BY c.id ASC"
+        );
         $statement->execute($params);
 
         return ['items' => array_map(fn (array $row): array => $this->courseDto($row), $statement->fetchAll())];
@@ -56,7 +60,11 @@ final class AdminMasterDataService
     /** @return array<string, mixed> */
     public function getCourse(int $id): array
     {
-        $statement = $this->pdo->prepare('SELECT id, codigo, nombre, estado, created_at, updated_at FROM cert_cursos WHERE id = ? LIMIT 1');
+        $statement = $this->pdo->prepare(
+            'SELECT c.id, c.codigo, c.nombre, c.estado, c.created_at, c.updated_at,'
+            . ' (SELECT COUNT(*) FROM cert_curso_fechas f WHERE f.curso_id = c.id) AS cantidad_fechas'
+            . ' FROM cert_cursos c WHERE c.id = ? LIMIT 1'
+        );
         $statement->execute([$this->positiveId($id)]);
         $row = $statement->fetch();
 
@@ -77,11 +85,44 @@ final class AdminMasterDataService
         return $this->getCourse($id);
     }
 
+    /**
+     * Actualiza código y/o nombre del curso.
+     *
+     * @param array<string, mixed> $body
+     * @return array<string, mixed>
+     */
+    public function updateCourse(int $id, array $body): array
+    {
+        $id = $this->positiveId($id);
+        $current = $this->getCourse($id);
+
+        $hasCodigo = array_key_exists('codigo', $body);
+        $hasNombre = array_key_exists('nombre', $body);
+        if (!$hasCodigo && !$hasNombre) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        $code = $hasCodigo ? $this->shortString($body['codigo'] ?? null, 40) : (string) $current['codigo'];
+        $name = $hasNombre ? $this->shortString($body['nombre'] ?? null, 180) : (string) $current['nombre'];
+
+        try {
+            $statement = $this->pdo->prepare('UPDATE cert_cursos SET codigo = ?, nombre = ? WHERE id = ?');
+            $statement->execute([$code, $name, $id]);
+        } catch (PDOException $exception) {
+            $this->throwConflictForUnique($exception, 'uq_cert_cursos_codigo');
+            throw $exception;
+        }
+
+        return $this->getCourse($id);
+    }
+
     /** @param array<string, mixed> $body @return array<string, mixed> */
     public function createStudent(array $body): array
     {
         $key = $this->validDniKey();
-        $name = $this->shortString($body['apellidoNombre'] ?? null, 160);
+        $apellido = $this->shortString($body['apellido'] ?? null, 80);
+        $nombre = $this->shortString($body['nombre'] ?? null, 80);
+        $apellidoNombre = $this->composeApellidoNombre($apellido, $nombre);
         $dni = $this->normalizeDni($body['dni'] ?? null);
         $state = isset($body['estado']) ? $this->enum($body['estado'], self::STUDENT_STATES) : 'activo';
         $dniHash = $this->hashDni($dni, $key);
@@ -102,16 +143,18 @@ final class AdminMasterDataService
 
         try {
             $statement = $this->pdo->prepare(
-                'INSERT INTO cert_alumnos (apellido_nombre, email, dni_hash, dni_cifrado, dni_mostrar, estado) VALUES (?, ?, ?, ?, ?, ?)'
+                'INSERT INTO cert_alumnos (apellido_nombre, apellido, nombre, email, dni_hash, dni_cifrado, dni_mostrar, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             );
-            $statement->bindValue(1, $name);
+            $statement->bindValue(1, $apellidoNombre);
+            $statement->bindValue(2, $apellido);
+            $statement->bindValue(3, $nombre);
             $email === null
-                ? $statement->bindValue(2, null, PDO::PARAM_NULL)
-                : $statement->bindValue(2, $email);
-            $statement->bindValue(3, $dniHash, PDO::PARAM_LOB);
-            $statement->bindValue(4, $dniCipher, PDO::PARAM_LOB);
-            $statement->bindValue(5, $dniDisplay);
-            $statement->bindValue(6, $state);
+                ? $statement->bindValue(4, null, PDO::PARAM_NULL)
+                : $statement->bindValue(4, $email);
+            $statement->bindValue(5, $dniHash, PDO::PARAM_LOB);
+            $statement->bindValue(6, $dniCipher, PDO::PARAM_LOB);
+            $statement->bindValue(7, $dniDisplay);
+            $statement->bindValue(8, $state);
             $statement->execute();
         } catch (PDOException $exception) {
             if ($this->isUniqueConstraint($exception, 'uq_cert_alumnos_dni_hash')) {
@@ -148,7 +191,7 @@ final class AdminMasterDataService
     public function listStudents(): array
     {
         $statement = $this->pdo->query(
-            'SELECT id, apellido_nombre, email, dni_mostrar, dni_cifrado, estado FROM cert_alumnos ORDER BY id ASC'
+            'SELECT id, apellido_nombre, apellido, nombre, email, dni_mostrar, dni_cifrado, estado FROM cert_alumnos ORDER BY id ASC'
         );
 
         return ['items' => array_map(fn (array $row): array => $this->studentDto($row), $statement->fetchAll())];
@@ -158,7 +201,7 @@ final class AdminMasterDataService
     public function getStudent(int $id): array
     {
         $statement = $this->pdo->prepare(
-            'SELECT id, apellido_nombre, email, dni_mostrar, dni_cifrado, estado FROM cert_alumnos WHERE id = ? LIMIT 1'
+            'SELECT id, apellido_nombre, apellido, nombre, email, dni_mostrar, dni_cifrado, estado FROM cert_alumnos WHERE id = ? LIMIT 1'
         );
         $statement->execute([$this->positiveId($id)]);
         $row = $statement->fetch();
@@ -178,6 +221,148 @@ final class AdminMasterDataService
         $statement->execute([$state, $this->positiveId($id)]);
 
         return $this->getStudent($id);
+    }
+
+    /**
+     * Actualiza datos personales del alumno (apellido, nombre, email, estado y/o dni).
+     * Cambiar DNI exige `dni_cipher_key` válida (igual que el alta).
+     *
+     * @param array<string, mixed> $body
+     * @return array<string, mixed>
+     */
+    public function updateStudent(int $id, array $body): array
+    {
+        $id = $this->positiveId($id);
+        $statement = $this->pdo->prepare(
+            'SELECT id, apellido_nombre, apellido, nombre, email, dni_mostrar, estado FROM cert_alumnos WHERE id = ? LIMIT 1'
+        );
+        $statement->execute([$id]);
+        $row = $statement->fetch();
+        if (!is_array($row)) {
+            throw new AdminCertificateException(404, 'STUDENT_NOT_FOUND', 'Alumno no encontrado.');
+        }
+
+        $hasApellido = array_key_exists('apellido', $body);
+        $hasNombre = array_key_exists('nombre', $body);
+        $hasEmail = array_key_exists('email', $body);
+        $hasEstado = array_key_exists('estado', $body);
+        $hasDni = array_key_exists('dni', $body);
+        if (!$hasApellido && !$hasNombre && !$hasEmail && !$hasEstado && !$hasDni) {
+            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        }
+
+        $apellido = $hasApellido
+            ? $this->shortString($body['apellido'] ?? null, 80)
+            : (string) ($row['apellido'] ?? '');
+        $nombre = $hasNombre
+            ? $this->shortString($body['nombre'] ?? null, 80)
+            : (string) ($row['nombre'] ?? '');
+        if ($hasApellido || $hasNombre) {
+            // Tras edición parcial ambos deben quedar no vacíos.
+            $apellido = $this->shortString($apellido !== '' ? $apellido : null, 80);
+            $nombre = $this->shortString($nombre !== '' ? $nombre : null, 80);
+        } else {
+            // Sin tocar identidad: conservar o derivar desde apellido_nombre legado.
+            if ($apellido === '' && $nombre === '') {
+                $split = $this->splitApellidoNombre((string) ($row['apellido_nombre'] ?? ''));
+                $apellido = $split['apellido'];
+                $nombre = $split['nombre'];
+            }
+        }
+        $apellidoNombre = $this->composeApellidoNombre($apellido, $nombre);
+        $email = $hasEmail
+            ? $this->optionalEmail($body['email'] ?? null)
+            : (is_string($row['email'] ?? null) && trim((string) $row['email']) !== ''
+                ? trim((string) $row['email'])
+                : null);
+        $state = $hasEstado
+            ? $this->enum($body['estado'] ?? null, self::STUDENT_STATES)
+            : (string) $row['estado'];
+
+        if ($hasDni) {
+            $key = $this->validDniKey();
+            $dni = $this->normalizeDni($body['dni'] ?? null);
+            $dniHash = $this->hashDni($dni, $key);
+            $dniCipher = DniCipher::encrypt($dni, $key);
+            $existingId = $this->findStudentIdByDniHash($dniHash);
+            if ($existingId !== null && $existingId !== $id) {
+                throw new AdminCertificateException(
+                    409,
+                    'CONFLICT',
+                    'El recurso ya existe.',
+                    ['existingStudentId' => $existingId],
+                );
+            }
+
+            try {
+                $update = $this->pdo->prepare(
+                    'UPDATE cert_alumnos SET apellido_nombre = ?, apellido = ?, nombre = ?, email = ?, estado = ?, dni_hash = ?, dni_cifrado = ?, dni_mostrar = ? WHERE id = ?'
+                );
+                $update->bindValue(1, $apellidoNombre);
+                $update->bindValue(2, $apellido);
+                $update->bindValue(3, $nombre);
+                $email === null
+                    ? $update->bindValue(4, null, PDO::PARAM_NULL)
+                    : $update->bindValue(4, $email);
+                $update->bindValue(5, $state);
+                $update->bindValue(6, $dniHash, PDO::PARAM_LOB);
+                $update->bindValue(7, $dniCipher, PDO::PARAM_LOB);
+                $update->bindValue(8, $dni);
+                $update->bindValue(9, $id);
+                $update->execute();
+            } catch (PDOException $exception) {
+                if ($this->isUniqueConstraint($exception, 'uq_cert_alumnos_dni_hash')) {
+                    $raceId = $this->findStudentIdByDniHash($dniHash);
+                    throw new AdminCertificateException(
+                        409,
+                        'CONFLICT',
+                        'El recurso ya existe.',
+                        $raceId !== null && $raceId !== $id ? ['existingStudentId' => $raceId] : [],
+                    );
+                }
+                throw $exception;
+            }
+        } else {
+            $update = $this->pdo->prepare(
+                'UPDATE cert_alumnos SET apellido_nombre = ?, apellido = ?, nombre = ?, email = ?, estado = ? WHERE id = ?'
+            );
+            $update->bindValue(1, $apellidoNombre);
+            $update->bindValue(2, $apellido);
+            $update->bindValue(3, $nombre);
+            $email === null
+                ? $update->bindValue(4, null, PDO::PARAM_NULL)
+                : $update->bindValue(4, $email);
+            $update->bindValue(5, $state);
+            $update->bindValue(6, $id);
+            $update->execute();
+        }
+
+        return $this->getStudent($id);
+    }
+
+    /**
+     * Payload único para el hub de asistencias admin (evita N+1 de fechas/asistencias por curso).
+     *
+     * @return array<string, mixed>
+     */
+    public function attendanceHub(): array
+    {
+        $fechasStatement = $this->pdo->query(
+            'SELECT id, curso_id, fecha, descripcion, orden, estado FROM cert_curso_fechas ORDER BY curso_id ASC, orden ASC, fecha ASC'
+        );
+        $alumnosActivos = (int) $this->pdo->query(
+            "SELECT COUNT(*) FROM cert_alumnos WHERE estado = 'activo'"
+        )->fetchColumn();
+
+        return [
+            'cursos' => $this->listCourses()['items'],
+            'fechas' => array_map(
+                fn (array $row): array => $this->courseDateDto($row),
+                $fechasStatement->fetchAll(),
+            ),
+            'asistencias' => $this->listAttendances(null, null)['items'],
+            'alumnosActivos' => $alumnosActivos,
+        ];
     }
 
     /** @param array<string, mixed> $body @return array<string, mixed> */
@@ -495,7 +680,7 @@ final class AdminMasterDataService
     /** @param array<string, mixed> $row @return array<string, mixed> */
     private function courseDto(array $row): array
     {
-        return [
+        $dto = [
             'id' => (int) $row['id'],
             'codigo' => (string) $row['codigo'],
             'nombre' => (string) $row['nombre'],
@@ -503,6 +688,11 @@ final class AdminMasterDataService
             'createdAt' => (string) $row['created_at'],
             'updatedAt' => (string) $row['updated_at'],
         ];
+        if (array_key_exists('cantidad_fechas', $row)) {
+            $dto['cantidadFechas'] = (int) $row['cantidad_fechas'];
+        }
+
+        return $dto;
     }
 
     /** @param array<string, mixed> $row @return array<string, mixed> */
@@ -512,12 +702,53 @@ final class AdminMasterDataService
             ? trim((string) $row['email'])
             : null;
 
+        $apellido = trim((string) ($row['apellido'] ?? ''));
+        $nombre = trim((string) ($row['nombre'] ?? ''));
+        if ($apellido === '' && $nombre === '') {
+            $split = $this->splitApellidoNombre((string) ($row['apellido_nombre'] ?? ''));
+            $apellido = $split['apellido'];
+            $nombre = $split['nombre'];
+        }
+        $apellidoNombre = $this->composeApellidoNombre($apellido, $nombre);
+        if ($apellidoNombre === '' && is_string($row['apellido_nombre'] ?? null)) {
+            $apellidoNombre = trim((string) $row['apellido_nombre']);
+        }
+
         return [
             'id' => (int) $row['id'],
-            'apellidoNombre' => (string) $row['apellido_nombre'],
+            'apellido' => $apellido,
+            'nombre' => $nombre,
+            'apellidoNombre' => $apellidoNombre,
             'dniMostrar' => $this->adminDniDisplay($row),
             'email' => $email,
             'estado' => (string) $row['estado'],
+        ];
+    }
+
+    private function composeApellidoNombre(string $apellido, string $nombre): string
+    {
+        return trim($apellido . ' ' . $nombre);
+    }
+
+    /** @return array{apellido: string, nombre: string} */
+    private function splitApellidoNombre(string $apellidoNombre): array
+    {
+        $trimmed = trim($apellidoNombre);
+        $commaIdx = strpos($trimmed, ',');
+        if ($commaIdx !== false) {
+            return [
+                'apellido' => trim(substr($trimmed, 0, $commaIdx)),
+                'nombre' => trim(substr($trimmed, $commaIdx + 1)),
+            ];
+        }
+        $spaceIdx = strpos($trimmed, ' ');
+        if ($spaceIdx === false) {
+            return ['apellido' => $trimmed, 'nombre' => ''];
+        }
+
+        return [
+            'apellido' => trim(substr($trimmed, 0, $spaceIdx)),
+            'nombre' => trim(substr($trimmed, $spaceIdx + 1)),
         ];
     }
 
@@ -606,7 +837,7 @@ final class AdminMasterDataService
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
         $dni = preg_replace('/\D+/', '', (string) $value) ?? '';
-        if (strlen($dni) < 7 || strlen($dni) > 10) {
+        if (strlen($dni) < 6 || strlen($dni) > 10) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
 

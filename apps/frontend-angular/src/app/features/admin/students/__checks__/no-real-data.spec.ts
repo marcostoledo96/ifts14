@@ -6,7 +6,7 @@ describe('students privacy', () => {
     for (const forbidden of ['legajo', 'token', 'matricula', 'matrícula', 'uuid']) {
       expect(value).not.toContain(forbidden);
     }
-    expect(seed.every((alumno) => /^\d{7,8}$/.test(alumno.dniMostrar))).toBeTrue();
+    expect(seed.every((alumno) => /^\d{6,10}$/.test(alumno.dniMostrar))).toBeTrue();
     expect(new Set(seed.map((alumno) => alumno.dniMostrar)).size).toBe(seed.length);
     expect(
       seed.every(

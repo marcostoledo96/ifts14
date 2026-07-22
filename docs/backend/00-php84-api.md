@@ -109,6 +109,8 @@ sudo docker run -d --rm \
   php -S 0.0.0.0:8080 -t /app /app/index.php
 ```
 
+Para QA manual con login admin (`bedelia` / `password-demo-auth`), no uses ese `example.php`: levantá con `bash scripts/local-api-up.sh` (usa `certificados-config.local.php` y valida el login).
+
 Casos verificados:
 
 - `GET http://127.0.0.1:8080/health` → 200 JSON `data.status: ok`, `data.service: certificados-api`.

@@ -1,6 +1,54 @@
 <section class="marcado-page" aria-labelledby="marcado-title">
   @if (cargando()) {
-    <div class="estado-linea" aria-busy="true">Cargando asistencias…</div>
+    <div class="marcado-skeleton" aria-busy="true" aria-label="Cargando asistencias">
+      <header class="page-header">
+        <span class="sk-bar sk-pulse sk-bar--link"></span>
+        <div class="page-header-row">
+          <div class="page-header-main">
+            <span class="sk-bar sk-pulse sk-bar--kicker"></span>
+            <span class="sk-bar sk-pulse sk-bar--title"></span>
+            <span class="sk-bar sk-pulse sk-bar--meta"></span>
+          </div>
+        </div>
+      </header>
+      <div class="layout-grid">
+        <div class="col-main">
+          <section class="controles-card sk-panel">
+            <div class="sk-controls">
+              <span class="sk-bar sk-pulse sk-bar--control"></span>
+              <span class="sk-bar sk-pulse sk-bar--control sk-bar--wide"></span>
+            </div>
+          </section>
+          <section class="roster sk-panel">
+            <div class="sk-head-row">
+              <app-ui-spinner size="sm" [decorative]="false" label="Cargando asistencias" />
+              <span class="sk-label">Cargando asistencias…</span>
+            </div>
+            <div class="roster-cols sk-roster-cols" aria-hidden="true">
+              <span>#</span><span>Alumno</span><span>Documento</span><span class="col-right">Presente</span>
+            </div>
+            <ul class="sk-alumnos">
+              @for (_ of [1, 2, 3, 4, 5]; track $index) {
+                <li class="sk-alumno-row">
+                  <span class="sk-bar sk-pulse sk-bar--idx"></span>
+                  <span class="sk-bar sk-pulse sk-bar--nombre"></span>
+                  <span class="sk-bar sk-pulse sk-bar--dni"></span>
+                  <span class="sk-bar sk-pulse sk-bar--toggle"></span>
+                </li>
+              }
+            </ul>
+          </section>
+        </div>
+        <aside class="col-aside">
+          <section class="resumen sk-panel">
+            <span class="sk-bar sk-pulse sk-bar--panel-title"></span>
+            <span class="sk-bar sk-pulse sk-bar--resumen-row"></span>
+            <span class="sk-bar sk-pulse sk-bar--presentes"></span>
+            <span class="sk-bar sk-pulse sk-bar--btn"></span>
+          </section>
+        </aside>
+      </div>
+    </div>
   }
 
   @if (error()) {
@@ -39,10 +87,6 @@
         </a>
       </div>
     </header>
-
-    <p class="demo-banner" role="status">
-      Datos de demostración: los cambios no se persisten al recargar.
-    </p>
 
     @if (fechaActual(); as f) {
       <div class="layout-grid">

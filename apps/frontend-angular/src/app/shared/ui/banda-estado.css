@@ -69,6 +69,22 @@
   color: var(--color-tech-blue);
 }
 
+.banda-spin {
+  animation: banda-spin 0.75s linear infinite;
+}
+
+@keyframes banda-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banda-spin {
+    animation: none;
+  }
+}
+
 .banda-content {
   min-width: 0;
   flex: 1 1 12rem;

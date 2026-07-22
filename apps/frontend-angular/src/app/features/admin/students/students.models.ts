@@ -21,7 +21,8 @@ export interface Alumno {
 
 /** Body de POST /admin/alumnos. */
 export interface AlumnoDraft {
-  readonly apellidoNombre: string;
+  readonly apellido: string;
+  readonly nombre: string;
   readonly dni: string;
   /** Email de contacto opcional. */
   readonly email?: string | null;

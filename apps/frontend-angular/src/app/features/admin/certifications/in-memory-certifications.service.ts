@@ -1,7 +1,7 @@
 // Implementación en memoria de CertificationsService.
 // Seed ficticio, institucionalmente seguro: DNI completo ficticio en UI admin,
 // sin emails reales, tokens completos, matrículas ni nombres reales.
-// Mutaciones viven solo en la instancia y se pierden al recargar.
+// La revocación pública se conserva por sesión para soportar QA con F5.
 import { Injectable } from '@angular/core';
 import {
   AuditEvent,
@@ -16,6 +16,20 @@ import {
   RegenerarPdfResult,
 } from './certifications.models';
 import { CertificationsService } from './certifications.service';
+import {
+  getMockAdminPublicStatus,
+  mockPublicValidationToken,
+  resetMockAdminPublicStatus,
+  setMockAdminPublicStatus,
+} from '../../../shared/certificates/mock-tokens';
+import { registerMockAdminLiveEstadoResolver } from '../../../shared/certificates/mock-admin-bridge';
+import { qrPngBlobFromUrl } from './qr-png';
+import { buildMockCertificatePdf } from './mock-certificate-pdf';
+
+/** URL pública canónica mock (dominio de producción; en local reemplazar host). */
+function mockPublicValidationUrl(tokenPrefix: string): string {
+  return `https://ifts14.edu.ar/certificados/validar/${mockPublicValidationToken(tokenPrefix)}`;
+}
 
 // ponytail: seed estático module-level; la instancia lo clona en ctor
 // para que cada test arranque con datos limpios sin compartir estado.
@@ -155,6 +169,39 @@ export class InMemoryCertificationsService implements CertificationsService {
   private readonly vigentesPorPar = new Map<string, number>();
 
   constructor() {
+    this.hydratePublicStatuses();
+    this.reindexVigentes();
+    // Validación pública consulta esta misma instancia (useExisting en admin).
+    registerMockAdminLiveEstadoResolver((token) => this.estadoPorTokenPublico(token));
+  }
+
+  /** Restaura el seed original (QA: cert 2 vuelve a vigente). */
+  resetToSeed(): void {
+    resetMockAdminPublicStatus();
+    const fresh = clone(seed());
+    this.certificados.splice(0, this.certificados.length, ...fresh);
+    this.nextId = 100;
+    this.reindexVigentes();
+    registerMockAdminLiveEstadoResolver((token) => this.estadoPorTokenPublico(token));
+  }
+
+  /** Aplica al seed los estados públicos persistidos durante esta sesión. */
+  private hydratePublicStatuses(): void {
+    for (const [index, certificado] of this.certificados.entries()) {
+      const status = getMockAdminPublicStatus(
+        mockPublicValidationToken(certificado.tokenPrefix),
+      );
+      if (status) {
+        this.certificados[index] = {
+          ...certificado,
+          estado: status === 'expirado' ? 'vencido' : status,
+        };
+      }
+    }
+  }
+
+  private reindexVigentes(): void {
+    this.vigentesPorPar.clear();
     for (const c of this.certificados) {
       if (c.estado === 'vigente' && c.alumnoId != null && c.cursoId != null) {
         this.vigentesPorPar.set(this.pairKey(c.alumnoId, c.cursoId), c.id);
@@ -164,6 +211,18 @@ export class InMemoryCertificationsService implements CertificationsService {
 
   private pairKey(alumnoId: number, cursoId: number): string {
     return `${alumnoId}:${cursoId}`;
+  }
+
+  /**
+   * Estado vivo del seed admin por token público (`prefijo_…-completo`).
+   * Lo usa MockValidationSource para alinear validación pública con revocaciones.
+   */
+  estadoPorTokenPublico(token: string): EstadoCertificado | null {
+    const normalized = token.trim();
+    const found = this.certificados.find(
+      (c) => mockPublicValidationToken(c.tokenPrefix) === normalized,
+    );
+    return found?.estado ?? null;
   }
 
   listar(filtros?: CertificacionesFiltros): Promise<readonly Certificacion[]> {
@@ -219,7 +278,7 @@ export class InMemoryCertificationsService implements CertificationsService {
     const pdfStatus: PdfStatus = found.id === 4 ? 'outdated' : 'valid';
     return Promise.resolve({
       certificadoId: found.id,
-      publicValidationUrl: `https://ifts14.edu.ar/certificados/validar/${found.tokenPrefix}-completo`,
+      publicValidationUrl: mockPublicValidationUrl(found.tokenPrefix),
       pdfDownloadUrl: `${found.id}/pdf`,
       tokenPrefix: found.tokenPrefix,
       pdfAvailable: found.estado !== 'borrador',
@@ -227,20 +286,13 @@ export class InMemoryCertificationsService implements CertificationsService {
     });
   }
 
-  descargarQrPng(id: number): Promise<Blob> {
+  async descargarQrPng(id: number): Promise<Blob> {
     const found = this.certificados.find((c) => c.id === id);
     if (!found) {
       return Promise.reject(new Error(`Certificación no encontrada: ${id}`));
     }
-    // PNG 1x1 mínimo válido para tests/mock (sin red).
-    const png = Uint8Array.from([
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
-      0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
-      0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
-      0x42, 0x60, 0x82,
-    ]);
-    return Promise.resolve(new Blob([png], { type: 'image/png' }));
+    // Misma URL canónica que entrega-manual; PNG escaneable (no stub 1×1).
+    return qrPngBlobFromUrl(mockPublicValidationUrl(found.tokenPrefix));
   }
 
   descargarPdf(id: number): Promise<Blob> {
@@ -248,9 +300,17 @@ export class InMemoryCertificationsService implements CertificationsService {
     if (!found) {
       return Promise.reject(new Error(`Certificación no encontrada: ${id}`));
     }
-    // PDF mínimo válido para tests/mock (sin red).
-    const pdf = '%PDF-1.1\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n';
-    return Promise.resolve(new Blob([pdf], { type: 'application/pdf' }));
+    // PDF abríble para QA local (no stub inválido).
+    return Promise.resolve(
+      buildMockCertificatePdf({
+        numero: found.numero,
+        nombreAlumno: found.nombreAlumno,
+        cursoNombre: found.cursoNombre,
+        documentMasked: found.documentMasked,
+        emitidoEn: found.emitidoEn,
+        validationUrl: mockPublicValidationUrl(found.tokenPrefix),
+      }),
+    );
   }
 
   contar(): Promise<number> {
@@ -266,7 +326,7 @@ export class InMemoryCertificationsService implements CertificationsService {
     // y devuelve los datos de entrega como entregaManual.
     return Promise.resolve({
       regenerado: true,
-      publicValidationUrl: `https://ifts14.edu.ar/certificados/validar/${found.tokenPrefix}-completo`,
+      publicValidationUrl: mockPublicValidationUrl(found.tokenPrefix),
       pdfDownloadUrl: `${found.id}/pdf`,
       pdfStatus: 'valid' as PdfStatus,
     });
@@ -301,6 +361,7 @@ export class InMemoryCertificationsService implements CertificationsService {
         ];
         
         this.certificados[index] = found;
+        setMockAdminPublicStatus(found.tokenPrefix, found.estado);
         for (const [key, certId] of this.vigentesPorPar) {
           if (certId === id) this.vigentesPorPar.delete(key);
         }
@@ -352,7 +413,7 @@ export class InMemoryCertificationsService implements CertificationsService {
       issuedAt: payload.issuedAt,
       expiresAt: payload.expiresAt,
       tokenPrefix,
-      publicValidationUrl: `https://ifts14.edu.ar/certificados/validar/${tokenPrefix}-completo`,
+      publicValidationUrl: mockPublicValidationUrl(tokenPrefix),
       pdfDownloadUrl: `/admin/certificados/${id}/pdf`,
     });
   }
