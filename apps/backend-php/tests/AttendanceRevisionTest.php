@@ -54,7 +54,7 @@ $certificateService = new AdminCertificateService(
 );
 
 // 2. Crear Alumno, Curso, Fechas y Asistencias
-$student = $masterData->createStudent(['dni' => '11222333', 'apellidoNombre' => 'Alumno Test']);
+$student = $masterData->createStudent(['dni' => '11222333', 'apellido' => 'Alumno', 'nombre' => 'Test']);
 $course = $masterData->createCourse(['codigo' => 'TEST01', 'nombre' => 'Curso Test']);
 $date1 = $masterData->createCourseDate($course['id'], ['fecha' => '2026-06-01', 'estado' => 'realizada']);
 $date2 = $masterData->createCourseDate($course['id'], ['fecha' => '2026-06-08', 'estado' => 'realizada']);
@@ -135,7 +135,7 @@ if (($verifiedAfterRestore['status'] ?? 0) !== 200 || ($verifiedAfterRestore['da
 }
 
 // 7. Fechas futuras/programadas (no certificables) no deben afectar revisiones.
-// Usar fecha futura para que el auto-estado no pase a realizada (fecha < hoy AR).
+// Usar fecha futura para que el auto-estado no pase a realizada (fecha > hoy AR).
 $date3 = $masterData->createCourseDate($course['id'], ['fecha' => '2099-06-15', 'estado' => 'programada']);
 $attendance3 = $masterData->recordAttendance(['alumnoId' => $student['id'], 'cursoId' => $course['id'], 'cursoFechaId' => $date3['id']]);
 

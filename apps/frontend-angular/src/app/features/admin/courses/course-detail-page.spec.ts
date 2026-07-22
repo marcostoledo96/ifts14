@@ -32,6 +32,7 @@ function courses(obtener: (id: number) => Promise<CursoDetalle>): CoursesService
     obtener,
     listar: () => Promise.resolve([]),
     crear: () => Promise.reject(new Error('not used')),
+    actualizar: () => Promise.reject(new Error('not used')),
     actualizarEstado: () => Promise.reject(new Error('not used')),
     listarFechas: () => Promise.resolve([]),
     guardarFecha: () => Promise.reject(new Error('not used')),
@@ -39,12 +40,17 @@ function courses(obtener: (id: number) => Promise<CursoDetalle>): CoursesService
   };
 }
 
-function attendance(listarAsistencias: AttendanceService['listarAsistencias']): AttendanceService {
+function attendance(
+  listarAsistenciasDeCurso: AttendanceService['listarAsistenciasDeCurso'],
+): AttendanceService {
   return {
-    listarAsistencias,
+    listarAsistenciasDeCurso,
+    listarAsistencias: async (cursoId, fechaId) =>
+      (await listarAsistenciasDeCurso(cursoId)).filter((a) => a.cursoFechaId === fechaId),
     listarAsistenciasPorPar: () => Promise.resolve([]),
     listarAsistenciasPorAlumno: () => Promise.resolve([]),
     listarAlumnos: () => Promise.resolve([]),
+    listarHub: () => Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
     marcar: () => Promise.resolve([]),
     anular: () => Promise.resolve(),
   };
@@ -72,20 +78,15 @@ describe('CourseDetailPage', () => {
     return fixture;
   }
 
-  it('resuelve métricas por fecha con allSettled y aísla fallos', async () => {
+  it('si listarAsistenciasDeCurso falla, todas las fechas quedan no disponibles', async () => {
     const f = await render(
       courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12), fecha(13)]))),
       '1',
-      attendance((_, fechaId) => {
-        if (fechaId === 11) return Promise.resolve([{ cursoId: 1, cursoFechaId: 11 }] as never);
-        if (fechaId === 12) return Promise.reject(new Error('seam failure'));
-        return Promise.resolve([]);
-      }),
+      attendance(() => Promise.reject(new Error('seam failure'))),
     );
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('1 presente');
     expect(el.textContent).toContain('No disponible');
-    expect(el.querySelectorAll('a[href*="/fechas/12/asistencias"]').length).toBe(0);
+    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"], a[href*="/fechas/12/asistencias"], a[href*="/fechas/13/asistencias"]').length).toBe(0);
     expect(el.querySelector('[aria-label="Acción de asistencia no disponible"]')).not.toBeNull();
   });
 
@@ -93,16 +94,14 @@ describe('CourseDetailPage', () => {
     const f = await render(
       courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12)]))),
       '1',
-      attendance((_, fechaId) => {
-        if (fechaId === 11) throw new Error('sync seam failure');
-        return Promise.resolve([{ cursoId: 1, cursoFechaId: 12 }] as never);
+      attendance(() => {
+        throw new Error('sync seam failure');
       }),
     );
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('No disponible');
-    expect(el.textContent).toContain('1 presente');
     expect(el.textContent).not.toContain('sync seam failure');
-    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"]').length).toBe(0);
+    expect(el.querySelectorAll('a[href*="/fechas/11/asistencias"], a[href*="/fechas/12/asistencias"]').length).toBe(0);
   });
 
   it('sin ATTENDANCE_SOURCE deja métricas honestamente no disponibles', async () => {
@@ -146,15 +145,11 @@ describe('CourseDetailPage', () => {
     const f = await render(
       courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12, 'realizada'), fecha(13, 'cancelada')]))),
       '1',
-      attendance((_, fechaId) =>
-        Promise.resolve(
-          fechaId === 12
-            ? ([
-                { cursoId: 1, cursoFechaId: 12 },
-                { cursoId: 1, cursoFechaId: 12 },
-              ] as never)
-            : [],
-        ),
+      attendance(() =>
+        Promise.resolve([
+          { cursoId: 1, cursoFechaId: 12 },
+          { cursoId: 1, cursoFechaId: 12 },
+        ] as never),
       ),
     );
     const el = f.nativeElement as HTMLElement;
@@ -168,21 +163,17 @@ describe('CourseDetailPage', () => {
     const mixed = [
       { id: 1, cursoId: 1, cursoFechaId: 11 },
       { id: 2, cursoId: 2, cursoFechaId: 11 },
-      { id: 3, cursoId: 1, cursoFechaId: 12 },
+      { id: 3, cursoId: 2, cursoFechaId: 12 },
       { id: 4 },
       null,
       undefined,
+      { id: 5, cursoId: 2, cursoFechaId: 12 },
+      { id: 6 },
     ] as unknown as readonly Asistencia[];
     const f = await render(
       courses(() => Promise.resolve(detail(1, [fecha(11), fecha(12)]))),
       '1',
-      attendance((_, fechaId) =>
-        Promise.resolve(
-          fechaId === 11
-            ? mixed
-            : ([{ id: 5, cursoId: 2, cursoFechaId: 12 }, { id: 6 }] as unknown as readonly Asistencia[]),
-        ),
-      ),
+      attendance(() => Promise.resolve(mixed)),
     );
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('1 presente');

@@ -96,6 +96,12 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/* Tablas de datos: celdas centradas en vertical (nombre, DNI, badges, CTAs). */
+table th,
+table td {
+  vertical-align: middle;
+}
+
 /* Clases compartidas para pares dt/dd (W2: mantienen dl/dt/dd válidos).
    Usadas por la directiva appCampoDato. Evitan wrappers custom dentro de <dl>. */
 .campo-label {
@@ -122,6 +128,23 @@ body {
 .campo-highlight {
   font-size: 1.0625rem;
   font-weight: 600;
+}
+
+/* Skeleton pulse compartido (páginas pueden añadir anchos/layout propios). */
+.sk-pulse {
+  background: color-mix(in srgb, var(--color-muted-foreground) 14%, transparent);
+  border-radius: var(--radius-sm);
+  animation: sk-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sk-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 /* Motion reducido — excluye focus-visible para preservar indicador de foco */

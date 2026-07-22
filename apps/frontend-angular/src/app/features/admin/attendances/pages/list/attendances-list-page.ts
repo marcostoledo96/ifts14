@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { COURSES_SOURCE } from '../../../courses/courses.service';
+import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 import { Curso, CursoFecha } from '../../../courses/courses.models';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
 
@@ -25,12 +25,11 @@ const fmtFecha = new Intl.DateTimeFormat('es-AR', {
 @Component({
   selector: 'app-attendances-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, UiSpinner],
   templateUrl: './attendances-list-page.html',
   styleUrl: './attendances-list-page.css',
 })
 export class AttendancesListPage {
-  private readonly courses = inject(COURSES_SOURCE);
   private readonly attendance = inject(ATTENDANCE_SOURCE);
 
   readonly q = signal('');
@@ -88,18 +87,46 @@ export class AttendancesListPage {
     this.cargando.set(true);
     this.error.set('');
     try {
-      const list = await this.courses.listar();
+      // Un solo GET /admin/hub/asistencias (mock: arma el hub en memoria).
+      const hub = await this.attendance.listarHub();
+      const total = hub.alumnosActivos;
+      const cursoById = new Map(hub.cursos.map((c) => [c.id, c]));
+      const presentesPorFecha = new Map<number, number>();
+      for (const a of hub.asistencias) {
+        presentesPorFecha.set(
+          a.cursoFechaId,
+          (presentesPorFecha.get(a.cursoFechaId) ?? 0) + 1,
+        );
+      }
       const filas: FilaAsistencia[] = [];
-      for (const c of list) {
-        const det = await this.courses.obtener(c.id);
-        const asistibles = det.fechas.filter((f) => f.estado !== 'cancelada');
-        if (asistibles.length === 0) continue;
-        const alumnos = await this.attendance.listarAlumnos(c.id);
-        const total = alumnos.length;
-        for (const f of asistibles) {
-          const asistencias = await this.attendance.listarAsistencias(c.id, f.id);
-          filas.push({ curso: c, fecha: f, presentes: asistencias.length, total });
-        }
+      for (const f of hub.fechas) {
+        if (f.estado === 'cancelada') continue;
+        const c = cursoById.get(f.cursoId);
+        if (!c) continue;
+        filas.push({
+          curso: {
+            id: c.id,
+            codigo: c.codigo,
+            nombre: c.nombre,
+            estado: c.estado as Curso['estado'],
+            createdAt: '',
+            updatedAt: '',
+            cuatrimestre: 'Sin programar',
+            cantidadFechas: 0,
+            alumnosPresentes: null,
+            certificaciones: null,
+          },
+          fecha: {
+            id: f.id,
+            cursoId: f.cursoId,
+            fecha: f.fecha,
+            descripcion: f.descripcion,
+            orden: f.orden,
+            estado: f.estado,
+          },
+          presentes: presentesPorFecha.get(f.id) ?? 0,
+          total,
+        });
       }
       filas.sort((a, b) => {
         const prio = (e: string) => (e === 'programada' ? 0 : e === 'realizada' ? 1 : 2);

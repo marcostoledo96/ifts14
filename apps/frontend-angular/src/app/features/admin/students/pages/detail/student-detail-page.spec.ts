@@ -33,6 +33,9 @@ describe('StudentDetailPage', () => {
             listarAsistenciasPorAlumno,
             listarAsistenciasPorPar: () => Promise.resolve([]),
             listarAsistencias: () => Promise.resolve([]),
+            listarAsistenciasDeCurso: () => Promise.resolve([]),
+            listarHub: () =>
+              Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
             listarAlumnos: () => Promise.resolve([]),
             marcar: () => Promise.resolve([]),
             anular: () => Promise.resolve(),
@@ -77,9 +80,9 @@ describe('StudentDetailPage', () => {
     const verLinks = Array.from(rootElement.querySelectorAll('a')).filter((a) =>
       (a.textContent || '').includes('Ver certificación'),
     ) as HTMLAnchorElement[];
+    // Tabla desktop + tarjeta mobile: misma certificación emitida del seed (#1).
     expect(verLinks.length).toBeGreaterThanOrEqual(2);
-    expect(verLinks.some((a) => (a.getAttribute('href') || '').includes('/admin/certificaciones/1'))).toBeTrue();
-    expect(verLinks.some((a) => (a.getAttribute('href') || '').includes('/admin/certificaciones/2'))).toBeTrue();
+    expect(verLinks.every((a) => (a.getAttribute('href') || '').includes('/admin/certificaciones/1'))).toBeTrue();
   });
 
   it('habilita Nueva certificación y Emitir con query params', async () => {
@@ -121,7 +124,7 @@ describe('StudentDetailPage', () => {
     expect(rootElementInvalido.textContent).toContain('Identificador de alumno inválido');
   });
 
-  it('mantiene Compartir y Editar disabled con motivos honestos', async () => {
+  it('oculta Compartir y habilita Editar datos hacia /editar', async () => {
     const harness = await RouterTestingHarness.create('/admin/alumnos/1');
     await harness.detectChanges();
     await harness.fixture.whenStable();
@@ -129,13 +132,13 @@ describe('StudentDetailPage', () => {
 
     const rootElement = harness.fixture.nativeElement as HTMLElement;
 
-    const sharingBtn = rootElement.querySelector('[aria-describedby="motivo-compartir"]');
-    expect(sharingBtn).not.toBeNull();
-    expect(sharingBtn?.getAttribute('disabled')).toBeDefined();
+    expect(rootElement.textContent).not.toContain('Compartir por canal externo');
+    expect(rootElement.querySelector('[aria-describedby="motivo-compartir"]')).toBeNull();
+    expect(rootElement.textContent).not.toContain('Sin API de actualización de datos personales');
 
-    expect(rootElement.textContent).toContain('expediente de cada certificación');
-    expect(rootElement.textContent).toContain('Sin API de actualización de datos personales');
-    expect(rootElement.textContent).not.toContain('F2-05');
+    const editar = rootElement.querySelector('[data-testid="cta-editar-datos"]') as HTMLAnchorElement;
+    expect(editar).toBeTruthy();
+    expect(editar.getAttribute('href')).toContain('/admin/alumnos/1/editar');
   });
 
   it('carga asistencias read-only al expandir Ver asistencias', async () => {

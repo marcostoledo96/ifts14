@@ -91,7 +91,7 @@ describe('AttendanceMarkingPage', () => {
   });
 
   it('marcado usa toggle accesible (button aria-pressed), no checkbox nativo', async () => {
-    const f = await render(1, 11);
+    const f = await render(3, 31);
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelectorAll('input[type="checkbox"]').length).toBe(0);
     const btns = toggles(el);
@@ -103,7 +103,7 @@ describe('AttendanceMarkingPage', () => {
   });
 
   it('toggle presente cambia aria-pressed y copy a «✓ Presente»', async () => {
-    const f = await render(1, 11);
+    const f = await render(3, 31);
     const el = f.nativeElement as HTMLElement;
     const first = toggles(el)[0];
     first.click();
@@ -113,7 +113,7 @@ describe('AttendanceMarkingPage', () => {
   });
 
   it('contador de marcados refleja selección inicial (0 para fecha sin presentes)', async () => {
-    const f = await render(1, 11);
+    const f = await render(3, 31);
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Presentes (0)');
   });
@@ -125,7 +125,7 @@ describe('AttendanceMarkingPage', () => {
   });
 
   it('toggle actualiza contador', async () => {
-    const f = await render(1, 11);
+    const f = await render(3, 31);
     const el = f.nativeElement as HTMLElement;
     toggles(el)[0].click();
     f.detectChanges();
@@ -133,7 +133,7 @@ describe('AttendanceMarkingPage', () => {
   });
 
   it('Guardar y generar deshabilitado sin presentes ni cambios; habilitado al marcar', async () => {
-    const f = await render(1, 11);
+    const f = await render(3, 31);
     const el = f.nativeElement as HTMLElement;
     const btn = el.querySelector('[data-testid="cta-guardar-generar"]') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
@@ -152,7 +152,7 @@ describe('AttendanceMarkingPage', () => {
   });
 
   it('resumen muestra cambios sin guardar', async () => {
-    const f = await render(1, 11);
+    const f = await render(3, 31);
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Sin cambios pendientes');
     toggles(el)[0].click();
@@ -162,10 +162,10 @@ describe('AttendanceMarkingPage', () => {
   });
 
   it('guardar persiste presentes en memoria y redirige a certificados', async () => {
-    const f = await render(1, 11);
+    const f = await render(3, 31);
     const router = TestBed.inject(Router);
     const svc = TestBed.inject(ATTENDANCE_SOURCE);
-    const before = await svc.listarAsistencias(1, 11);
+    const before = await svc.listarAsistencias(3, 31);
     expect(before.length).toBe(0);
     const btns = toggles(f.nativeElement as HTMLElement);
     btns[0].click();
@@ -179,10 +179,10 @@ describe('AttendanceMarkingPage', () => {
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
-    const after = await svc.listarAsistencias(1, 11);
+    const after = await svc.listarAsistencias(3, 31);
     expect(after.length).toBe(3);
     expect(router.navigate).toHaveBeenCalledWith(
-      ['/admin/cursos', 1, 'fechas', 11, 'asistencias', 'certificados'],
+      ['/admin/cursos', 3, 'fechas', 31, 'asistencias', 'certificados'],
       jasmine.objectContaining({
         state: jasmine.objectContaining({
           mensaje: jasmine.stringMatching(/Asistencias guardadas/),
@@ -202,10 +202,12 @@ describe('AttendanceMarkingPage', () => {
     const tokenAntes = vigenteAntes.tokenPrefix;
 
     const btns = toggles(f.nativeElement as HTMLElement);
-    // Alumno 1 ya tiene vigente en curso 1 → regenerar; 2 y 3 → emitir.
-    btns[0].click();
-    btns[1].click();
-    btns[2].click();
+    // Alumno 1 ya puede venir presente del seed; 2 y 3 se marcan → emitir.
+    for (const i of [0, 1, 2]) {
+      if (btns[i].getAttribute('aria-pressed') !== 'true') {
+        btns[i].click();
+      }
+    }
     f.detectChanges();
     const btn = (f.nativeElement as HTMLElement).querySelector(
       '[data-testid="cta-guardar-generar"]',
@@ -411,6 +413,7 @@ describe('AttendanceMarkingPage', () => {
           pending.set(`c-${id}`, { resolve: resolve as (v: unknown) => void });
         }),
       crear: () => Promise.reject(new Error('noop')),
+      actualizar: () => Promise.reject(new Error('noop')),
       actualizarEstado: () => Promise.reject(new Error('noop')),
       listarFechas: () => Promise.resolve([]),
       guardarFecha: () => Promise.reject(new Error('noop')),
@@ -425,8 +428,13 @@ describe('AttendanceMarkingPage', () => {
         new Promise<readonly Asistencia[]>((resolve) => {
           pending.set(`s-${cid}-${fid}`, { resolve: resolve as (v: unknown) => void });
         }),
+      listarAsistenciasDeCurso: (cid: number) =>
+        new Promise<readonly Asistencia[]>((resolve) => {
+          pending.set(`sc-${cid}`, { resolve: resolve as (v: unknown) => void });
+        }),
       listarAsistenciasPorPar: () => Promise.resolve([]),
       listarAsistenciasPorAlumno: () => Promise.resolve([]),
+      listarHub: () => Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
       marcar: () => Promise.resolve([]),
       anular: () => Promise.resolve(),
     };
@@ -519,6 +527,7 @@ describe('AttendanceMarkingPage', () => {
           fechas: [{ id: id * 10 + 1, cursoId: id, fecha: '2026-01-01', descripcion: null, orden: 1, estado: 'programada' as const }],
         }),
       crear: () => Promise.reject(new Error('noop')),
+      actualizar: () => Promise.reject(new Error('noop')),
       actualizarEstado: () => Promise.reject(new Error('noop')),
       listarFechas: () => Promise.resolve([]),
       guardarFecha: () => Promise.reject(new Error('noop')),
@@ -530,8 +539,10 @@ describe('AttendanceMarkingPage', () => {
         { id: 2, apellidoNombre: 'A2 B2', dniMostrar: '20222222', estado: 'activo' as const },
       ]),
       listarAsistencias: () => Promise.resolve([]),
+      listarAsistenciasDeCurso: () => Promise.resolve([]),
       listarAsistenciasPorPar: () => Promise.resolve([]),
       listarAsistenciasPorAlumno: () => Promise.resolve([]),
+      listarHub: () => Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
       marcar: (cid: number, fid: number) =>
         new Promise<readonly Asistencia[]>((resolve, reject) => {
           pendingMarcar.set(`${cid}-${fid}`, { resolve, reject });

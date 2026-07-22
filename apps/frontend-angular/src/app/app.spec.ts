@@ -34,6 +34,20 @@ describe('App', () => {
     expect(compiled.querySelector('footer[role="contentinfo"]')).not.toBeNull();
   });
 
+  it('en ruta pública el footer muestra logos institucionales asociados', async () => {
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/ruta-publica-inexistente');
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const partners = compiled.querySelectorAll('.site-footer-partners img');
+    expect(partners.length).toBe(3);
+    const srcs = Array.from(partners).map((img) => img.getAttribute('src') ?? '');
+    expect(srcs.some((s) => s.includes('buenos-aires-aprende'))).toBeTrue();
+    expect(srcs.some((s) => s.includes('buenos-aires-ciudad'))).toBeTrue();
+    expect(srcs.some((s) => s.includes('escudo-caba'))).toBeTrue();
+  });
+
   it('en ruta pública incluye skip link hacia #contenido', async () => {
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/ruta-publica-inexistente');

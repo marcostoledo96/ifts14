@@ -143,7 +143,7 @@ describe('HttpCertificationsService', () => {
     expect(result.attendedDates).toEqual(['2026-03-10']);
     expect(result.auditEvents.length).toBe(1);
     expect(result.auditEvents[0].accion).toBe('emision');
-    expect(result.publicValidationUrl).toBe('/admin/certificados/7/pdf');
+    expect(result.publicValidationUrl).toBe('');
   });
 
   it('obtenerEntregaManual hace GET a /admin/certificados/:id/entrega-manual y mapea el DTO', async () => {

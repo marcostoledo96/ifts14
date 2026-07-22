@@ -1,23 +1,24 @@
 # Plantilla .htaccess — API de staging /certificados_staging/api/
 #
-# Copiar como .htaccess dentro de public_html/certificados_staging/api/.
-# Bloquea acceso directo a src/ y config/ y enruta todo a index.php.
-# El router PHP (normalizePath) ya acepta /certificados_staging/api.
+# Copiar como .htaccess dentro de public_html/certificados_qa/certificados_staging/api/
+# SOLO en instalación nueva. Conservar `.user.ini` del servidor (auto_prepend).
 #
-# Config externa de staging: descomentar y completar la ruta real fuera de Git.
-# SetEnv CERTIFICADOS_CONFIG_PATH "/ruta/externa/staging/certificados-config.php"
-#
-# Sin secretos en este archivo: solo SetEnv apuntando a la ruta externa.
+# IMPORTANTE: este hosting NO tiene mod_env. Nunca usar SetEnv aquí.
+# Si MultiPHP marca 8.4 pero `ping.php` reporta 8.1, forzar el handler abajo.
+
+# Forzar ea-php84 (MultiPHP a veces no aplica al CGI de la carpeta).
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php84 .php .php8 .phtml
+</IfModule>
 
 RewriteEngine On
 RewriteBase /certificados_staging/api/
 
 # Bloquear acceso directo a código, configuración y artefactos de dependencias.
-# vendor/ no debería versionarse ni subirse, pero si llega a quedar bajo el webroot,
-# se niega su acceso directo. composer.json/composer.lock también se bloquean.
 RewriteRule ^(src|config)/ - [F,L]
 RewriteRule ^vendor/ - [F,L]
 RewriteRule ^composer\.(json|lock)$ - [F,L]
+RewriteRule ^\.user\.ini$ - [F,L]
 
 # Fallback a index.php para todas las rutas API no existentes.
 RewriteCond %{REQUEST_FILENAME} !-f

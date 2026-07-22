@@ -602,3 +602,29 @@ select:disabled {
   white-space: nowrap;
   border: 0;
 }
+
+/* Skeleton de editor */
+.editor-skeleton { display: grid; gap: var(--space-4); }
+.sk-bar { display: block; height: 0.75rem; border-radius: var(--radius-sm); }
+.sk-bar--kicker { width: 6rem; height: 0.625rem; margin-bottom: var(--space-2); }
+.sk-bar--title { width: min(14rem, 60%); height: 1.5rem; }
+.sk-bar--panel-title { width: 8rem; height: 1rem; margin-bottom: var(--space-4); }
+.sk-bar--field { width: 100%; height: 2.5rem; }
+.sk-bar--desc { width: 80%; }
+.sk-bar--idx { width: 1.5rem; height: 2.5rem; flex-shrink: 0; }
+.sk-head-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.sk-label { font-size: 0.8125rem; color: var(--color-muted-foreground); }
+.sk-panel { padding: var(--space-4); }
+.sk-fields { display: grid; gap: var(--space-3); }
+.sk-fecha-row {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr 1.5fr;
+  gap: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+.sk-fecha-row:last-child { margin-bottom: 0; }

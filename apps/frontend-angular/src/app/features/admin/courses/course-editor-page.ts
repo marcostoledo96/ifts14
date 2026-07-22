@@ -19,13 +19,14 @@ import {
   EstadoCurso,
   EstadoFecha,
 } from './courses.models';
+import { UiSpinner } from '../../../shared/ui/ui-spinner';
 
 // Editor de curso: create (alta) o edit (estado + fechas).
 // Layout v0 con contrato estricto: sin campos fantasma.
 @Component({
   selector: 'app-course-editor-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, UiSpinner],
   templateUrl: './course-editor-page.html',
   styleUrl: './course-editor-page.css',
 })
@@ -247,6 +248,12 @@ export class CourseEditorPage {
         this.error.set('Curso no encontrado.');
         return;
       }
+      const codigo = this.codigo().trim();
+      const nombre = this.nombre().trim();
+      const d0 = this.detalle();
+      if (!d0 || d0.codigo !== codigo || d0.nombre !== nombre) {
+        await this.courses.actualizar(cid, { codigo, nombre });
+      }
       const nuevoEstado = this.estadoResultante();
       if (nuevoEstado !== this.estadoOriginal()) {
         await this.courses.actualizarEstado(cid, nuevoEstado);
@@ -254,6 +261,8 @@ export class CourseEditorPage {
       await this.courses.reemplazarFechas(cid, this.fechas());
       const d = await this.courses.obtener(cid);
       this.detalle.set(d);
+      this.codigo.set(d.codigo);
+      this.nombre.set(d.nombre);
       this.estadoOriginal.set(d.estado);
       this.activo.set(d.estado === 'activo');
       this.fechasOriginales.set(d.fechas);

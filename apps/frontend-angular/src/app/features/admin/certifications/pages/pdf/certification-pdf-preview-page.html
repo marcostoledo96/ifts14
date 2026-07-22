@@ -1,6 +1,34 @@
 <section class="pdf-vista" aria-labelledby="pdf-title">
   @if (cargando()) {
-    <p class="estado-linea">Cargando certificación…</p>
+    <div class="pdf-skeleton" aria-busy="true" aria-label="Cargando certificación">
+      <nav class="breadcrumb no-print" aria-hidden="true">
+        <span class="sk-bar sk-pulse sk-bar--crumb"></span>
+        <span class="sk-bar sk-pulse sk-bar--crumb sk-bar--short"></span>
+      </nav>
+      <div class="acciones-barra no-print sk-acciones">
+        <div class="acciones-titulo">
+          <span class="sk-bar sk-pulse sk-bar--kicker"></span>
+          <span class="sk-bar sk-pulse sk-bar--title"></span>
+        </div>
+        <div class="sk-acciones-botones">
+          <span class="sk-bar sk-pulse sk-bar--btn"></span>
+          <span class="sk-bar sk-pulse sk-bar--btn"></span>
+          <span class="sk-bar sk-pulse sk-bar--btn sk-bar--link"></span>
+        </div>
+      </div>
+      <div class="sk-head-row no-print">
+        <app-ui-spinner size="sm" [decorative]="false" label="Cargando certificación" />
+        <span class="sk-label">Cargando certificación…</span>
+      </div>
+      <div class="certificado-folio sk-folio" aria-hidden="true">
+        <span class="sk-bar sk-pulse sk-bar--folio-header"></span>
+        <span class="sk-bar sk-pulse sk-bar--folio-title"></span>
+        <span class="sk-bar sk-pulse sk-bar--folio-line"></span>
+        <span class="sk-bar sk-pulse sk-bar--folio-line sk-bar--wide"></span>
+        <span class="sk-bar sk-pulse sk-bar--folio-line"></span>
+        <span class="sk-bar sk-pulse sk-bar--folio-qr"></span>
+      </div>
+    </div>
   }
 
   @if (error()) {
@@ -78,8 +106,8 @@
       </p>
     }
 
-    <!-- Folio del certificado (se imprime) -->
-    <article class="certificado-folio" aria-label="Certificado imprimible">
+    <!-- Folio del certificado (se imprime / se captura al descargar PDF) -->
+    <article #folio class="certificado-folio" aria-label="Certificado imprimible">
       @if (estadoPresentacion(); as estado) {
         <span class="cert-estado-marca cert-estado-marca--{{ estado.clave }}" aria-hidden="true">
           {{ estado.marca }}
@@ -94,10 +122,10 @@
       <div class="folio-contenido">
         <!-- Encabezado: logos institucionales fijos -->
         <header class="folio-header">
-          <div class="folio-logo folio-logo--escudo">
+          <div class="folio-logo folio-logo--ifts">
             <img
-              [src]="brand.escudoCaba"
-              alt="Escudo de la Ciudad Autónoma de Buenos Aires"
+              [src]="brand.logoIfts"
+              alt="Instituto de Formación Técnica Superior N.° 14"
               decoding="async"
             />
           </div>
@@ -115,10 +143,10 @@
               decoding="async"
             />
           </div>
-          <div class="folio-logo folio-logo--ifts">
+          <div class="folio-logo folio-logo--escudo">
             <img
-              [src]="brand.logoIfts"
-              alt="Instituto de Formación Técnica Superior N.° 14"
+              [src]="brand.escudoCaba"
+              alt="Escudo de la Ciudad Autónoma de Buenos Aires"
               decoding="async"
             />
           </div>
@@ -158,11 +186,14 @@
           @if (d.attendedDates.length) {
             <section class="cert-fechas-asistidas" aria-label="Fechas asistidas">
               <p>Fechas asistidas:</p>
-              <ol>
-                @for (fecha of d.attendedDates; track fecha) {
-                  <li class="cert-fecha-asistida mono">{{ formatearFechaAsistida(fecha) }}</li>
+              <p class="cert-fechas-lista">
+                @for (fecha of d.attendedDates; track fecha; let last = $last) {
+                  <span class="cert-fecha-asistida mono">{{ formatearFechaAsistida(fecha) }}</span>
+                  @if (!last) {
+                    <span class="cert-fecha-sep" aria-hidden="true">,{{ '\u00A0' }}</span>
+                  }
                 }
-              </ol>
+              </p>
             </section>
           }
           <p class="cert-cierre">
@@ -191,17 +222,25 @@
 
           <div class="cert-validacion">
             <div class="cert-val-inner">
-              <div class="qr-decorativo" aria-hidden="true">
-                <div class="qr-grid">
-                  @for (c of qrCells; track $index) {
-                    <span class="qr-cell {{ c ? 'qr-on' : 'qr-off' }}"></span>
-                  }
+              @if (qrSrc(); as src) {
+                <img
+                  class="qr-real"
+                  [src]="src"
+                  width="88"
+                  height="88"
+                  alt="Código QR de validación del certificado"
+                />
+              } @else if (qrError()) {
+                <div class="qr-fallback" role="img" [attr.aria-label]="qrError()">
+                  <span aria-hidden="true">QR</span>
                 </div>
-              </div>
+              } @else {
+                <div class="qr-placeholder" aria-hidden="true"></div>
+              }
               <div class="cert-val-info">
                 <p class="cert-val-kicker">Validación digital</p>
                 <p class="cert-val-desc">Escanee el código QR o visite:</p>
-                <p class="cert-val-url mono">{{ d.publicValidationUrl }}</p>
+                <p class="cert-val-url mono">{{ validacionUrlMostrada() || '—' }}</p>
               </div>
             </div>
             <dl class="cert-val-datos">

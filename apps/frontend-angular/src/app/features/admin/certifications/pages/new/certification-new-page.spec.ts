@@ -14,7 +14,10 @@ import { INSTITUTIONAL_CONFIG_SOURCE } from '../../../institutional-config/insti
 import { Curso, CursoFecha } from '../../../courses/courses.models';
 import { Alumno } from '../../../students/students.models';
 import { Asistencia } from '../../../attendances/models/attendance.types';
-import { InstitutionalConfig } from '../../../institutional-config/institutional-config.service';
+import {
+  emptyParameters,
+  InstitutionalConfig,
+} from '../../../institutional-config/institutional-config.service';
 import { EmisionResult } from '../../certifications.models';
 
 describe('hoyBuenosAires', () => {
@@ -102,6 +105,7 @@ describe('CertificationNewPage', () => {
     rectorRole: 'Rector/a',
     advisorName: 'Asesor Demo',
     advisorRole: 'Asesor/a pedagógico/a',
+    parameters: emptyParameters(),
     updatedAt: '2026-01-01',
   };
 

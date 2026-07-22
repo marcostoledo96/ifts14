@@ -32,7 +32,8 @@ La API DEBE exponer `GET /admin/certificados/{id}` con snapshot de fechas asisti
 - DADO un certificado existente con snapshot
 - CUANDO se consulta su detalle autorizado
 - ENTONCES la API DEBE responder `200` con `attendedDates`, `auditEvents` y `links`.
-- Y NO DEBE incluir token completo ni DNI completo.
+- Y DEBE incluir `documentMasked` con DNI completo (D0 2026-07-20).
+- Y NO DEBE incluir token completo ni el campo `documentNumber`.
 
 #### Scenario: Certificado inexistente
 
@@ -42,19 +43,32 @@ La API DEBE exponer `GET /admin/certificados/{id}` con snapshot de fechas asisti
 
 ### Requirement: Configuración institucional administrable
 
-La API DEBE permitir leer y actualizar la fila única de configuración institucional con DTO camelCase seguro.
+La API DEBE permitir leer y actualizar la fila única de configuración institucional con DTO camelCase seguro, más el mapa tipado `parameters` (`cert_parametros_sistema`).
 
 #### Scenario: Lectura con fallback
 
 - DADO ausencia de fila en `cert_configuracion_institucional`
 - CUANDO se consulta `GET /admin/configuracion-institucional`
-- ENTONCES la API DEBE responder `200` con fallback seguro documentado.
+- ENTONCES la API DEBE responder `200` con fallback seguro documentado
+- Y DEBE incluir `parameters` con las 9 claves del catálogo activo (valores desde DB o defaults).
 
 #### Scenario: Actualización válida
 
 - DADO un body con `institutionName` no vacío
 - CUANDO se ejecuta `PUT /admin/configuracion-institucional`
 - ENTONCES la API DEBE persistir y responder `200` con `updatedAt`.
+
+#### Scenario: Actualización de parámetros tipados
+
+- DADO un body con `parameters` solo con claves seed conocidas
+- CUANDO se ejecuta `PUT /admin/configuracion-institucional`
+- ENTONCES la API DEBE upsert en `cert_parametros_sistema` y devolver los valores actualizados en `data.parameters`.
+
+#### Scenario: Parámetro desconocido o email inválido
+
+- DADO `parameters` con clave no catalogada o `email_contacto` mal formado
+- CUANDO se intenta actualizar
+- ENTONCES la API DEBE responder `400 VALIDATION_ERROR` sin persistir esos cambios.
 
 #### Scenario: Nombre institucional ausente
 

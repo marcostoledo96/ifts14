@@ -24,6 +24,7 @@ import { INSTITUTIONAL_CONFIG_SOURCE } from './features/admin/institutional-conf
 import { InMemoryInstitutionalConfigService } from './features/admin/institutional-config/in-memory-institutional-config.service';
 import { InstitutionalConfigPage } from './features/admin/institutional-config/pages/institutional-config-page';
 import { provideHttpClient } from '@angular/common/http';
+import { resetMockAdminPublicStatus } from './shared/certificates/mock-tokens';
 
 
 // Verifica que ninguna ruta apunte a un token de demo salvo la validación
@@ -494,6 +495,7 @@ describe('app.routes', () => {
   // vive el provider), para probar el wiring runtime de verdad.
 
   async function setupHarnessWithSession() {
+    resetMockAdminPublicStatus();
     // P5-03: environment.useRealApi=true → admin route providers usan HTTP sources.
     // Sobrescribimos solo los providers de la ruta admin con children a InMemory.
     const testRoutes: Routes = routes.map((r) => {
@@ -938,17 +940,17 @@ describe('app.routes', () => {
     // F4-02 delta: Descargar PDF y Regenerar PDF pasan a routerLink.
     // F6-01 delta: Revocar pasa a routerLink.
     // P6-01 delta: Entrega manual pasa a routerLink.
-    // Ciclo 12: Copiar link y Compartir habilitados (sin handoff F6-03).
+    // Ciclo 12: Copiar link y Descargar QR habilitados (sin handoff F6-03).
     const copiar = Array.from(el.querySelectorAll('.acciones-panel button')).find((b) =>
       b.textContent?.includes('Copiar link'),
     );
-    const compartir = Array.from(el.querySelectorAll('.acciones-panel button')).find((b) =>
-      b.textContent?.includes('Compartir'),
+    const descargarQr = Array.from(el.querySelectorAll('.acciones-panel button')).find((b) =>
+      b.textContent?.includes('Descargar QR'),
     );
     expect(copiar).toBeTruthy();
-    expect(compartir).toBeTruthy();
+    expect(descargarQr).toBeTruthy();
     expect((copiar as HTMLButtonElement).disabled).toBeFalse();
-    expect((compartir as HTMLButtonElement).disabled).toBeFalse();
+    expect((descargarQr as HTMLButtonElement).disabled).toBeFalse();
     expect(el.textContent).not.toContain('F6-03');
   });
 

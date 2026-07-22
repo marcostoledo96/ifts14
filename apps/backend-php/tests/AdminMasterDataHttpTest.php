@@ -32,6 +32,7 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_rev
     applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
     applySqlFile($pdo, __DIR__ . '/../../../database/migrations/010_backfill_pdf_revision.sql');
     applySqlFile($pdo, __DIR__ . '/../../../database/migrations/011_alumnos_email_opcional.sql');
+    applySqlFile($pdo, __DIR__ . '/../../../database/migrations/012_alumnos_apellido_nombre_separados.sql');
 
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-master-data-http-' . bin2hex(random_bytes(4));
@@ -97,17 +98,35 @@ try {
     assertStatus(request($port, 'GET', '/admin/cursos', $authHeaders), 200, 'listar cursos');
     assertError(patchJson($port, '/admin/cursos/' . $courseId . '/estado', $adminKey, ['estado' => 'invalido']), 400, 'VALIDATION_ERROR', 'estado curso inválido');
     assertStatus(patchJson($port, '/admin/cursos/' . $courseId . '/estado', $adminKey, ['estado' => 'activo']), 200, 'estado curso');
+    assertError(patchJson($port, '/admin/cursos/' . $courseId, $adminKey, []), 400, 'VALIDATION_ERROR', 'curso PATCH vacío');
+    $renamed = patchJson($port, '/admin/cursos/' . $courseId, $adminKey, [
+        'codigo' => 'CUR-MD-01B',
+        'nombre' => 'Curso Master Data Renombrado',
+    ]);
+    assertStatus($renamed, 200, 'actualizar codigo/nombre curso');
+    $renamedBody = assertJson($renamed, 'actualizar curso');
+    if (($renamedBody['data']['codigo'] ?? '') !== 'CUR-MD-01B' || ($renamedBody['data']['nombre'] ?? '') !== 'Curso Master Data Renombrado') {
+        throw new RuntimeException('PATCH curso no persistió codigo/nombre.');
+    }
+    $otherCourse = postJson($port, '/admin/cursos', $adminKey, ['codigo' => 'CUR-MD-02', 'nombre' => 'Otro curso']);
+    assertStatus($otherCourse, 201, 'crear segundo curso');
+    assertError(
+        patchJson($port, '/admin/cursos/' . $courseId, $adminKey, ['codigo' => 'CUR-MD-02']),
+        409,
+        'CONFLICT',
+        'codigo curso duplicado al editar',
+    );
 
     writeConfig($configPath, $baseConfig);
     $beforeStudents = (int) $pdo->query('SELECT COUNT(*) FROM cert_alumnos')->fetchColumn();
-    assertError(postJson($port, '/admin/alumnos', $adminKey, ['apellidoNombre' => 'Alumno Config Demo', 'dni' => '12345678']), 500, 'CONFIGURATION_ERROR', 'dni key ausente');
+    assertError(postJson($port, '/admin/alumnos', $adminKey, ['apellido' => 'Alumno', 'nombre' => 'Config Demo', 'dni' => '12345678']), 500, 'CONFIGURATION_ERROR', 'dni key ausente');
     $afterStudents = (int) $pdo->query('SELECT COUNT(*) FROM cert_alumnos')->fetchColumn();
     if ($beforeStudents !== $afterStudents) {
         throw new RuntimeException('POST alumno persistió aun sin dni_cipher_key válida.');
     }
     writeConfig($configPath, $baseConfig + ['dni_cipher_key' => base64_encode(str_repeat('d', 32))]);
 
-    $student = postJson($port, '/admin/alumnos', $adminKey, ['apellidoNombre' => 'Alumno Master Demo', 'dni' => '12.345.678']);
+    $student = postJson($port, '/admin/alumnos', $adminKey, ['apellido' => 'Alumno', 'nombre' => 'Master Demo', 'dni' => '12.345.678']);
     assertStatus($student, 201, 'crear alumno');
     $studentBody = assertJson($student, 'crear alumno');
     $studentId = (int) ($studentBody['data']['id'] ?? 0);
@@ -119,7 +138,8 @@ try {
         throw new RuntimeException('Alumno sin email debía devolver email null.');
     }
     $withEmail = postJson($port, '/admin/alumnos', $adminKey, [
-        'apellidoNombre' => 'Alumno Email Demo',
+        'apellido' => 'Alumno',
+        'nombre' => 'Email Demo',
         'dni' => '87654321',
         'email' => 'alumno.demo@example.invalid',
     ]);
@@ -129,7 +149,7 @@ try {
         throw new RuntimeException('Email opcional no persistió en DTO.');
     }
     assertNoSensitiveStudentData($withEmail['body']);
-    assertError(postJson($port, '/admin/alumnos', $adminKey, ['apellidoNombre' => 'Alumno Dup', 'dni' => '12345678']), 409, 'CONFLICT', 'alumno duplicado');
+    assertError(postJson($port, '/admin/alumnos', $adminKey, ['apellido' => 'Alumno', 'nombre' => 'Dup', 'dni' => '12345678']), 409, 'CONFLICT', 'alumno duplicado');
     $studentDetail = request($port, 'GET', '/admin/alumnos/' . $studentId, $authHeaders);
     assertStatus($studentDetail, 200, 'detalle alumno');
     assertNoSensitiveStudentData($studentDetail['body']);
@@ -141,6 +161,39 @@ try {
     writeConfig($configPath, $baseConfig + ['dni_cipher_key' => base64_encode(str_repeat('d', 32))]);
 
     assertStatus(patchJson($port, '/admin/alumnos/' . $studentId . '/estado', $adminKey, ['estado' => 'activo']), 200, 'estado alumno');
+
+    $patched = patchJson($port, '/admin/alumnos/' . $studentId, $adminKey, [
+        'apellido' => 'Alumno',
+        'nombre' => 'Master Editado',
+        'email' => 'alumno.editado@example.invalid',
+    ]);
+    assertStatus($patched, 200, 'editar alumno sin dni');
+    $patchedBody = assertJson($patched, 'editar alumno sin dni');
+    if (($patchedBody['data']['apellido'] ?? '') !== 'Alumno' || ($patchedBody['data']['nombre'] ?? '') !== 'Master Editado') {
+        throw new RuntimeException('apellido/nombre no se actualizaron.');
+    }
+    if (($patchedBody['data']['email'] ?? '') !== 'alumno.editado@example.invalid') {
+        throw new RuntimeException('email no se actualizó.');
+    }
+    assertNoSensitiveStudentData($patched['body']);
+
+    writeConfig($configPath, $baseConfig);
+    assertError(patchJson($port, '/admin/alumnos/' . $studentId, $adminKey, ['dni' => '99887766']), 500, 'CONFIGURATION_ERROR', 'editar dni sin key');
+    writeConfig($configPath, $baseConfig + ['dni_cipher_key' => base64_encode(str_repeat('d', 32))]);
+
+    $patchedDni = patchJson($port, '/admin/alumnos/' . $studentId, $adminKey, ['dni' => '99.887.766']);
+    assertStatus($patchedDni, 200, 'editar dni alumno');
+    $patchedDniBody = assertJson($patchedDni, 'editar dni alumno');
+    if (($patchedDniBody['data']['dniMostrar'] ?? '') !== '99887766') {
+        throw new RuntimeException('dniMostrar no se actualizó al editar DNI.');
+    }
+
+    $hub = request($port, 'GET', '/admin/hub/asistencias', $authHeaders);
+    assertStatus($hub, 200, 'hub asistencias');
+    $hubBody = assertJson($hub, 'hub asistencias');
+    if (!isset($hubBody['data']['cursos'], $hubBody['data']['fechas'], $hubBody['data']['asistencias'], $hubBody['data']['alumnosActivos'])) {
+        throw new RuntimeException('Hub asistencias sin claves esperadas.');
+    }
 
     $date1 = postJson($port, '/admin/cursos/' . $courseId . '/fechas', $adminKey, ['fecha' => '2026-08-01', 'descripcion' => 'Clase 1', 'estado' => 'programada']);
     assertStatus($date1, 201, 'crear fecha 1');

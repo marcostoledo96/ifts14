@@ -1,6 +1,38 @@
 <section class="certs-page" aria-labelledby="certs-page-title">
   @if (cargando()) {
-    <div class="estado-linea" aria-busy="true">Cargando certificados…</div>
+    <div class="certs-skeleton" aria-busy="true" aria-label="Cargando certificados">
+      <header class="page-header">
+        <span class="sk-bar sk-pulse sk-bar--link"></span>
+        <div class="page-header-row">
+          <div class="page-header-main">
+            <span class="sk-bar sk-pulse sk-bar--kicker"></span>
+            <span class="sk-bar sk-pulse sk-bar--title"></span>
+            <span class="sk-bar sk-pulse sk-bar--meta"></span>
+          </div>
+        </div>
+      </header>
+      <div class="sk-head-row">
+        <app-ui-spinner size="sm" [decorative]="false" label="Cargando certificados" />
+        <span class="sk-label">Cargando certificados…</span>
+      </div>
+      <div class="tabla-skeleton">
+        <ul class="sk-cert-rows">
+          @for (_ of [1, 2, 3, 4]; track $index) {
+            <li class="sk-cert-row">
+              <div class="sk-cert-datos">
+                <span class="sk-bar sk-pulse sk-bar--alumno"></span>
+                <span class="sk-bar sk-pulse sk-bar--meta-line"></span>
+              </div>
+              <div class="sk-cert-acciones">
+                <span class="sk-bar sk-pulse sk-bar--accion"></span>
+                <span class="sk-bar sk-pulse sk-bar--accion"></span>
+                <span class="sk-bar sk-pulse sk-bar--accion sk-bar--primary"></span>
+              </div>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
   }
 
   @if (error()) {

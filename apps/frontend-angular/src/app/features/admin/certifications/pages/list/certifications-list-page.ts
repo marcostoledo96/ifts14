@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, InjectionToken, isDevMode, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import {
   Certificacion,
@@ -23,7 +24,7 @@ export const CERTIFICATIONS_QA_ENABLED = new InjectionToken<boolean>('CERTIFICAT
 @Component({
   selector: 'app-certifications-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, UiSpinner],
   templateUrl: './certifications-list-page.html',
   styleUrl: './certifications-list-page.css',
 })

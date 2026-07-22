@@ -116,12 +116,12 @@ DTOs administrativos principales:
 
 Reglas de privacidad y persistencia:
 
-- `POST /admin/alumnos` normaliza DNI a dígitos, exige longitud 7 a 10, calcula `dni_hash` binario como HMAC-SHA-256 usando `dni_cipher_key` y guarda `dni_cifrado` con esa misma clave externa.
+- `POST /admin/alumnos` normaliza DNI a dígitos, exige longitud 6 a 10, calcula `dni_hash` binario como HMAC-SHA-256 usando `dni_cipher_key` y guarda `dni_cifrado` con esa misma clave externa.
 - Si `dni_cipher_key` falta o es inválida, responde `500 CONFIGURATION_ERROR` antes de insertar alumno.
 - `PATCH /admin/alumnos/{id}/estado` no requiere `dni_cipher_key`: solo actualiza el estado y conserva el DTO admin con DNI completo en `dniMostrar`/`documentMasked`.
 - Las respuestas admin usan `dniMostrar`/`documentMasked` con dígitos completos (D0 2026-07-20); email opcional (nullable). NO devuelven `dni_hash`, `dni_cifrado`, tokens, SQL, secretos ni rutas internas. Logs, auditoría y errores NO incluyen DNI completo ni token completo.
 - Asistencia válida requiere alumno `activo`, curso `activo` y fecha `programada` o `realizada` del curso.
-- Tras `POST` o `DELETE` de asistencia, si la fecha no está `cancelada`, el backend recalcula su `estado` con día local `America/Argentina/Buenos_Aires`: `realizada` solo si hay ≥1 asistencia activa y `fecha < hoy`; si no, `programada`. `cancelada` no se infiere ni se modifica automáticamente. Al entrar o salir de `realizada` se conserva el sync de snapshots / `pdf_estado=desactualizado`.
+- Tras `POST` o `DELETE` de asistencia, si la fecha no está `cancelada`, el backend recalcula su `estado` con día local `America/Argentina/Buenos_Aires`: `realizada` solo si hay ≥1 asistencia activa y `fecha <= hoy`; si no, `programada`. `cancelada` no se infiere ni se modifica automáticamente. Al entrar o salir de `realizada` se conserva el sync de snapshots / `pdf_estado=desactualizado`.
 - Los filtros `cursoId` y `alumnoId` de `GET /admin/asistencias` deben ser enteros positivos; si vienen informados con formato inválido, responden `400 VALIDATION_ERROR` en vez de ampliar el listado.
 - Una asistencia activa duplicada responde `409 CONFLICT`; la anulación usa `eliminado_en` y no hace `DELETE` físico.
 - `orden` de fechas de curso acepta solo `1..65535`; aplica a creación, actualización y al próximo orden automático. Si se supera el máximo, responde `400 VALIDATION_ERROR`.

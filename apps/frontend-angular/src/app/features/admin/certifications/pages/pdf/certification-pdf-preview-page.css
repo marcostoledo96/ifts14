@@ -313,19 +313,19 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  padding: var(--space-5) var(--space-5) var(--space-6);
+  padding: var(--space-10) var(--space-8) var(--space-10);
 }
 
 @media (min-width: 640px) {
   .folio-contenido {
     gap: var(--space-6);
-    padding: var(--space-6) var(--space-8);
+    padding: 4rem 4rem;
   }
 }
 
 @media (min-width: 1024px) {
   .folio-contenido {
-    padding: var(--space-6) var(--space-12);
+    padding: 4rem 4.5rem;
   }
 }
 
@@ -383,14 +383,18 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-5);
+  /* Respiro respecto al borde del folio. */
+  padding: var(--space-4) var(--space-5) var(--space-2);
+  box-sizing: border-box;
 }
 
 @media (min-width: 640px) {
   .folio-header {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: var(--space-4);
+    gap: var(--space-5);
+    padding: var(--space-5) var(--space-6) var(--space-3);
   }
 }
 
@@ -535,18 +539,26 @@
   color: var(--color-foreground);
 }
 
-.cert-fechas-asistidas p,
-.cert-fechas-asistidas ol {
+.cert-fechas-asistidas p {
   margin: 0;
 }
 
-.cert-fechas-asistidas ol {
+.cert-fechas-lista {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0 var(--space-3);
-  padding: 0;
-  list-style-position: inside;
+  align-items: baseline;
+  gap: 0;
+  margin-top: 0.15rem;
+}
+
+.cert-fecha-asistida {
+  white-space: nowrap;
+}
+
+.cert-fecha-sep {
+  white-space: pre;
+  margin-right: 0.15em;
 }
 
 .cert-cierre {
@@ -666,35 +678,35 @@
   gap: var(--space-3);
 }
 
-.qr-decorativo {
+.qr-real {
   flex-shrink: 0;
+  width: 5.5rem;
+  height: 5.5rem;
+  object-fit: contain;
+  background: #fff;
+  padding: 0.35rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.qr-placeholder,
+.qr-fallback {
+  flex-shrink: 0;
+  box-sizing: border-box;
   width: 4.5rem;
   height: 4.5rem;
-  background: var(--color-ink);
-  padding: 0.375rem;
   border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-border);
+  background: var(--color-muted, #f3f4f6);
 }
 
-.qr-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 1px;
-  width: 100%;
-  height: 100%;
-}
-
-.qr-cell {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-}
-
-.qr-on {
-  background: var(--color-ink-foreground);
-}
-
-.qr-off {
-  background: var(--color-ink);
+.qr-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-muted-foreground, #6b7280);
 }
 
 .cert-val-info {
@@ -826,6 +838,178 @@
   margin: 0;
 }
 
+/* ---------- Export PDF A4 (captura html2canvas) ----------
+   Llena 297×210 mm: márgenes equilibrados, tipografía legible,
+   firmas en 3 columnas y distribución vertical (sin vacío inferior).
+   Independiente del viewport (@media) de la ventana del browser. */
+.certificado-folio.folio-export-a4 {
+  background: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.certificado-folio.folio-export-a4 .folio-contenido {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  /* Márgenes A4 ~10–14 mm (equilibrados; no apilar arriba). */
+  padding: 10mm 14mm 9mm !important;
+  gap: 0 !important;
+}
+
+.certificado-folio.folio-export-a4 .folio-header {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 1.25rem !important;
+  padding: 0 !important;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.certificado-folio.folio-export-a4 .folio-logo img {
+  max-height: 2.85rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-titulo-wrap {
+  flex-shrink: 0;
+  margin: 0.35rem 0 0.15rem;
+}
+
+.certificado-folio.folio-export-a4 .cert-titulo {
+  font-size: 2.65rem !important;
+  letter-spacing: 0.1em !important;
+  line-height: 1.05 !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-cuerpo {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 1 auto !important;
+  max-width: 56rem !important;
+  width: 100%;
+  margin: 0 auto !important;
+  gap: 0.2rem;
+  min-height: 0;
+}
+
+.certificado-folio.folio-export-a4 .cert-intro,
+.certificado-folio.folio-export-a4 .cert-texto,
+.certificado-folio.folio-export-a4 .cert-cierre {
+  font-size: 0.92rem !important;
+  line-height: 1.45 !important;
+  max-width: 48rem;
+}
+
+.certificado-folio.folio-export-a4 .cert-protagonista {
+  font-size: 2.35rem !important;
+  margin-top: 0.65rem !important;
+  margin-bottom: 0 !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-divider {
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.15rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-doc {
+  font-size: 0.8rem !important;
+  margin-top: 0.35rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-texto {
+  margin-top: 0.7rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-fechas-asistidas {
+  margin-top: 0.45rem !important;
+  font-size: 0.78rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-cierre {
+  margin-top: 0.55rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-pie-firmas {
+  display: grid !important;
+  grid-template-columns: 1fr minmax(14rem, 19rem) 1fr !important;
+  align-items: end !important;
+  gap: 1.5rem !important;
+  width: 100%;
+  flex-shrink: 0;
+  margin-top: 0.35rem;
+}
+
+.certificado-folio.folio-export-a4 .cert-validacion {
+  order: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+  padding: 0.65rem 0.75rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-firma-sello {
+  height: 2rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-firma-nombre {
+  font-size: 0.85rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-firma-cargo {
+  font-size: 0.58rem !important;
+}
+
+.certificado-folio.folio-export-a4 .qr-real,
+.certificado-folio.folio-export-a4 .qr-placeholder,
+.certificado-folio.folio-export-a4 .qr-fallback {
+  width: 4.5rem !important;
+  height: 4.5rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-val-datos {
+  margin-top: 0.45rem !important;
+  padding-top: 0.4rem !important;
+  gap: 0.4rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-val-kicker {
+  font-size: 0.62rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-val-desc,
+.certificado-folio.folio-export-a4 .cert-val-url {
+  font-size: 0.62rem !important;
+  line-height: 1.35 !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-val-datos dt,
+.certificado-folio.folio-export-a4 .cert-val-datos dd {
+  font-size: 0.58rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-footer-pie {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  flex-shrink: 0;
+  margin-top: 0.4rem;
+  padding-top: 0.35rem !important;
+  gap: 0.75rem !important;
+  border-top: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent);
+}
+
+.certificado-folio.folio-export-a4 .cert-estado-banda {
+  padding: 0.4rem 0.65rem !important;
+  font-size: 0.8rem !important;
+  flex-shrink: 0;
+}
+
 /* ---------- Print styles ---------- */
 .no-print {
   /* Visible en pantalla; oculto en @media print. */
@@ -872,7 +1056,12 @@
      leve del contenido para evitar overflow sin recortar (fix R4-001). */
   .folio-contenido {
     gap: var(--space-2) !important;
-    padding: var(--space-2) var(--space-4) !important;
+    padding: var(--space-4) var(--space-5) !important;
+  }
+
+  .folio-header {
+    gap: var(--space-2) !important;
+    padding: var(--space-2) var(--space-3) 0 !important;
   }
 
   /* Tipografía compacta en impresión para preservar paridad visual
@@ -927,7 +1116,9 @@
     font-size: 0.5rem !important;
   }
 
-  .qr-decorativo {
+  .qr-real,
+  .qr-placeholder,
+  .qr-fallback {
     width: 3rem !important;
     height: 3rem !important;
   }
@@ -969,11 +1160,7 @@
     font-size: 0.625rem !important;
   }
 
-  /* Encabezado compacto. */
-  .folio-header {
-    gap: var(--space-2) !important;
-  }
-
+  /* Encabezado compacto (padding ya definido arriba en @media print). */
   .folio-logo img {
     max-height: 2.25rem !important;
   }
@@ -989,4 +1176,51 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+}
+
+/* Skeleton de vista PDF */
+.pdf-skeleton .sk-bar { display: block; border-radius: var(--radius-sm); }
+.sk-bar--crumb { width: 7rem; height: 0.75rem; display: inline-block; margin-right: var(--space-2); }
+.sk-bar--short { width: 5rem; }
+.sk-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+}
+.sk-bar--kicker { width: 8rem; height: 0.625rem; margin-bottom: var(--space-2); }
+.sk-bar--title { width: min(16rem, 70%); height: 1.375rem; }
+.sk-acciones-botones { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.sk-bar--btn { width: 7rem; height: 2.25rem; }
+.sk-bar--link { width: 9rem; }
+.sk-head-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.sk-label { font-size: 0.8125rem; color: var(--color-muted-foreground); }
+.sk-folio {
+  min-height: 28rem;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  display: grid;
+  gap: var(--space-3);
+}
+.sk-bar--folio-header { width: 100%; height: 3.5rem; }
+.sk-bar--folio-title { width: 40%; height: 1.5rem; margin: var(--space-2) auto; }
+.sk-bar--folio-line { width: 75%; height: 0.875rem; margin: 0 auto; }
+.sk-bar--wide { width: 90%; }
+.sk-bar--folio-qr {
+  width: 5.5rem;
+  height: 5.5rem;
+  margin: var(--space-4) auto 0;
+  border-radius: var(--radius-sm);
 }

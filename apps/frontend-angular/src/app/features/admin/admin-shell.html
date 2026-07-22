@@ -1,10 +1,25 @@
 <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
+@if (navegando()) {
+  <div
+    class="nav-progress"
+    role="progressbar"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-label="Cargando página"
+  >
+    <span class="nav-progress-bar" aria-hidden="true"></span>
+  </div>
+}
 <div class="layout">
   <aside class="sidebar-desktop" aria-label="Navegación admin">
-    <app-sidebar-admin [active]="rutaActual()" (cerrarSesion)="cerrarSesion()" />
+    <app-sidebar-admin
+      [active]="rutaActual()"
+      [navegando]="navegando()"
+      [rutaPendiente]="rutaPendiente()"
+      (cerrarSesion)="cerrarSesion()"
+    />
   </aside>
   <div class="content" [attr.inert]="menuAbierto() ? '' : null">
-    <!-- Solo móvil: abre el drawer. En desktop la sidebar fija alcanza. -->
     <header class="mobile-nav" role="banner">
       <button
         type="button"
@@ -19,7 +34,7 @@
         </svg>
       </button>
     </header>
-    <main id="contenido" role="main">
+    <main id="contenido" role="main" [attr.aria-busy]="navegando() ? 'true' : null">
       <router-outlet />
     </main>
     <footer role="contentinfo">
@@ -27,10 +42,6 @@
     </footer>
   </div>
 </div>
-<!-- Drawer mobile: overlay + panel condicional. Solo visible < 64rem.
-     Click en overlay cierra. Render condicional para que el contenido
-     focusable (nav/logout) NO quede expuesto a teclado/screen readers
-     cuando el drawer está cerrado. -->
 @if (menuAbierto()) {
   <div class="drawer-overlay" (click)="cerrarMenu()" aria-hidden="true"></div>
   <aside
@@ -39,6 +50,11 @@
     role="navigation"
     aria-label="Navegación admin (móvil)"
   >
-    <app-sidebar-admin [active]="rutaActual()" (cerrarSesion)="cerrarSesion()" />
+    <app-sidebar-admin
+      [active]="rutaActual()"
+      [navegando]="navegando()"
+      [rutaPendiente]="rutaPendiente()"
+      (cerrarSesion)="cerrarSesion()"
+    />
   </aside>
 }

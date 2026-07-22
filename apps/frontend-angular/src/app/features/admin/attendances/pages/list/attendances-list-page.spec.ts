@@ -31,12 +31,12 @@ describe('AttendancesListPage', () => {
     return el.querySelectorAll('[data-testid="asistencias-tabla"] .card-asis-link');
   }
 
-  it('muestra título Asistencias y banner de demo', async () => {
+  it('muestra título Asistencias y oculta banner demo con API real', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Asistencias');
     expect(el.textContent).toContain('Registro de cursada');
-    expect(el.textContent).toContain('Datos de demostración');
+    expect(el.textContent).not.toContain('Datos de demostración');
   });
 
   it('renderiza filas/tarjetas del seed (excluye canceladas)', async () => {
@@ -119,7 +119,7 @@ describe('AttendancesListPage', () => {
     expect(presentes).toEqual([7, 8]);
   });
 
-  it('total deriva del mock: curso 1 tiene 13 alumnos (12 + 1)', async () => {
+  it('total del hub: alumnos activos globales (mock = máximo roster activo)', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const cardsEl = Array.from(cards(el));
@@ -133,8 +133,9 @@ describe('AttendancesListPage', () => {
     });
     const cur001 = conteos.filter((c) => c.codigo === 'CUR-001');
     expect(cur001.length).toBe(3);
+    // Hub usa un único total global (paridad con HTTP /admin/hub/asistencias).
     for (const c of cur001) {
-      expect(c.total).toBe(13);
+      expect(c.total).toBe(14);
     }
   });
 
@@ -156,7 +157,7 @@ describe('AttendancesListPage', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('curso sin fechas asistibles no rompe la lista (no llama listarAlumnos)', async () => {
+  it('curso sin fechas asistibles no rompe la lista', async () => {
     await TestBed.configureTestingModule({
       imports: [AttendancesListPage],
       providers: [
