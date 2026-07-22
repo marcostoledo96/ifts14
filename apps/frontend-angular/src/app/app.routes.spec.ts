@@ -964,9 +964,9 @@ describe('app.routes', () => {
     const cmp = harness.routeNativeElement?.querySelector('app-certification-preview-page');
     expect(cmp).not.toBeNull();
     const el = cmp as HTMLElement;
-    // Expediente con secciones v0: breadcrumb, ficha, acciones, validación,
+    // Expediente con secciones v0: Volver, ficha, acciones, validación,
     // riesgo, documento réplica y auditoría.
-    expect(el.querySelector('nav[aria-label="Migas de pan"]')).not.toBeNull();
+    expect(el.querySelector('[data-testid="volver-certificaciones"]')).not.toBeNull();
     expect(el.querySelector('.ficha-expediente')).not.toBeNull();
     expect(el.querySelector('.acciones-panel')).not.toBeNull();
     expect(el.querySelector('.validacion-panel')).not.toBeNull();
