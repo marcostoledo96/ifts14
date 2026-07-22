@@ -27,7 +27,7 @@ describe('HttpStudentsService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('listar hace GET a /admin/alumnos y mapea apellidoNombre→apellido+nombre y email', async () => {
+  it('listar hace GET a /admin/alumnos y mapea apellido/nombre y email', async () => {
     const p = service.listar();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     expect(req.request.method).toBe('GET');
@@ -36,6 +36,8 @@ describe('HttpStudentsService', () => {
         items: [
           {
             id: 1,
+            apellido: 'Pérez',
+            nombre: 'Juan',
             apellidoNombre: 'Pérez Juan',
             dniMostrar: '12345678',
             email: 'juan.perez@example.invalid',
@@ -43,6 +45,8 @@ describe('HttpStudentsService', () => {
           },
           {
             id: 2,
+            apellido: 'García',
+            nombre: 'María Luz',
             apellidoNombre: 'García María Luz',
             dniMostrar: '34567890',
             email: null,
@@ -69,20 +73,24 @@ describe('HttpStudentsService', () => {
 
   it('crear hace POST a /admin/alumnos con body exacto y mapea 201', async () => {
     const p = service.crear({
-      apellidoNombre: 'Nuevo Alumno',
+      apellido: 'Nuevo',
+      nombre: 'Alumno',
       dni: '30111222',
       email: 'nuevo.alumno@example.invalid',
     });
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({
-      apellidoNombre: 'Nuevo Alumno',
+      apellido: 'Nuevo',
+      nombre: 'Alumno',
       dni: '30111222',
       email: 'nuevo.alumno@example.invalid',
     });
     req.flush({
       data: {
         id: 42,
+        apellido: 'Nuevo',
+        nombre: 'Alumno',
         apellidoNombre: 'Nuevo Alumno',
         dniMostrar: '30111222',
         email: 'nuevo.alumno@example.invalid',
@@ -100,12 +108,19 @@ describe('HttpStudentsService', () => {
   });
 
   it('crear omite email vacío del body POST', async () => {
-    const p = service.crear({ apellidoNombre: 'Sin Email', dni: '30111223', email: null });
+    const p = service.crear({ apellido: 'Sin', nombre: 'Email', dni: '30111223', email: null });
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
-    expect(req.request.body).toEqual({ apellidoNombre: 'Sin Email', dni: '30111223' });
-    expect(Object.keys(req.request.body).sort()).toEqual(['apellidoNombre', 'dni']);
+    expect(req.request.body).toEqual({ apellido: 'Sin', nombre: 'Email', dni: '30111223' });
+    expect(Object.keys(req.request.body).sort()).toEqual(['apellido', 'dni', 'nombre']);
     req.flush({
-      data: { id: 43, apellidoNombre: 'Sin Email', dniMostrar: '30111223', estado: 'activo' },
+      data: {
+        id: 43,
+        apellido: 'Sin',
+        nombre: 'Email',
+        apellidoNombre: 'Sin Email',
+        dniMostrar: '30111223',
+        estado: 'activo',
+      },
       meta: { requestId: 'r-create-no-email' },
     });
     const created = await p;
@@ -114,7 +129,7 @@ describe('HttpStudentsService', () => {
   });
 
   it('crear en 409 con existingStudentId lanza StudentDuplicateError', async () => {
-    const p = service.crear({ apellidoNombre: 'Dup', dni: '30111222' });
+    const p = service.crear({ apellido: 'Dup', nombre: 'Test', dni: '30111222' });
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     req.flush(
       {
@@ -133,7 +148,7 @@ describe('HttpStudentsService', () => {
   });
 
   it('crear en 409 sin id resuelve por listado', async () => {
-    const p = service.crear({ apellidoNombre: 'Dup', dni: '30111222' });
+    const p = service.crear({ apellido: 'Dup', nombre: 'Test', dni: '30111222' });
     const createReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     createReq.flush(
       { error: { code: 'CONFLICT', message: 'Duplicado', details: [] }, meta: { requestId: 'r409b' } },
@@ -143,7 +158,14 @@ describe('HttpStudentsService', () => {
     const listReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     listReq.flush({
       data: {
-        items: [{ id: 9, apellidoNombre: 'Ya Existe', dniMostrar: '30111222', estado: 'activo' }],
+        items: [{
+          id: 9,
+          apellido: 'Ya',
+          nombre: 'Existe',
+          apellidoNombre: 'Ya Existe',
+          dniMostrar: '30111222',
+          estado: 'activo',
+        }],
       },
       meta: { requestId: 'r409-list' },
     });
@@ -152,7 +174,23 @@ describe('HttpStudentsService', () => {
     );
   });
 
-  it('apellidoNombre sin espacio → apellido lleno, nombre vacío', async () => {
+  it('fallback: solo apellidoNombre con coma → apellido y nombre', async () => {
+    const p = service.listar();
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
+    req.flush({
+      data: {
+        items: [
+          { id: 1, apellidoNombre: 'García, Lucía M.', dniMostrar: '11111111', estado: 'activo' },
+        ],
+      },
+      meta: { requestId: 'r-comma' },
+    });
+    const result = await p;
+    expect(result[0].apellido).toBe('García');
+    expect(result[0].nombre).toBe('Lucía M.');
+  });
+
+  it('fallback: apellidoNombre sin espacio → apellido lleno, nombre vacío', async () => {
     const p = service.listar();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     req.flush({
@@ -169,9 +207,9 @@ describe('HttpStudentsService', () => {
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos`);
     req.flush({
       data: { items: [
-        { id: 1, apellidoNombre: 'A B', dniMostrar: '20111111', estado: 'activo' },
-        { id: 2, apellidoNombre: 'C D', dniMostrar: '20222222', estado: 'activo' },
-        { id: 3, apellidoNombre: 'E F', dniMostrar: '20333333', estado: 'activo' },
+        { id: 1, apellido: 'A', nombre: 'B', apellidoNombre: 'A B', dniMostrar: '20111111', estado: 'activo' },
+        { id: 2, apellido: 'C', nombre: 'D', apellidoNombre: 'C D', dniMostrar: '20222222', estado: 'activo' },
+        { id: 3, apellido: 'E', nombre: 'F', apellidoNombre: 'E F', dniMostrar: '20333333', estado: 'activo' },
       ] },
       meta: { requestId: 'r3' },
     });
@@ -185,6 +223,8 @@ describe('HttpStudentsService', () => {
     req.flush({
       data: {
         id: 5,
+        apellido: 'López',
+        nombre: 'Diego',
         apellidoNombre: 'López Diego',
         dniMostrar: '99556677',
         email: 'diego.lopez@example.invalid',
@@ -236,6 +276,39 @@ describe('HttpStudentsService', () => {
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos/5`);
     req.flush('crash', { status: 500, statusText: 'Internal Server Error' });
     await expectAsync(p).toBeRejected();
+  });
+
+  it('actualizar hace PATCH a /admin/alumnos/:id con body de datos personales', async () => {
+    const p = service.actualizar(5, {
+      apellido: 'Editado',
+      nombre: 'Nombre',
+      dni: '20111222',
+      email: 'editado@example.invalid',
+    });
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos/5`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({
+      apellido: 'Editado',
+      nombre: 'Nombre',
+      dni: '20111222',
+      email: 'editado@example.invalid',
+    });
+    req.flush({
+      data: {
+        id: 5,
+        apellido: 'Editado',
+        nombre: 'Nombre',
+        apellidoNombre: 'Editado Nombre',
+        dniMostrar: '20111222',
+        email: 'editado@example.invalid',
+        estado: 'activo',
+      },
+      meta: { requestId: 'r-patch' },
+    });
+    const result = await p;
+    expect(result.apellido).toBe('Editado');
+    expect(result.nombre).toBe('Nombre');
+    expect(result.email).toBe('editado@example.invalid');
   });
 
   it('contar 4xx rechaza con error', async () => {

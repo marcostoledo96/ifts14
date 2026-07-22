@@ -53,14 +53,15 @@ Delta spec — funcionalidad real de entrega manual desde el panel admin.
 **Then** DEBE navegar a la página de regeneración o mostrar mensaje de que se requiere regeneración
 **And** MVP: mostrar mensaje "La regeneración de PDF requiere acción del backend. Contactar al administrador."
 
-### REQ-DEL-006: Botón "Entregar" habilitado en preview
+### REQ-DEL-006: Expediente sin CTA «Entrega manual» (acciones directas)
 
 **Prioridad**: HIGH
 
 **Given** la página de preview de certificación
-**When** el botón "Entrega manual" está presente
-**Then** DEBE estar habilitado (no disabled)
-**And** al hacer clic DEBE navegar a `/admin/certificaciones/{id}/entrega`
+**When** Bedelía inspecciona el panel Acciones y el panel Enlace de validación
+**Then** NO DEBE mostrar el botón «Entrega manual»
+**And** DEBE ofrecer Copiar link, Compartir, Descargar PDF y Descargar QR desde el expediente
+**And** la ruta `/admin/certificaciones/{id}/entrega` PUEDE seguir existiendo para acceso directo / QA, sin CTA en el expediente
 
 ### REQ-DEL-007: Foco y escape en diálogos
 

@@ -53,9 +53,9 @@ El sistema DEBE mostrar un listado navegable de certificaciones ficticias, filtr
 
 #### Scenario: Paginación y cambio de resultados
 
-- **Given** hay más de cinco coincidencias o la página activa deja de existir
+- **Given** hay más de veinte coincidencias o la página activa deja de existir
 - **When** Bedelía cambia filtros, búsqueda o página
-- **Then** DEBE mostrar cinco elementos por página y reiniciar o acotar la página a un rango válido.
+- **Then** DEBE mostrar veinte elementos por página y reiniciar o acotar la página a un rango válido.
 
 #### Scenario: Navegación conservada desde ambas vistas
 
@@ -95,7 +95,7 @@ En desarrollo y tests, el sistema DEBE ofrecer un harness QA explícito y no per
 
 ### Requirement: Previsualización segura y handoff explícito
 
-El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente con estado, alumno, curso, asistencias, documento réplica, auditoría, QR decorativo, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada decorativa. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Revocar certificación` DEBE navegar a `/admin/certificaciones/:id/revocar`; `Entrega manual` DEBE navegar al flujo de entrega vigente. `Copiar link` y `Compartir` DEBEN usar la URL canónica de `obtenerEntregaManual().publicValidationUrl` (deshabilitados si revocado o sin URL). Las autoridades de la réplica DEBEN venir de configuración institucional (`rectorName`/`advisorName` + roles); si la config falla o ambos nombres están vacíos, DEBE mostrar “Configuración institucional pendiente” sin bloquear Copiar/Compartir. El QR/token DEBE permanecer permanente. NO DEBE exponer token completo, legajo ni matrícula. DEBE mostrar DNI completo en `documentMasked`/`dniMostrar` (D0).
+El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente con estado, alumno, curso, asistencias, documento réplica, auditoría, QR, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada decorativa. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Revocar certificación` DEBE navegar a `/admin/certificaciones/:id/revocar`. El panel de acciones NO DEBE incluir el CTA «Entrega manual» ni «Compartir» (redundante con Copiar link). El panel Acciones DEBE ofrecer `Copiar link` y `Descargar QR`. El panel «Enlace de validación» DEBE ofrecer también `Copiar link` y `Descargar QR`. `Copiar link` DEBE usar la URL canónica de `obtenerEntregaManual().publicValidationUrl` (deshabilitado si revocado o sin URL). `Descargar QR` DEBE obtener el PNG vía `descargarQrPng` sin rotar token. Las autoridades de la réplica DEBEN venir de configuración institucional (`rectorName`/`advisorName` + roles); si la config falla o ambos nombres están vacíos, DEBE mostrar “Configuración institucional pendiente” sin bloquear Copiar/Descargar QR. El QR/token DEBE permanecer permanente. NO DEBE exponer token completo, legajo ni matrícula. DEBE mostrar DNI completo en `documentMasked`/`dniMostrar` (D0).
 
 #### Scenario: Expediente de una certificación
 
@@ -103,14 +103,15 @@ El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente con estado
 - **When** la pantalla carga
 - **Then** DEBE mostrar datos seguros, URL truncada decorativa y permitir volver al listado.
 
-#### Scenario: Acciones PDF, revocación, entrega y copy/share
+#### Scenario: Acciones PDF, revocación, entrega y copy/QR
 
 - **Given** Bedelía visualiza un expediente
-- **When** selecciona PDF, revocación, entrega, o inspecciona Copiar/Compartir
+- **When** selecciona PDF, revocación, o inspecciona Copiar link / Descargar QR
 - **Then** las acciones PDF DEBEN abrir la vista imprimible sin rotar QR/token.
 - **And** la revocación DEBE navegar a `/admin/certificaciones/:id/revocar`.
-- **And** Entrega manual DEBE navegar al flujo de entrega vigente.
-- **And** Copiar/Compartir DEBEN usar la URL canónica de entrega-manual cuando el certificado no está revocado.
+- **And** el panel Acciones NO DEBE mostrar «Entrega manual» ni «Compartir».
+- **And** Copiar link DEBE usar la URL canónica de entrega-manual cuando el certificado no está revocado.
+- **And** Descargar QR (en Acciones y en Enlace de validación) DEBE obtener el PNG vía `descargarQrPng` sin rotar token.
 
 #### Scenario: Id inexistente, inválido o ausente
 
@@ -162,6 +163,15 @@ El sistema DEBE mantener paridad visual igual o mejor que la referencia v0 del e
 - **Then** DEBE invocar `CertificationsService.descargarPdf(id)` (HttpClient blob) y disparar descarga `cert-{codigo}.pdf`
 - **And** MUST NOT inventar un Blob sin respuesta del servicio
 - **And** Imprimir MUST permanecer disponible en paralelo
+
+#### Scenario: QR real en la vista imprimible
+
+- **Given** la vista `/admin/certificaciones/:id/pdf` con id válido
+- **When** la pantalla carga
+- **Then** DEBE mostrar un PNG de QR vía `descargarQrPng(id)` (mismo endpoint/mock que entrega)
+- **And** DEBE mostrar la URL canónica de `obtenerEntregaManual().publicValidationUrl`
+- **And** NO DEBE usar la cuadrícula decorativa 8×8
+- **And** el QR/token NO DEBE rotar
 
 #### Scenario: Checker de aplicación real por estado
 

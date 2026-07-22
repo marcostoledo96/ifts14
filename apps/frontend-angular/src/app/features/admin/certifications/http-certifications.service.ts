@@ -190,7 +190,8 @@ export class HttpCertificationsService implements CertificationsService {
   private toCertificacionDetalle(dto: CertDetailDto): CertificacionDetalle {
     return {
       ...this.toCertificacion(dto),
-      publicValidationUrl: dto.links?.pdf ?? '',
+      // La URL pública canónica sale de entrega-manual; links.pdf no es validación.
+      publicValidationUrl: '',
       attendedDates: (dto.attendedDates ?? []).map((d) => d.fecha),
       auditEvents: (dto.auditEvents ?? []).map((e) => ({
         at: e.createdAt,

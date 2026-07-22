@@ -8,7 +8,7 @@ Listado y detalle de alumnos mock-only con DNI completo en UI admin (D0 2026-07-
 
 ### Requirement: Fuente administrativa con DNI completo
 
-El sistema DEBE proveer un DTO de UI `Alumno` desde una fuente local. DEBE mostrar `dniMostrar` con el DNI completo ficticio (7–8 dígitos) en listados y detalle admin. El DTO PUEDE incluir `email: string | null` con direcciones ficticias `@example.invalid` en seeds. NO DEBE almacenar ni mostrar token, legajo, matrícula ni UUID. El DTO PUEDE incluir `tieneEmail` como booleano derivado de `email` para filtros de contacto.
+El sistema DEBE proveer un DTO de UI `Alumno` desde una fuente local. DEBE mostrar `dniMostrar` con el DNI completo ficticio (6–10 dígitos) en listados y detalle admin. El DTO PUEDE incluir `email: string | null` con direcciones ficticias `@example.invalid` en seeds. NO DEBE almacenar ni mostrar token, legajo, matrícula ni UUID. El DTO PUEDE incluir `tieneEmail` como booleano derivado de `email` para filtros de contacto.
 
 #### Scenario: DTO y seed administrativos
 

@@ -16,6 +16,8 @@ export interface CoursesService {
   listar(filtros?: CursosFiltros): Promise<readonly Curso[]>;
   obtener(id: number): Promise<CursoDetalle>;
   crear(dto: CursoDraft): Promise<CursoDetalle>;
+  /** Actualiza código y/o nombre (PATCH /admin/cursos/:id). */
+  actualizar(id: number, draft: Pick<CursoDraft, 'codigo' | 'nombre'>): Promise<CursoDetalle>;
   actualizarEstado(id: number, estado: EstadoCurso): Promise<CursoDetalle>;
   listarFechas(cursoId: number): Promise<readonly CursoFecha[]>;
   guardarFecha(cursoId: number, dto: CursoFechaDraft): Promise<CursoFecha>;

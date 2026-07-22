@@ -24,6 +24,7 @@ interface CursoDto {
   estado: string;
   createdAt: string;
   updatedAt: string;
+  cantidadFechas?: number;
 }
 
 interface CursoFechaDto {
@@ -46,13 +47,15 @@ interface FechasResponse { items: CursoFechaDto[] }
 @Injectable({ providedIn: 'root' })
 export class HttpCoursesService implements CoursesService {
   private readonly http = inject(HttpClient);
+  /** Coalescing por curso: evita GET /fechas duplicados (filtro conFechas, listados, etc.). */
+  private fechasPorCurso = new Map<number, Promise<readonly CursoFecha[]>>();
 
   async listar(filtros?: CursosFiltros): Promise<readonly Curso[]> {
     const url = `${environment.apiBaseUrl}/admin/cursos`;
     const envelope = await firstValueFrom(
       this.http.get<ApiEnvelope<ListResponse>>(url),
     );
-    let list = envelope.data.items.map((dto) => this.toCurso(dto, 0));
+    let list = envelope.data.items.map((dto) => this.toCurso(dto, dto.cantidadFechas ?? 0));
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
     }
@@ -64,30 +67,35 @@ export class HttpCoursesService implements CoursesService {
         );
       }
     }
-    // ponytail: conFechas requiere fetch de fechas por curso; sin link table, omitimos.
+    // Preferir cantidadFechas del listado (backend); fallback a N× listarFechas.
     if (filtros?.conFechas !== undefined) {
-      const withFechas = await Promise.all(
-        list.map(async (c) => {
-          const fechas = await this.listarFechas(c.id);
-          return { curso: { ...c, cantidadFechas: fechas.length }, tiene: fechas.length > 0 };
-        }),
-      );
-      list = withFechas
-        .filter((r) => r.tiene === filtros.conFechas)
-        .map((r) => r.curso);
+      const hasCounts = envelope.data.items.every((dto) => typeof dto.cantidadFechas === 'number');
+      if (hasCounts) {
+        list = list.filter((c) => (c.cantidadFechas > 0) === filtros.conFechas);
+      } else {
+        const withFechas = await Promise.all(
+          list.map(async (c) => {
+            const fechas = await this.listarFechas(c.id);
+            return { curso: { ...c, cantidadFechas: fechas.length }, tiene: fechas.length > 0 };
+          }),
+        );
+        list = withFechas
+          .filter((r) => r.tiene === filtros.conFechas)
+          .map((r) => r.curso);
+      }
     }
     return list;
   }
 
   async obtener(id: number): Promise<CursoDetalle> {
     const base = `${environment.apiBaseUrl}/admin/cursos/${id}`;
-    const [cursoEnv, fechasEnv] = await Promise.all([
+    const [cursoEnv, fechas] = await Promise.all([
       firstValueFrom(this.http.get<ApiEnvelope<CursoDto>>(base)),
-      firstValueFrom(this.http.get<ApiEnvelope<FechasResponse>>(`${base}/fechas`)),
+      this.listarFechas(id),
     ]);
     return {
-      ...this.toCurso(cursoEnv.data, fechasEnv.data.items.length),
-      fechas: fechasEnv.data.items.map((f) => this.toCursoFecha(f)),
+      ...this.toCurso(cursoEnv.data, fechas.length),
+      fechas: [...fechas],
     };
   }
 
@@ -103,6 +111,20 @@ export class HttpCoursesService implements CoursesService {
     return { ...this.toCurso(envelope.data, 0), fechas: [] };
   }
 
+  async actualizar(
+    id: number,
+    draft: Pick<CursoDraft, 'codigo' | 'nombre'>,
+  ): Promise<CursoDetalle> {
+    const url = `${environment.apiBaseUrl}/admin/cursos/${id}`;
+    const envelope = await firstValueFrom(
+      this.http.patch<ApiEnvelope<CursoDto>>(url, {
+        codigo: draft.codigo,
+        nombre: draft.nombre,
+      }),
+    );
+    return { ...this.toCurso(envelope.data, envelope.data.cantidadFechas ?? 0), fechas: [] };
+  }
+
   async actualizarEstado(id: number, estado: EstadoCurso): Promise<CursoDetalle> {
     const url = `${environment.apiBaseUrl}/admin/cursos/${id}/estado`;
     const envelope = await firstValueFrom(
@@ -112,11 +134,27 @@ export class HttpCoursesService implements CoursesService {
   }
 
   async listarFechas(cursoId: number): Promise<readonly CursoFecha[]> {
+    let pending = this.fechasPorCurso.get(cursoId);
+    if (!pending) {
+      pending = this.fetchFechas(cursoId).catch((err) => {
+        this.fechasPorCurso.delete(cursoId);
+        throw err;
+      });
+      this.fechasPorCurso.set(cursoId, pending);
+    }
+    return pending;
+  }
+
+  private async fetchFechas(cursoId: number): Promise<readonly CursoFecha[]> {
     const url = `${environment.apiBaseUrl}/admin/cursos/${cursoId}/fechas`;
     const envelope = await firstValueFrom(
       this.http.get<ApiEnvelope<FechasResponse>>(url),
     );
     return envelope.data.items.map((f) => this.toCursoFecha(f));
+  }
+
+  private invalidateFechas(cursoId: number): void {
+    this.fechasPorCurso.delete(cursoId);
   }
 
   async guardarFecha(cursoId: number, dto: CursoFechaDraft): Promise<CursoFecha> {
@@ -130,6 +168,7 @@ export class HttpCoursesService implements CoursesService {
           estado: dto.estado,
         }),
       );
+      this.invalidateFechas(cursoId);
       return this.toCursoFecha(envelope.data);
     }
     const url = `${environment.apiBaseUrl}/admin/cursos/${cursoId}/fechas/${dto.id}`;
@@ -141,6 +180,7 @@ export class HttpCoursesService implements CoursesService {
         estado: dto.estado,
       }),
     );
+    this.invalidateFechas(cursoId);
     return this.toCursoFecha(envelope.data);
   }
 
@@ -174,6 +214,7 @@ export class HttpCoursesService implements CoursesService {
     }
 
     // 4. Re-read para estado consistente.
+    this.invalidateFechas(cursoId);
     return this.listarFechas(cursoId);
   }
 

@@ -48,6 +48,24 @@ describe('HttpAttendanceService', () => {
     expect(result[0].estado).toBe('activo');
   });
 
+  it('listarAsistenciasDeCurso hace GET a /admin/asistencias?cursoId= sin filtrar fecha', async () => {
+    const p = service.listarAsistenciasDeCurso(5);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`);
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      data: {
+        items: [
+          { id: 1, alumnoId: 10, cursoId: 5, cursoFechaId: 200, fecha: '2026-03-01', fechaEstado: 'realizada', registradoEn: '2026-03-01T12:00:00Z' },
+          { id: 2, alumnoId: 11, cursoId: 5, cursoFechaId: 201, fecha: '2026-03-08', fechaEstado: 'programada', registradoEn: '2026-03-08T12:00:00Z' },
+        ],
+      },
+      meta: { requestId: 'req_test' },
+    });
+    const list = await p;
+    expect(list.length).toBe(2);
+    expect(list.map((a) => a.cursoFechaId)).toEqual([200, 201]);
+  });
+
   it('listarAsistencias hace GET a /admin/asistencias?cursoId= y filtra por fechaId client-side', async () => {
     const p = service.listarAsistencias(5, 200);
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`);
@@ -210,6 +228,45 @@ describe('HttpAttendanceService', () => {
       { status: 404, statusText: 'Not Found' },
     );
     await expectAsync(p).toBeRejected();
+  });
+
+  it('listarHub hace GET a /admin/hub/asistencias', async () => {
+    const p = service.listarHub();
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      data: {
+        cursos: [{ id: 1, codigo: 'CUR-001', nombre: 'Demo', estado: 'activo' }],
+        fechas: [
+          {
+            id: 11,
+            cursoId: 1,
+            fecha: '2026-03-01',
+            descripcion: null,
+            orden: 1,
+            estado: 'programada',
+          },
+        ],
+        asistencias: [
+          {
+            id: 1,
+            alumnoId: 10,
+            cursoId: 1,
+            cursoFechaId: 11,
+            fecha: '2026-03-01',
+            fechaEstado: 'programada',
+            registradoEn: '2026-03-01T12:00:00Z',
+          },
+        ],
+        alumnosActivos: 3,
+      },
+      meta: { requestId: 'hub1' },
+    });
+    const hub = await p;
+    expect(hub.cursos.length).toBe(1);
+    expect(hub.fechas[0].id).toBe(11);
+    expect(hub.asistencias.length).toBe(1);
+    expect(hub.alumnosActivos).toBe(3);
   });
 
   it('resuelve vía ATTENDANCE_SOURCE token', () => {

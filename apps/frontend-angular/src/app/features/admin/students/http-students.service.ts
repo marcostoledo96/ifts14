@@ -1,8 +1,7 @@
-// Fuente HTTP de alumnos. Implementa StudentsService contra la API PHP admin.
-// GET /admin/alumnos → envelope { data: { items: AlumnoDto[] } }.
-// POST /admin/alumnos → body { apellidoNombre, dni, estado? }.
-// Mapeo: apellidoNombre se divide en apellido+nombre (primer espacio).
-// tieneEmail / cursos / certs → null (backend no los expone).
+/**
+ * HTTP real: GET/POST/PATCH /admin/alumnos.
+ * DTO: apellido + nombre (+ apellidoNombre compuesto de compat).
+ */
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -13,7 +12,9 @@ import { StudentsService } from './students.service';
 
 interface AlumnoDto {
   id: number;
-  apellidoNombre: string;
+  apellido?: string;
+  nombre?: string;
+  apellidoNombre?: string;
   dniMostrar: string;
   email?: string | null;
   estado: string;
@@ -64,8 +65,9 @@ export class HttpStudentsService implements StudentsService {
 
   async crear(draft: AlumnoDraft): Promise<AlumnoDetalle> {
     const url = `${environment.apiBaseUrl}/admin/alumnos`;
-    const body: { apellidoNombre: string; dni: string; email?: string; estado?: string } = {
-      apellidoNombre: draft.apellidoNombre,
+    const body: { apellido: string; nombre: string; dni: string; email?: string; estado?: string } = {
+      apellido: draft.apellido,
+      nombre: draft.nombre,
       dni: draft.dni,
     };
     const email = (draft.email ?? '').trim();
@@ -96,6 +98,39 @@ export class HttpStudentsService implements StudentsService {
     }
   }
 
+  async actualizar(id: number, draft: AlumnoDraft): Promise<AlumnoDetalle> {
+    const url = `${environment.apiBaseUrl}/admin/alumnos/${id}`;
+    const body: {
+      apellido: string;
+      nombre: string;
+      dni: string;
+      email: string | null;
+      estado?: string;
+    } = {
+      apellido: draft.apellido,
+      nombre: draft.nombre,
+      dni: draft.dni,
+      email: (draft.email ?? '').trim() === '' ? null : (draft.email ?? '').trim(),
+    };
+    if (draft.estado !== undefined) {
+      body.estado = draft.estado;
+    }
+    try {
+      const envelope = await firstValueFrom(
+        this.http.patch<ApiEnvelope<AlumnoDto>>(url, body),
+      );
+      return this.toAlumnoDetalle(envelope.data);
+    } catch (err) {
+      if (err instanceof HttpErrorResponse && err.status === 409) {
+        const fromApi = this.existingIdFromConflict(err);
+        if (fromApi !== null) {
+          throw new StudentDuplicateError(fromApi);
+        }
+      }
+      throw err;
+    }
+  }
+
   private existingIdFromConflict(err: HttpErrorResponse): number | null {
     const details = (err.error as { error?: { details?: { existingStudentId?: unknown } } } | null)
       ?.error?.details;
@@ -117,6 +152,13 @@ export class HttpStudentsService implements StudentsService {
 
   private splitApellidoNombre(apellidoNombre: string): { apellido: string; nombre: string } {
     const trimmed = apellidoNombre.trim();
+    const commaIdx = trimmed.indexOf(',');
+    if (commaIdx !== -1) {
+      return {
+        apellido: trimmed.slice(0, commaIdx).trim(),
+        nombre: trimmed.slice(commaIdx + 1).trim(),
+      };
+    }
     const idx = trimmed.indexOf(' ');
     if (idx === -1) {
       return { apellido: trimmed, nombre: '' };
@@ -125,7 +167,13 @@ export class HttpStudentsService implements StudentsService {
   }
 
   private toAlumno(dto: AlumnoDto): Alumno {
-    const { apellido, nombre } = this.splitApellidoNombre(dto.apellidoNombre);
+    let apellido = typeof dto.apellido === 'string' ? dto.apellido.trim() : '';
+    let nombre = typeof dto.nombre === 'string' ? dto.nombre.trim() : '';
+    if (apellido === '' && nombre === '' && typeof dto.apellidoNombre === 'string') {
+      const split = this.splitApellidoNombre(dto.apellidoNombre);
+      apellido = split.apellido;
+      nombre = split.nombre;
+    }
     const email =
       typeof dto.email === 'string' && dto.email.trim() !== '' ? dto.email.trim() : null;
     return {

@@ -5,8 +5,8 @@
         class="sidebar-brand-img"
         [src]="logoSrc"
         alt=""
-        width="36"
-        height="36"
+        width="52"
+        height="52"
         decoding="async"
       />
     </span>
@@ -25,11 +25,16 @@
             <a
               [routerLink]="route"
               [attr.aria-current]="isActive(item) ? 'page' : null"
+              [attr.aria-busy]="isNavigatingTo(item) ? 'true' : null"
               [class.active]="isActive(item)"
+              [class.nav-loading]="isNavigatingTo(item)"
             >
               <span class="nav-active-bar" aria-hidden="true"></span>
               <ng-container *ngTemplateOutlet="navIcon; context: { $implicit: item.iconId }" />
-              <span>{{ item.label }}</span>
+              <span class="nav-label">{{ item.label }}</span>
+              @if (isNavigatingTo(item)) {
+                <app-ui-spinner size="sm" class="nav-spinner" />
+              }
             </a>
           } @else {
             <button type="button" class="nav-placeholder" disabled aria-disabled="true">
@@ -48,11 +53,16 @@
         <a
           [routerLink]="configItem.route!"
           [attr.aria-current]="isActive(configItem) ? 'page' : null"
+          [attr.aria-busy]="isNavigatingTo(configItem) ? 'true' : null"
           [class.active]="isActive(configItem)"
+          [class.nav-loading]="isNavigatingTo(configItem)"
         >
           <span class="nav-active-bar" aria-hidden="true"></span>
           <ng-container *ngTemplateOutlet="navIcon; context: { $implicit: configItem.iconId }" />
-          <span>{{ configItem.label }}</span>
+          <span class="nav-label">{{ configItem.label }}</span>
+          @if (isNavigatingTo(configItem)) {
+            <app-ui-spinner size="sm" class="nav-spinner" />
+          }
         </a>
       </li>
       <li>

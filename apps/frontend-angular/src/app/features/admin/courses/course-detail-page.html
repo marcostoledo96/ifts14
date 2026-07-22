@@ -5,7 +5,35 @@
 
   <output class="resumen" aria-live="polite" aria-atomic="true">{{ resumen() }}</output>
   @if (cargando()) {
-    <p class="estado-linea" aria-busy="true">Cargando curso…</p>
+    <article class="curso-ficha curso-ficha-skeleton" aria-busy="true" aria-label="Cargando curso">
+      <aside class="acento sk-pulse" aria-hidden="true"></aside>
+      <div class="curso-contenido">
+        <header class="curso-header">
+          <div class="curso-identidad">
+            <div class="curso-badges">
+              <span class="sk-bar sk-pulse sk-bar--badge"></span>
+              <span class="sk-bar sk-pulse sk-bar--badge sk-bar--wide"></span>
+            </div>
+            <span class="sk-bar sk-pulse sk-bar--title"></span>
+          </div>
+          <span class="sk-bar sk-pulse sk-bar--btn"></span>
+        </header>
+        <div class="sk-head-row">
+          <app-ui-spinner size="sm" [decorative]="false" label="Cargando curso" />
+          <span class="sk-label">Cargando curso…</span>
+        </div>
+        <hr class="curso-divider" />
+        <div class="sk-fechas">
+          @for (_ of [1, 2, 3]; track $index) {
+            <div class="sk-fecha-row">
+              <span class="sk-bar sk-pulse sk-bar--fecha"></span>
+              <span class="sk-bar sk-pulse sk-bar--estado"></span>
+              <span class="sk-bar sk-pulse sk-bar--accion"></span>
+            </div>
+          }
+        </div>
+      </div>
+    </article>
   }
   @if (error()) {
     <p class="estado-linea estado-error">{{ error() }}</p>

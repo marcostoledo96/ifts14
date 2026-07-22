@@ -1,10 +1,10 @@
-# .gitleaks.toml — allowlist para ifts14
-# Rutas con tokens de test, datos mock y migraciones que no contienen secretos reales.
+# .gitleaks.toml — allowlist acotada para ifts14.
+# No excluir todo apps/backend-php/tests/: secretos reales ahí deben fallar CI.
+# Solo rutas de referencia visual y migraciones SQL versionadas.
 
 [allowlist]
-  description = "Allowlist for test tokens, sample data and migrations"
+  description = "Allowlist for sample UI export and SQL migrations"
   paths = [
     '''muestra_pagina/''',
-    '''apps/backend-php/tests/''',
     '''database/migrations/''',
   ]

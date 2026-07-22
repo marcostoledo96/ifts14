@@ -33,6 +33,7 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_rev
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/010_backfill_pdf_revision.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/011_alumnos_email_opcional.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/012_alumnos_apellido_nombre_separados.sql');
 
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-http-emission-e2e-' . bin2hex(random_bytes(4));
@@ -99,7 +100,7 @@ try {
     $cursoId = (int) (assertJson($courseResponse, 'crear curso HTTP')['data']['id'] ?? 0);
 
     $studentResponse = postJson($port, '/admin/alumnos', $adminKey, [
-        'apellidoNombre' => 'Alumno HTTP Demo',
+        'apellido' => 'Alumno', 'nombre' => 'HTTP Demo',
         'dni' => $dni,
     ]);
     assertStatus($studentResponse, 201, 'crear alumno HTTP');

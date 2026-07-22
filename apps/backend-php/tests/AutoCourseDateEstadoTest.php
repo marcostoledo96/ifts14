@@ -58,7 +58,7 @@ $hoy = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_
 $pasada = '2020-01-15';
 $futura = '2099-06-01';
 
-$student = $masterData->createStudent(['dni' => '22333444', 'apellidoNombre' => 'Alumno Auto Estado']);
+$student = $masterData->createStudent(['dni' => '22333444', 'apellido' => 'Alumno', 'nombre' => 'Auto Estado']);
 $course = $masterData->createCourse(['codigo' => 'AUTO01', 'nombre' => 'Curso Auto Estado']);
 
 // 1.1 Fecha pasada + presente → realizada
@@ -83,15 +83,15 @@ if (($attPast['fechaEstado'] ?? '') !== 'realizada') {
     throw new RuntimeException('1.1 DTO asistencia debía reportar fechaEstado=realizada');
 }
 
-// 1.2 Same-day y futura → programada
+// 1.2 Same-day → realizada; futura → programada
 $dateToday = $masterData->createCourseDate($course['id'], ['fecha' => $hoy, 'estado' => 'programada']);
 $attToday = $masterData->recordAttendance([
     'alumnoId' => $student['id'],
     'cursoId' => $course['id'],
     'cursoFechaId' => $dateToday['id'],
 ]);
-if (($attToday['fechaEstado'] ?? '') !== 'programada') {
-    throw new RuntimeException('1.2 Same-day debía quedar programada, got ' . ($attToday['fechaEstado'] ?? 'null'));
+if (($attToday['fechaEstado'] ?? '') !== 'realizada') {
+    throw new RuntimeException('1.2 Same-day debía quedar realizada, got ' . ($attToday['fechaEstado'] ?? 'null'));
 }
 
 $dateFuture = $masterData->createCourseDate($course['id'], ['fecha' => $futura, 'estado' => 'programada']);
@@ -105,7 +105,7 @@ if (($attFuture['fechaEstado'] ?? '') !== 'programada') {
 }
 
 // 1.3 Anular último presente → programada + sync
-$studentSync = $masterData->createStudent(['dni' => '33444555', 'apellidoNombre' => 'Alumno Sync']);
+$studentSync = $masterData->createStudent(['dni' => '33444555', 'apellido' => 'Alumno', 'nombre' => 'Sync']);
 $courseSync = $masterData->createCourse(['codigo' => 'AUTO02', 'nombre' => 'Curso Sync']);
 $dateSync = $masterData->createCourseDate($courseSync['id'], ['fecha' => $pasada, 'estado' => 'programada', 'orden' => 1]);
 $attSync = $masterData->recordAttendance([

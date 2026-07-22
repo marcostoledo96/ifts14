@@ -92,16 +92,32 @@ describe('CourseEditorPage', () => {
     expect(el.textContent).not.toContain('Firma');
   });
 
-  it('modo edit: código y nombre están deshabilitados; toggle presente', async () => {
+  it('modo edit: código y nombre editables; toggle presente', async () => {
     const f = await render('edit', 1);
     const el = f.nativeElement as HTMLElement;
     const codigo = el.querySelector('#curso-codigo') as HTMLInputElement;
     const nombre = el.querySelector('#curso-nombre') as HTMLInputElement;
-    expect(codigo.disabled).toBe(true);
-    expect(nombre.disabled).toBe(true);
+    expect(codigo.disabled).toBe(false);
+    expect(nombre.disabled).toBe(false);
+    expect(el.textContent).toContain('Podés corregir código y nombre');
     const sw = el.querySelector('[role="switch"]') as HTMLButtonElement;
     expect(sw).not.toBeNull();
     expect(sw.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('modo edit: guardar con código/nombre cambiados llama actualizar', async () => {
+    const f = await render('edit', 1);
+    const svc = TestBed.inject(COURSES_SOURCE);
+    const actualizarSpy = spyOn(svc, 'actualizar').and.callThrough();
+    f.componentInstance.codigo.set('CUR-EDIT');
+    f.componentInstance.nombre.set('Curso editado');
+    await f.componentInstance.guardar();
+    f.detectChanges();
+    expect(actualizarSpy).toHaveBeenCalledWith(1, {
+      codigo: 'CUR-EDIT',
+      nombre: 'Curso editado',
+    });
+    expect(f.componentInstance.ok()).toContain('guardados');
   });
 
   it('sin input type=time ni badges de emitidos', async () => {
@@ -290,6 +306,7 @@ describe('CourseEditorPage', () => {
           pending.set(id, resolve);
         }),
       crear: () => Promise.reject(new Error('noop')),
+      actualizar: () => Promise.reject(new Error('noop')),
       actualizarEstado: () => Promise.reject(new Error('noop')),
       listarFechas: () => Promise.resolve([]),
       guardarFecha: () => Promise.reject(new Error('noop')),

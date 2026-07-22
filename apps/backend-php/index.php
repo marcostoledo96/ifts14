@@ -193,18 +193,26 @@ if ($path === '/admin/cursos') {
 }
 
 if (preg_match('#^/admin/cursos/(\d+)$#', $path, $matches) === 1) {
-    if ($method !== 'GET') {
+    if (!in_array($method, ['GET', 'PATCH'], true)) {
         Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
         return;
     }
 
-    $config = adminConfig($requestId);
+    $config = adminConfig($requestId, $method === 'PATCH');
     if ($config === null) {
         return;
     }
 
-    respondToAdmin(static function () use ($config, $requestId, $matches): array {
-        return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->getCourse((int) $matches[1])];
+    $body = $method === 'PATCH' ? readJsonBody($requestId) : null;
+    if ($method === 'PATCH' && $body === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $matches, $method, $body): array {
+        $service = new AdminMasterDataService(Database::pdo($config), $requestId);
+        return $method === 'PATCH'
+            ? ['status' => 200, 'data' => $service->updateCourse((int) $matches[1], $body ?? [])]
+            : ['status' => 200, 'data' => $service->getCourse((int) $matches[1])];
     }, $requestId);
     return;
 }
@@ -238,8 +246,9 @@ if ($path === '/admin/alumnos') {
     if ($config === null) {
         return;
     }
-    $dniCipherKey = $method === 'POST' ? loadDniCipherKey($config, $requestId) : null;
-    if ($method === 'POST' && $dniCipherKey === null) {
+    // GET y POST necesitan dni_cipher_key: listado D0 puede descifrar filas legacy enmascaradas.
+    $dniCipherKey = loadDniCipherKey($config, $requestId);
+    if ($dniCipherKey === null) {
         return;
     }
     $body = $method === 'POST' ? readJsonBody($requestId) : null;
@@ -257,6 +266,50 @@ if ($path === '/admin/alumnos') {
 }
 
 if (preg_match('#^/admin/alumnos/(\d+)$#', $path, $matches) === 1) {
+    if (!in_array($method, ['GET', 'PATCH'], true)) {
+        Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
+        return;
+    }
+
+    $config = adminConfig($requestId, $method === 'PATCH');
+    if ($config === null) {
+        return;
+    }
+
+    if ($method === 'GET') {
+        $dniCipherKey = loadDniCipherKey($config, $requestId);
+        if ($dniCipherKey === null) {
+            return;
+        }
+        respondToAdmin(static function () use ($config, $requestId, $matches, $dniCipherKey): array {
+            return [
+                'status' => 200,
+                'data' => (new AdminMasterDataService(Database::pdo($config), $requestId, $dniCipherKey))->getStudent((int) $matches[1]),
+            ];
+        }, $requestId);
+        return;
+    }
+
+    $body = readJsonBody($requestId);
+    if ($body === null) {
+        return;
+    }
+    $needsDniKey = array_key_exists('dni', $body);
+    $dniCipherKey = $needsDniKey ? loadDniCipherKey($config, $requestId) : null;
+    if ($needsDniKey && $dniCipherKey === null) {
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $matches, $body, $dniCipherKey): array {
+        return [
+            'status' => 200,
+            'data' => (new AdminMasterDataService(Database::pdo($config), $requestId, $dniCipherKey))->updateStudent((int) $matches[1], $body),
+        ];
+    }, $requestId);
+    return;
+}
+
+if ($path === '/admin/hub/asistencias') {
     if ($method !== 'GET') {
         Response::error(404, 'NOT_FOUND', 'Recurso no encontrado.', $requestId);
         return;
@@ -267,8 +320,8 @@ if (preg_match('#^/admin/alumnos/(\d+)$#', $path, $matches) === 1) {
         return;
     }
 
-    respondToAdmin(static function () use ($config, $requestId, $matches): array {
-        return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->getStudent((int) $matches[1])];
+    respondToAdmin(static function () use ($config, $requestId): array {
+        return ['status' => 200, 'data' => (new AdminMasterDataService(Database::pdo($config), $requestId))->attendanceHub()];
     }, $requestId);
     return;
 }

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { INSTITUTIONAL_PARTNER_LOGOS } from './shared/brand/institutional-brand';
 import { HeaderInstitucional } from './shared/ui/header-institucional';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
@@ -15,6 +16,7 @@ export class App {
   // Shell route-aware: en /admin/* AdminShell provee banner/main/footer propios.
   // El root solo conserva header+main+footer en rutas públicas.
   private readonly router = inject(Router);
+  readonly partnerLogos = INSTITUTIONAL_PARTNER_LOGOS;
   readonly esRutaAdmin = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),

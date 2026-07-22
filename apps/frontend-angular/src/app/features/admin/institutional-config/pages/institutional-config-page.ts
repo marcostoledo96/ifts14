@@ -4,22 +4,29 @@ import {
   computed,
   inject,
   signal,
+  WritableSignal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  flattenParameterValues,
   INSTITUTIONAL_CONFIG_LIMITS,
   INSTITUTIONAL_CONFIG_SOURCE,
+  InstitutionalConfig,
   InstitutionalConfigWrite,
+  SYSTEM_PARAMETER_DEFAULTS,
+  SYSTEM_PARAMETER_KEYS,
+  SystemParameterKey,
 } from '../institutional-config.service';
+import { UiSpinner } from '../../../../shared/ui/ui-spinner';
 import { INSTITUTIONAL_LOGOS } from '../../../../shared/brand/institutional-brand';
 
 // Página de configuración institucional: layout calca v0 (nav sticky +
-// secciones). Solo campos del DTO backend son editables; logos son assets
-// fijos del frontend; firmas/SMTP/textos extra son presentacionales.
+// secciones). Persistidos: 6 campos institucionales + 9 parámetros tipados.
+// Logos fijos; firmas digitales fuera de este ciclo.
 @Component({
   selector: 'app-institutional-config-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, UiSpinner],
   templateUrl: './institutional-config-page.html',
   styleUrl: './institutional-config-page.css',
 })
@@ -27,27 +34,8 @@ export class InstitutionalConfigPage {
   private readonly source = inject(INSTITUTIONAL_CONFIG_SOURCE);
 
   readonly limits = INSTITUTIONAL_CONFIG_LIMITS;
-
-  /** Logos institucionales hardcodeados (sin upload ni persistencia). */
   readonly logos = INSTITUTIONAL_LOGOS;
-
-  /** Valores presentacionales (no DTO / no dirty / no PUT). */
-  readonly demo = {
-    textoInstitucional:
-      'El Instituto de Formación Técnica Superior N.° 14 depende de la Dirección de Formación Técnica Superior del Gobierno de la Ciudad de Buenos Aires.',
-    tituloCert: 'Certificado de Aprobación',
-    formatoNumero: 'IFTS14-{CURSO}-{AÑO}-{SEC}',
-    linkValidacion: 'certificados.ifts14.edu.ar/validar/',
-    textoQr:
-      'Escaneá el código para verificar la autenticidad de este certificado en el sitio oficial del IFTS N.° 14.',
-    emailContacto: 'contacto@example.invalid',
-    textoValidacion:
-      'Este espacio permite verificar la validez de los certificados emitidos por el IFTS N.° 14.',
-    sitioInstituto: 'www.ifts14.edu.ar',
-    msgValido: 'Certificado válido y vigente, emitido por el IFTS N.° 14.',
-    msgRevocado: 'Este certificado fue revocado por la institución y ya no es válido.',
-    msgNoEncontrado: 'No se encontró ningún certificado asociado a este código.',
-  } as const;
+  readonly parameterKeys = SYSTEM_PARAMETER_KEYS;
 
   readonly institutionName = signal('');
   readonly certificateText = signal('');
@@ -55,6 +43,28 @@ export class InstitutionalConfigPage {
   readonly rectorRole = signal('');
   readonly advisorName = signal('');
   readonly advisorRole = signal('');
+
+  readonly textoInstitucional = signal(SYSTEM_PARAMETER_DEFAULTS.texto_institucional.value);
+  readonly tituloCertificado = signal(SYSTEM_PARAMETER_DEFAULTS.titulo_certificado.value);
+  readonly textoQr = signal(SYSTEM_PARAMETER_DEFAULTS.texto_qr.value);
+  readonly emailContacto = signal(SYSTEM_PARAMETER_DEFAULTS.email_contacto.value);
+  readonly textoValidacion = signal(SYSTEM_PARAMETER_DEFAULTS.texto_validacion.value);
+  readonly sitioInstituto = signal(SYSTEM_PARAMETER_DEFAULTS.sitio_instituto.value);
+  readonly msgValido = signal(SYSTEM_PARAMETER_DEFAULTS.msg_valido.value);
+  readonly msgRevocado = signal(SYSTEM_PARAMETER_DEFAULTS.msg_revocado.value);
+  readonly msgNoEncontrado = signal(SYSTEM_PARAMETER_DEFAULTS.msg_no_encontrado.value);
+
+  private readonly paramSignalByKey: Record<SystemParameterKey, WritableSignal<string>> = {
+    texto_institucional: this.textoInstitucional,
+    titulo_certificado: this.tituloCertificado,
+    texto_qr: this.textoQr,
+    email_contacto: this.emailContacto,
+    texto_validacion: this.textoValidacion,
+    sitio_instituto: this.sitioInstituto,
+    msg_valido: this.msgValido,
+    msg_revocado: this.msgRevocado,
+    msg_no_encontrado: this.msgNoEncontrado,
+  };
 
   private readonly snapshot = signal<InstitutionalConfigWrite | null>(null);
 
@@ -70,14 +80,20 @@ export class InstitutionalConfigPage {
     const snap = this.snapshot();
     if (snap === null) return false;
     const form = this.formValue();
-    return (
+    if (
       form.institutionName !== snap.institutionName ||
       form.certificateText !== snap.certificateText ||
       form.rectorName !== snap.rectorName ||
       form.rectorRole !== snap.rectorRole ||
       form.advisorName !== snap.advisorName ||
       form.advisorRole !== snap.advisorRole
-    );
+    ) {
+      return true;
+    }
+    for (const key of SYSTEM_PARAMETER_KEYS) {
+      if ((form.parameters[key] ?? '') !== (snap.parameters[key] ?? '')) return true;
+    }
+    return false;
   });
 
   readonly previewRector = computed(
@@ -92,6 +108,10 @@ export class InstitutionalConfigPage {
   }
 
   private formValue(): InstitutionalConfigWrite {
+    const parameters = {} as Record<SystemParameterKey, string>;
+    for (const key of SYSTEM_PARAMETER_KEYS) {
+      parameters[key] = this.paramSignalByKey[key]();
+    }
     return {
       institutionName: this.institutionName(),
       certificateText: this.certificateText(),
@@ -99,16 +119,20 @@ export class InstitutionalConfigPage {
       rectorRole: this.rectorRole(),
       advisorName: this.advisorName(),
       advisorRole: this.advisorRole(),
+      parameters,
     };
   }
 
-  private applyConfig(config: InstitutionalConfigWrite & { updatedAt: string | null }): void {
+  private applyConfig(config: InstitutionalConfig): void {
     this.institutionName.set(config.institutionName);
     this.certificateText.set(config.certificateText);
     this.rectorName.set(config.rectorName);
     this.rectorRole.set(config.rectorRole);
     this.advisorName.set(config.advisorName);
     this.advisorRole.set(config.advisorRole);
+    for (const key of SYSTEM_PARAMETER_KEYS) {
+      this.paramSignalByKey[key].set(config.parameters[key]?.value ?? '');
+    }
     this.snapshot.set({
       institutionName: config.institutionName,
       certificateText: config.certificateText,
@@ -116,6 +140,7 @@ export class InstitutionalConfigPage {
       rectorRole: config.rectorRole,
       advisorName: config.advisorName,
       advisorRole: config.advisorRole,
+      parameters: flattenParameterValues(config.parameters),
     });
     this.updatedAt.set(config.updatedAt);
   }
@@ -134,9 +159,18 @@ export class InstitutionalConfigPage {
     }
   }
 
-  onInput(field: keyof InstitutionalConfigWrite, event: Event): void {
+  onInput(
+    field: Exclude<keyof InstitutionalConfigWrite, 'parameters'>,
+    event: Event,
+  ): void {
     const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
     this[field].set(value);
+    this.ok.set('');
+  }
+
+  onParameterInput(key: SystemParameterKey, event: Event): void {
+    const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
+    this.paramSignalByKey[key].set(value);
     this.ok.set('');
   }
 
@@ -149,6 +183,9 @@ export class InstitutionalConfigPage {
     this.rectorRole.set(snap.rectorRole);
     this.advisorName.set(snap.advisorName);
     this.advisorRole.set(snap.advisorRole);
+    for (const key of SYSTEM_PARAMETER_KEYS) {
+      this.paramSignalByKey[key].set(snap.parameters[key] ?? '');
+    }
     this.error.set('');
     this.ok.set('');
   }
@@ -157,7 +194,7 @@ export class InstitutionalConfigPage {
     if (!this.institutionName().trim()) {
       return 'El nombre de la institución es obligatorio.';
     }
-    const { name, role, certificateText } = this.limits;
+    const { name, role, certificateText, parameterText, parameterTextarea } = this.limits;
     const checks: readonly [string, number, string][] = [
       [this.institutionName(), name, `El nombre de la institución supera los ${name} caracteres.`],
       [this.rectorName(), name, `El nombre de la autoridad supera los ${name} caracteres.`],
@@ -168,6 +205,18 @@ export class InstitutionalConfigPage {
     ];
     for (const [value, max, message] of checks) {
       if (value.length > max) return message;
+    }
+    for (const key of SYSTEM_PARAMETER_KEYS) {
+      const meta = SYSTEM_PARAMETER_DEFAULTS[key];
+      const value = this.paramSignalByKey[key]();
+      const max = meta.type === 'textarea' ? parameterTextarea : parameterText;
+      if (value.length > max) {
+        return `${meta.label} supera los ${max} caracteres.`;
+      }
+      if (meta.type === 'email' && value.trim() !== '') {
+        const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+        if (!ok) return 'El email de contacto institucional no es válido.';
+      }
     }
     return '';
   }
@@ -190,5 +239,18 @@ export class InstitutionalConfigPage {
     } finally {
       this.guardando.set(false);
     }
+  }
+
+  /**
+   * Anclas internas: con `<base href="/certificados/">` el navegador resuelve
+   * `#id` contra la base y navega a `/certificados/#id` → redirect a login.
+   * preventDefault + scroll mantiene la sesión y el layout SPA.
+   */
+  irASeccion(event: Event, sectionId: string): void {
+    event.preventDefault();
+    const target = document.getElementById(sectionId);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    target.focus({ preventScroll: true });
   }
 }

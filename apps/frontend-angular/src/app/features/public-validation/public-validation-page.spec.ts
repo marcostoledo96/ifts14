@@ -2,7 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { VALIDATION_SOURCE } from '../../shared/certificates/validation-source';
 import { ValidationSource, ValidationSourceResult } from '../../shared/certificates/validation-source';
-import { MockValidationSource, VALID_VALID_DTO } from '../../shared/certificates/mock-tokens';
+import {
+  MockValidationSource,
+  resetMockAdminPublicStatus,
+  VALID_VALID_DTO,
+} from '../../shared/certificates/mock-tokens';
+import { clearMockAdminLiveEstadoResolver } from '../../shared/certificates/mock-admin-bridge';
 import { PublicValidationPage } from './public-validation-page';
 
 function configureProviders(source: ValidationSource) {
@@ -20,6 +25,8 @@ class StubSource implements ValidationSource {
 }
 
 async function renderWith(token: string, source: ValidationSource) {
+  resetMockAdminPublicStatus();
+  clearMockAdminLiveEstadoResolver();
   await TestBed.configureTestingModule({
     imports: [PublicValidationPage],
     providers: configureProviders(source),
@@ -182,6 +189,17 @@ describe('PublicValidationPage', () => {
     expect(pieLogo?.getAttribute('src')).toContain('logo-ifts.webp');
   });
 
+  it('muestra franja con logos BA Aprende, Ciudad y Escudo', async () => {
+    const fixture = await renderWith('demo-valido', new StubSource(validResult));
+    const el = fixture.nativeElement as HTMLElement;
+    const logos = el.querySelectorAll('.marca-strip-logos img');
+    expect(logos.length).toBe(3);
+    const srcs = Array.from(logos).map((img) => img.getAttribute('src') ?? '');
+    expect(srcs.some((s) => s.includes('buenos-aires-aprende'))).toBeTrue();
+    expect(srcs.some((s) => s.includes('buenos-aires-ciudad'))).toBeTrue();
+    expect(srcs.some((s) => s.includes('escudo-caba'))).toBeTrue();
+  });
+
   it('no dibuja QR decorativo', async () => {
     const fixture = await renderWith('demo-valido', new StubSource(validResult));
     const el = fixture.nativeElement as HTMLElement;
@@ -238,5 +256,16 @@ describe('PublicValidationPage', () => {
     const fixture = await renderWith('demo-valido', new MockValidationSource());
     const text = textOf(fixture);
     expect(text).toContain('Certificación válida');
+  });
+
+  it('con MockValidationSource real: token Copiar link admin → Demo Uno válido (D0)', async () => {
+    const fixture = await renderWith('prefijo_demo_a1b-completo', new MockValidationSource());
+    const text = textOf(fixture);
+    expect(text).toContain('Certificación válida');
+    expect(text).toContain('Alumno Demo Uno');
+    expect(text).toContain('12345678');
+    expect(text).toContain('Curso de introducción a la gestión');
+    // La UI pública no debe mostrar el token completo en el cuerpo.
+    expect(text).not.toContain('prefijo_demo_a1b-completo');
   });
 });

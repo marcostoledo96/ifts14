@@ -21,10 +21,11 @@ return [
     'token_encryption_key' => 'REEMPLAZAR_CON_CLAVE_BASE64_DE_32_BYTES',
     // Clave de cifrado de DNI (AES-256-GCM). Mismas reglas que token_encryption_key.
     'dni_cipher_key' => 'REEMPLAZAR_CON_CLAVE_DNI_BASE64_DE_32_BYTES',
-    // Credenciales de sesión admin: usar un usuario y un hash PASSWORD_DEFAULT
-    // externos a Git. Nunca versionar contraseña plana ni exponerlos al browser.
+    // Credenciales de sesión admin: generar hash con PASSWORD_DEFAULT fuera de Git.
+    // Placeholder inválido a propósito: Config::adminSessionSettings() lo rechaza
+    // hasta reemplazarlo (nunca usar hashes públicos conocidos tipo "password").
     'admin_username' => 'REEMPLAZAR_CON_USUARIO_ADMIN_EXTERNO',
-    'admin_password_hash' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.',
+    'admin_password_hash' => 'REEMPLAZAR_CON_HASH_PASSWORD_DEFAULT',
     'admin_session_idle_seconds' => 1800,
     'admin_session_absolute_seconds' => 28800,
     // Compatibilidad exclusiva CLI; queda deshabilitada y no autoriza HTTP.

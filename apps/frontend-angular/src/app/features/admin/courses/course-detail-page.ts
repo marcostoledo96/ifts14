@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ATTENDANCE_SOURCE } from '../attendances/data/attendance.token';
 import { COURSES_SOURCE } from './courses.service';
 import { CursoDetalle } from './courses.models';
+import { UiSpinner } from '../../../shared/ui/ui-spinner';
 
 type AttendanceMetric =
   | { status: 'known'; present: number }
@@ -13,7 +14,7 @@ type AttendanceMetric =
 @Component({
   selector: 'app-course-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, UiSpinner],
   templateUrl: './course-detail-page.html',
   styleUrl: './course-detail-page.css',
 })
@@ -71,30 +72,51 @@ export class CourseDetailPage {
       return;
     }
     try {
-      const det = await this.courses.obtener(cid);
+      // Curso + asistencias en paralelo (un solo GET de asistencias del curso).
+      let all: readonly unknown[] = [];
+      let attendanceFailed = false;
+      let det: CursoDetalle;
+
+      if (this.attendance) {
+        const [detSettled, attSettled] = await Promise.allSettled([
+          this.courses.obtener(cid),
+          // then() convierte throws síncronos del seam en rejected (no tumba el try).
+          Promise.resolve().then(() => this.attendance!.listarAsistenciasDeCurso(cid)),
+        ]);
+        if (detSettled.status === 'rejected') throw detSettled.reason;
+        det = detSettled.value;
+        if (attSettled.status === 'fulfilled') {
+          all = attSettled.value;
+        } else {
+          attendanceFailed = true;
+        }
+      } else {
+        det = await this.courses.obtener(cid);
+      }
       if (gen !== this.loadGen) return;
       this.detalle.set(det);
-      const settled = await Promise.allSettled(
-        det.fechas.map((f) =>
-          this.attendance
-            ? Promise.resolve().then(() => this.attendance!.listarAsistencias(cid, f.id))
-            : Promise.resolve([]),
-        ),
-      );
-      if (gen !== this.loadGen) return;
+
+      const presentByFecha = new Map<number, number>();
+      if (!attendanceFailed && this.attendance) {
+        for (const raw of all) {
+          if (
+            raw != null &&
+            typeof raw === 'object' &&
+            (raw as { cursoId?: unknown }).cursoId === cid &&
+            typeof (raw as { cursoFechaId?: unknown }).cursoFechaId === 'number'
+          ) {
+            const fechaId = (raw as { cursoFechaId: number }).cursoFechaId;
+            presentByFecha.set(fechaId, (presentByFecha.get(fechaId) ?? 0) + 1);
+          }
+        }
+      }
+
       this.metricas.set(
         new Map<number, AttendanceMetric>(
-          det.fechas.map((f, index) => {
-            const result = settled[index];
+          det.fechas.map((f) => {
             if (!this.attendance) return [f.id, { status: 'unavailable', reason: 'missing-seam' }];
-            if (result.status === 'rejected') return [f.id, { status: 'unavailable', reason: 'failed' }];
-            const present = result.value.filter(
-              (attendance) =>
-                attendance != null &&
-                typeof attendance === 'object' &&
-                attendance.cursoId === cid &&
-                attendance.cursoFechaId === f.id,
-            ).length;
+            if (attendanceFailed) return [f.id, { status: 'unavailable', reason: 'failed' }];
+            const present = presentByFecha.get(f.id) ?? 0;
             return present > 0
               ? [f.id, { status: 'known', present }]
               : [f.id, { status: 'unavailable', reason: 'empty' }];

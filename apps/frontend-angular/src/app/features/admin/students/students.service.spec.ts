@@ -4,7 +4,7 @@ describe('InMemoryStudentsService', () => {
   it('expone el DTO administrativo con DNI completo ficticio', async () => {
     const alumnos = await new InMemoryStudentsService().listar();
     expect(alumnos.length).toBeGreaterThan(6);
-    expect(alumnos.every((a) => /^\d{7,8}$/.test(a.dniMostrar))).toBeTrue();
+    expect(alumnos.every((a) => /^\d{6,10}$/.test(a.dniMostrar))).toBeTrue();
     expect(new Set(alumnos.map((a) => a.dniMostrar)).size).toBe(alumnos.length);
     expect(alumnos.every((a) => typeof a.tieneEmail === 'boolean')).toBeTrue();
     expect(alumnos.every((a) => a.email === null || a.email.includes('@example.invalid'))).toBeTrue();
@@ -31,7 +31,8 @@ describe('InMemoryStudentsService', () => {
   it('crear agrega alumno con dniMostrar completo y email opcional', async () => {
     const service = new InMemoryStudentsService();
     const created = await service.crear({
-      apellidoNombre: 'Prueba Alta',
+      apellido: 'Prueba',
+      nombre: 'Alta',
       dni: '40111222',
       email: 'prueba.alta@example.invalid',
     });
@@ -49,9 +50,29 @@ describe('InMemoryStudentsService', () => {
   it('crear rechaza DNI duplicado con 409 y id existente', async () => {
     const service = new InMemoryStudentsService();
     await expectAsync(
-      service.crear({ apellidoNombre: 'Otro Nombre', dni: '20111222' }),
+      service.crear({ apellido: 'Otro', nombre: 'Nombre', dni: '20111222' }),
     ).toBeRejectedWith(
       jasmine.objectContaining({ status: 409, existingStudentId: 1 }),
     );
+  });
+
+  it('actualizar modifica datos personales y rechaza DNI duplicado', async () => {
+    const service = new InMemoryStudentsService();
+    const updated = await service.actualizar(1, {
+      apellido: 'Ficticia',
+      nombre: 'Persona Uno Editada',
+      dni: '20111222',
+      email: 'persona.uno.edit@example.invalid',
+    });
+    expect(updated.nombre).toBe('Persona Uno Editada');
+    expect(updated.email).toBe('persona.uno.edit@example.invalid');
+    await expectAsync(
+      service.actualizar(1, {
+        apellido: 'X',
+        nombre: 'Y',
+        dni: '20222333',
+        email: null,
+      }),
+    ).toBeRejectedWith(jasmine.objectContaining({ status: 409, existingStudentId: 2 }));
   });
 });

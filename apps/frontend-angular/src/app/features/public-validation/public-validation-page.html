@@ -1,8 +1,54 @@
 <section class="validation" aria-labelledby="validation-title">
   <h1 id="validation-title" class="visually-hidden">Validación de certificado</h1>
 
+  <div class="marca-strip">
+    <ul class="marca-strip-logos" aria-label="Instituciones asociadas">
+      @for (logo of partnerLogos; track logo.id) {
+        <li [class.marca-strip-item--featured]="logo.id === 'ba-aprende'">
+          <img
+            [src]="logo.src"
+            [alt]="logo.nombre"
+            width="140"
+            height="48"
+            loading="lazy"
+            decoding="async"
+          />
+        </li>
+      }
+    </ul>
+  </div>
+
   @if (isLoading()) {
     <app-banda-estado kind="loading" title="Verificando…" />
+    <article class="folio folio-skeleton" aria-busy="true" aria-label="Cargando validación">
+      <header class="membrete">
+        <div class="membrete-fila">
+          <div class="membrete-texto">
+            <span class="sk-bar sk-pulse sk-bar--eyebrow"></span>
+            <span class="sk-bar sk-pulse sk-bar--titulo"></span>
+            <span class="sk-bar sk-pulse sk-bar--bajada"></span>
+          </div>
+          <span class="sk-bar sk-pulse sk-bar--numero"></span>
+        </div>
+      </header>
+      <div class="folio-grid">
+        <main class="folio-main">
+          <section class="seccion">
+            <span class="sk-bar sk-pulse sk-bar--seccion"></span>
+            <span class="sk-bar sk-pulse sk-bar--campo"></span>
+            <span class="sk-bar sk-pulse sk-bar--campo sk-bar--wide"></span>
+          </section>
+          <section class="seccion">
+            <span class="sk-bar sk-pulse sk-bar--seccion"></span>
+            <span class="sk-bar sk-pulse sk-bar--campo"></span>
+          </section>
+        </main>
+        <aside class="folio-aside">
+          <span class="sk-bar sk-pulse sk-bar--aside-label"></span>
+          <span class="sk-bar sk-pulse sk-bar--qr"></span>
+        </aside>
+      </div>
+    </article>
   } @else if (isTechnicalError()) {
     <article class="folio folio-error" aria-labelledby="error-title">
       <header class="error-head">

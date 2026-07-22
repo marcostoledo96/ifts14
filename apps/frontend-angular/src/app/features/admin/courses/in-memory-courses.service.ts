@@ -43,9 +43,9 @@ function seed(): CursoRecord[] {
       updatedAt: now,
       cuatrimestre: '1.er cuatrimestre 2026',
       fechas: [
-        { id: 11, cursoId: 1, fecha: '2026-03-02', descripcion: 'Clase inaugural', orden: 1, estado: 'programada' },
-        { id: 12, cursoId: 1, fecha: '2026-03-09', descripcion: null, orden: 2, estado: 'programada' },
-        { id: 13, cursoId: 1, fecha: '2026-03-16', descripcion: null, orden: 3, estado: 'programada' },
+        { id: 11, cursoId: 1, fecha: '2026-03-02', descripcion: 'Clase inaugural', orden: 1, estado: 'realizada' },
+        { id: 12, cursoId: 1, fecha: '2026-03-09', descripcion: null, orden: 2, estado: 'realizada' },
+        { id: 13, cursoId: 1, fecha: '2026-03-16', descripcion: null, orden: 3, estado: 'realizada' },
       ],
     },
     {
@@ -57,8 +57,8 @@ function seed(): CursoRecord[] {
       updatedAt: now,
       cuatrimestre: '1.er cuatrimestre 2026',
       fechas: [
-        { id: 21, cursoId: 2, fecha: '2026-04-05', descripcion: null, orden: 1, estado: 'programada' },
-        { id: 22, cursoId: 2, fecha: '2026-04-12', descripcion: null, orden: 2, estado: 'programada' },
+        { id: 21, cursoId: 2, fecha: '2026-04-05', descripcion: null, orden: 1, estado: 'realizada' },
+        { id: 22, cursoId: 2, fecha: '2026-04-12', descripcion: null, orden: 2, estado: 'realizada' },
       ],
     },
     {
@@ -168,6 +168,25 @@ export class InMemoryCoursesService implements CoursesService {
     };
     this.cursos.push(nuevo);
     return Promise.resolve({ ...this.toCurso(nuevo), fechas: [] });
+  }
+
+  actualizar(id: number, draft: Pick<CursoDraft, 'codigo' | 'nombre'>): Promise<CursoDetalle> {
+    const found = this.cursos.find((c) => c.id === id);
+    if (!found) {
+      return Promise.reject(new Error(`Curso no encontrado: ${id}`));
+    }
+    const codigo = draft.codigo.trim();
+    const nombre = draft.nombre.trim();
+    if (!codigo || !nombre) {
+      return Promise.reject(new Error('Código y nombre son obligatorios'));
+    }
+    if (this.cursos.some((c) => c.id !== id && c.codigo === codigo)) {
+      return Promise.reject(new Error('Ya existe un curso con ese código'));
+    }
+    found.codigo = codigo;
+    found.nombre = nombre;
+    found.updatedAt = new Date().toISOString();
+    return Promise.resolve({ ...this.toCurso(found), fechas: clone(found.fechas) });
   }
 
   actualizarEstado(id: number, estado: EstadoCurso): Promise<CursoDetalle> {

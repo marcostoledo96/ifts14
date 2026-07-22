@@ -35,6 +35,16 @@
             ],
             "styles": [
               "src/styles.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "qrcode",
+              "html2canvas-pro",
+              "jspdf",
+              "canvg",
+              "core-js",
+              "raf",
+              "rgbcolor",
+              "dompurify"
             ]
           },
           "configurations": {

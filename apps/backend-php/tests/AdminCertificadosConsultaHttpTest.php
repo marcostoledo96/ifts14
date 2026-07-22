@@ -33,6 +33,8 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_rev
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_snapshot.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/010_backfill_pdf_revision.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/011_alumnos_email_opcional.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/012_alumnos_apellido_nombre_separados.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/013_parametros_sistema.sql');
 
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-consulta-http-' . bin2hex(random_bytes(4));
@@ -90,6 +92,13 @@ try {
     if (($configBody['data']['institutionName'] ?? '') !== 'IFTS N.° 14') {
         throw new RuntimeException('config GET inicial: fallback institucional inesperado.');
     }
+    $params = $configBody['data']['parameters'] ?? null;
+    if (!is_array($params) || !isset($params['titulo_certificado']['value'])) {
+        throw new RuntimeException('config GET inicial: faltan parameters tipados.');
+    }
+    if (($params['titulo_certificado']['value'] ?? '') !== 'Certificado de Aprobación') {
+        throw new RuntimeException('config GET inicial: seed titulo_certificado inesperado.');
+    }
 
     $configPut = putJson($port, '/admin/configuracion-institucional', $adminKey, [
         'institutionName' => 'IFTS 14 Consulta Demo',
@@ -98,20 +107,38 @@ try {
         'rectorRole' => 'Rector/a',
         'advisorName' => 'Asesora Demo',
         'advisorRole' => 'Asesor/a Pedagógica',
+        'parameters' => [
+            'titulo_certificado' => 'Certificado Demo Persistido',
+            'email_contacto' => 'bedelia@ifts14.example',
+        ],
     ]);
     assertStatus($configPut, 200, 'config PUT');
     $configPutBody = assertJson($configPut, 'config PUT');
     if (($configPutBody['data']['institutionName'] ?? '') !== 'IFTS 14 Consulta Demo') {
         throw new RuntimeException('config PUT: no persistió institutionName.');
     }
+    if (($configPutBody['data']['parameters']['titulo_certificado']['value'] ?? '') !== 'Certificado Demo Persistido') {
+        throw new RuntimeException('config PUT: no persistió parameters.titulo_certificado.');
+    }
+    if (($configPutBody['data']['parameters']['email_contacto']['value'] ?? '') !== 'bedelia@ifts14.example') {
+        throw new RuntimeException('config PUT: no persistió parameters.email_contacto.');
+    }
 
     assertError(putJson($port, '/admin/configuracion-institucional', $adminKey, ['institutionName' => '   ']), 400, 'VALIDATION_ERROR', 'config PUT sin nombre');
+    assertError(putJson($port, '/admin/configuracion-institucional', $adminKey, [
+        'institutionName' => 'IFTS N.° 14',
+        'parameters' => ['clave_desconocida' => 'x'],
+    ]), 400, 'VALIDATION_ERROR', 'config PUT parámetro desconocido');
+    assertError(putJson($port, '/admin/configuracion-institucional', $adminKey, [
+        'institutionName' => 'IFTS N.° 14',
+        'parameters' => ['email_contacto' => 'no-es-email'],
+    ]), 400, 'VALIDATION_ERROR', 'config PUT email inválido');
 
     $course = postJson($port, '/admin/cursos', $adminKey, ['codigo' => 'CUR-CNS-01', 'nombre' => 'Curso Consulta']);
     assertStatus($course, 201, 'crear curso consulta');
     $cursoId = (int) (assertJson($course, 'crear curso consulta')['data']['id'] ?? 0);
 
-    $student = postJson($port, '/admin/alumnos', $adminKey, ['apellidoNombre' => 'Alumno Consulta', 'dni' => $dni]);
+    $student = postJson($port, '/admin/alumnos', $adminKey, ['apellido' => 'Alumno', 'nombre' => 'Consulta', 'dni' => $dni]);
     assertStatus($student, 201, 'crear alumno consulta');
     $alumnoId = (int) (assertJson($student, 'crear alumno consulta')['data']['id'] ?? 0);
 

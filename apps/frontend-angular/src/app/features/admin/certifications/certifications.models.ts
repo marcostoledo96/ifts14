@@ -5,7 +5,7 @@
 
 export type EstadoCertificado = 'borrador' | 'vigente' | 'revocado' | 'vencido';
 
-export const PAGINA_TAMANO = 5;
+export const PAGINA_TAMANO = 20;
 
 // Certificación listable: campos seguros para el listado admin.
 export interface Certificacion {

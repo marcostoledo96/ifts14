@@ -224,15 +224,25 @@ a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 /* Skeleton */
 .tabla-skeleton { overflow: hidden; padding: 0; }
 .skeleton-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-muted) 60%, transparent);
+  color: var(--color-tech-blue);
 }
 .skeleton-label {
   font: 0.6875rem var(--font-mono);
   letter-spacing: var(--tracking-caps-tight);
   text-transform: uppercase;
   color: var(--color-muted-foreground);
+}
+.skeleton-bar--avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  flex: 0 0 auto;
 }
 .skeleton-rows { list-style: none; margin: 0; padding: 0; }
 .skeleton-row {
@@ -319,7 +329,7 @@ td {
   padding: .875rem var(--space-4);
   border-bottom: 1px solid var(--color-border);
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
 }
 tbody tr { transition: background-color .12s ease; }
 tbody tr:hover { background: color-mix(in srgb, var(--color-muted) 40%, transparent); }

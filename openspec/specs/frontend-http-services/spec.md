@@ -214,17 +214,17 @@ The system SHALL provide `HttpCertificationsService` implementing `Certification
 
 The system SHALL provide an `InstitutionalConfigService` interface, `HttpInstitutionalConfigService`, and `InMemoryInstitutionalConfigService` wired via `environment.useRealApi`.
 
-The `InstitutionalConfig` model SHALL map 1:1 to the backend DTO fields: `institutionName`, `certificateText`, `rectorName`, `rectorRole`, `advisorName`, `advisorRole`, `updatedAt`. It SHALL NOT invent fields the API does not expose (`direccion`, `logoUrl`, logos, email, signature uploads).
+The `InstitutionalConfig` model SHALL map 1:1 to the backend DTO fields: `institutionName`, `certificateText`, `rectorName`, `rectorRole`, `advisorName`, `advisorRole`, `updatedAt`, and `parameters` (mapa de las 9 claves tipadas activas de `cert_parametros_sistema`). It SHALL NOT invent fields the API does not expose (`direccion`, `logoUrl`, logos, signature uploads).
 
 #### Scenario: Fetch institutional config
 
 - GIVEN the backend returns config from `GET /admin/configuracion-institucional`
 - WHEN `obtener()` is called
-- THEN the service SHALL return `InstitutionalConfig` mapped 1:1 from `envelope.data` (null string fields normalized to `''`)
+- THEN the service SHALL return `InstitutionalConfig` mapped 1:1 from `envelope.data` (null string fields normalized to `''`; cada entrada de `parameters` con `value`/`type`/`group`/`label`)
 
 #### Scenario: Save institutional config
 
-- GIVEN a valid write payload with non-empty `institutionName`
+- GIVEN a valid write payload with non-empty `institutionName` and optional flat `parameters` values
 - WHEN `guardar(payload)` is called
 - THEN the service SHALL `PUT /admin/configuracion-institucional` with the write body
 - AND SHALL return the updated `InstitutionalConfig` from `envelope.data`
