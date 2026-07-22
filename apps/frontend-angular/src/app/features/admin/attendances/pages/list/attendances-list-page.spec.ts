@@ -148,6 +148,44 @@ describe('AttendancesListPage', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it('reintento solapado no deja error stale tras carga exitosa', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AttendancesListPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
+      ],
+    }).compileComponents();
+    const attendance = TestBed.inject(ATTENDANCE_SOURCE) as AttendanceMockService;
+    const realHub = attendance.listarHub.bind(attendance);
+    let resolveSlow: ((value: Awaited<ReturnType<typeof realHub>>) => void) | null = null;
+    const slow = new Promise<Awaited<ReturnType<typeof realHub>>>((resolve) => {
+      resolveSlow = resolve;
+    });
+    let calls = 0;
+    spyOn(attendance, 'listarHub').and.callFake(() => {
+      calls += 1;
+      return calls === 1 ? slow : realHub();
+    });
+
+    const f = TestBed.createComponent(AttendancesListPage);
+    f.detectChanges();
+    // Segunda carga (rápida) mientras la primera sigue pendiente.
+    await f.componentInstance.cargar();
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('.estado-error')).toBeNull();
+    expect(tableRows(f.nativeElement as HTMLElement).length).toBe(6);
+
+    resolveSlow!(await realHub());
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('.estado-error')).toBeNull();
+    expect(tableRows(f.nativeElement as HTMLElement).length).toBe(6);
+    expect(calls).toBe(2);
+  });
+
   it('curso nuevo sin fechas no rompe la lista y queda visible', async () => {
     await TestBed.configureTestingModule({
       imports: [AttendancesListPage],

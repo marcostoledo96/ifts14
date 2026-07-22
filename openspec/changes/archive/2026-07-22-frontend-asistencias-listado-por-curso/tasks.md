@@ -23,7 +23,7 @@ Chain strategy: size-exception — Units 1+2 together
 | 1 | Listado solo cursos + specs | PR1 → `feat/asistencias-listado-por-curso` | `npx ng test --include='**/attendances-list-page.spec.ts' --no-watch --browsers=ChromeHeadless` | Mock: `/admin/asistencias` filas=cursos | Revert `pages/list/*` |
 | 2 | Intermedia + rutas + specs | PR2 base=PR1 | `npx ng test --include='**/attendance-course-dates-page.spec.ts' --include='**/app.routes.spec.ts' --no-watch --browsers=ChromeHeadless` | Mock: curso→fechas→marcado | Revert `pages/course-dates/*` + `app.routes*` |
 
-Base paths: `apps/frontend-angular/src/app/` · Feature: `features/admin/attendances/`  
+Base paths: `apps/frontend-angular/src/app/` · Feature: `features/admin/attendances/`
 Done global: specs verdes; sin cambios BE/mock hub/marcado; CTA listado→intermedia→marcado.
 
 ## Phase 1: RED — listado (Unit 1)

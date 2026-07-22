@@ -114,6 +114,9 @@ export class AttendanceCourseDatesPage {
     this.filas.set([]);
     this.cursoNombre.set('');
     this.cursoCodigo.set('');
+    // Al cambiar de curso (ruta reutilizada) no arrastrar búsqueda/filtro previo.
+    this.q.set('');
+    this.estado.set('todas');
 
     const n = Number(id);
     const cid = !id || Number.isNaN(n) || n <= 0 ? null : n;
@@ -166,9 +169,9 @@ export class AttendanceCourseDatesPage {
         return a.fecha.localeCompare(b.fecha);
       });
       this.filas.set(filas);
-    } catch (e) {
+    } catch {
       if (gen === this.loadGen) {
-        this.error.set((e as Error).message || 'No se pudieron cargar las fechas.');
+        this.error.set('No se pudieron cargar las fechas. Reintentá.');
       }
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);

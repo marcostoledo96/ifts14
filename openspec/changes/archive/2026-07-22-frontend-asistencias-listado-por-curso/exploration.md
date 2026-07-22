@@ -54,19 +54,19 @@
 
 ### Approaches
 
-1. **Opción A — Ruta intermedia bajo asistencias (confirmada)**  
+1. **Opción A — Ruta intermedia bajo asistencias (confirmada)**
    Flujo: `/admin/asistencias` (cursos) → `/admin/asistencias/curso/:id` (solo fechas) → `/admin/cursos/:id/fechas/:fechaId/asistencias` (marcado existente).
    - Pros: cumple pedido Marcos; un click menos de “curso repetido”; reusa hub; marcado intacto; URL deep-linkeable; separa concerns del detalle de curso
    - Cons: una pantalla nueva + ruta + specs; hay que redefinir filtros del listado (hoy son de estado de fecha)
    - Effort: **Medium** (FE + delta spec + tests; sin backend)
 
-2. **Opción B — Reusar `/admin/cursos/:id` como intermedia**  
+2. **Opción B — Reusar `/admin/cursos/:id` como intermedia**
    Listado de asistencias solo cursos → navegar al detalle de curso.
    - Pros: cero pantalla nueva; fechas ya listadas en detalle
    - Cons: mezcla ficha de curso (edición, estado, etc.) con “solo elegir fecha”; no es lo pedido; sensación de salir del flujo Asistencias
    - Effort: Low — **rechazada** (Marcos eligió A)
 
-3. **Opción C — Acordeón / expand en el mismo listado**  
+3. **Opción C — Acordeón / expand en el mismo listado**
    Una fila por curso; al expandir, fechas inline.
    - Pros: una sola URL
    - Cons: peor deep-link; listado sigue denso; no es Opción A

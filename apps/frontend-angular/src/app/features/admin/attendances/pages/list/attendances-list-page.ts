@@ -29,6 +29,8 @@ const ESTADO_CURSO_LABEL: Record<string, string> = {
 })
 export class AttendancesListPage {
   private readonly attendance = inject(ATTENDANCE_SOURCE);
+  /** Descarta respuestas obsoletas si hay reintentos solapados. */
+  private loadGen = 0;
 
   readonly q = signal('');
   readonly filas = signal<readonly FilaCurso[]>([]);
@@ -66,10 +68,13 @@ export class AttendancesListPage {
   }
 
   async cargar(): Promise<void> {
+    const gen = ++this.loadGen;
     this.cargando.set(true);
     this.error.set('');
     try {
       const hub = await this.attendance.listarHub();
+      if (gen !== this.loadGen) return;
+
       const fechasPorCurso = new Map<number, number>();
       const fechasConPresentes = new Map<number, Set<number>>();
 
@@ -102,10 +107,11 @@ export class AttendancesListPage {
 
       filas.sort((a, b) => a.codigo.localeCompare(b.codigo));
       this.filas.set(filas);
-    } catch (e) {
-      this.error.set((e as Error).message || 'No se pudo cargar el registro de asistencias.');
+    } catch {
+      if (gen !== this.loadGen) return;
+      this.error.set('No se pudo cargar el registro de asistencias. Reintentá.');
     } finally {
-      this.cargando.set(false);
+      if (gen === this.loadGen) this.cargando.set(false);
     }
   }
 
