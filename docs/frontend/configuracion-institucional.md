@@ -29,7 +29,7 @@
 
 ## Fuera de alcance
 
-Logos upload, firma criptográfica, SMTP, rotación de QR, auth nueva.
+Logos upload, firma criptográfica, correo automático, rotación de QR, auth nueva.
 
 ## Referencias
 
