@@ -16,11 +16,11 @@ build_output_hash: sha256:641b21b18064e733a7bbe38a226dbc36e6a47ad87f13295eb10b28
 
 ## Verification Report
 
-**Change**: frontend-backend-config-firmas-autoridades  
-**Branch**: feat/config-upload-firmas-autoridades (`cd8939e`)  
-**Version**: N/A (change specs)  
-**Mode**: Standard (re-verify post-remediation Phase 6)  
-**Idioma**: español argentino formal  
+**Change**: frontend-backend-config-firmas-autoridades
+**Branch**: feat/config-upload-firmas-autoridades (`cd8939e`)
+**Version**: N/A (change specs)
+**Mode**: Standard (re-verify post-remediation Phase 6)
+**Idioma**: español argentino formal
 
 ### Completeness
 
@@ -34,7 +34,7 @@ Phase 6 remediation (6.1–6.3) marcada `[x]`; código de producto no tocado en 
 
 ### Build & Tests Execution
 
-**Build**: ✅ Passed  
+**Build**: ✅ Passed
 ```text
 npx tsc --noEmit -p tsconfig.app.json → exit 0
   hash=ff63851439f41c4bd0169f582040e068eea30757f1f0e32317dee7f0f14672eb
@@ -44,7 +44,7 @@ php -l (Docker ifts14-php84): AdminInstitutionalConfigService, CertificatePdfSer
   phpl hash=3579c55c2c0af24f26756d6b6bba5f75512e2ce9b8528f07d5f9bf279b88f18c
 ```
 
-**Tests**: ✅ todos verdes  
+**Tests**: ✅ todos verdes
 ```text
 InstitutionalSignatureValidationTest: PASS (exit 0)
   hash=f18aea4a21445660215ab56b207de3fea93ed3226ed1e3c59d7e137dbc114e33

@@ -733,14 +733,15 @@ final class AdminCertificateService
     /** @return array{institutionName:string,certificateText:string,rectorName:string,rectorRole:string,advisorName:string,advisorRole:string,rectorSignaturePath:?string,advisorSignaturePath:?string} */
     private function loadInstitutionalConfig(PDO $pdo): array
     {
-        $statement = $pdo->prepare(<<<'SQL'
-            SELECT institucion_nombre, rector_nombre, rector_cargo, asesor_nombre, asesor_cargo, texto_certificado,
-                   rector_firma_filename, asesor_firma_filename
-            FROM cert_configuracion_institucional
-            WHERE id = 1
-            LIMIT 1
-            SQL);
+        // Con ATTR_EMULATE_PREPARES=false, columnas ausentes fallan en prepare (no en execute).
         try {
+            $statement = $pdo->prepare(<<<'SQL'
+                SELECT institucion_nombre, rector_nombre, rector_cargo, asesor_nombre, asesor_cargo, texto_certificado,
+                       rector_firma_filename, asesor_firma_filename
+                FROM cert_configuracion_institucional
+                WHERE id = 1
+                LIMIT 1
+                SQL);
             $statement->execute();
             $row = $statement->fetch();
         } catch (PDOException) {
