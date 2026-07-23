@@ -20,6 +20,8 @@ const CONFIG_SEED = {
     rectorRole: 'Rectora del IFTS N.° 14',
     advisorName: '',
     advisorRole: 'Asesora Pedagógica del IFTS N.° 14',
+    rectorSignaturePresent: false,
+    advisorSignaturePresent: true,
     updatedAt: '2026-01-01T00:00:00Z',
   },
   meta: { requestId: 'parity-config' },

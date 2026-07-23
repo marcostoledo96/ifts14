@@ -208,6 +208,7 @@ function buildManualService(FakePdoForManual $pdo, string $cipherKey, ?string $p
         'publicBaseUrl' => 'https://demo.example.edu.ar/certificados',
         'tokenCipherKey' => $cipherKey,
         'pdfStoragePath' => $pdfStoragePath,
+        'signatureStoragePath' => null,
     ];
     foreach ($props as $name => $value) {
         $prop = new ReflectionProperty(AdminCertificateService::class, $name);
@@ -360,6 +361,7 @@ $propsNoKey = [
     'publicBaseUrl' => 'https://demo.example.edu.ar/certificados',
     'tokenCipherKey' => null,
     'pdfStoragePath' => $pdfDir5,
+    'signatureStoragePath' => null,
 ];
 foreach ($propsNoKey as $name => $value) {
     $prop = new ReflectionProperty(AdminCertificateService::class, $name);

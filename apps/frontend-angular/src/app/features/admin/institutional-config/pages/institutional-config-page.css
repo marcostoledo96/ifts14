@@ -649,6 +649,42 @@ textarea:focus-visible {
   color: var(--color-valid);
 }
 
+.firma-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.firma-upload-label {
+  cursor: pointer;
+  margin: 0;
+}
+
+.firma-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cfg-inline-error {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-destructive, #b42318);
+}
+
+.cfg-inline-ok {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-valid);
+}
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;

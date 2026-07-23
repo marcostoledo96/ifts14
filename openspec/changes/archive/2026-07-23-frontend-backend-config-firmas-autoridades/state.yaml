@@ -1,0 +1,64 @@
+change: frontend-backend-config-firmas-autoridades
+branch: feat/config-upload-firmas-autoridades
+base: origin/main
+status: archived
+artifact_store: hybrid
+updated_at: "2026-07-23"
+archived_at: "2026-07-23"
+archive_path: openspec/changes/archive/2026-07-23-frontend-backend-config-firmas-autoridades/
+delivery:
+  strategy: exception-ok
+  chain_strategy: size-exception
+  note: "Marcos aceptó size:exception — PR full-stack único"
+phases:
+  explore: skipped
+  propose: done
+  spec: done
+  design: done
+  tasks: done
+  apply: done
+  verify: done
+  archive: done
+apply:
+  completed_tasks: 21
+  total_tasks: 21
+  mode: standard
+  evidence:
+    be_validation: "InstitutionalSignatureValidationTest PASS (Docker ifts14-php84)"
+    be_security: "InstitutionalSignatureSecurityTest PASS (incluye DELETE)"
+    be_pdf: "InstitutionalSignaturePdfTest PASS"
+    be_http: "InstitutionalSignatureHttpTest PASS (auth/preview/DELETE)"
+    be_auth_matrix: "AdminAuthorizationMatrixTest PASS — 24 sitios (+3 firmas)"
+    fe_unit: "ng test institutional-config 38/38 SUCCESS (ChromeHeadlessNoSandbox)"
+    fe_tsc: "npx tsc --noEmit -p tsconfig.app.json exit 0"
+verify:
+  verdict: PASS WITH WARNINGS
+  blockers: 0
+  critical_findings: 0
+  scenarios_compliant: "29/41"
+  evidence_revision: "sha256:533d7a5d69a53bc5c6f08deda2cde99708cbc79722de23ddfa23c18581672689"
+  report: openspec/changes/archive/2026-07-23-frontend-backend-config-firmas-autoridades/verify-report.md
+  remediations_closed:
+    - "HTTP 401/403 sin sesión / CSRF en POST|DELETE|GET /firmas/{rol}"
+    - "Assert preview headers nosniff + Cache-Control no-store + MIME"
+    - "BE deleteSignature → flags false + unlink + filename/hash NULL"
+  remaining_warnings:
+    - "Storage no público sin probe URL"
+    - "GET/PUT consulta flags/side-effects no re-ejecutados en HTTP suite firmas"
+    - "Escenarios PDF/QR previos fuera de SignaturePdfTest"
+    - "Migración 014 sin apply CI"
+archive:
+  merged_specs:
+    - admin-institutional-signatures (created)
+    - frontend-http-services (updated)
+    - admin-certificate-consulta (updated)
+    - certificate-pdf-qr-generation (updated)
+    - backend-modelo-datos-certificados (updated)
+    - deploy-cpanel-certificados (updated)
+  destructive_removals: none
+  engram_observation_ids:
+    proposal: 7173
+    spec: 7176
+    design: 7177
+    tasks: 7178
+    verify_report: 7186

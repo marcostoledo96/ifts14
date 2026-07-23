@@ -48,6 +48,8 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/009_auditoria_sync_s
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/010_backfill_pdf_revision.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/011_alumnos_email_opcional.sql');
 applySqlFile($pdo, __DIR__ . '/../../../database/migrations/012_alumnos_apellido_nombre_separados.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/013_parametros_sistema.sql');
+applySqlFile($pdo, __DIR__ . '/../../../database/migrations/014_firmas_autoridades.sql');
 
 $tokenKey = str_repeat('t', 32);
 $dniKey = str_repeat('d', 32);
