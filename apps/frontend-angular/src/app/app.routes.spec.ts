@@ -23,6 +23,7 @@ import { InMemoryStudentsService } from './features/admin/students/in-memory-stu
 import { INSTITUTIONAL_CONFIG_SOURCE } from './features/admin/institutional-config/institutional-config.service';
 import { InMemoryInstitutionalConfigService } from './features/admin/institutional-config/in-memory-institutional-config.service';
 import { InstitutionalConfigPage } from './features/admin/institutional-config/pages/institutional-config-page';
+import { AdminGuidePage } from './features/admin/guide/admin-guide-page';
 import { provideHttpClient } from '@angular/common/http';
 import { resetMockAdminPublicStatus } from './shared/certificates/mock-tokens';
 
@@ -1149,6 +1150,39 @@ describe('app.routes', () => {
     const harness = await RouterTestingHarness.create('/admin/certificaciones/1/revocar');
     const cmp = harness.routeNativeElement?.querySelector('app-certification-revoke-page');
     expect(cmp).not.toBeNull();
+  });
+
+  // --- Ruta admin/guia (instructivo de flujo) ---
+
+  it("admin children define guia", () => {
+    const children = adminChildren();
+    const paths = children.map((c) => c.path);
+    expect(paths).toContain('guia');
+  });
+
+  it("loadComponent de guia devuelve AdminGuidePage", async () => {
+    const children = adminChildren();
+    const r = children.find((c) => c.path === 'guia');
+    expect(r?.loadComponent).toBeDefined();
+    const cmp = await (r!.loadComponent as () => Promise<unknown>)();
+    expect(cmp).toBe(AdminGuidePage);
+  });
+
+  it("navegación real /admin/guia sin sesión termina en /admin/login", async () => {
+    await setupRouter('/admin/guia');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/admin/login');
+  });
+
+  it("runtime: /admin/guia con sesión renderiza la guía", async () => {
+    await setupHarnessWithSession();
+    const harness = await RouterTestingHarness.create('/admin/guia');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+    const cmp = harness.routeNativeElement?.querySelector('app-admin-guide-page');
+    expect(cmp).not.toBeNull();
+    expect(cmp?.textContent).toContain('Flujo de trabajo de Bedelía');
   });
 
   // --- Ruta admin/configuracion (ciclo configuración institucional) ---

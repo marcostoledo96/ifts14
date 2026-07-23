@@ -8,12 +8,12 @@ Definir la base navegable del panel administrativo Angular 20 para F2-04..F2-06:
 
 ### Requirement: Rutas administrativas aisladas
 
-El sistema DEBE exponer `/admin/login`, `/admin`, `/admin/dashboard`, `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` y `/admin/alumnos*` sin romper rutas públicas.
+El sistema DEBE exponer `/admin/login`, `/admin`, `/admin/dashboard`, `/admin/guia`, `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` y `/admin/alumnos*` sin romper rutas públicas.
 (Previously: no exponía `/admin/alumnos/:id` como ruta administrativa activa.)
 
 #### Scenario: Navegación admin básica
 
-- **Given** una persona abre `/admin/login`, `/admin/dashboard`, `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` o `/admin/alumnos*`
+- **Given** una persona abre `/admin/login`, `/admin/dashboard`, `/admin/guia`, `/admin/cursos*`, `/admin/asistencias*`, `/admin/certificaciones*` o `/admin/alumnos*`
 - **When** Angular resuelve la ruta
 - **Then** DEBE cargar la pantalla administrativa correspondiente.
 - **And** `/admin` DEBE resolver hacia login o dashboard según la sesión mock.
@@ -27,7 +27,7 @@ El sistema DEBE exponer `/admin/login`, `/admin`, `/admin/dashboard`, `/admin/cu
 
 ### Requirement: Login y shell explícitamente simulados
 
-El sistema DEBE presentar login y shell administrativos; el dashboard DEBE ser mesa de trabajo (acciones, pendientes, actividad, resumen) según `admin-dashboard-workbench`. NO DEBE usar la grilla legacy de cuatro cards con conteos ficticios. El login DEBE comunicar acceso institucional con auth real (sesión cookie) y aviso de auditoría; NO DEBE presentar copy de «acceso simulado».
+El sistema DEBE presentar login y shell administrativos; el dashboard DEBE ser mesa de trabajo (acciones, flujo de trabajo, pendientes, actividad, resumen) según `admin-dashboard-workbench`. NO DEBE usar la grilla legacy de cuatro cards con conteos ficticios. El login DEBE comunicar acceso institucional con auth real (sesión cookie) y aviso de auditoría; NO DEBE presentar copy de «acceso simulado».
 (Previously: exigía mensaje «Acceso simulado — la autenticación real se define en una fase posterior»; el dashboard enlazaba Cursos/Asistencias/Certificaciones/Alumnos con conteos ficticios en cuatro cards.)
 
 #### Scenario: Aviso de auditoría en login
@@ -42,8 +42,16 @@ El sistema DEBE presentar login y shell administrativos; el dashboard DEBE ser m
 - **Given** existe una sesión admin activa
 - **When** se abre `/admin/dashboard`
 - **Then** DEBE mostrarse “Panel de certificaciones” con acciones principales navegables.
+- **And** DEBE mostrarse el panel instructivo «Flujo de trabajo» antes de Pendientes, con CTA destacado a `/admin/guia` (sin duplicar el menú lateral).
 - **And** el resumen operativo DEBE derivar métricas de seams existentes o mostrar “—” ante fallo.
 - **And** bandeja y actividad DEBEN ser honestas (sin conteos/eventos inventados).
+
+#### Scenario: Guía operativa
+
+- **Given** sesión admin activa
+- **When** se abre `/admin/guia`
+- **Then** DEBE explicarse el flujo de cursos, alumnos, asistencias, certificaciones y configuración.
+- **And** DEBE ofrecer Volver al dashboard.
 
 ### Requirement: Sesión mock solo en memoria
 
