@@ -1,0 +1,73 @@
+<section class="guia-page" aria-labelledby="guia-title">
+  <app-ui-back-link
+    to="/admin/dashboard"
+    label="Volver al panel"
+    testId="volver-dashboard"
+  />
+
+  <header class="page-header">
+    <p class="kicker">Instructivo operativo</p>
+    <h1 id="guia-title" class="title">Flujo de trabajo de Bedelía</h1>
+    <p class="lede">
+      Guía breve del orden recomendado para operar el panel. La navegación entre
+      módulos está en el menú lateral; acá se explica qué hacer en cada etapa.
+    </p>
+  </header>
+
+  <aside class="intro-banner" role="note" aria-labelledby="intro-banner-title">
+    <svg class="intro-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75" />
+      <path d="M12 10v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+      <circle cx="12" cy="7.5" r="0.9" fill="currentColor" />
+    </svg>
+    <div class="intro-body">
+      <p id="intro-banner-title" class="intro-title">Orden sugerido</p>
+      <p class="intro-text">
+        Cursos y fechas → Alumnos → Asistencias → Certificaciones.
+        Configuración institucional se define una vez y aplica a los folios nuevos.
+      </p>
+    </div>
+  </aside>
+
+  <div class="guia-layout">
+    <nav class="guia-nav" aria-label="Temas de la guía">
+      <div class="guia-nav-sticky">
+        <p class="guia-nav-kicker">Temas</p>
+        <ol class="guia-nav-list">
+          @for (s of secciones; track s.id; let i = $index) {
+            <li>
+              <a class="guia-nav-link" [href]="'#' + s.guiaAncla">
+                <span class="guia-nav-num">{{ i + 1 }}</span>
+                {{ s.titulo }}
+              </a>
+            </li>
+          }
+        </ol>
+      </div>
+    </nav>
+
+    <div class="guia-sections">
+      @for (s of secciones; track s.id; let i = $index) {
+        <article
+          class="guia-seccion"
+          [id]="s.guiaAncla"
+          [attr.data-testid]="'guia-seccion-' + s.id"
+        >
+          <header class="seccion-head">
+            <span class="seccion-num" aria-hidden="true">{{ i + 1 }}</span>
+            <div class="seccion-heading">
+              <h2 class="seccion-title">{{ s.titulo }}</h2>
+              <p class="seccion-resumen">{{ s.resumen }}</p>
+            </div>
+          </header>
+          <ol class="seccion-pasos">
+            @for (p of s.cuerpo; track p) {
+              <li>{{ p }}</li>
+            }
+          </ol>
+          <a class="seccion-cta" [routerLink]="s.route">{{ s.ctaLabel }}</a>
+        </article>
+      }
+    </div>
+  </div>
+</section>

@@ -91,6 +91,40 @@
     </div>
   </section>
 
+  <section class="instructivo" aria-labelledby="flujo-titulo" data-testid="flujo-trabajo">
+    <div class="instructivo-inner">
+      <div class="instructivo-copy">
+        <p class="instructivo-kicker">Cómo usar el panel</p>
+        <h2 id="flujo-titulo" class="instructivo-title">Flujo de trabajo</h2>
+        <p class="instructivo-text">
+          Operá en este orden: primero cursos y fechas, después alumnos,
+          luego asistencias y certificaciones. La configuración institucional
+          se define una sola vez y aplica a los folios nuevos.
+        </p>
+        <ol class="instructivo-pasos" aria-label="Orden recomendado">
+          @for (paso of flujoPasos; track paso.id; let i = $index) {
+            <li>
+              <span class="instructivo-paso-num" aria-hidden="true">{{ i + 1 }}</span>
+              <span class="instructivo-paso-label">{{ paso.titulo }}</span>
+            </li>
+          }
+        </ol>
+      </div>
+      <a
+        class="instructivo-cta"
+        routerLink="/admin/guia"
+        data-testid="flujo-ver-guia"
+      >
+        <svg class="instructivo-cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-linecap="round" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" stroke-linejoin="round" />
+          <path d="M8 7h8M8 11h6" stroke-linecap="round" />
+        </svg>
+        Ver guía de trabajo
+      </a>
+    </div>
+  </section>
+
   <section class="panel pendientes" aria-labelledby="pendientes-titulo">
     <div class="panel-head">
       <h2 id="pendientes-titulo" class="panel-title">Pendientes de resolución</h2>

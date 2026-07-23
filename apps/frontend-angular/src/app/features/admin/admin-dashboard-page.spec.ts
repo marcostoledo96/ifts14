@@ -72,8 +72,12 @@ describe('AdminDashboardPage', () => {
     expect(curso?.getAttribute('href')).toContain('/admin/cursos/nuevo');
     expect(asist?.getAttribute('href')).toContain('/admin/asistencias');
     expect(entrega?.getAttribute('href')).toContain('/admin/certificaciones');
-    expect(el.textContent).not.toContain('Configuración');
-    expect(Array.from(el.querySelectorAll('.accion-label')).some((n) => n.textContent === 'Alumnos')).toBeFalse();
+    // Configuración / Alumnos no son tiles de Acciones (sí se mencionan en el instructivo).
+    const accionLabels = Array.from(el.querySelectorAll('.acciones-grid .accion-label')).map(
+      (n) => n.textContent?.trim(),
+    );
+    expect(accionLabels).not.toContain('Configuración');
+    expect(accionLabels).not.toContain('Alumnos');
 
     const carga = el.querySelector('button.accion--disabled') as HTMLButtonElement | null;
     expect(carga).toBeTruthy();
@@ -83,6 +87,33 @@ describe('AdminDashboardPage', () => {
     expect(carga?.textContent).toContain('Carga masiva');
     expect(carga?.textContent).toContain('Importar padrón desde CSV');
   });
+
+  it('muestra instructivo antes de Pendientes con CTA Ver guía (sin navegación a módulos)', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const flujo = el.querySelector('[data-testid="flujo-trabajo"]');
+    const pendientes = el.querySelector('.pendientes');
+    expect(flujo).not.toBeNull();
+    expect(pendientes).not.toBeNull();
+    expect(flujo!.compareDocumentPosition(pendientes!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    expect(el.querySelector('#flujo-titulo')?.textContent).toContain('Flujo de trabajo');
+    expect(flujo!.textContent).toContain('Cómo usar el panel');
+    expect(flujo!.querySelectorAll('a').length).toBe(1);
+
+    const guia = el.querySelector('[data-testid="flujo-ver-guia"]') as HTMLAnchorElement;
+    expect(guia.getAttribute('href')).toContain('/admin/guia');
+    expect(guia.textContent).toMatch(/Ver guía de trabajo/i);
+    expect(guia.classList.contains('instructivo-cta')).toBeTrue();
+
+    const labels = Array.from(el.querySelectorAll('.instructivo-paso-label')).map((n) =>
+      n.textContent?.trim(),
+    );
+    expect(labels).toEqual(['Cursos', 'Alumnos', 'Asistencias', 'Certificaciones', 'Configuración']);
+    expect(flujo!.querySelectorAll('a[href*="/admin/cursos"], a[href*="/admin/alumnos"], a[href*="/admin/asistencias"], a[href*="/admin/certificaciones"], a[href*="/admin/configuracion"]').length).toBe(0);
+    expect(flujo!.querySelector('.flujo-abrir')).toBeNull();
+  });
+
   it('bandeja v0: iconos por tono, links Revisar y solo sin-fechas con conteo real', async () => {
     const f = await render();
     await settle(f);
