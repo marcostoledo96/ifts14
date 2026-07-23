@@ -1,11 +1,11 @@
 # Archive Report — frontend-backend-config-firmas-autoridades
 
-**Change**: `frontend-backend-config-firmas-autoridades`  
-**Branch**: `feat/config-upload-firmas-autoridades`  
-**Archived**: 2026-07-23  
-**Mode**: hybrid  
-**Verdict verify**: PASS WITH WARNINGS (0 CRITICAL)  
-**Tasks**: 21/21 complete  
+**Change**: `frontend-backend-config-firmas-autoridades`
+**Branch**: `feat/config-upload-firmas-autoridades`
+**Archived**: 2026-07-23
+**Mode**: hybrid
+**Verdict verify**: PASS WITH WARNINGS (0 CRITICAL)
+**Tasks**: 21/21 complete
 
 ## Resumen ejecutivo
 

@@ -116,9 +116,9 @@ Basename `{rol}.png|.jpg`; DB solo basename + sha256. Errores: `VALIDATION_ERROR
 
 ## Migration / Rollout
 
-1. Dir fuera webroot + `signature_storage_path` en config externa.  
-2. Migración `014` (columnas nullable).  
-3. Deploy BE → build FE.  
+1. Dir fuera webroot + `signature_storage_path` en config externa.
+2. Migración `014` (columnas nullable).
+3. Deploy BE → build FE.
 4. Rollback: revertir código; DROP columnas controlado; vaciar dir. PDFs previos intactos.
 
 ## Open Questions
