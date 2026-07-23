@@ -81,6 +81,28 @@ final class Config
     }
 
     /**
+     * Valida y normaliza el storage de firmas de autoridades (PNG/JPEG).
+     * Fuera del webroot; requerido solo en rutas de firmas y emisión/regeneración PDF.
+     *
+     * @param array<string, mixed> $config
+     * @return array<string, mixed>
+     */
+    public static function requireSignatureStoragePath(array $config): array
+    {
+        if (
+            !isset($config['signature_storage_path'])
+            || !is_string($config['signature_storage_path'])
+            || trim($config['signature_storage_path']) === ''
+        ) {
+            throw new RuntimeException('Configuration invalid.');
+        }
+
+        $config['signature_storage_path'] = rtrim(trim($config['signature_storage_path']), '/');
+
+        return $config;
+    }
+
+    /**
      * Valida y normaliza la clave de cifrado de tokens (AES-256-GCM). La clave
      * DEBE provenir de configuración externa a Git y decodificar exactamente a
      * 32 bytes (base64/base64url). Falla cerrado si falta o es inválida.

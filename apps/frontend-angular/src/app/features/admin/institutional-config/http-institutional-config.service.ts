@@ -1,6 +1,6 @@
 // Fuente HTTP de configuración institucional.
 // GET/PUT /admin/configuracion-institucional → envelope { data: ConfigDto }.
-// Mapeo 1:1 con el DTO backend; strings null se normalizan a vacío para el form.
+// Firmas: POST|DELETE|GET …/firmas/{rector|asesor} (multipart / bytes).
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -10,6 +10,7 @@ import {
   InstitutionalConfig,
   InstitutionalConfigService,
   InstitutionalConfigWrite,
+  SignatureRole,
   SYSTEM_PARAMETER_DEFAULTS,
   SYSTEM_PARAMETER_KEYS,
   SystemParameterEntry,
@@ -30,6 +31,8 @@ interface InstitutionalConfigDto {
   rectorRole: string | null;
   advisorName: string | null;
   advisorRole: string | null;
+  rectorSignaturePresent?: boolean | null;
+  advisorSignaturePresent?: boolean | null;
   updatedAt: string | null;
   parameters?: Partial<Record<SystemParameterKey, ParameterDto>> | null;
 }
@@ -66,6 +69,8 @@ function fromDto(dto: InstitutionalConfigDto): InstitutionalConfig {
     rectorRole: dto.rectorRole ?? '',
     advisorName: dto.advisorName ?? '',
     advisorRole: dto.advisorRole ?? '',
+    rectorSignaturePresent: dto.rectorSignaturePresent === true,
+    advisorSignaturePresent: dto.advisorSignaturePresent === true,
     parameters: mapParameters(dto.parameters),
     updatedAt: dto.updatedAt,
   };
@@ -88,5 +93,32 @@ export class HttpInstitutionalConfigService implements InstitutionalConfigServic
       this.http.put<ApiEnvelope<InstitutionalConfigDto>>(this.url, payload),
     );
     return fromDto(envelope.data);
+  }
+
+  async subirFirma(role: SignatureRole, file: File): Promise<InstitutionalConfig> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+    const envelope = await firstValueFrom(
+      this.http.post<ApiEnvelope<InstitutionalConfigDto>>(
+        `${this.url}/firmas/${role}`,
+        body,
+      ),
+    );
+    return fromDto(envelope.data);
+  }
+
+  async quitarFirma(role: SignatureRole): Promise<InstitutionalConfig> {
+    const envelope = await firstValueFrom(
+      this.http.delete<ApiEnvelope<InstitutionalConfigDto>>(
+        `${this.url}/firmas/${role}`,
+      ),
+    );
+    return fromDto(envelope.data);
+  }
+
+  async previewFirma(role: SignatureRole): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${this.url}/firmas/${role}`, { responseType: 'blob' }),
+    );
   }
 }

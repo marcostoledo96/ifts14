@@ -40,6 +40,7 @@ final class AdminCertificateService
         private readonly ?string $tokenCipherKey = null,
         private readonly ?string $pdfStoragePath = null,
         private readonly ?string $dniCipherKey = null,
+        private readonly ?string $signatureStoragePath = null,
     ) {
     }
 
@@ -729,19 +730,32 @@ final class AdminCertificateService
         return $row;
     }
 
-    /** @return array{institutionName:string,certificateText:string,rectorName:string,rectorRole:string,advisorName:string,advisorRole:string} */
+    /** @return array{institutionName:string,certificateText:string,rectorName:string,rectorRole:string,advisorName:string,advisorRole:string,rectorSignaturePath:?string,advisorSignaturePath:?string} */
     private function loadInstitutionalConfig(PDO $pdo): array
     {
         $statement = $pdo->prepare(<<<'SQL'
-            SELECT institucion_nombre, rector_nombre, rector_cargo, asesor_nombre, asesor_cargo, texto_certificado
+            SELECT institucion_nombre, rector_nombre, rector_cargo, asesor_nombre, asesor_cargo, texto_certificado,
+                   rector_firma_filename, asesor_firma_filename
             FROM cert_configuracion_institucional
             WHERE id = 1
             LIMIT 1
             SQL);
-        $statement->execute();
-        $row = $statement->fetch();
+        try {
+            $statement->execute();
+            $row = $statement->fetch();
+        } catch (PDOException) {
+            // Sin migración 014: emitir con tipografía (sin paths de firma).
+            $statement = $pdo->prepare(<<<'SQL'
+                SELECT institucion_nombre, rector_nombre, rector_cargo, asesor_nombre, asesor_cargo, texto_certificado
+                FROM cert_configuracion_institucional
+                WHERE id = 1
+                LIMIT 1
+                SQL);
+            $statement->execute();
+            $row = $statement->fetch();
+        }
 
-        return InstitutionalConfig::fromDatabaseRow($row);
+        return InstitutionalConfig::fromDatabaseRow($row, $this->signatureStoragePath);
     }
 
     /** @return list<array{curso_fecha_id:int,fecha:string,descripcion:?string,orden:int}> */

@@ -32,7 +32,7 @@ try {
         throw new RuntimeException('login de matriz inválido.');
     }
 
-    // 21 invocaciones reales a adminConfig() en index.php; no hay diferencias con el diseño.
+    // Invocaciones reales a adminConfig() en index.php (incluye firmas/{rol}).
     $sites = [
         ['GET', '/admin/cursos', false], ['GET', '/admin/cursos/1', false], ['PATCH', '/admin/cursos/1', true], ['PATCH', '/admin/cursos/1/estado', true],
         ['GET', '/admin/alumnos', false], ['GET', '/admin/alumnos/1', false], ['PATCH', '/admin/alumnos/1', true], ['PATCH', '/admin/alumnos/1/estado', true],
@@ -41,6 +41,9 @@ try {
         ['GET', '/admin/certificados', false], ['POST', '/admin/certificados', true], ['GET', '/admin/certificados/1', false],
         ['GET', '/admin/configuracion-institucional', false], ['POST', '/admin/certificados/1/revocar', true],
         ['GET', '/admin/certificados/1/pdf', false], ['GET', '/admin/certificados/1/qr.png', false], ['GET', '/admin/certificados/1/entrega-manual', false],
+        ['GET', '/admin/configuracion-institucional/firmas/rector', false],
+        ['POST', '/admin/configuracion-institucional/firmas/rector', true],
+        ['DELETE', '/admin/configuracion-institucional/firmas/rector', true],
     ];
     foreach ($sites as [$method, $path, $mutates]) {
         $headerOnly = matrixRequest($port, $method, $path, ['X-Admin-Key: legacy_demo_key_2026', 'Content-Type: application/json'], '{}');
@@ -64,7 +67,7 @@ try {
     putenv($previousConfigPath === false ? 'CERTIFICADOS_CONFIG_PATH' : 'CERTIFICADOS_CONFIG_PATH=' . $previousConfigPath);
     array_map(static fn (string $file): bool => is_file($file) ? unlink($file) : true, glob($tmpDir . '/*') ?: []); rmdir($tmpDir);
 }
-echo "OK AdminAuthorizationMatrixTest: 21 sitios reconciliados\n";
+echo 'OK AdminAuthorizationMatrixTest: ' . count($sites) . " sitios reconciliados\n";
 
 function matrixWait(int $port): void { for ($i = 0; $i < 50; $i++) { $s = @stream_socket_client('tcp://127.0.0.1:' . $port, $e, $m, .1); if (is_resource($s)) { fclose($s); return; } usleep(100000); } throw new RuntimeException('Servidor no disponible.'); }
 /** @param list<string> $headers @return array{status:int,headers:array<string,string>,body:string} */

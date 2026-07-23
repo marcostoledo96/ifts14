@@ -502,6 +502,13 @@ if ($path === '/admin/certificados') {
     }
 
     respondToAdmin(static function () use ($config, $requestId, $body, $tokenCipherKey, $dniCipherKey): array {
+        try {
+            $config = Config::requireSignatureStoragePath($config);
+            $signaturePath = (string) $config['signature_storage_path'];
+        } catch (RuntimeException) {
+            $signaturePath = null;
+        }
+
         $service = new AdminCertificateService(
             Database::pdo($config),
             (string) $config['token_pepper'],
@@ -513,6 +520,7 @@ if ($path === '/admin/certificados') {
             $tokenCipherKey,
             null,
             $dniCipherKey,
+            $signaturePath,
         );
 
         return ['status' => 201, 'data' => $service->emitir($body)];
@@ -577,6 +585,88 @@ if ($path === '/admin/configuracion-institucional') {
         return [
             'status' => 200,
             'data' => (new AdminInstitutionalConfigService(Database::pdo($config), $requestId))->update($body),
+        ];
+    }, $requestId);
+    return;
+}
+
+if (preg_match('#^/admin/configuracion-institucional/firmas/(rector|asesor)$#', $path, $firmaMatches) === 1) {
+    if (!in_array($method, ['GET', 'POST', 'DELETE'], true)) {
+        header('Allow: GET, POST, DELETE');
+        Response::error(405, 'METHOD_NOT_ALLOWED', 'Método no permitido.', $requestId);
+        return;
+    }
+
+    $config = adminConfig($requestId, false);
+    if ($config === null) {
+        return;
+    }
+
+    try {
+        $config = Config::requireSignatureStoragePath($config);
+    } catch (RuntimeException) {
+        Response::error(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.', $requestId);
+        return;
+    }
+
+    $role = $firmaMatches[1];
+    $signaturePath = (string) $config['signature_storage_path'];
+
+    if ($method === 'GET') {
+        try {
+            $preview = (new AdminInstitutionalConfigService(
+                Database::pdo($config),
+                $requestId,
+                $signaturePath,
+            ))->previewSignature($role);
+        } catch (AdminCertificateException $exception) {
+            Response::error(
+                $exception->status,
+                $exception->errorCode,
+                $exception->getMessage(),
+                $requestId,
+                $exception->details,
+            );
+            return;
+        }
+
+        http_response_code(200);
+        Response::noStoreSecurityHeaders();
+        header('Content-Type: ' . $preview['mime']);
+        header('Content-Length: ' . (string) strlen($preview['bytes']));
+        echo $preview['bytes'];
+        return;
+    }
+
+    if ($method === 'DELETE') {
+        respondToAdmin(static function () use ($config, $requestId, $role, $signaturePath): array {
+            return [
+                'status' => 200,
+                'data' => (new AdminInstitutionalConfigService(
+                    Database::pdo($config),
+                    $requestId,
+                    $signaturePath,
+                ))->deleteSignature($role),
+            ];
+        }, $requestId);
+        return;
+    }
+
+    // POST multipart: campo "file" o "firma".
+    $uploaded = $_FILES['file'] ?? $_FILES['firma'] ?? null;
+    if (!is_array($uploaded)) {
+        Response::error(400, 'VALIDATION_ERROR', 'Solicitud inválida.', $requestId);
+        return;
+    }
+
+    respondToAdmin(static function () use ($config, $requestId, $role, $signaturePath, $uploaded): array {
+        return [
+            'status' => 200,
+            'data' => (new AdminInstitutionalConfigService(
+                Database::pdo($config),
+                $requestId,
+                $signaturePath,
+            ))->uploadSignature($role, $uploaded),
         ];
     }, $requestId);
     return;
@@ -725,6 +815,13 @@ if (preg_match('#^/admin/certificados/(\d+)/regenerar-pdf$#', $path, $matches) =
     }
 
     respondToAdmin(static function () use ($config, $requestId, $certificateId, $tokenCipherKey, $dniCipherKey): array {
+        try {
+            $config = Config::requireSignatureStoragePath($config);
+            $signaturePath = (string) $config['signature_storage_path'];
+        } catch (RuntimeException) {
+            $signaturePath = null;
+        }
+
         $service = new AdminCertificateService(
             Database::pdo($config),
             (string) $config['token_pepper'],
@@ -736,6 +833,7 @@ if (preg_match('#^/admin/certificados/(\d+)/regenerar-pdf$#', $path, $matches) =
             $tokenCipherKey,
             null,
             $dniCipherKey,
+            $signaturePath,
         );
 
         return ['status' => 200, 'data' => $service->regenerarPdf($certificateId)];

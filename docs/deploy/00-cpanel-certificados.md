@@ -128,7 +128,7 @@ Subir la API PHP versionada a:
 public_html/certificados/api/
 ```
 
-La configuración real debe quedar fuera del repositorio y preferentemente fuera del webroot. Para validar certificados, el archivo externo debe devolver un array PHP con las claves reales esperadas por `Config::load()`: `db_host`, `db_name`, `db_user`, `db_pass`, `token_pepper`, `public_base_url` y `certificate_storage_path`; la guía no debe registrar valores reales. Tomar como referencia de estructura el ejemplo versionable `apps/backend-php/config/certificados-config.example.php`, reemplazando sus valores ficticios fuera de Git. Sin `token_pepper`, `public_base_url` o `certificate_storage_path`, `Config::load()` debe fallar de forma segura con error genérico y la API no debe exponer stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable y contra un config ficticio bajo `/tmp`; la configuración productiva permanece fuera de Git.
+La configuración real debe quedar fuera del repositorio y preferentemente fuera del webroot. Para validar certificados, el archivo externo debe devolver un array PHP con las claves reales esperadas por `Config::load()`: `db_host`, `db_name`, `db_user`, `db_pass`, `token_pepper`, `public_base_url` y `certificate_storage_path`; la guía no debe registrar valores reales. Para firmas de autoridades, agregar `signature_storage_path` (fuera del webroot; ver `Config::requireSignatureStoragePath`). Tomar como referencia de estructura el ejemplo versionable `apps/backend-php/config/certificados-config.example.php`, reemplazando sus valores ficticios fuera de Git. Sin `token_pepper`, `public_base_url` o `certificate_storage_path`, `Config::load()` / `requirePdfConfig()` debe fallar de forma segura con error genérico y la API no debe exponer stack traces ni rutas internas. La verificación local del ciclo `backend-validacion-publica-certificados` se ejecutó contra el ejemplo versionable y contra un config ficticio bajo `/tmp`; la configuración productiva permanece fuera de Git.
 
 ### Entrega manual (reemplaza al reenvío por email)
 
@@ -154,6 +154,7 @@ La clave `token_encryption_key` vive en el archivo de configuración externo (nu
 | `token_pepper` | Pepper del hash público (ya existente). |
 | `public_base_url` | Base pública absoluta para armar `/validar/{token}`. |
 | `certificate_storage_path` | Ruta absoluta del storage de PDFs (fuera del webroot). |
+| `signature_storage_path` | Ruta absoluta del storage de firmas de autoridades PNG/JPEG (fuera del webroot). |
 
 Si la clave falta, no decodifica a 32 bytes o el descifrado falla, el endpoint responde `409 TOKEN_NOT_RECOVERABLE` sin regenerar token. La pérdida de la clave vuelve no recuperables los certificados existentes.
 
@@ -200,6 +201,20 @@ Si se revierte el cambio PDF/QR:
 3. Los certificados previos permanecen intactos: el rollback no toca `cert_certificados` ni `cert_tokens_verificacion`.
 
 No requiere migraciones de base.
+
+### Almacenamiento de firmas de autoridades
+
+`signature_storage_path` es la ruta absoluta donde se persisten las firmas imagen (PNG/JPEG) de rector y asesor. Basenames fijos: `rector.png|jpg`, `asesor.png|jpg`. La base solo guarda basename + sha256 (migración `014`).
+
+Recomendación: **fuera del webroot**, espejo de `certificate_storage_path` (ej. `/home/usuario_demo/certificados_firmas/`). No hay URL pública de firmas; el preview es `GET /admin/configuracion-institucional/firmas/{rol}` autenticado.
+
+Tomar la clave del ejemplo versionable `apps/backend-php/config/certificados-config.example.php` y configurarla en el archivo externo (nunca en Git).
+
+#### Rollback de firmas de prueba
+
+1. Vaciar el directorio de firmas de prueba bajo `signature_storage_path`.
+2. Revertir código API/FE y, si corresponde, DROP controlado de columnas `*_firma_*` (ver `database/docs/014-firmas-autoridades.md`).
+3. **No borrar** PDFs en `certificate_storage_path`: los certificados emitidos permanecen intactos hasta regeneración explícita.
 
 ## .htaccess
 

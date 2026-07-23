@@ -65,6 +65,14 @@ function mockClipboard(writeText: jasmine.Spy): () => void {
   };
 }
 
+
+
+const signatureStubs = {
+  subirFirma: () => Promise.reject(new Error('N/A')),
+  quitarFirma: () => Promise.reject(new Error('N/A')),
+  previewFirma: () => Promise.reject(new Error('N/A')),
+} as const;
+
 function configFixture(
   overrides: Partial<InstitutionalConfig> = {},
 ): InstitutionalConfig {
@@ -76,6 +84,8 @@ function configFixture(
     rectorRole: 'Rector/a',
     advisorName: 'Asesor Real',
     advisorRole: 'Asesor/a pedagógico/a',
+    rectorSignaturePresent: false,
+    advisorSignaturePresent: false,
     updatedAt: '2026-01-01T00:00:00Z',
     ...rest,
     parameters: paramOverride ?? emptyParameters(),
@@ -282,6 +292,7 @@ describe('CertificationPreviewPage', () => {
     const config: InstitutionalConfigService = {
       obtener: () => Promise.resolve(configFixture()),
       guardar: () => Promise.reject(new Error('N/A')),
+      ...signatureStubs,
     };
     const f = await render('1', { config });
     const el = f.nativeElement as HTMLElement;
@@ -296,6 +307,7 @@ describe('CertificationPreviewPage', () => {
     const config: InstitutionalConfigService = {
       obtener: () => Promise.reject(new Error('config fail')),
       guardar: () => Promise.reject(new Error('N/A')),
+      ...signatureStubs,
     };
     const f = await render('1', { config });
     const el = f.nativeElement as HTMLElement;
@@ -313,6 +325,7 @@ describe('CertificationPreviewPage', () => {
           configFixture({ rectorName: '  ', advisorName: '', rectorRole: 'Rector/a' }),
         ),
       guardar: () => Promise.reject(new Error('N/A')),
+      ...signatureStubs,
     };
     const f = await render('1', { config });
     const el = f.nativeElement as HTMLElement;
@@ -492,6 +505,7 @@ describe('CertificationPreviewPage', () => {
     const config: InstitutionalConfigService = {
       obtener: () => Promise.resolve(configFixture()),
       guardar: () => Promise.reject(new Error('N/A')),
+      ...signatureStubs,
     };
     const f = await render('1', { config });
     const el = f.nativeElement as HTMLElement;
@@ -572,6 +586,7 @@ describe('CertificationPreviewPage', () => {
     const config: InstitutionalConfigService = {
       obtener: () => Promise.resolve(configFixture()),
       guardar: () => Promise.reject(new Error('N/A')),
+      ...signatureStubs,
     };
     const f = await render('1', { config });
     const el = f.nativeElement as HTMLElement;

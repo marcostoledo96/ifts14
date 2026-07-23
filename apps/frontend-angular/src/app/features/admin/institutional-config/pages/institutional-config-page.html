@@ -413,12 +413,44 @@
                   </div>
                   <div class="firma-block">
                     <span class="cfg-label">Firma digital</span>
-                    <div class="firma-row firma-row--empty">
-                      <span class="firma-status">Sin firma cargada</span>
-                      <button type="button" class="btn-ghost" disabled>Subir firma</button>
+                    <div
+                      class="firma-row"
+                      [class.firma-row--empty]="!rectorSignaturePresent()"
+                      [class.firma-row--ok]="rectorSignaturePresent()"
+                    >
+                      <span
+                        class="firma-status"
+                        [class.firma-status--ok]="rectorSignaturePresent()"
+                      >
+                        {{ rectorSignaturePresent() ? 'Firma cargada' : 'Sin firma cargada' }}
+                      </span>
+                      <div class="firma-actions">
+                        <label class="btn-ghost firma-upload-label" [attr.aria-disabled]="firmaBusy()">
+                          {{ rectorSignaturePresent() ? 'Reemplazar' : 'Subir firma' }}
+                          <input
+                            id="firma-rector"
+                            type="file"
+                            accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                            class="firma-file-input"
+                            [disabled]="firmaBusy()"
+                            (change)="onFirmaSeleccionada('rector', $event)"
+                          />
+                        </label>
+                        @if (rectorSignaturePresent()) {
+                          <button
+                            type="button"
+                            class="btn-ghost"
+                            [disabled]="firmaBusy()"
+                            (click)="quitarFirma('rector')"
+                          >
+                            Quitar
+                          </button>
+                        }
+                      </div>
                     </div>
                     <p class="cfg-ayuda">
-                      Sin API de archivos: en el PDF se muestra el bloque tipográfico.
+                      PNG o JPEG, máx. 1 MB y ~1200×400. Se guarda al elegir el archivo (no usa
+                      Guardar).
                     </p>
                   </div>
                 </fieldset>
@@ -452,26 +484,70 @@
                   </div>
                   <div class="firma-block">
                     <span class="cfg-label">Firma digital</span>
-                    <div class="firma-row firma-row--ok">
-                      <span class="firma-status firma-status--ok">Firma cargada</span>
-                      <button type="button" class="btn-ghost" disabled>Reemplazar</button>
+                    <div
+                      class="firma-row"
+                      [class.firma-row--empty]="!advisorSignaturePresent()"
+                      [class.firma-row--ok]="advisorSignaturePresent()"
+                    >
+                      <span
+                        class="firma-status"
+                        [class.firma-status--ok]="advisorSignaturePresent()"
+                      >
+                        {{ advisorSignaturePresent() ? 'Firma cargada' : 'Sin firma cargada' }}
+                      </span>
+                      <div class="firma-actions">
+                        <label class="btn-ghost firma-upload-label" [attr.aria-disabled]="firmaBusy()">
+                          {{ advisorSignaturePresent() ? 'Reemplazar' : 'Subir firma' }}
+                          <input
+                            id="firma-asesor"
+                            type="file"
+                            accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                            class="firma-file-input"
+                            [disabled]="firmaBusy()"
+                            (change)="onFirmaSeleccionada('asesor', $event)"
+                          />
+                        </label>
+                        @if (advisorSignaturePresent()) {
+                          <button
+                            type="button"
+                            class="btn-ghost"
+                            [disabled]="firmaBusy()"
+                            (click)="quitarFirma('asesor')"
+                          >
+                            Quitar
+                          </button>
+                        }
+                      </div>
                     </div>
                     <p class="cfg-ayuda">
-                      Estado de muestra. La carga real no está disponible sin API de archivos.
+                      PNG o JPEG, máx. 1 MB y ~1200×400. Se guarda al elegir el archivo (no usa
+                      Guardar).
                     </p>
                   </div>
                 </fieldset>
               </div>
 
+              @if (firmaError()) {
+                <p class="cfg-inline-error" role="alert">{{ firmaError() }}</p>
+              }
+              @if (firmaOk()) {
+                <p class="cfg-inline-ok" role="status">{{ firmaOk() }}</p>
+              }
+
               <div class="signature-preview" aria-label="Vista previa de firmas">
                 <p class="preview-hint">Vista previa en el PDF</p>
                 <div class="preview-firmas">
                   <p class="firma">
-                    <span class="firma-pending" aria-hidden="true">Firma pendiente</span>
+                    @if (!rectorSignaturePresent()) {
+                      <span class="firma-pending" aria-hidden="true">Firma pendiente</span>
+                    }
                     <span class="firma-nombre">{{ previewRector() }}</span>
                     <span class="firma-cargo">{{ rectorRole() || '[Cargo]' }}</span>
                   </p>
                   <p class="firma">
+                    @if (!advisorSignaturePresent()) {
+                      <span class="firma-pending" aria-hidden="true">Firma pendiente</span>
+                    }
                     <span class="firma-nombre">{{ previewAdvisor() }}</span>
                     <span class="firma-cargo">{{ advisorRole() || '[Cargo]' }}</span>
                   </p>
