@@ -316,6 +316,7 @@ function buildRegenService(FakePdoForRegen $pdo, string $cipherKey, string $dniK
         'tokenCipherKey' => $cipherKey,
         'pdfStoragePath' => $pdfStoragePath,
         'dniCipherKey' => $dniKey,
+        'signatureStoragePath' => null,
     ];
     foreach ($props as $name => $value) {
         $prop = new ReflectionProperty(AdminCertificateService::class, $name);
