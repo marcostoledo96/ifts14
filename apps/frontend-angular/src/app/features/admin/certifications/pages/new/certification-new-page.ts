@@ -22,6 +22,7 @@ import { STUDENTS_SOURCE } from '../../../students/students.service';
 import { Alumno } from '../../../students/students.models';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { EmitirCertificacionPayload } from '../../certifications.models';
+import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 export interface PresenteVista {
@@ -72,7 +73,7 @@ function iniciales(a: Alumno): string {
 @Component({
   selector: 'app-certification-new-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, UiSpinner],
+  imports: [RouterLink, UiBackLink, UiSpinner],
   templateUrl: './certification-new-page.html',
   styleUrl: './certification-new-page.css',
 })

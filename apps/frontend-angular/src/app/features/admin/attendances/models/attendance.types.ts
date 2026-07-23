@@ -4,6 +4,9 @@
 
 import { EstadoFecha } from '../../courses/courses.models';
 
+/** Tamaño de página del listado hub de asistencias (paridad alumnos/cursos). */
+export const ATTENDANCES_PAGE_SIZE = 20;
+
 export type EstadoAlumno = 'activo' | 'inactivo';
 
 export interface AsistenciaAlumno {

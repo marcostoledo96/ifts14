@@ -13,6 +13,7 @@ import { Certificacion } from '../../../certifications/certifications.models';
 import { CERTIFICATIONS_SOURCE } from '../../../certifications/certifications.service';
 import { COURSES_SOURCE } from '../../../courses/courses.service';
 import { CursoDetalle } from '../../../courses/courses.models';
+import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 export interface ResumenGeneracionNav {
@@ -30,7 +31,7 @@ export interface DateCertificatesNavState {
 @Component({
   selector: 'app-date-certificates-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, UiSpinner],
+  imports: [RouterLink, UiBackLink, UiSpinner],
   templateUrl: './date-certificates-page.html',
   styleUrl: './date-certificates-page.css',
 })

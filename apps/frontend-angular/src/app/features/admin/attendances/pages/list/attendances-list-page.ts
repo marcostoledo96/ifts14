@@ -1,27 +1,26 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
-import { Curso, CursoFecha } from '../../../courses/courses.models';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
+import { ATTENDANCES_PAGE_SIZE } from '../../models/attendance.types';
 
-type EstadoFiltro = 'todas' | 'programada' | 'realizada';
-
-interface FilaAsistencia {
-  readonly curso: Curso;
-  readonly fecha: CursoFecha;
-  /** Conteos demostrativos por fecha (derivados del mock en memoria). */
-  readonly presentes: number;
-  readonly total: number;
+interface FilaCurso {
+  readonly id: number;
+  readonly codigo: string;
+  readonly nombre: string;
+  readonly estado: string;
+  readonly fechasAsistibles: number;
+  readonly fechasConPresentes: number;
 }
 
-const fmtFecha = new Intl.DateTimeFormat('es-AR', {
-  weekday: 'short',
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-});
+const ESTADO_CURSO_LABEL: Record<string, string> = {
+  borrador: 'Borrador',
+  activo: 'Activo',
+  cerrado: 'Cerrado',
+  archivado: 'Archivado',
+};
 
-/** Hub de fechas asistibles → marcado. Sin HTTP/storage. */
+/** Hub de cursos → intermedia de fechas. Sin HTTP/storage. */
 @Component({
   selector: 'app-attendances-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,39 +30,47 @@ const fmtFecha = new Intl.DateTimeFormat('es-AR', {
 })
 export class AttendancesListPage {
   private readonly attendance = inject(ATTENDANCE_SOURCE);
+  /** Descarta respuestas obsoletas si hay reintentos solapados. */
+  private loadGen = 0;
 
   readonly q = signal('');
-  readonly estado = signal<EstadoFiltro>('todas');
-  readonly filas = signal<readonly FilaAsistencia[]>([]);
+  readonly pagina = signal(1);
+  readonly filas = signal<readonly FilaCurso[]>([]);
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly skeletonRows = [0, 1, 2, 3, 4] as const;
 
-  readonly estados: readonly EstadoFiltro[] = ['todas', 'programada', 'realizada'];
-  readonly estadoChipLabel: Record<EstadoFiltro, string> = {
-    todas: 'Todas',
-    programada: 'Programadas',
-    realizada: 'Realizadas',
-  };
-
-  readonly filtradas = computed<readonly FilaAsistencia[]>(() => {
+  readonly filtradas = computed<readonly FilaCurso[]>(() => {
     const texto = this.q().trim().toLowerCase();
-    const est = this.estado();
-    return this.filas().filter((f) => {
-      if (est !== 'todas' && f.fecha.estado !== est) return false;
-      if (!texto) return true;
-      return (
-        f.curso.nombre.toLowerCase().includes(texto) ||
-        f.curso.codigo.toLowerCase().includes(texto) ||
-        f.fecha.fecha.includes(texto) ||
-        (f.fecha.descripcion?.toLowerCase().includes(texto) ?? false)
-      );
-    });
+    if (!texto) return this.filas();
+    return this.filas().filter(
+      (f) =>
+        f.nombre.toLowerCase().includes(texto) || f.codigo.toLowerCase().includes(texto),
+    );
   });
 
-  readonly hayFiltrosActivos = computed(
-    () => this.q().trim().length > 0 || this.estado() !== 'todas',
+  readonly totalPaginas = computed(() =>
+    Math.max(1, Math.ceil(this.filtradas().length / ATTENDANCES_PAGE_SIZE)),
   );
+  readonly paginaSegura = computed(() => Math.min(this.pagina(), this.totalPaginas()));
+  readonly itemsVisibles = computed(() => {
+    const page = this.paginaSegura();
+    return this.filtradas().slice(
+      (page - 1) * ATTENDANCES_PAGE_SIZE,
+      page * ATTENDANCES_PAGE_SIZE,
+    );
+  });
+  /** Páginas visibles en el pager numerado (máx. 5 botones + elipsis). */
+  readonly paginasVisibles = computed(() => {
+    const total = this.totalPaginas();
+    const actual = this.paginaSegura();
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
+    if (actual <= 3) return [1, 2, 3, 4, 5];
+    if (actual >= total - 2) return [total - 4, total - 3, total - 2, total - 1, total];
+    return [actual - 2, actual - 1, actual, actual + 1, actual + 2];
+  });
+
+  readonly hayFiltrosActivos = computed(() => this.q().trim().length > 0);
 
   readonly mostrarResumen = computed(() => !this.cargando() && !this.error());
 
@@ -84,94 +91,85 @@ export class AttendancesListPage {
   }
 
   async cargar(): Promise<void> {
+    const gen = ++this.loadGen;
     this.cargando.set(true);
     this.error.set('');
     try {
-      // Un solo GET /admin/hub/asistencias (mock: arma el hub en memoria).
       const hub = await this.attendance.listarHub();
-      const total = hub.alumnosActivos;
-      const cursoById = new Map(hub.cursos.map((c) => [c.id, c]));
-      const presentesPorFecha = new Map<number, number>();
-      for (const a of hub.asistencias) {
-        presentesPorFecha.set(
-          a.cursoFechaId,
-          (presentesPorFecha.get(a.cursoFechaId) ?? 0) + 1,
-        );
-      }
-      const filas: FilaAsistencia[] = [];
+      if (gen !== this.loadGen) return;
+
+      const fechasPorCurso = new Map<number, number>();
+      const fechasConPresentes = new Map<number, Set<number>>();
+
       for (const f of hub.fechas) {
         if (f.estado === 'cancelada') continue;
-        const c = cursoById.get(f.cursoId);
-        if (!c) continue;
-        filas.push({
-          curso: {
-            id: c.id,
-            codigo: c.codigo,
-            nombre: c.nombre,
-            estado: c.estado as Curso['estado'],
-            createdAt: '',
-            updatedAt: '',
-            cuatrimestre: 'Sin programar',
-            cantidadFechas: 0,
-            alumnosPresentes: null,
-            certificaciones: null,
-          },
-          fecha: {
-            id: f.id,
-            cursoId: f.cursoId,
-            fecha: f.fecha,
-            descripcion: f.descripcion,
-            orden: f.orden,
-            estado: f.estado,
-          },
-          presentes: presentesPorFecha.get(f.id) ?? 0,
-          total,
-        });
+        fechasPorCurso.set(f.cursoId, (fechasPorCurso.get(f.cursoId) ?? 0) + 1);
       }
-      filas.sort((a, b) => {
-        const prio = (e: string) => (e === 'programada' ? 0 : e === 'realizada' ? 1 : 2);
-        const pe = prio(a.fecha.estado) - prio(b.fecha.estado);
-        if (pe !== 0) return pe;
-        return a.fecha.fecha.localeCompare(b.fecha.fecha);
+      for (const a of hub.asistencias) {
+        const set = fechasConPresentes.get(a.cursoId) ?? new Set<number>();
+        set.add(a.cursoFechaId);
+        fechasConPresentes.set(a.cursoId, set);
+      }
+
+      const filas: FilaCurso[] = hub.cursos.map((c) => {
+        const asistibles = fechasPorCurso.get(c.id) ?? 0;
+        const conPresentes = [...(fechasConPresentes.get(c.id) ?? [])].filter((fechaId) =>
+          hub.fechas.some(
+            (f) => f.id === fechaId && f.cursoId === c.id && f.estado !== 'cancelada',
+          ),
+        ).length;
+        return {
+          id: c.id,
+          codigo: c.codigo,
+          nombre: c.nombre,
+          estado: c.estado,
+          fechasAsistibles: asistibles,
+          fechasConPresentes: conPresentes,
+        };
       });
+
+      filas.sort((a, b) => a.codigo.localeCompare(b.codigo));
       this.filas.set(filas);
-    } catch (e) {
-      this.error.set((e as Error).message || 'No se pudo cargar el registro de asistencias.');
+      this.pagina.set(Math.min(this.pagina(), this.totalPaginas()));
+    } catch {
+      if (gen !== this.loadGen) return;
+      this.error.set('No se pudo cargar el registro de asistencias. Reintentá.');
     } finally {
-      this.cargando.set(false);
+      if (gen === this.loadGen) this.cargando.set(false);
     }
   }
 
   onSearch(event: Event): void {
     this.q.set((event.target as HTMLInputElement).value);
+    this.pagina.set(1);
   }
 
-  onEstado(e: EstadoFiltro): void {
-    this.estado.set(this.estado() === e ? 'todas' : e);
+  onPagina(page: number): void {
+    this.pagina.set(Math.min(Math.max(1, page), this.totalPaginas()));
   }
 
   onLimpiarFiltros(): void {
     this.q.set('');
-    this.estado.set('todas');
+    this.pagina.set(1);
   }
 
   onReintentar(): void {
     void this.cargar();
   }
 
-  formatFecha(iso: string): string {
-    const [y, m, d] = iso.split('-').map(Number);
-    if (!y || !m || !d) return iso;
-    return fmtFecha.format(new Date(y, m - 1, d));
-  }
-
   etiquetaEstado(estado: string): string {
-    if (estado === 'programada') return 'Programada';
-    if (estado === 'realizada') return 'Realizada';
-    return estado;
+    return ESTADO_CURSO_LABEL[estado] ?? estado;
   }
 
-  linkMarcado(fila: FilaAsistencia): unknown[] {
-    return ['/admin/cursos', fila.curso.id, 'fechas', fila.fecha.id, 'asistencias'];
+  linkIntermedia(fila: FilaCurso): unknown[] {
+    return ['/admin/asistencias/curso', fila.id];
+  }
+
+  textoMetricas(fila: FilaCurso): string {
+    const n = fila.fechasAsistibles;
+    const m = fila.fechasConPresentes;
+    const fechas = n === 1 ? '1 fecha asistible' : `${n} fechas asistibles`;
+    if (m === 0) return fechas;
+    return `${fechas} · ${m} con presentes`;
   }
 }

@@ -437,14 +437,13 @@ describe('CertificationPreviewPage', () => {
 
   // --- Secciones del expediente (paridad v0) ---
 
-  it('muestra breadcrumb con enlace a certificaciones y número de expediente', async () => {
+  it('muestra botón Volver a Certificaciones', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    const breadcrumb = el.querySelector('nav[aria-label="Migas de pan"]');
-    expect(breadcrumb).not.toBeNull();
-    const link = breadcrumb?.querySelector('a[routerLink="/admin/certificaciones"]');
-    expect(link).not.toBeNull();
-    expect(breadcrumb?.textContent).toMatch(/IFTS14-CERT-/);
+    const back = el.querySelector('[data-testid="volver-certificaciones"]') as HTMLAnchorElement;
+    expect(back).toBeTruthy();
+    expect(back.getAttribute('href')).toBe('/admin/certificaciones');
+    expect(back.textContent).toMatch(/Volver a Certificaciones/i);
   });
 
   it('muestra encabezado con kicker, título (alumno) y badge de estado', async () => {
@@ -634,8 +633,9 @@ describe('CertificationPreviewPage', () => {
   it('muestra enlace de retorno a /admin/certificaciones', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    const volver = el.querySelector('a[routerLink="/admin/certificaciones"]');
+    const volver = el.querySelector('[data-testid="volver-certificaciones"]');
     expect(volver).not.toBeNull();
+    expect((volver as HTMLAnchorElement).getAttribute('href')).toBe('/admin/certificaciones');
   });
 
   // --- Privacidad ---

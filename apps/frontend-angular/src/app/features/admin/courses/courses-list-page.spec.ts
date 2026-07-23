@@ -1,9 +1,24 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { COURSES_QA_ENABLED, CoursesListPage } from './courses-list-page';
-import { Curso } from './courses.models';
+import { COURSES_PAGE_SIZE, Curso } from './courses.models';
 import { COURSES_SOURCE, CoursesService } from './courses.service';
 import { InMemoryCoursesService } from './in-memory-courses.service';
+
+function cursoStub(id: number): Curso {
+  return {
+    id,
+    codigo: `CUR-${String(id).padStart(3, '0')}`,
+    nombre: `Curso ${id}`,
+    estado: 'activo',
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+    cuatrimestre: '1C 2026',
+    cantidadFechas: 1,
+    alumnosPresentes: null,
+    certificaciones: null,
+  };
+}
 
 describe('CoursesListPage', () => {
   async function render(
@@ -273,5 +288,35 @@ describe('CoursesListPage', () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();
     await render();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('pagina de a 20 y resetea página al filtrar', async () => {
+    const muchos = Array.from({ length: COURSES_PAGE_SIZE + 5 }, (_, i) => cursoStub(i + 1));
+    const source = jasmine.createSpyObj<CoursesService>('CoursesService', ['listar']);
+    source.listar.and.callFake((filtros) => {
+      const q = filtros?.q?.trim().toLowerCase() ?? '';
+      if (!q) return Promise.resolve(muchos);
+      return Promise.resolve(muchos.filter((c) => c.nombre.toLowerCase().includes(q)));
+    });
+
+    const f = await render(source);
+    const page = f.componentInstance;
+    expect(page.itemsVisibles().length).toBe(COURSES_PAGE_SIZE);
+    expect((f.nativeElement as HTMLElement).querySelector('[aria-label="Paginación de cursos"]')).not.toBeNull();
+
+    page.onPagina(2);
+    f.detectChanges();
+    expect(page.itemsVisibles()).toEqual(muchos.slice(COURSES_PAGE_SIZE));
+
+    page.onSearch({ target: { value: 'Curso 3' } } as unknown as Event);
+    await f.whenStable();
+    f.detectChanges();
+    expect(page.paginaSegura()).toBe(1);
+    expect(page.itemsVisibles().length).toBe(1);
+
+    page.onPagina(99);
+    expect(page.paginaSegura()).toBe(1);
+    page.onPagina(-4);
+    expect(page.paginaSegura()).toBe(1);
   });
 });

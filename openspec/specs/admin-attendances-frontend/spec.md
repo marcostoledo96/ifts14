@@ -2,32 +2,113 @@
 
 ## Propósito
 
-Definir la UI administrativa Angular 20 para el camino operativo Curso → Fecha → asistencias y certificados: listar fechas, marcar presentes y, con un solo botón, guardar asistencias + emitir/actualizar certificados del curso. En UI admin, `dniMostrar` muestra DNI completo ficticio (D0 2026-07-20). Entrega desde el hub: descarga PDF y copiar link público (sin SMTP).
+Definir la UI administrativa Angular 20 para el camino operativo Curso → Fecha → asistencias y certificados: listado global de cursos, intermedia de fechas, marcado de presentes y, con un solo botón, guardar asistencias + emitir/actualizar certificados del curso. En UI admin, `dniMostrar` muestra DNI completo ficticio (D0 2026-07-20). Entrega desde el hub: descarga PDF y copiar link público (sin SMTP).
 
 ## Requirements
 
 ### Requirement: Rutas protegidas y entradas de asistencias
 
-El sistema DEBE exponer `/admin/asistencias` y `/admin/cursos/:id/fechas/:fechaId/asistencias` dentro del flujo admin protegido por sesión. La navegación habitual DEBE ser desde el detalle de curso (Abrir fecha / Cargar / Ver y entregar). El listado global `/admin/asistencias` DEBE permanecer como acceso secundario y empujar el camino Cursos → fecha.
+El sistema DEBE exponer `/admin/asistencias`, `/admin/asistencias/curso/:id` y `/admin/cursos/:id/fechas/:fechaId/asistencias` bajo admin con sesión. La entrada habitual DEBE seguir siendo detalle de curso → marcado. El listado global DEBE ser acceso secundario y empujar **cursos → intermedia → marcado** (sin filas curso×fecha). Back desde marcado a la intermedia: fuera de alcance.
 
 #### Scenario: Acceso con sesión mock
 
-- **Given** existe una sesión mock activa
-- **When** se abre una ruta de asistencias
-- **Then** DEBE mostrarse la lista o el hub de fecha correspondiente.
+- **Given** sesión mock activa
+- **When** se abre listado, intermedia o marcado
+- **Then** DEBE mostrarse la pantalla correspondiente.
 
 #### Scenario: Acceso sin sesión mock
 
-- **Given** no existe sesión mock activa
-- **When** se intenta abrir una ruta de asistencias
-- **Then** DEBE aplicarse la protección vigente del panel admin.
+- **Given** sin sesión mock
+- **When** se abre una ruta de asistencias
+- **Then** DEBE aplicarse la protección admin vigente.
 
 #### Scenario: Entrada desde detalle de curso
 
-- **Given** un curso con fechas
+- **Given** curso con fechas
 - **When** Bedelía elige Abrir fecha / Cargar / Ver y entregar
+- **Then** DEBE ir a `/admin/cursos/:id/fechas/:fechaId/asistencias`
+- **And** sin fechas, DEBE ofrecer Agregar fecha (sin saltar al hub).
+
+#### Scenario: Camino hub asistencias
+
+- **Given** sesión y cursos en hub
+- **When** se usa listado → curso → fecha
+- **Then** DEBE recorrer `/admin/asistencias` → `/admin/asistencias/curso/:id` → marcado.
+
+### Requirement: Listado global solo por curso
+
+En `/admin/asistencias` el sistema DEBE listar una fila por curso (no curso×fecha). DEBE buscar por nombre o código. NO DEBE ofrecer chips de estado de fecha. Por fila DEBE mostrar N fechas asistibles (≠ `cancelada`) y PUEDE mostrar cuántas tienen ≥1 presente; NO DEBE usar `alumnosActivos` como total por fila. Cursos sin fechas asistibles DEBEN verse. El CTA DEBE ir a `/admin/asistencias/curso/:id`. DEBE paginar client-side de a 20 cursos (reset al buscar).
+
+#### Scenario: Filas = cursos
+
+- **Given** hub con varios cursos y fechas no canceladas
+- **When** se abre `/admin/asistencias`
+- **Then** DEBE haber una fila por curso (sin repetir nombre por fecha).
+
+#### Scenario: Búsqueda por nombre o código
+
+- **Given** cursos en el listado
+- **When** se busca por fragmento de nombre o código
+- **Then** DEBEN quedar solo filas coincidentes.
+
+#### Scenario: Sin chips de estado de fecha
+
+- **Given** el listado global
+- **When** se revisan filtros
+- **Then** NO DEBEN existir chips `programada`/`realizada` de fecha.
+
+#### Scenario: Métricas honestas
+
+- **Given** curso con N fechas no canceladas y M con presentes
+- **When** se ve su fila
+- **Then** DEBE mostrar N y PUEDE mostrar M; NO DEBE usar `alumnosActivos` como total.
+
+#### Scenario: Curso sin fechas asistibles
+
+- **Given** curso sin fechas o solo `cancelada`
+- **When** se abre el listado y su CTA
+- **Then** el curso DEBE verse y la intermedia DEBE mostrar empty claro.
+
+#### Scenario: Paginación de 20
+
+- **Given** hay más de 20 cursos en el resultado filtrado
+- **When** se renderiza `/admin/asistencias`
+- **Then** DEBE mostrar como máximo 20 filas/cards por página con pager accesible
+- **And** al buscar DEBE volver a la página 1.
+
+### Requirement: Página intermedia de fechas del curso
+
+El sistema DEBE exponer `/admin/asistencias/curso/:id` (antes de rutas conflictivas) para elegir fecha asistible. DEBE listar solo fechas ≠ `cancelada` y DEBE mostrar/filtrar `programada`|`realizada`. El CTA DEBE ir a `/admin/cursos/:id/fechas/:fechaId/asistencias` (marcado intacto). Sin fechas asistibles: empty claro y DEBERÍA enlazar a detalle/agregar fecha si aplica. `:id` ausente: error controlado. NO DEBE exigir cambios de backend/`listarHub`.
+
+#### Scenario: Fechas asistibles
+
+- **Given** curso con `programada`, `realizada` y `cancelada`
+- **When** se abre la intermedia
+- **Then** DEBEN listarse solo no canceladas y DEBE distinguirse/filtrarse estado.
+
+#### Scenario: CTA al marcado
+
+- **Given** fecha asistible en la intermedia
+- **When** se activa el CTA
 - **Then** DEBE navegar a `/admin/cursos/:id/fechas/:fechaId/asistencias`.
-- **And** si no hay fechas, DEBE ofrecer Agregar fecha sin saltar al hub genérico de asistencias.
+
+#### Scenario: Empty sin fechas
+
+- **Given** curso sin fechas no canceladas
+- **When** se abre la intermedia
+- **Then** empty claro; DEBERÍA ofrecer enlace a detalle/agregar fecha si aplica.
+
+#### Scenario: Curso inexistente
+
+- **Given** `:id` ausente en el hub
+- **When** se abre la intermedia
+- **Then** error controlado sin tumbar el panel.
+
+#### Scenario: Orden de ruta
+
+- **Given** rutas admin de asistencias
+- **When** se resuelve `/admin/asistencias/curso/:id`
+- **Then** DEBE activarse la intermedia (no otra ruta).
 
 ### Requirement: Hub de fecha — asistencias
 

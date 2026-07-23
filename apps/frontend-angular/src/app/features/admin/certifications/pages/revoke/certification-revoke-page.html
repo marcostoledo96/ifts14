@@ -31,7 +31,11 @@
   <div class="fixed-overlay error-overlay" aria-live="assertive">
     <div class="error-panel" role="alert">
       <p class="estado-linea estado-error">{{ error() }}</p>
-      <a [routerLink]="volverLink()" class="btn-volver">Volver al expediente</a>
+      <app-ui-back-link
+        [to]="volverLink()"
+        label="Volver al expediente"
+        testId="volver-expediente"
+      />
     </div>
   </div>
 }

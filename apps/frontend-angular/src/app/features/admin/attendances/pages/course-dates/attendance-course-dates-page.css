@@ -20,6 +20,14 @@
   color: var(--color-muted-foreground);
 }
 
+.estado-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-3);
+}
+
 .title {
   margin: var(--space-1) 0 0;
   font-size: 1.75rem;
@@ -374,54 +382,6 @@
 
 .lista-asis { display: none; }
 
-.list-footer,
-.cards-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  border-top: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-muted) 30%, transparent);
-  margin: 0;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-}
-.list-footer { padding: var(--space-3) var(--space-4); }
-.cards-footer {
-  margin-top: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-card);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 4%, transparent);
-}
-.footer-count { margin: 0; font-size: .75rem; color: var(--color-muted-foreground); }
-
-.pager { display: flex; align-items: center; margin: 0; gap: .25rem; }
-.pager-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2rem;
-  height: 2rem;
-  padding: 0 .5rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-card);
-  color: var(--color-foreground);
-  font-family: var(--font-mono);
-  font-size: .75rem;
-  cursor: pointer;
-}
-.pager-btn:disabled { opacity: .4; cursor: not-allowed; }
-.pager-btn:hover:not(:disabled):not([aria-current='page']) { background: var(--color-muted); }
-.pager-num[aria-current='page'] {
-  background: var(--color-ink);
-  color: var(--color-ink-foreground);
-  border-color: var(--color-ink);
-}
-.pager-ellipsis { padding: 0 .25rem; color: var(--color-muted-foreground); }
-
 @media (max-width: 47.99rem) {
   .table-wrap { display: none; }
   .lista-asis {
@@ -432,10 +392,6 @@
     gap: var(--space-3);
     grid-template-columns: 1fr;
   }
-}
-
-@media (min-width: 48rem) {
-  .cards-footer { display: none; }
 }
 
 table {

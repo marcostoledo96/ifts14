@@ -13,6 +13,7 @@ import { Router, RouterLink } from '@angular/router';
 import { existingStudentIdOf } from '../../student-duplicate.error';
 import { AlumnoDraft } from '../../students.models';
 import { STUDENTS_SOURCE } from '../../students.service';
+import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 export interface AlumnoFormRow {
@@ -85,7 +86,7 @@ export function mensajeErrorAlta(err: unknown, modo: 'create' | 'edit' = 'create
 @Component({
   selector: 'app-student-editor-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, UiSpinner],
+  imports: [FormsModule, RouterLink, UiBackLink, UiSpinner],
   templateUrl: './student-editor-page.html',
   styleUrl: './student-editor-page.css',
 })
