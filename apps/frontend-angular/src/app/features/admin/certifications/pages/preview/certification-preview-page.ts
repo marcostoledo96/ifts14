@@ -22,6 +22,7 @@ import {
   INSTITUTIONAL_PARTNER_LOGOS,
 } from '../../../../../shared/brand/institutional-brand';
 import { qrPngBlobFromUrl } from '../../qr-png';
+import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 type AutoridadesVista = {
@@ -40,7 +41,7 @@ type AutoridadesVista = {
 @Component({
   selector: 'app-certification-preview-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, UiSpinner],
+  imports: [RouterLink, UiBackLink, UiSpinner],
   templateUrl: './certification-preview-page.html',
   styleUrl: './certification-preview-page.css',
 })

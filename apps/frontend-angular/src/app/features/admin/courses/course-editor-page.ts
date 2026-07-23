@@ -19,6 +19,7 @@ import {
   EstadoCurso,
   EstadoFecha,
 } from './courses.models';
+import { UiBackLink } from '../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../shared/ui/ui-spinner';
 
 // Editor de curso: create (alta) o edit (estado + fechas).
@@ -26,7 +27,7 @@ import { UiSpinner } from '../../../shared/ui/ui-spinner';
 @Component({
   selector: 'app-course-editor-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, UiSpinner],
+  imports: [FormsModule, RouterLink, UiBackLink, UiSpinner],
   templateUrl: './course-editor-page.html',
   styleUrl: './course-editor-page.css',
 })

@@ -1,7 +1,9 @@
 <section aria-labelledby="curso-title">
-  <p class="volver">
-    <a routerLink="/admin/cursos">← Volver a cursos</a>
-  </p>
+  <app-ui-back-link
+    to="/admin/cursos"
+    label="Volver a Cursos"
+    testId="volver-cursos"
+  />
 
   <output class="resumen" aria-live="polite" aria-atomic="true">{{ resumen() }}</output>
   @if (cargando()) {

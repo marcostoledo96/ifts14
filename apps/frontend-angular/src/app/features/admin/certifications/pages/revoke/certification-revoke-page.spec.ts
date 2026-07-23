@@ -169,6 +169,6 @@ describe('CertificationRevokePage', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.error-panel[role="alert"]')).toBeTruthy();
     expect(el.textContent).toContain('Certificación no encontrada');
-    expect(el.querySelector('.btn-volver')?.textContent).toContain('Volver');
+    expect(el.querySelector('[data-testid="volver-expediente"]')?.textContent).toContain('Volver');
   }));
 });

@@ -622,3 +622,7 @@ P6 cierra con 5/5 ciclos archivados (P6-01 a P6-05). Este ciclo no introdujo del
 
 Límites explícitos (P6-05): no agrega dependencias nuevas, no rota token/QR, no cambia el backend, no introduce un sistema de diseño distinto del vigente, no modifica la ruta ni el token, no toca la lógica de los flujos 4–22, no agrega diferenciación pública entre estados (D1-03), no reescribe `muestra_pagina/`. Próximo ciclo: P7-01 (CI frontend).
 - [Handoff a Marcos — F3-06](./05-handoff-marcos-f3-06.md) — reporte de handoff final de Fase 3 a Marcos con F3-04/F3-05 y roadmap F4-F6.
+
+## Cierre — listado de asistencias por curso (2026-07-22)
+
+Ciclo `frontend-asistencias-listado-por-curso` (rama `feat/asistencias-listado-por-curso`): hub FE reorganizado a cursos → intermedia de fechas → marcado. Detalle operativo: [asistencias-listado-por-curso.md](./asistencias-listado-por-curso.md). Archive: `openspec/changes/archive/2026-07-22-frontend-asistencias-listado-por-curso/`. Spec canónica actualizada: `openspec/specs/admin-attendances-frontend/spec.md`.

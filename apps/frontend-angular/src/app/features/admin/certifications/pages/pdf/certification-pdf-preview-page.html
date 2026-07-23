@@ -33,24 +33,21 @@
 
   @if (error()) {
     <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
-    <p class="volver no-print">
-      <a routerLink="/admin/certificaciones">← Volver al listado</a>
-    </p>
+    <app-ui-back-link
+      class="no-print"
+      to="/admin/certificaciones"
+      label="Volver a Certificaciones"
+      testId="volver-certificaciones"
+    />
   }
 
   @if (detalle(); as d) {
-    <!-- Barra de acciones (no se imprime) -->
-    <nav aria-label="Migas de pan" class="breadcrumb no-print">
-      <a routerLink="/admin/certificaciones" class="breadcrumb-link">
-        ← Certificaciones
-      </a>
-      <span class="breadcrumb-sep" aria-hidden="true">/</span>
-      <a routerLink="/admin/certificaciones/{{ id() }}" class="breadcrumb-link">
-        {{ numeroExpediente() }}
-      </a>
-      <span class="breadcrumb-sep" aria-hidden="true">/</span>
-      <span class="breadcrumb-current">Vista imprimible</span>
-    </nav>
+    <app-ui-back-link
+      class="no-print"
+      [to]="['/admin/certificaciones', id()]"
+      label="Volver al expediente"
+      testId="volver-expediente"
+    />
 
     <div class="acciones-barra no-print">
       <div class="acciones-titulo">
@@ -81,12 +78,6 @@
           }
           Descargar PDF
         </button>
-        <a
-          routerLink="/admin/certificaciones/{{ id() }}"
-          class="btn-volver-exp"
-        >
-          ← Volver al expediente
-        </a>
       </div>
     </div>
 
@@ -291,8 +282,11 @@
       oficial del certificado.
     </p>
 
-    <p class="volver no-print footer-volver">
-      <a routerLink="/admin/certificaciones">← Volver al listado</a>
-    </p>
+    <app-ui-back-link
+      class="no-print"
+      to="/admin/certificaciones"
+      label="Volver a Certificaciones"
+      testId="volver-certificaciones-footer"
+    />
   }
 </section>

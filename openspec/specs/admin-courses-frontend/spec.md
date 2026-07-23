@@ -32,7 +32,7 @@ El sistema DEBE exponer `/admin/cursos`, `/admin/cursos/nuevo`, `/admin/cursos/:
 
 ### Requirement: UI contract-ready de cursos y fechas
 
-El sistema DEBE renderizar listado, detalle y editor de cursos con semántica accesible, estados claros y datos ficticios no sensibles solo en memoria. El listado DEBE mostrar cuatrimestre, cantidad derivada de fechas y métricas de presentes/certificaciones como placeholders explícitos; estas últimas NO DEBEN consultar otros features. DEBE ofrecer filtros por búsqueda, chips toggle de los cuatro estados (Borrador / Activos / Cerrados / Archivados) con indicador visual, chips con/sin fechas, badge de estado con dot y borde semántico, acento lateral en filas/cards, estados de carga/error/vacío con iconografía inline, resumen accesible y limpieza de filtros.
+El sistema DEBE renderizar listado, detalle y editor de cursos con semántica accesible, estados claros y datos ficticios no sensibles solo en memoria. El listado DEBE mostrar cuatrimestre, cantidad derivada de fechas y métricas de presentes/certificaciones como placeholders explícitos; estas últimas NO DEBEN consultar otros features. DEBE ofrecer filtros por búsqueda, chips toggle de los cuatro estados (Borrador / Activos / Cerrados / Archivados) con indicador visual, chips con/sin fechas, badge de estado con dot y borde semántico, acento lateral en filas/cards, estados de carga/error/vacío con iconografía inline, resumen accesible, limpieza de filtros y paginación client-side de 20 ítems por página (reset al filtrar).
 
 (Previously: filtro de estado vía select; badge de estado plano; estados de pantalla solo texto.)
 
@@ -67,6 +67,13 @@ El sistema DEBE renderizar listado, detalle y editor de cursos con semántica ac
 - **Given** se aplican búsqueda, chip de estado y filtro con/sin fechas
 - **When** se activa “Limpiar filtros”
 - **Then** DEBEN restablecerse los tres filtros y el resumen accesible DEBE anunciar el resultado.
+
+#### Scenario: Paginación de 20
+
+- **Given** hay más de 20 cursos en el resultado filtrado
+- **When** se renderiza el listado
+- **Then** DEBE mostrar como máximo 20 filas/cards por página con pager accesible
+- **And** al cambiar filtros DEBE volver a la página 1.
 
 #### Scenario: Chips de estado con toggle
 

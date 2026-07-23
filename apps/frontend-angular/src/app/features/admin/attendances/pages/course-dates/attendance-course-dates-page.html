@@ -1,0 +1,226 @@
+<section aria-labelledby="curso-fechas-title">
+  <app-ui-back-link
+    to="/admin/asistencias"
+    label="Volver a Asistencias"
+    testId="volver-asistencias"
+  />
+
+  <div class="header-row">
+    <div>
+      <p class="kicker">
+        Fechas del curso
+        @if (cursoCodigo()) {
+          <span aria-hidden="true"> · </span>
+          <span class="mono">{{ cursoCodigo() }}</span>
+        }
+      </p>
+      <h1 id="curso-fechas-title" class="title">
+        @if (cursoNombre()) {
+          {{ cursoNombre() }}
+        } @else {
+          Fechas del curso
+        }
+      </h1>
+      <p class="intro">
+        Elegí una fecha asistible para tomar asistencia. Las fechas canceladas no se listan.
+      </p>
+    </div>
+  </div>
+
+  @if (!cargando() && !error() && filas().length > 0) {
+    <section class="filtros" aria-label="Buscar y filtrar fechas">
+      <div class="filtros-main">
+        <label class="filtro-search" for="buscar-fecha-curso">
+          <span class="filtro-label">Buscar</span>
+          <span class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+            </svg>
+            <input
+              id="buscar-fecha-curso"
+              type="search"
+              autocomplete="off"
+              [value]="q()"
+              (input)="onSearch($event)"
+              placeholder="Fecha o descripción…"
+              aria-label="Buscar fechas por fecha o descripción"
+            />
+          </span>
+        </label>
+
+        <div class="filtro-estado">
+          <span class="filtro-label" id="filtro-estado-fecha-label">Estado de la fecha</span>
+          <div class="filter-chips" role="group" aria-labelledby="filtro-estado-fecha-label">
+            @for (e of estados; track e) {
+              <button
+                type="button"
+                class="chip-estado"
+                [attr.data-estado]="e"
+                [attr.aria-pressed]="estado() === e"
+                (click)="onEstado(e)"
+              >
+                <span class="chip-dot chip-dot--{{ e }}" aria-hidden="true"></span>
+                {{ estadoChipLabel[e] }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      @if (mostrarResumen()) {
+        <div class="results-summary">
+          <p aria-live="polite">
+            <span class="count-mono">{{ filtradas().length }}</span>
+            {{ filtradas().length === 1 ? 'fecha' : 'fechas' }}
+            {{ hayFiltrosActivos() ? 'coinciden con el filtro' : 'asistibles' }}
+          </p>
+          @if (hayFiltrosActivos()) {
+            <button type="button" class="clear-filters" (click)="onLimpiarFiltros()">
+              Limpiar filtros
+            </button>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (cargando()) {
+    <div class="tabla-skeleton" aria-busy="true" aria-label="Cargando fechas">
+      <div class="skeleton-head">
+        <app-ui-spinner size="sm" />
+        <span class="skeleton-label">Cargando fechas…</span>
+      </div>
+      <ul class="skeleton-rows">
+        @for (_ of skeletonRows; track $index) {
+          <li class="skeleton-row">
+            <span class="skeleton-bar skeleton-bar--date skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--metric skeleton-pulse"></span>
+            <span class="skeleton-bar skeleton-bar--action skeleton-pulse"></span>
+          </li>
+        }
+      </ul>
+    </div>
+  } @else if (error()) {
+    <div class="estado-panel estado-error" role="alert">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke-linejoin="round"/>
+          <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">No pudimos cargar las fechas</h2>
+      <p>{{ error() }}</p>
+      <div class="estado-actions">
+        <button type="button" class="btn-primary" (click)="onReintentar()">Reintentar</button>
+        <a class="btn-secondary" routerLink="/admin/asistencias">Volver a Asistencias</a>
+      </div>
+    </div>
+  } @else if (vacioTotal()) {
+    <div class="estado-panel" data-state="empty-total" aria-live="polite">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Este curso no tiene fechas asistibles</h2>
+      <p>
+        Agregá o reactivá fechas desde el detalle del curso para poder tomar asistencia.
+      </p>
+      <a class="btn-primary" [routerLink]="linkDetalleCurso()">Ir al detalle del curso</a>
+    </div>
+  } @else if (vacioFiltro()) {
+    <div class="estado-panel" data-state="no-results" aria-live="polite">
+      <span class="estado-icon-wrap" aria-hidden="true">
+        <svg class="estado-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m20 20-3.5-3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h2 class="estado-title">Ninguna fecha coincide</h2>
+      <p>No hay fechas que coincidan con la búsqueda o el filtro de estado.</p>
+      <button type="button" class="btn-secondary" (click)="onLimpiarFiltros()">Limpiar filtros</button>
+    </div>
+  } @else {
+    <div class="table-wrap" data-testid="curso-fechas-tabla">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="th-center">Presentes</th>
+            <th scope="col" class="th-actions"><span class="sr-only">Acción</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of filtradas(); track fila.id) {
+            <tr>
+              <td>
+                <time [attr.datetime]="fila.fecha">{{ formatFecha(fila.fecha) }}</time>
+                @if (fila.descripcion) {
+                  <span class="curso-detalle">{{ fila.descripcion }}</span>
+                }
+              </td>
+              <td>
+                <span class="estado-chip estado-{{ fila.estado }}">
+                  {{ etiquetaEstado(fila.estado) }}
+                </span>
+              </td>
+              <td class="td-center">
+                <span class="card-asis-conteo mono">{{ fila.presentes }}</span>
+              </td>
+              <td class="td-actions">
+                <a
+                  class="card-asis-link btn-marcar"
+                  [routerLink]="linkMarcado(fila)"
+                  [attr.aria-label]="'Tomar asistencia — ' + fila.fecha"
+                >
+                  <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                    <path d="M8 2v4M16 2v4M3 10h18" stroke-linecap="round"/>
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="m9 16 2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Tomar asistencia
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <ul class="lista-asis" data-testid="curso-fechas-cards">
+      @for (fila of filtradas(); track fila.id) {
+        <li>
+          <article class="card-asis">
+            <header class="card-asis-header">
+              <div class="card-asis-heading">
+                <h2 class="card-asis-title">
+                  <time [attr.datetime]="fila.fecha">{{ formatFecha(fila.fecha) }}</time>
+                </h2>
+                @if (fila.descripcion) {
+                  <span class="curso-detalle">{{ fila.descripcion }}</span>
+                }
+              </div>
+              <span class="estado-chip estado-{{ fila.estado }}">
+                {{ etiquetaEstado(fila.estado) }}
+              </span>
+            </header>
+            <dl class="card-asis-meta">
+              <dt>Presentes</dt>
+              <dd class="card-asis-conteo">{{ fila.presentes }}</dd>
+            </dl>
+            <a
+              class="card-asis-link btn-marcar"
+              [routerLink]="linkMarcado(fila)"
+              [attr.aria-label]="'Tomar asistencia — ' + fila.fecha"
+            >
+              Tomar asistencia
+            </a>
+          </article>
+        </li>
+      }
+    </ul>
+  }
+</section>

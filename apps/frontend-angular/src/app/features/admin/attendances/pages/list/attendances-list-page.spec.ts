@@ -5,6 +5,7 @@ import { COURSES_SOURCE } from '../../../courses/courses.service';
 import { InMemoryCoursesService } from '../../../courses/in-memory-courses.service';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
 import { AttendanceMockService } from '../../data/attendance-mock.service';
+import { ATTENDANCES_PAGE_SIZE, HubAsistencias } from '../../models/attendance.types';
 
 describe('AttendancesListPage', () => {
   async function render() {
@@ -27,6 +28,10 @@ describe('AttendancesListPage', () => {
     return el.querySelectorAll('.lista-asis .card-asis');
   }
 
+  function tableRows(el: HTMLElement): NodeListOf<Element> {
+    return el.querySelectorAll('[data-testid="asistencias-tabla"] tbody tr');
+  }
+
   function tableLinks(el: HTMLElement): NodeListOf<Element> {
     return el.querySelectorAll('[data-testid="asistencias-tabla"] .card-asis-link');
   }
@@ -39,32 +44,29 @@ describe('AttendancesListPage', () => {
     expect(el.textContent).not.toContain('Datos de demostración');
   });
 
-  it('renderiza filas/tarjetas del seed (excluye canceladas)', async () => {
+  it('renderiza una fila por curso del seed (no flatten de fechas)', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    // Seed: curso 1 (3), 2 (2), 3 (1), 4 (2), 5 (0 cancelada), 6 (3) = 11.
-    expect(cards(el).length).toBe(11);
-    expect(el.querySelectorAll('[data-testid="asistencias-tabla"] tbody tr').length).toBe(11);
+    // Seed: 6 cursos (CUR-001..006), incluida CUR-005 sin fechas asistibles.
+    expect(cards(el).length).toBe(6);
+    expect(tableRows(el).length).toBe(6);
   });
 
-  it('cada fila tiene enlace Tomar asistencia', async () => {
+  it('no ofrece chips de estado de fecha programada/realizada', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const links = tableLinks(el);
-    expect(links.length).toBe(11);
-    const first = links[0] as HTMLAnchorElement;
-    expect(first.getAttribute('href')).toContain('/admin/cursos/');
-    expect(first.getAttribute('href')).toContain('/fechas/');
-    expect(first.getAttribute('href')).toContain('/asistencias');
+    expect(el.querySelector('button[data-estado="programada"]')).toBeNull();
+    expect(el.querySelector('button[data-estado="realizada"]')).toBeNull();
+    expect(el.textContent).not.toContain('Estado de la fecha');
   });
 
-  it('expone input type=search', async () => {
+  it('expone input type=search por nombre o código', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('input[type="search"]')).not.toBeNull();
   });
 
-  it('filtrar por texto reduce la lista', async () => {
+  it('filtrar por código deja una sola fila', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const input = el.querySelector('input[type="search"]') as HTMLInputElement;
@@ -73,73 +75,63 @@ describe('AttendancesListPage', () => {
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
-    expect(cards(el).length).toBe(3);
+    expect(cards(el).length).toBe(1);
+    expect(tableRows(el).length).toBe(1);
   });
 
-  it('filtra por chip Programadas', async () => {
+  it('filtrar por fragmento de nombre reduce la lista', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const chip = el.querySelector('button[data-estado="programada"]') as HTMLButtonElement;
-    expect(chip).toBeTruthy();
-    chip.click();
+    const input = el.querySelector('input[type="search"]') as HTMLInputElement;
+    input.value = 'herramientas';
+    input.dispatchEvent(new Event('input'));
     f.detectChanges();
-    const rows = Array.from(el.querySelectorAll('[data-testid="asistencias-tabla"] tbody tr'));
-    expect(rows.length).toBeGreaterThan(0);
-    for (const row of rows) {
-      expect(row.textContent?.toLowerCase()).toContain('programada');
-      expect(row.textContent?.toLowerCase()).not.toContain('realizada');
+    await f.whenStable();
+    f.detectChanges();
+    expect(cards(el).length).toBe(1);
+    expect(el.textContent).toContain('CUR-002');
+  });
+
+  it('métricas honestas: N fechas asistibles y M con presentes (sin alumnosActivos)', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const rows = Array.from(tableRows(el));
+    const byCode = new Map(
+      rows.map((row) => {
+        const codigo = row.querySelector('.mono')?.textContent?.trim() ?? '';
+        const metric = row.querySelector('.card-asis-conteo')?.textContent?.trim() ?? '';
+        return [codigo, metric] as const;
+      }),
+    );
+    expect(byCode.get('CUR-001')).toMatch(/3/);
+    expect(byCode.get('CUR-001')).toMatch(/3/);
+    expect(byCode.get('CUR-005')).toMatch(/0/);
+    // No debe parecer presentes/alumnosActivos (p. ej. 3/14).
+    for (const metric of byCode.values()) {
+      expect(metric).not.toMatch(/\/14\b/);
     }
   });
 
-  it('muestra conteo demostrativo presentes/total por fecha', async () => {
+  it('curso sin fechas asistibles (CUR-005) permanece visible', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
-    const conteos = Array.from(
-      el.querySelectorAll('[data-testid="asistencias-tabla"] .card-asis-conteo'),
-    ).map((d) => d.textContent?.trim() ?? '');
-    expect(conteos.length).toBe(11);
-    for (const c of conteos) {
-      expect(c).toMatch(/^\d+\/\d+$/);
+    expect(el.textContent).toContain('CUR-005');
+    expect(el.textContent).toContain('Curso de registros y archivo');
+  });
+
+  it('CTA de cada fila apunta a la intermedia /admin/asistencias/curso/:id', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const links = Array.from(tableLinks(el)) as HTMLAnchorElement[];
+    expect(links.length).toBe(6);
+    for (const link of links) {
+      const href = link.getAttribute('href') ?? '';
+      expect(href).toMatch(/^\/admin\/asistencias\/curso\/\d+$/);
+      expect(href).not.toContain('/fechas/');
     }
   });
 
-  it('conteo deriva del mock: fecha realizada curso 4 tiene 8 presentes', async () => {
-    const f = await render();
-    const el = f.nativeElement as HTMLElement;
-    const cardsEl = Array.from(cards(el));
-    const conteos = cardsEl.map((card) => {
-      const dds = Array.from(card.querySelectorAll('.card-asis-meta dd'));
-      const codigo = dds[1]?.textContent?.trim() ?? '';
-      const conteo = card.querySelector('.card-asis-conteo')?.textContent?.trim() ?? '';
-      return { codigo, conteo };
-    });
-    const cur004 = conteos.filter((c) => c.codigo === 'CUR-004');
-    expect(cur004.length).toBe(2);
-    const presentes = cur004.map((c) => Number(c.conteo.split('/')[0])).sort();
-    expect(presentes).toEqual([7, 8]);
-  });
-
-  it('total del hub: alumnos activos globales (mock = máximo roster activo)', async () => {
-    const f = await render();
-    const el = f.nativeElement as HTMLElement;
-    const cardsEl = Array.from(cards(el));
-    const conteos = cardsEl.map((card) => {
-      const dds = Array.from(card.querySelectorAll('.card-asis-meta dd'));
-      const codigo = dds[1]?.textContent?.trim() ?? '';
-      const total = Number(
-        (card.querySelector('.card-asis-conteo')?.textContent?.trim() ?? '').split('/')[1],
-      );
-      return { codigo, total };
-    });
-    const cur001 = conteos.filter((c) => c.codigo === 'CUR-001');
-    expect(cur001.length).toBe(3);
-    // Hub usa un único total global (paridad con HTTP /admin/hub/asistencias).
-    for (const c of cur001) {
-      expect(c.total).toBe(14);
-    }
-  });
-
-  it('filtrar sin matches muestra mensaje de vacío', async () => {
+  it('filtrar sin matches muestra vacío de filtro', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const input = el.querySelector('input[type="search"]') as HTMLInputElement;
@@ -148,7 +140,7 @@ describe('AttendancesListPage', () => {
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
-    expect(el.textContent).toContain('No hay fechas que coincidan');
+    expect(el.textContent).toMatch(/Ningún curso coincide|No hay cursos que coincidan/i);
   });
 
   it('no llama fetch', async () => {
@@ -157,7 +149,45 @@ describe('AttendancesListPage', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('curso sin fechas asistibles no rompe la lista', async () => {
+  it('reintento solapado no deja error stale tras carga exitosa', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AttendancesListPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        { provide: ATTENDANCE_SOURCE, useClass: AttendanceMockService },
+      ],
+    }).compileComponents();
+    const attendance = TestBed.inject(ATTENDANCE_SOURCE) as AttendanceMockService;
+    const realHub = attendance.listarHub.bind(attendance);
+    let resolveSlow: ((value: Awaited<ReturnType<typeof realHub>>) => void) | null = null;
+    const slow = new Promise<Awaited<ReturnType<typeof realHub>>>((resolve) => {
+      resolveSlow = resolve;
+    });
+    let calls = 0;
+    spyOn(attendance, 'listarHub').and.callFake(() => {
+      calls += 1;
+      return calls === 1 ? slow : realHub();
+    });
+
+    const f = TestBed.createComponent(AttendancesListPage);
+    f.detectChanges();
+    // Segunda carga (rápida) mientras la primera sigue pendiente.
+    await f.componentInstance.cargar();
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('.estado-error')).toBeNull();
+    expect(tableRows(f.nativeElement as HTMLElement).length).toBe(6);
+
+    resolveSlow!(await realHub());
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('.estado-error')).toBeNull();
+    expect(tableRows(f.nativeElement as HTMLElement).length).toBe(6);
+    expect(calls).toBe(2);
+  });
+
+  it('curso nuevo sin fechas no rompe la lista y queda visible', async () => {
     await TestBed.configureTestingModule({
       imports: [AttendancesListPage],
       providers: [
@@ -174,20 +204,62 @@ describe('AttendancesListPage', () => {
     f.detectChanges();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('.estado-error')).toBeNull();
-    expect(el.textContent).not.toContain('Curso no encontrado');
+    expect(el.textContent).toContain('VACIO');
+    expect(tableRows(el).length).toBe(7);
   });
 
-  it('cada enlace Tomar asistencia tiene aria-label contextual con curso y fecha', async () => {
-    const f = await render();
+  it('pagina de a 20 y resetea página al buscar', async () => {
+    const hub: HubAsistencias = {
+      cursos: Array.from({ length: ATTENDANCES_PAGE_SIZE + 5 }, (_, i) => ({
+        id: i + 1,
+        codigo: `CUR-${String(i + 1).padStart(3, '0')}`,
+        nombre: `Curso hub ${i + 1}`,
+        estado: 'activo',
+      })),
+      fechas: [],
+      asistencias: [],
+      alumnosActivos: 0,
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [AttendancesListPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        {
+          provide: ATTENDANCE_SOURCE,
+          useValue: {
+            listarHub: () => Promise.resolve(hub),
+            listarAlumnos: () => Promise.resolve([]),
+            listarAsistencias: () => Promise.resolve([]),
+            listarAsistenciasPorPar: () => Promise.resolve([]),
+            listarAsistenciasPorAlumno: () => Promise.resolve([]),
+            marcar: () => Promise.resolve([]),
+            anular: () => Promise.resolve(),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const f = TestBed.createComponent(AttendancesListPage);
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const page = f.componentInstance;
     const el = f.nativeElement as HTMLElement;
-    const links = Array.from(tableLinks(el)) as HTMLAnchorElement[];
-    expect(links.length).toBeGreaterThan(0);
-    for (const link of links) {
-      const row = link.closest('tr') as HTMLElement;
-      const curso = row.querySelector('.curso-nombre')?.textContent?.trim() ?? '';
-      const label = link.getAttribute('aria-label') ?? '';
-      expect(label.startsWith(`Tomar asistencia de ${curso} — `)).toBeTrue();
-      expect(label).toMatch(/\d{4}-\d{2}-\d{2}$/);
-    }
+
+    expect(page.itemsVisibles().length).toBe(ATTENDANCES_PAGE_SIZE);
+    expect(tableRows(el).length).toBe(ATTENDANCES_PAGE_SIZE);
+    expect(el.querySelector('[aria-label="Paginación de asistencias"]')).not.toBeNull();
+
+    page.onPagina(2);
+    f.detectChanges();
+    expect(page.itemsVisibles().length).toBe(5);
+    expect(tableRows(el).length).toBe(5);
+
+    page.onSearch({ target: { value: 'Curso hub 3' } } as unknown as Event);
+    f.detectChanges();
+    expect(page.paginaSegura()).toBe(1);
+    expect(page.itemsVisibles().length).toBe(1);
   });
 });
