@@ -33,6 +33,8 @@ applySqlFile($pdo, __DIR__ . '/../../../database/migrations/008_certificados_rev
     applySqlFile($pdo, __DIR__ . '/../../../database/migrations/010_backfill_pdf_revision.sql');
     applySqlFile($pdo, __DIR__ . '/../../../database/migrations/011_alumnos_email_opcional.sql');
     applySqlFile($pdo, __DIR__ . '/../../../database/migrations/012_alumnos_apellido_nombre_separados.sql');
+    applySqlFile($pdo, __DIR__ . '/../../../database/migrations/013_parametros_sistema.sql');
+    applySqlFile($pdo, __DIR__ . '/../../../database/migrations/014_firmas_autoridades.sql');
 
 $root = dirname(__DIR__);
 $tmpDir = sys_get_temp_dir() . '/ifts14-master-data-http-' . bin2hex(random_bytes(4));

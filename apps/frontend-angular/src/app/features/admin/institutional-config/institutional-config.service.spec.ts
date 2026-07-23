@@ -23,6 +23,8 @@ const DTO = {
   rectorRole: 'Director',
   advisorName: 'Asesor Demo',
   advisorRole: 'Secretario Académico',
+  rectorSignaturePresent: true,
+  advisorSignaturePresent: false,
   updatedAt: '2026-01-01T00:00:00Z',
   parameters: {
     titulo_certificado: {
@@ -65,8 +67,66 @@ describe('HttpInstitutionalConfigService', () => {
     expect(result.advisorName).toBe('Asesor Demo');
     expect(result.advisorRole).toBe('Secretario Académico');
     expect(result.updatedAt).toBe('2026-01-01T00:00:00Z');
+    expect(result.rectorSignaturePresent).toBeTrue();
+    expect(result.advisorSignaturePresent).toBeFalse();
     expect(result.parameters.titulo_certificado.value).toBe('Certificado de Aprobación');
     expect(result.parameters.email_contacto.value).toContain('@');
+  });
+
+  it('obtener normaliza flags de firma ausentes a false', async () => {
+    const p = service.obtener();
+    const req = httpMock.expectOne(API_URL);
+    req.flush({
+      data: {
+        institutionName: 'Otra',
+        certificateText: null,
+        rectorName: null,
+        rectorRole: null,
+        advisorName: null,
+        advisorRole: null,
+        updatedAt: null,
+      },
+      meta: { requestId: 'r-flags' },
+    });
+    const result = await p;
+    expect(result.rectorSignaturePresent).toBeFalse();
+    expect(result.advisorSignaturePresent).toBeFalse();
+  });
+
+  it('subirFirma hace POST multipart a /firmas/{rol}', async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], 'firma.png', { type: 'image/png' });
+    const p = service.subirFirma('rector', file);
+    const req = httpMock.expectOne(`${API_URL}/firmas/rector`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toBeInstanceOf(FormData);
+    req.flush({
+      data: { ...DTO, rectorSignaturePresent: true },
+      meta: { requestId: 'up1' },
+    });
+    const result = await p;
+    expect(result.rectorSignaturePresent).toBeTrue();
+  });
+
+  it('quitarFirma hace DELETE a /firmas/{rol}', async () => {
+    const p = service.quitarFirma('asesor');
+    const req = httpMock.expectOne(`${API_URL}/firmas/asesor`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush({
+      data: { ...DTO, advisorSignaturePresent: false },
+      meta: { requestId: 'del1' },
+    });
+    const result = await p;
+    expect(result.advisorSignaturePresent).toBeFalse();
+  });
+
+  it('previewFirma hace GET blob a /firmas/{rol}', async () => {
+    const p = service.previewFirma('rector');
+    const req = httpMock.expectOne(`${API_URL}/firmas/rector`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob([new Uint8Array([9, 8, 7])], { type: 'image/png' }));
+    const blob = await p;
+    expect(blob.size).toBe(3);
   });
 
   it('obtener normaliza campos null del backend a string vacío (updatedAt queda null)', async () => {
@@ -201,7 +261,19 @@ describe('InMemoryInstitutionalConfigService', () => {
     expect(config.institutionName).toBe('Instituto de Formación Técnica Superior N.° 14');
     expect(config.rectorRole).toBeTruthy();
     expect(config.advisorRole).toBeTruthy();
+    expect(config.rectorSignaturePresent).toBeFalse();
+    expect(config.advisorSignaturePresent).toBeTrue();
     expect(config.parameters.titulo_certificado.value).toBe('Certificado de Aprobación');
+  });
+
+  it('subirFirma y quitarFirma actualizan flags en memoria', async () => {
+    const up = await service.subirFirma(
+      'rector',
+      new File([new Uint8Array([1])], 'r.png', { type: 'image/png' }),
+    );
+    expect(up.rectorSignaturePresent).toBeTrue();
+    const down = await service.quitarFirma('rector');
+    expect(down.rectorSignaturePresent).toBeFalse();
   });
 
   it('guardar muta el seed y setea updatedAt', async () => {

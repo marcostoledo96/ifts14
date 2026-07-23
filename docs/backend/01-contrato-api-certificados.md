@@ -273,15 +273,20 @@ Respuesta `200`:
     "rectorRole": "Rector/a",
     "advisorName": "",
     "advisorRole": "Asesor/a Pedagógica",
-    "updatedAt": null
+    "rectorSignaturePresent": false,
+    "advisorSignaturePresent": false,
+    "updatedAt": null,
+    "parameters": {}
   },
   "meta": { "requestId": "req_admin_no_sensible" }
 }
 ```
 
+Los flags `rectorSignaturePresent` / `advisorSignaturePresent` indican si hay metadatos de firma imagen (migración 014). No exponen path ni hash.
+
 ### `PUT /admin/configuracion-institucional`
 
-Actualiza la configuración institucional. Requiere `X-Admin-Key` y `Content-Type: application/json`. `institutionName` es obligatorio y no vacío. Campos opcionales usan fallback seguro cuando llegan vacíos.
+Actualiza la configuración institucional (textos y parámetros JSON). Requiere sesión admin y `Content-Type: application/json`. `institutionName` es obligatorio y no vacío. **No acepta multipart ni firmas**; las firmas usan las rutas dedicadas.
 
 Request:
 
@@ -292,11 +297,28 @@ Request:
   "rectorName": "Nombre Rector/a",
   "rectorRole": "Rector/a",
   "advisorName": "Nombre Asesor/a",
-  "advisorRole": "Asesor/a Pedagógica"
+  "advisorRole": "Asesor/a Pedagógica",
+  "parameters": {
+    "titulo_certificado": "Certificado de Aprobación"
+  }
 }
 ```
 
-Respuesta `200`: mismo DTO que `GET`, con `updatedAt` persistido.
+Respuesta `200`: mismo DTO que `GET`, con `updatedAt` persistido y flags de firma.
+
+### `POST|DELETE|GET /admin/configuracion-institucional/firmas/{rector|asesor}`
+
+Opción A: persistencia inmediata de firma imagen por rol (`rector` | `asesor`). Auth: sesión admin vigente. Storage: `signature_storage_path` (fuera del webroot). DB: basename + sha256.
+
+| Método | Body | Efecto |
+|--------|------|--------|
+| `POST` | `multipart/form-data` campo `file` (o `firma`) | Valida PNG/JPEG (finfo), ≤1 MB, ≤~1200×400; replace atómico tmp→rename→DB→unlink ext vieja |
+| `DELETE` | — | NULL metadatos + unlink archivo |
+| `GET` | — | Bytes de preview; `Content-Type` real (`image/png` \| `image/jpeg`) + `X-Content-Type-Options: nosniff` + `Cache-Control: no-store` |
+
+Errores: `400 VALIDATION_ERROR` (MIME/tamaño/dims/rol inválido), `404 NOT_FOUND` (sin firma), `500 CONFIGURATION_ERROR` (storage ausente o falla de escritura).
+
+POST/DELETE responden `200` con el mismo DTO de configuración (flags actualizados).
 
 ### `POST /admin/certificados/{id}/revocar`
 

@@ -132,6 +132,7 @@ function buildQrManualService(FakePdoForQr $pdo, string $cipherKey): AdminCertif
         'publicBaseUrl' => 'https://demo.example.edu.ar/certificados',
         'tokenCipherKey' => $cipherKey,
         'pdfStoragePath' => sys_get_temp_dir(),
+        'signatureStoragePath' => null,
     ] as $name => $value) {
         (new ReflectionProperty(AdminCertificateService::class, $name))->setValue($service, $value);
     }

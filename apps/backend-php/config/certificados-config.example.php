@@ -13,6 +13,8 @@ return [
     'public_base_url' => 'https://demo.example.edu.ar/certificados',
     // Ruta absoluta del storage de PDFs, preferentemente fuera del webroot.
     'certificate_storage_path' => '/home/usuario_demo/certificados_storage_demo',
+    // Ruta absoluta del storage de firmas de autoridades (PNG/JPEG), fuera del webroot.
+    'signature_storage_path' => '/home/usuario_demo/certificados_firmas_demo',
     // Clave de cifrado de tokens (AES-256-GCM). DEBE ser externa a Git en
     // producción: inyectarla por config externa, nunca versionar el valor real.
     // Debe decodificar (base64/base64url) exactamente a 32 bytes.

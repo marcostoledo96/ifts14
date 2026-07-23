@@ -107,6 +107,8 @@ export interface InstitutionalConfig {
   readonly rectorRole: string;
   readonly advisorName: string;
   readonly advisorRole: string;
+  readonly rectorSignaturePresent: boolean;
+  readonly advisorSignaturePresent: boolean;
   readonly parameters: Readonly<Record<SystemParameterKey, SystemParameterEntry>>;
   // Solo lectura: la fija el backend al guardar.
   readonly updatedAt: string | null;
@@ -150,9 +152,16 @@ export function flattenParameterValues(
   return out;
 }
 
+export type SignatureRole = 'rector' | 'asesor';
+
 export interface InstitutionalConfigService {
   obtener(): Promise<InstitutionalConfig>;
   guardar(payload: InstitutionalConfigWrite): Promise<InstitutionalConfig>;
+  /** POST multipart inmediato (Opción A); no marca dirty del formulario de textos. */
+  subirFirma(role: SignatureRole, file: File): Promise<InstitutionalConfig>;
+  quitarFirma(role: SignatureRole): Promise<InstitutionalConfig>;
+  /** Preview autenticado; el llamador debe revocar el object URL. */
+  previewFirma(role: SignatureRole): Promise<Blob>;
 }
 
 // ponytail: token único para inyectar la implementación (mock o HTTP).

@@ -119,8 +119,22 @@ final class CertificatePdfService
         $tcpdf->setFont('helvetica', '', self::CERTIFICATE_CODE_FONT_SIZE);
         $tcpdf->MultiCell(self::CONTENT_WIDTH, self::DETAIL_CELL_HEIGHT, 'Código de certificado: ' . $this->visibleText($certificateCode), self::PDF_NO_BORDER, 'C');
 
-        $this->renderSignatory($tcpdf, self::RECTOR_X, self::SIGNATORY_Y, $institutionalConfig['rectorName'], $institutionalConfig['rectorRole']);
-        $this->renderSignatory($tcpdf, self::ADVISOR_X, self::SIGNATORY_Y, $institutionalConfig['advisorName'], $institutionalConfig['advisorRole']);
+        $this->renderSignatory(
+            $tcpdf,
+            self::RECTOR_X,
+            self::SIGNATORY_Y,
+            $institutionalConfig['rectorName'],
+            $institutionalConfig['rectorRole'],
+            $institutionalConfig['rectorSignaturePath'] ?? null,
+        );
+        $this->renderSignatory(
+            $tcpdf,
+            self::ADVISOR_X,
+            self::SIGNATORY_Y,
+            $institutionalConfig['advisorName'],
+            $institutionalConfig['advisorRole'],
+            $institutionalConfig['advisorSignaturePath'] ?? null,
+        );
 
         // QR de validación en la esquina inferior derecha. El contenido del QR
         // es la URL pública; el token completo nunca se imprime como texto.
@@ -192,15 +206,37 @@ final class CertificatePdfService
         return mb_substr(trim((string) $value), 0, InstitutionalConfig::TEXT_MAX_LENGTH);
     }
 
-    private function renderSignatory(TCPDF $tcpdf, int $x, int $y, string $name, string $role): void
-    {
+    private function renderSignatory(
+        TCPDF $tcpdf,
+        int $x,
+        int $y,
+        string $name,
+        string $role,
+        ?string $signaturePath = null,
+    ): void {
         $name = trim($name);
         $role = trim($role);
         if ($name === '') {
             return;
         }
 
-        $tcpdf->Line($x, $y, $x + self::SIGNATORY_WIDTH, $y);
+        $imageDrawn = false;
+        if (is_string($signaturePath) && $signaturePath !== '' && is_file($signaturePath) && is_readable($signaturePath)) {
+            // TCPDF Image usa GD/Imagick internamente; QR ya depende de GD.
+            $imageHeight = 14;
+            $imageY = $y - $imageHeight;
+            try {
+                $tcpdf->Image($signaturePath, $x + 5, $imageY, self::SIGNATORY_WIDTH - 10, $imageHeight, '', '', '', false, 300, '', false, false, 0, false, false, false);
+                $imageDrawn = true;
+            } catch (Throwable) {
+                $imageDrawn = false;
+            }
+        }
+
+        if (!$imageDrawn) {
+            $tcpdf->Line($x, $y, $x + self::SIGNATORY_WIDTH, $y);
+        }
+
         $tcpdf->setXY($x, $y + self::SIGNATORY_TEXT_OFFSET_Y);
         $tcpdf->setFont('helvetica', 'B', self::SIGNATORY_NAME_FONT_SIZE);
         $tcpdf->MultiCell(self::SIGNATORY_WIDTH, self::SIGNATORY_CELL_HEIGHT, $name, self::PDF_NO_BORDER, 'C');

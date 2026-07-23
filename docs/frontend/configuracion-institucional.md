@@ -4,32 +4,37 @@
 
 - Base funcional archivada en `openspec/changes/archive/2026-07-16-frontend-configuracion-institucional/`.
 - Paridad de layout **P-14** archivada en `openspec/changes/archive/2026-07-17-frontend-parity-configuracion-layout/`.
-  Verify P-14: `test:ci` 772/772, `tsc --noEmit` exit 0, `npm run build` exit 0 (PASS WITH WARNINGS: budget CSS página 9.99 kB > 8 kB).
+- Firmas de autoridades (Opción A): archivado en `openspec/changes/archive/2026-07-23-frontend-backend-config-firmas-autoridades/`.
 
 ## Alcance implementado
 
 - Ruta lazy `/admin/configuracion` bajo `AdminShell`.
 - Ítem de sidebar **Configuración** con estado activo por prefijo.
-- Seam `InstitutionalConfigService`: `obtener()` (GET) y `guardar()` (PUT) contra `/admin/configuracion-institucional`.
-- Modelo 1:1 con el DTO backend: `institutionName`, `certificateText`, `rectorName`, `rectorRole`, `advisorName`, `advisorRole`, `updatedAt`.
+- Seam `InstitutionalConfigService`:
+  - `obtener()` / `guardar()` → GET/PUT JSON `/admin/configuracion-institucional`
+  - `subirFirma(role, file)` → POST multipart `/firmas/{rector|asesor}` (inmediato)
+  - `quitarFirma(role)` → DELETE
+  - `previewFirma(role)` → GET blob autenticado
+- Modelo con flags `rectorSignaturePresent` / `advisorSignaturePresent` (solo lectura).
 - Provider `useRealApi ? HttpInstitutionalConfigService : InMemoryInstitutionalConfigService`.
-- UI P-14 (calco v0, sin inventar persistencia):
-  - Kicker «Folio institucional», lede y banner de impacto con tres bullets.
-  - Nav lateral sticky (desktop) con anclas `#identidad` … `#validacion`.
-  - Secciones card numeradas 01–05 con iconos SVG Lucide-like.
-  - Campos editables solo del DTO; preview tipográfica de firmas; barra sticky dirty (Guardar configuración / Descartar cambios + `updatedAt`).
-  - Logos, upload de firmas, email SMTP y sello: nota honesta o control disabled (sin `input[type=file]`).
-  - Contacto y Validación pública: bloques informativos sin inputs inventados.
+- UI Autoridades: `input[type=file]` real; POST al elegir; Quitar; **no marca dirty** del formulario de textos; Guardar no envía multipart.
+- Logos institucionales: fijos del sistema (sin upload).
 - Validación cliente alineada a límites PHP (160 / 80 / 255); `institutionName` obligatorio.
 
-## Fuera de alcance (sin persistencia backend)
+## Firmas (Opción A)
 
-Logos upload, dirección, email editable, upload de firmas, formato de numeración, mensajes de validación pública, sello / link base QR.
+- Formatos: PNG o JPEG; máx. 1 MB; recomendado ≤~1200×400.
+- Persistencia inmediata al elegir archivo; independiente de «Guardar configuración».
+- Preview tipográfica en la página; el PDF usa imagen si el archivo existe (fallback tipográfico si no).
+
+## Fuera de alcance
+
+Logos upload, firma criptográfica, correo automático, rotación de QR, auth nueva.
 
 ## Referencias
 
-- Archive P-14: `openspec/changes/archive/2026-07-17-frontend-parity-configuracion-layout/`
-- Archive base: `openspec/changes/archive/2026-07-16-frontend-configuracion-institucional/`
-- Spec canónica HTTP: `openspec/specs/frontend-http-services/spec.md` (InstitutionalConfig)
+- Archive: `openspec/changes/archive/2026-07-23-frontend-backend-config-firmas-autoridades/`
+- Spec firmas: `openspec/specs/admin-institutional-signatures/spec.md`
+- Spec HTTP: `openspec/specs/frontend-http-services/spec.md`
 - Referencia visual: `muestra_pagina/components/admin/configuracion-institucional.tsx` (no portar React)
 - Página: `apps/frontend-angular/src/app/features/admin/institutional-config/pages/`
