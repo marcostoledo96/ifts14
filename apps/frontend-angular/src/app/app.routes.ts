@@ -78,6 +78,12 @@ export const routes: Routes = [
           import('./features/admin/admin-dashboard-page').then((m) => m.AdminDashboardPage),
       },
       {
+        path: 'guia',
+        title: 'Admin · Guía de flujo — IFTS 14',
+        loadComponent: () =>
+          import('./features/admin/guide/admin-guide-page').then((m) => m.AdminGuidePage),
+      },
+      {
         path: 'configuracion',
         title: 'Admin · Configuración institucional — IFTS 14',
         loadComponent: () =>
