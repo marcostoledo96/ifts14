@@ -64,6 +64,54 @@ export const DASHBOARD_PENDIENTES: readonly PendienteFila[] = [
  *  solo estructura + estado vacío, nunca eventos inventados. */
 export const ACTIVIDAD_COLUMNAS = ['Hora', 'ID', 'Tipo', 'Detalle', 'Autor'] as const;
 
+export interface FlujoPaso {
+  readonly id: string;
+  readonly titulo: string;
+  readonly resumen: string;
+  readonly route: string;
+  /** Ancla en `/admin/guia` (sin #). */
+  readonly guiaAncla: string;
+}
+
+/** Orden operativo Bedelía: mapa compacto en dashboard → detalle en /admin/guia. */
+export const DASHBOARD_FLUJO_PASOS: readonly FlujoPaso[] = [
+  {
+    id: 'cursos',
+    titulo: 'Cursos',
+    resumen: 'Alta de comisión, carga y edición de fechas de cursada.',
+    route: '/admin/cursos',
+    guiaAncla: 'cursos',
+  },
+  {
+    id: 'alumnos',
+    titulo: 'Alumnos',
+    resumen: 'Alta o actualización de fichas (documento visible en UI admin).',
+    route: '/admin/alumnos',
+    guiaAncla: 'alumnos',
+  },
+  {
+    id: 'asistencias',
+    titulo: 'Asistencias',
+    resumen: 'Elegí curso y fecha, y registrá presentes de la clase.',
+    route: '/admin/asistencias',
+    guiaAncla: 'asistencias',
+  },
+  {
+    id: 'certificaciones',
+    titulo: 'Certificaciones',
+    resumen: 'Listado, expediente, PDF/QR permanente y entrega manual.',
+    route: '/admin/certificaciones',
+    guiaAncla: 'certificaciones',
+  },
+  {
+    id: 'configuracion',
+    titulo: 'Configuración',
+    resumen: 'Datos institucionales del folio (autoridades, textos, identidad).',
+    route: '/admin/configuracion',
+    guiaAncla: 'configuracion',
+  },
+];
+
 // Mesa de trabajo admin: acciones reales + resumen derivado de seams.
 // Bandeja con conteo real solo donde hay fuente; actividad sin eventos seed.
 @Component({
@@ -79,6 +127,7 @@ export class AdminDashboardPage {
   private readonly certs = inject(CERTIFICATIONS_SOURCE, { optional: true });
 
   readonly pendientes = DASHBOARD_PENDIENTES;
+  readonly flujoPasos = DASHBOARD_FLUJO_PASOS;
   readonly actividadColumnas = ACTIVIDAD_COLUMNAS;
 
   readonly cursosCargados = signal<Metric>(null);
