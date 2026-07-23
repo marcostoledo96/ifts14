@@ -105,6 +105,8 @@ describe('CertificationNewPage', () => {
     rectorRole: 'Rector/a',
     advisorName: 'Asesor Demo',
     advisorRole: 'Asesor/a pedagógico/a',
+    rectorSignaturePresent: false,
+    advisorSignaturePresent: false,
     parameters: emptyParameters(),
     updatedAt: '2026-01-01',
   };

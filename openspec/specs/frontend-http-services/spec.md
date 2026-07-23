@@ -212,28 +212,54 @@ The system SHALL provide `HttpCertificationsService` implementing `Certification
 
 ### Requirement: HttpInstitutionalConfigService provides institutional configuration
 
-The system SHALL provide an `InstitutionalConfigService` interface, `HttpInstitutionalConfigService`, and `InMemoryInstitutionalConfigService` wired via `environment.useRealApi`.
+El sistema DEBE proveer `InstitutionalConfigService`, `HttpInstitutionalConfigService` e `InMemoryInstitutionalConfigService` vía `environment.useRealApi`.
 
-The `InstitutionalConfig` model SHALL map 1:1 to the backend DTO fields: `institutionName`, `certificateText`, `rectorName`, `rectorRole`, `advisorName`, `advisorRole`, `updatedAt`, and `parameters` (mapa de las 9 claves tipadas activas de `cert_parametros_sistema`). It SHALL NOT invent fields the API does not expose (`direccion`, `logoUrl`, logos, signature uploads).
+El modelo `InstitutionalConfig` DEBE mapear 1:1 los campos de texto del DTO: `institutionName`, `certificateText`, `rectorName`, `rectorRole`, `advisorName`, `advisorRole`, `updatedAt`, `parameters` (9 claves tipadas) y los flags booleanos `rectorSignaturePresent` / `advisorSignaturePresent`. `obtener()` / `guardar()` DEBEN usar JSON sin multipart. El modelo NO DEBE inventar `direccion`, `logoUrl` ni URLs públicas de firma.
+(Previously: el modelo excluía uploads/firmas y no incluía flags de presencia.)
 
 #### Scenario: Fetch institutional config
 
-- GIVEN the backend returns config from `GET /admin/configuracion-institucional`
-- WHEN `obtener()` is called
-- THEN the service SHALL return `InstitutionalConfig` mapped 1:1 from `envelope.data` (null string fields normalized to `''`; cada entrada de `parameters` con `value`/`type`/`group`/`label`)
+- DADO el backend responde `GET /admin/configuracion-institucional`
+- CUANDO se llama `obtener()`
+- ENTONCES el servicio DEBE devolver `InstitutionalConfig` desde `envelope.data` (strings null → `''`; `parameters` tipados; flags booleanos de firma)
 
 #### Scenario: Save institutional config
 
-- GIVEN a valid write payload with non-empty `institutionName` and optional flat `parameters` values
-- WHEN `guardar(payload)` is called
-- THEN the service SHALL `PUT /admin/configuracion-institucional` with the write body
-- AND SHALL return the updated `InstitutionalConfig` from `envelope.data`
+- DADO payload válido con `institutionName` no vacío y `parameters` opcionales
+- CUANDO se llama `guardar(payload)`
+- ENTONCES el servicio DEBE `PUT /admin/configuracion-institucional` en JSON
+- Y DEBE devolver `InstitutionalConfig` actualizado sin enviar multipart de firmas
 
 #### Scenario: HTTP error handling for config
 
-- GIVEN the backend returns a 4xx or 5xx status
-- WHEN `obtener()` or `guardar()` is called
-- THEN the service SHALL reject the promise with a descriptive error
+- DADO el backend responde 4xx o 5xx
+- CUANDO se llama `obtener()` o `guardar()`
+- ENTONCES el servicio DEBE rechazar con error descriptivo
+
+### Requirement: Métodos HTTP de firmas institucionales
+
+`InstitutionalConfigService` (HTTP e in-memory) DEBE exponer métodos para `POST`/`DELETE`/`GET` de firmas por rol (`rector`|`asesor`) contra `/admin/configuracion-institucional/firmas/{rol}`. Upload DEBE usar multipart; DELETE/GET DEBEN ser inmediatos e independientes de `guardar()`.
+
+#### Scenario: Upload firma por rol
+
+- DADO `File` PNG/JPEG válido y rol permitido
+- CUANDO se llama el método de upload
+- ENTONCES el servicio DEBE `POST` multipart a `.../firmas/{rol}`
+- Y DEBE resolver éxito/error sin invocar `guardar()`
+
+#### Scenario: Delete y preview firma
+
+- DADO un rol permitido
+- CUANDO se llama delete o preview
+- ENTONCES delete DEBE `DELETE .../firmas/{rol}` y preview DEBE `GET` binario con auth de sesión
+- Y errores HTTP DEBEN rechazarse con mensaje descriptivo
+
+#### Scenario: HttpTestingController cubre firmas
+
+- DADO tests con `HttpTestingController`
+- CUANDO se ejercitan upload/delete/preview
+- ENTONCES DEBEN afirmar método, URL y cuerpo/headers esperados
+- Y DEBEN flushear mock y verificar sin requests pendientes
 
 ### Requirement: HttpTestingController tests for all HTTP services
 

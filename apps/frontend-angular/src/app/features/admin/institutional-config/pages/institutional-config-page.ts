@@ -22,7 +22,7 @@ import { INSTITUTIONAL_LOGOS } from '../../../../shared/brand/institutional-bran
 
 // Página de configuración institucional: layout calca v0 (nav sticky +
 // secciones). Persistidos: 6 campos institucionales + 9 parámetros tipados.
-// Logos fijos; firmas digitales fuera de este ciclo.
+// Logos fijos; firmas: upload inmediato Opción A (no dirty del formulario).
 @Component({
   selector: 'app-institutional-config-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +43,8 @@ export class InstitutionalConfigPage {
   readonly rectorRole = signal('');
   readonly advisorName = signal('');
   readonly advisorRole = signal('');
+  readonly rectorSignaturePresent = signal(false);
+  readonly advisorSignaturePresent = signal(false);
 
   readonly textoInstitucional = signal(SYSTEM_PARAMETER_DEFAULTS.texto_institucional.value);
   readonly tituloCertificado = signal(SYSTEM_PARAMETER_DEFAULTS.titulo_certificado.value);
@@ -71,8 +73,11 @@ export class InstitutionalConfigPage {
   readonly updatedAt = signal<string | null>(null);
   readonly cargando = signal(true);
   readonly guardando = signal(false);
+  readonly firmaBusy = signal(false);
   readonly error = signal('');
   readonly ok = signal('');
+  readonly firmaError = signal('');
+  readonly firmaOk = signal('');
 
   readonly cargado = computed(() => this.snapshot() !== null);
 
@@ -130,6 +135,8 @@ export class InstitutionalConfigPage {
     this.rectorRole.set(config.rectorRole);
     this.advisorName.set(config.advisorName);
     this.advisorRole.set(config.advisorRole);
+    this.rectorSignaturePresent.set(config.rectorSignaturePresent);
+    this.advisorSignaturePresent.set(config.advisorSignaturePresent);
     for (const key of SYSTEM_PARAMETER_KEYS) {
       this.paramSignalByKey[key].set(config.parameters[key]?.value ?? '');
     }
@@ -238,6 +245,47 @@ export class InstitutionalConfigPage {
       this.error.set('No se pudo guardar la configuración. Reintentá en unos minutos.');
     } finally {
       this.guardando.set(false);
+    }
+  }
+
+  async onFirmaSeleccionada(role: 'rector' | 'asesor', event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) return;
+
+    this.firmaError.set('');
+    this.firmaOk.set('');
+    this.firmaBusy.set(true);
+    try {
+      const updated = await this.source.subirFirma(role, file);
+      this.rectorSignaturePresent.set(updated.rectorSignaturePresent);
+      this.advisorSignaturePresent.set(updated.advisorSignaturePresent);
+      this.updatedAt.set(updated.updatedAt);
+      this.firmaOk.set(
+        role === 'rector' ? 'Firma del rector/a cargada.' : 'Firma del asesor/a cargada.',
+      );
+    } catch {
+      this.firmaError.set('No se pudo cargar la firma. Usá PNG o JPEG de hasta 1 MB.');
+    } finally {
+      this.firmaBusy.set(false);
+    }
+  }
+
+  async quitarFirma(role: 'rector' | 'asesor'): Promise<void> {
+    this.firmaError.set('');
+    this.firmaOk.set('');
+    this.firmaBusy.set(true);
+    try {
+      const updated = await this.source.quitarFirma(role);
+      this.rectorSignaturePresent.set(updated.rectorSignaturePresent);
+      this.advisorSignaturePresent.set(updated.advisorSignaturePresent);
+      this.updatedAt.set(updated.updatedAt);
+      this.firmaOk.set('Firma eliminada.');
+    } catch {
+      this.firmaError.set('No se pudo quitar la firma. Reintentá en unos minutos.');
+    } finally {
+      this.firmaBusy.set(false);
     }
   }
 

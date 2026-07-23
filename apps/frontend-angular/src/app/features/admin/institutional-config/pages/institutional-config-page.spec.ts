@@ -16,6 +16,8 @@ const BASE: InstitutionalConfig = {
   rectorRole: 'Rector/a',
   advisorName: 'Asesora Demo',
   advisorRole: 'Asesora pedagógica',
+  rectorSignaturePresent: false,
+  advisorSignaturePresent: false,
   parameters: emptyParameters(),
   updatedAt: '2026-01-01T00:00:00Z',
 };
@@ -29,7 +31,10 @@ class StubInstitutionalConfigService implements InstitutionalConfigService {
   failPut = false;
   obtenerCalls = 0;
   guardarCalls = 0;
+  subirFirmaCalls = 0;
+  quitarFirmaCalls = 0;
   lastPayload: InstitutionalConfigWrite | null = null;
+  lastUpload: { role: string; fileName: string } | null = null;
 
   async obtener(): Promise<InstitutionalConfig> {
     this.obtenerCalls++;
@@ -54,6 +59,7 @@ class StubInstitutionalConfigService implements InstitutionalConfigService {
       };
     }
     this.config = {
+      ...this.config,
       institutionName: payload.institutionName,
       certificateText: payload.certificateText,
       rectorName: payload.rectorName,
@@ -64,6 +70,33 @@ class StubInstitutionalConfigService implements InstitutionalConfigService {
       updatedAt: '2026-02-02T12:00:00Z',
     };
     return { ...this.config, parameters: { ...parameters } };
+  }
+
+  async subirFirma(role: 'rector' | 'asesor', file: File): Promise<InstitutionalConfig> {
+    this.subirFirmaCalls++;
+    this.lastUpload = { role, fileName: file.name };
+    this.config = {
+      ...this.config,
+      rectorSignaturePresent: role === 'rector' ? true : this.config.rectorSignaturePresent,
+      advisorSignaturePresent: role === 'asesor' ? true : this.config.advisorSignaturePresent,
+      updatedAt: '2026-03-03T12:00:00Z',
+    };
+    return { ...this.config, parameters: { ...this.config.parameters } };
+  }
+
+  async quitarFirma(role: 'rector' | 'asesor'): Promise<InstitutionalConfig> {
+    this.quitarFirmaCalls++;
+    this.config = {
+      ...this.config,
+      rectorSignaturePresent: role === 'rector' ? false : this.config.rectorSignaturePresent,
+      advisorSignaturePresent: role === 'asesor' ? false : this.config.advisorSignaturePresent,
+      updatedAt: '2026-03-04T12:00:00Z',
+    };
+    return { ...this.config, parameters: { ...this.config.parameters } };
+  }
+
+  async previewFirma(): Promise<Blob> {
+    return new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' });
   }
 }
 
@@ -191,18 +224,68 @@ describe('InstitutionalConfigPage', () => {
     expect(scroll).toHaveBeenCalled();
   });
 
-  // --- REQ-CFG / CFGLAY-005: firmas/logos sin upload; parámetros editables ---
+  // --- Firmas Opción A: input file real; POST al elegir; sin dirty ---
 
-  it('no ofrece upload real: sin input file; botones de logo/firma deshabilitados', async () => {
+  it('ofrece input file real para firmas (rector y asesor)', async () => {
     const f = await render();
-    expect(el(f).querySelector('input[type="file"]')).toBeNull();
-    const uploadBtns = Array.from(el(f).querySelectorAll('button')).filter((b) =>
-      /subir logo|reemplazar|subir firma/i.test(b.textContent || ''),
+    expect(el(f).querySelector('#firma-rector')).not.toBeNull();
+    expect(el(f).querySelector('#firma-asesor')).not.toBeNull();
+    expect(el(f).querySelectorAll('input[type="file"]').length).toBe(2);
+  });
+
+  it('al elegir archivo dispara subirFirma sin marcar dirty del formulario', async () => {
+    const f = await render();
+    const page = f.componentInstance;
+    expect(page.dirty()).toBeFalse();
+    const file = new File([new Uint8Array([1, 2, 3])], 'rector.png', { type: 'image/png' });
+    const inputEl = el(f).querySelector('#firma-rector') as HTMLInputElement;
+    Object.defineProperty(inputEl, 'files', { value: [file] });
+    inputEl.dispatchEvent(new Event('change'));
+    await f.whenStable();
+    f.detectChanges();
+    expect(stub.subirFirmaCalls).toBe(1);
+    expect(stub.lastUpload).toEqual({ role: 'rector', fileName: 'rector.png' });
+    expect(stub.guardarCalls).toBe(0);
+    expect(page.dirty()).toBeFalse();
+    expect(page.rectorSignaturePresent()).toBeTrue();
+  });
+
+  it('quitar firma dispara DELETE y no marca dirty', async () => {
+    const f = await render();
+    stub.config = { ...stub.config, rectorSignaturePresent: true };
+    await f.componentInstance.cargar();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const quitar = Array.from(el(f).querySelectorAll('button')).find((b) =>
+      /quitar/i.test(b.textContent || ''),
     );
-    expect(uploadBtns.length).toBeGreaterThan(0);
-    for (const b of uploadBtns) {
-      expect(b.disabled).toBeTrue();
-    }
+    expect(quitar).toBeTruthy();
+    quitar!.dispatchEvent(new Event('click'));
+    await f.whenStable();
+    f.detectChanges();
+    expect(stub.quitarFirmaCalls).toBe(1);
+    expect(f.componentInstance.dirty()).toBeFalse();
+    expect(f.componentInstance.rectorSignaturePresent()).toBeFalse();
+  });
+
+  it('Guardar envía solo textos JSON (sin multipart de firmas)', async () => {
+    const f = await render();
+    setValue(f, '#rector-name', 'Rector Editado');
+    (el(f).querySelector('.sticky-bar button[type="submit"]') as HTMLButtonElement).click();
+    await settle(f);
+    expect(stub.guardarCalls).toBe(1);
+    expect(stub.lastPayload?.rectorName).toBe('Rector Editado');
+    expect(stub.subirFirmaCalls).toBe(0);
+  });
+
+  it('logos siguen sin upload; botones de logo ausentes', async () => {
+    const f = await render();
+    const logoUpload = Array.from(el(f).querySelectorAll('button')).filter((b) =>
+      /subir logo|reemplazar logo/i.test(b.textContent || ''),
+    );
+    expect(logoUpload.length).toBe(0);
+    expect(el(f).querySelector('.logos-grid button')).toBeNull();
   });
 
   it('contacto y validación tienen campos de parámetros editables', async () => {

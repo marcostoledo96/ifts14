@@ -17,7 +17,18 @@ final class InstitutionalConfig
         'advisorRole' => 'Asesor/a Pedagógica',
     ];
 
-    /** @return array{institutionName:string,certificateText:string,rectorName:string,rectorRole:string,advisorName:string,advisorRole:string} */
+    /**
+     * @return array{
+     *   institutionName:string,
+     *   certificateText:string,
+     *   rectorName:string,
+     *   rectorRole:string,
+     *   advisorName:string,
+     *   advisorRole:string,
+     *   rectorSignaturePath:?string,
+     *   advisorSignaturePath:?string
+     * }
+     */
     public static function normalize(mixed $config): array
     {
         $config = is_array($config) ? $config : [];
@@ -29,6 +40,8 @@ final class InstitutionalConfig
             'rectorRole' => self::value($config['rectorRole'] ?? null, self::DEFAULTS['rectorRole'], self::ROLE_MAX_LENGTH),
             'advisorName' => self::value($config['advisorName'] ?? null, self::DEFAULTS['advisorName'], self::NAME_MAX_LENGTH),
             'advisorRole' => self::value($config['advisorRole'] ?? null, self::DEFAULTS['advisorRole'], self::ROLE_MAX_LENGTH),
+            'rectorSignaturePath' => self::optionalPath($config['rectorSignaturePath'] ?? null),
+            'advisorSignaturePath' => self::optionalPath($config['advisorSignaturePath'] ?? null),
         ];
     }
 
@@ -57,14 +70,25 @@ final class InstitutionalConfig
         }
     }
 
-    /** @return array{institutionName:string,certificateText:string,rectorName:string,rectorRole:string,advisorName:string,advisorRole:string} */
-    public static function fromDatabaseRow(mixed $row): array
+    /**
+     * @return array{
+     *   institutionName:string,
+     *   certificateText:string,
+     *   rectorName:string,
+     *   rectorRole:string,
+     *   advisorName:string,
+     *   advisorRole:string,
+     *   rectorSignaturePath:?string,
+     *   advisorSignaturePath:?string
+     * }
+     */
+    public static function fromDatabaseRow(mixed $row, ?string $signatureStoragePath = null): array
     {
         if (!is_array($row)) {
             return self::normalize([]);
         }
 
-        return self::normalize([
+        $base = self::normalize([
             'institutionName' => $row['institucion_nombre'] ?? null,
             'certificateText' => $row['texto_certificado'] ?? null,
             'rectorName' => $row['rector_nombre'] ?? null,
@@ -72,6 +96,46 @@ final class InstitutionalConfig
             'advisorName' => $row['asesor_nombre'] ?? null,
             'advisorRole' => $row['asesor_cargo'] ?? null,
         ]);
+
+        if ($signatureStoragePath !== null && $signatureStoragePath !== '') {
+            $base['rectorSignaturePath'] = self::resolveSignaturePath(
+                $signatureStoragePath,
+                $row['rector_firma_filename'] ?? null,
+            );
+            $base['advisorSignaturePath'] = self::resolveSignaturePath(
+                $signatureStoragePath,
+                $row['asesor_firma_filename'] ?? null,
+            );
+        }
+
+        return $base;
+    }
+
+    private static function resolveSignaturePath(string $storage, mixed $filename): ?string
+    {
+        if (!is_string($filename) || $filename === '') {
+            return null;
+        }
+        if (
+            str_contains($filename, '/')
+            || str_contains($filename, '\\')
+            || str_contains($filename, '..')
+            || preg_match('/\A(rector|asesor)\.(png|jpg)\z/', $filename) !== 1
+        ) {
+            return null;
+        }
+
+        $path = rtrim($storage, '/') . '/' . $filename;
+        return is_file($path) && is_readable($path) ? $path : null;
+    }
+
+    private static function optionalPath(mixed $value): ?string
+    {
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return trim($value);
     }
 
     private static function value(mixed $value, string $default, int $maxLength): string
