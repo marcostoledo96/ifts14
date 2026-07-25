@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { resetMockAdminPublicStatus } from '../../../../../shared/certificates/mock-tokens';
 import { CERTIFICATIONS_SOURCE } from '../../../certifications/certifications.service';
 import { InMemoryCertificationsService } from '../../../certifications/in-memory-certifications.service';
 import { COURSES_SOURCE } from '../../../courses/courses.service';
@@ -7,6 +8,12 @@ import { InMemoryCoursesService } from '../../../courses/in-memory-courses.servi
 import { DateCertificatesPage } from './date-certificates-page';
 
 describe('DateCertificatesPage', () => {
+  beforeEach(() => {
+    // Otros specs pueden dejar certs seed en "revocado" vía localStorage compartido.
+    resetMockAdminPublicStatus();
+    TestBed.resetTestingModule();
+  });
+
   async function render(id: number, fechaId: number) {
     await TestBed.configureTestingModule({
       imports: [DateCertificatesPage],
@@ -47,15 +54,22 @@ describe('DateCertificatesPage', () => {
 
   it('descargarQr llama descargarQrPng del seam', async () => {
     const f = await render(1, 11);
+    const page = f.componentInstance;
+    const vigente = page.certificados().find((c) => page.puedeEntregar(c));
+    expect(vigente).toBeTruthy();
     const certs = TestBed.inject(CERTIFICATIONS_SOURCE);
-    const spy = spyOn(certs, 'descargarQrPng').and.callThrough();
+    const spy = spyOn(certs, 'descargarQrPng').and.resolveTo(
+      new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' }),
+    );
     const btn = (f.nativeElement as HTMLElement).querySelector(
       '[data-testid="cert-descargar-qr"]',
     ) as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    expect(btn.disabled).toBeFalse();
     btn.click();
     f.detectChanges();
     await f.whenStable();
-    expect(spy).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith(vigente!.id);
   });
 
   it('no expone token completo en la lista', async () => {

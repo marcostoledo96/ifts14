@@ -51,6 +51,9 @@ export class InstitutionalConfigPage {
   /** Object URLs del preview (revoke al reemplazar/quitar/destroy). */
   readonly rectorFirmaUrl = signal<string | null>(null);
   readonly advisorFirmaUrl = signal<string | null>(null);
+  /** Evita publicar blob URLs stale tras refresh concurrente o destroy. */
+  private rectorPreviewGen = 0;
+  private advisorPreviewGen = 0;
 
   readonly textoInstitucional = signal(SYSTEM_PARAMETER_DEFAULTS.texto_institucional.value);
   readonly tituloCertificado = signal(SYSTEM_PARAMETER_DEFAULTS.titulo_certificado.value);
@@ -116,6 +119,8 @@ export class InstitutionalConfigPage {
 
   constructor() {
     this.destroyRef.onDestroy(() => {
+      this.rectorPreviewGen++;
+      this.advisorPreviewGen++;
       this.revokeFirmaUrl('rector');
       this.revokeFirmaUrl('asesor');
     });
@@ -316,11 +321,18 @@ export class InstitutionalConfigPage {
   }
 
   private async loadFirmaPreview(role: SignatureRole, present: boolean): Promise<void> {
+    const gen = role === 'rector' ? ++this.rectorPreviewGen : ++this.advisorPreviewGen;
     this.revokeFirmaUrl(role);
     if (!present) return;
     try {
       const blob = await this.source.previewFirma(role);
+      const current = role === 'rector' ? this.rectorPreviewGen : this.advisorPreviewGen;
+      if (gen !== current) return;
       const url = URL.createObjectURL(blob);
+      if (gen !== (role === 'rector' ? this.rectorPreviewGen : this.advisorPreviewGen)) {
+        URL.revokeObjectURL(url);
+        return;
+      }
       if (role === 'rector') this.rectorFirmaUrl.set(url);
       else this.advisorFirmaUrl.set(url);
     } catch {
