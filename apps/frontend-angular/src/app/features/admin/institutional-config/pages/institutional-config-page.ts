@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   signal,
   WritableSignal,
@@ -13,6 +14,7 @@ import {
   INSTITUTIONAL_CONFIG_SOURCE,
   InstitutionalConfig,
   InstitutionalConfigWrite,
+  SignatureRole,
   SYSTEM_PARAMETER_DEFAULTS,
   SYSTEM_PARAMETER_KEYS,
   SystemParameterKey,
@@ -32,6 +34,7 @@ import { INSTITUTIONAL_LOGOS } from '../../../../shared/brand/institutional-bran
 })
 export class InstitutionalConfigPage {
   private readonly source = inject(INSTITUTIONAL_CONFIG_SOURCE);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly limits = INSTITUTIONAL_CONFIG_LIMITS;
   readonly logos = INSTITUTIONAL_LOGOS;
@@ -45,6 +48,9 @@ export class InstitutionalConfigPage {
   readonly advisorRole = signal('');
   readonly rectorSignaturePresent = signal(false);
   readonly advisorSignaturePresent = signal(false);
+  /** Object URLs del preview (revoke al reemplazar/quitar/destroy). */
+  readonly rectorFirmaUrl = signal<string | null>(null);
+  readonly advisorFirmaUrl = signal<string | null>(null);
 
   readonly textoInstitucional = signal(SYSTEM_PARAMETER_DEFAULTS.texto_institucional.value);
   readonly tituloCertificado = signal(SYSTEM_PARAMETER_DEFAULTS.titulo_certificado.value);
@@ -109,6 +115,10 @@ export class InstitutionalConfigPage {
   );
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.revokeFirmaUrl('rector');
+      this.revokeFirmaUrl('asesor');
+    });
     void this.cargar();
   }
 
@@ -137,6 +147,7 @@ export class InstitutionalConfigPage {
     this.advisorRole.set(config.advisorRole);
     this.rectorSignaturePresent.set(config.rectorSignaturePresent);
     this.advisorSignaturePresent.set(config.advisorSignaturePresent);
+    void this.refreshFirmaPreviews(config.rectorSignaturePresent, config.advisorSignaturePresent);
     for (const key of SYSTEM_PARAMETER_KEYS) {
       this.paramSignalByKey[key].set(config.parameters[key]?.value ?? '');
     }
@@ -262,6 +273,10 @@ export class InstitutionalConfigPage {
       this.rectorSignaturePresent.set(updated.rectorSignaturePresent);
       this.advisorSignaturePresent.set(updated.advisorSignaturePresent);
       this.updatedAt.set(updated.updatedAt);
+      await this.refreshFirmaPreviews(
+        updated.rectorSignaturePresent,
+        updated.advisorSignaturePresent,
+      );
       this.firmaOk.set(
         role === 'rector' ? 'Firma del rector/a cargada.' : 'Firma del asesor/a cargada.',
       );
@@ -281,12 +296,43 @@ export class InstitutionalConfigPage {
       this.rectorSignaturePresent.set(updated.rectorSignaturePresent);
       this.advisorSignaturePresent.set(updated.advisorSignaturePresent);
       this.updatedAt.set(updated.updatedAt);
+      await this.refreshFirmaPreviews(
+        updated.rectorSignaturePresent,
+        updated.advisorSignaturePresent,
+      );
       this.firmaOk.set('Firma eliminada.');
     } catch {
       this.firmaError.set('No se pudo quitar la firma. Reintentá en unos minutos.');
     } finally {
       this.firmaBusy.set(false);
     }
+  }
+
+  private async refreshFirmaPreviews(rector: boolean, advisor: boolean): Promise<void> {
+    await Promise.all([
+      this.loadFirmaPreview('rector', rector),
+      this.loadFirmaPreview('asesor', advisor),
+    ]);
+  }
+
+  private async loadFirmaPreview(role: SignatureRole, present: boolean): Promise<void> {
+    this.revokeFirmaUrl(role);
+    if (!present) return;
+    try {
+      const blob = await this.source.previewFirma(role);
+      const url = URL.createObjectURL(blob);
+      if (role === 'rector') this.rectorFirmaUrl.set(url);
+      else this.advisorFirmaUrl.set(url);
+    } catch {
+      // Preview opcional: el flag de presencia ya indica estado.
+    }
+  }
+
+  private revokeFirmaUrl(role: SignatureRole): void {
+    const current = role === 'rector' ? this.rectorFirmaUrl() : this.advisorFirmaUrl();
+    if (current) URL.revokeObjectURL(current);
+    if (role === 'rector') this.rectorFirmaUrl.set(null);
+    else this.advisorFirmaUrl.set(null);
   }
 
   /**
