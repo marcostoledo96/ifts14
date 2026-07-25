@@ -538,15 +538,23 @@
                 <p class="preview-hint">Vista previa en el PDF</p>
                 <div class="preview-firmas">
                   <p class="firma">
-                    @if (!rectorSignaturePresent()) {
+                    @if (rectorFirmaUrl(); as url) {
+                      <img class="firma-img" [src]="url" alt="Firma del rector/a" />
+                    } @else if (!rectorSignaturePresent()) {
                       <span class="firma-pending" aria-hidden="true">Firma pendiente</span>
+                    } @else {
+                      <span class="firma-pending" aria-hidden="true">Firma cargada</span>
                     }
                     <span class="firma-nombre">{{ previewRector() }}</span>
                     <span class="firma-cargo">{{ rectorRole() || '[Cargo]' }}</span>
                   </p>
                   <p class="firma">
-                    @if (!advisorSignaturePresent()) {
+                    @if (advisorFirmaUrl(); as url) {
+                      <img class="firma-img" [src]="url" alt="Firma del asesor/a" />
+                    } @else if (!advisorSignaturePresent()) {
                       <span class="firma-pending" aria-hidden="true">Firma pendiente</span>
+                    } @else {
+                      <span class="firma-pending" aria-hidden="true">Firma cargada</span>
                     }
                     <span class="firma-nombre">{{ previewAdvisor() }}</span>
                     <span class="firma-cargo">{{ advisorRole() || '[Cargo]' }}</span>

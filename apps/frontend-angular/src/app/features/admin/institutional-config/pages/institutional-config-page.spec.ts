@@ -33,8 +33,11 @@ class StubInstitutionalConfigService implements InstitutionalConfigService {
   guardarCalls = 0;
   subirFirmaCalls = 0;
   quitarFirmaCalls = 0;
+  previewFirmaCalls = 0;
+  failPreview = false;
   lastPayload: InstitutionalConfigWrite | null = null;
   lastUpload: { role: string; fileName: string } | null = null;
+  lastPreviewRole: string | null = null;
 
   async obtener(): Promise<InstitutionalConfig> {
     this.obtenerCalls++;
@@ -95,7 +98,10 @@ class StubInstitutionalConfigService implements InstitutionalConfigService {
     return { ...this.config, parameters: { ...this.config.parameters } };
   }
 
-  async previewFirma(): Promise<Blob> {
+  async previewFirma(role: 'rector' | 'asesor'): Promise<Blob> {
+    this.previewFirmaCalls++;
+    this.lastPreviewRole = role;
+    if (this.failPreview) throw new Error('preview falló');
     return new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' });
   }
 }
@@ -248,6 +254,9 @@ describe('InstitutionalConfigPage', () => {
     expect(stub.guardarCalls).toBe(0);
     expect(page.dirty()).toBeFalse();
     expect(page.rectorSignaturePresent()).toBeTrue();
+    expect(stub.previewFirmaCalls).toBeGreaterThan(0);
+    expect(el(f).querySelector('img.firma-img[alt="Firma del rector/a"]')).not.toBeNull();
+    expect(page.rectorFirmaUrl()?.startsWith('blob:')).toBeTrue();
   });
 
   it('quitar firma dispara DELETE y no marca dirty', async () => {
@@ -257,6 +266,7 @@ describe('InstitutionalConfigPage', () => {
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
+    expect(el(f).querySelector('img.firma-img[alt="Firma del rector/a"]')).not.toBeNull();
     const quitar = Array.from(el(f).querySelectorAll('button')).find((b) =>
       /quitar/i.test(b.textContent || ''),
     );
@@ -267,6 +277,27 @@ describe('InstitutionalConfigPage', () => {
     expect(stub.quitarFirmaCalls).toBe(1);
     expect(f.componentInstance.dirty()).toBeFalse();
     expect(f.componentInstance.rectorSignaturePresent()).toBeFalse();
+    expect(f.componentInstance.rectorFirmaUrl()).toBeNull();
+    expect(el(f).querySelector('img.firma-img[alt="Firma del rector/a"]')).toBeNull();
+  });
+
+  it('preview fallido no rompe la página y deja Firma cargada sin img', async () => {
+    stub = new StubInstitutionalConfigService();
+    stub.config = { ...stub.config, rectorSignaturePresent: true };
+    stub.failPreview = true;
+    await TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [InstitutionalConfigPage],
+      providers: [{ provide: INSTITUTIONAL_CONFIG_SOURCE, useValue: stub }],
+    }).compileComponents();
+    const f = TestBed.createComponent(InstitutionalConfigPage);
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(f.componentInstance.rectorSignaturePresent()).toBeTrue();
+    expect(f.componentInstance.rectorFirmaUrl()).toBeNull();
+    expect(el(f).textContent).toContain('Firma cargada');
+    expect(el(f).querySelector('img.firma-img[alt="Firma del rector/a"]')).toBeNull();
   });
 
   it('Guardar envía solo textos JSON (sin multipart de firmas)', async () => {
