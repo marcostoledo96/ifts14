@@ -225,4 +225,28 @@ describe('SidebarAdmin', () => {
     btn.click();
     expect(called).toBe(true);
   });
+
+  it('muestra X de cierre solo con mostrarCerrar=true y emite cerrarMenu', async () => {
+    await TestBed.configureTestingModule({
+      imports: [SidebarAdmin],
+      providers: [provideRouter([])],
+    }).compileComponents();
+    const f = TestBed.createComponent(SidebarAdmin);
+    f.componentRef.setInput('mostrarCerrar', true);
+    let closed = false;
+    f.componentInstance.cerrarMenu.subscribe(() => (closed = true));
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const btn = el.querySelector('button.sidebar-close') as HTMLButtonElement | null;
+    expect(btn).not.toBeNull();
+    expect(btn?.getAttribute('aria-label')).toBe('Cerrar menú');
+    btn?.click();
+    expect(closed).toBe(true);
+  });
+
+  it('no muestra X de cierre por defecto (sidebar desktop)', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('button.sidebar-close')).toBeNull();
+  });
 });
