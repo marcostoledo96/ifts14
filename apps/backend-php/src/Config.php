@@ -8,7 +8,8 @@ require_once __DIR__ . '/DniCipher.php';
 final class Config
 {
     private const string DEFAULT_PATH = '/home/usuario_demo/certificados_config/certificados-api.php';
-    private const int ADMIN_SESSION_IDLE_SECONDS = 1800;
+    /** Idle máximo sin actividad autenticada (4 h). Debe coincidir con la config externa. */
+    private const int ADMIN_SESSION_IDLE_SECONDS = 14400;
     private const int ADMIN_SESSION_ABSOLUTE_SECONDS = 28800;
 
     /** Hashes bcrypt públicos conocidos (p. ej. Laravel "password") — no admitir en deploy. */

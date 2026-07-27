@@ -28,7 +28,7 @@ return [
     // hasta reemplazarlo (nunca usar hashes públicos conocidos tipo "password").
     'admin_username' => 'REEMPLAZAR_CON_USUARIO_ADMIN_EXTERNO',
     'admin_password_hash' => 'REEMPLAZAR_CON_HASH_PASSWORD_DEFAULT',
-    'admin_session_idle_seconds' => 1800,
+    'admin_session_idle_seconds' => 14400,
     'admin_session_absolute_seconds' => 28800,
     // Compatibilidad exclusiva CLI; queda deshabilitada y no autoriza HTTP.
     'admin_legacy_key_enabled' => false,

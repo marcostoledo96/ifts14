@@ -48,7 +48,7 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'token_pepper' => 'pepper_demo_firmas_http',
     'admin_username' => 'bedelia',
     'admin_password_hash' => password_hash($password, PASSWORD_DEFAULT),
-    'admin_session_idle_seconds' => 1800,
+    'admin_session_idle_seconds' => 14400,
     'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $tmpDir . '/rate-limit.json',
     'signature_storage_path' => $storage,
