@@ -122,7 +122,7 @@ export class CertificationPreviewPage {
   readonly puedeReemitir = computed(() => {
     const d = this.detalle();
     if (!d) return false;
-    if (d.estado !== 'revocado' && d.estado !== 'vencido') return false;
+    if (d.estado !== 'revocado') return false;
     return d.alumnoId != null && d.cursoId != null;
   });
 
@@ -391,12 +391,8 @@ function estadoToLabel(e: EstadoCertificado): string {
   switch (e) {
     case 'vigente':
       return 'Válida';
-    case 'borrador':
-      return 'Borrador';
     case 'revocado':
       return 'Revocada';
-    case 'vencido':
-      return 'Vencida';
     default:
       return e;
   }
