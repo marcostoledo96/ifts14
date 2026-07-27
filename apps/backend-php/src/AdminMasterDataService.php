@@ -193,24 +193,41 @@ final class AdminMasterDataService
         $statement = $this->pdo->query(
             'SELECT id, apellido_nombre, apellido, nombre, email, dni_mostrar, dni_cifrado, estado FROM cert_alumnos ORDER BY id ASC'
         );
+        $rows = $statement->fetchAll();
+        $ids = array_map(static fn (array $row): int => (int) $row['id'], $rows);
+        $metricsById = $this->studentMetricsByIds($ids);
 
-        return ['items' => array_map(fn (array $row): array => $this->studentDto($row), $statement->fetchAll())];
+        return [
+            'items' => array_map(
+                function (array $row) use ($metricsById): array {
+                    $id = (int) $row['id'];
+
+                    return $this->studentDto($row, $metricsById[$id] ?? $this->emptyStudentMetrics());
+                },
+                $rows,
+            ),
+        ];
     }
 
     /** @return array<string, mixed> */
     public function getStudent(int $id): array
     {
+        $id = $this->positiveId($id);
         $statement = $this->pdo->prepare(
             'SELECT id, apellido_nombre, apellido, nombre, email, dni_mostrar, dni_cifrado, estado FROM cert_alumnos WHERE id = ? LIMIT 1'
         );
-        $statement->execute([$this->positiveId($id)]);
+        $statement->execute([$id]);
         $row = $statement->fetch();
 
         if (!is_array($row)) {
             throw new AdminCertificateException(404, 'STUDENT_NOT_FOUND', 'Alumno no encontrado.');
         }
 
-        return $this->studentDto($row);
+        $metrics = $this->studentMetricsByIds([$id])[$id] ?? $this->emptyStudentMetrics();
+        $dto = $this->studentDto($row, $metrics);
+        $dto['cursos'] = $this->studentCoursesTrajectory($id);
+
+        return $dto;
     }
 
     /** @param array<string, mixed> $body @return array<string, mixed> */
@@ -697,8 +714,12 @@ final class AdminMasterDataService
         return $dto;
     }
 
-    /** @param array<string, mixed> $row @return array<string, mixed> */
-    private function studentDto(array $row): array
+    /**
+     * @param array<string, mixed> $row
+     * @param array{cursosConAsistencia:int,certificacionesValidas:int,certificacionesRevocadas:int}|null $metrics
+     * @return array<string, mixed>
+     */
+    private function studentDto(array $row, ?array $metrics = null): array
     {
         $email = is_string($row['email'] ?? null) && trim($row['email']) !== ''
             ? trim((string) $row['email'])
@@ -716,6 +737,8 @@ final class AdminMasterDataService
             $apellidoNombre = trim((string) $row['apellido_nombre']);
         }
 
+        $metrics ??= $this->emptyStudentMetrics();
+
         return [
             'id' => (int) $row['id'],
             'apellido' => $apellido,
@@ -724,7 +747,173 @@ final class AdminMasterDataService
             'dniMostrar' => $this->adminDniDisplay($row),
             'email' => $email,
             'estado' => (string) $row['estado'],
+            'cursosConAsistencia' => $metrics['cursosConAsistencia'],
+            'certificacionesValidas' => $metrics['certificacionesValidas'],
+            'certificacionesRevocadas' => $metrics['certificacionesRevocadas'],
         ];
+    }
+
+    /** @return array{cursosConAsistencia:int,certificacionesValidas:int,certificacionesRevocadas:int} */
+    private function emptyStudentMetrics(): array
+    {
+        return [
+            'cursosConAsistencia' => 0,
+            'certificacionesValidas' => 0,
+            'certificacionesRevocadas' => 0,
+        ];
+    }
+
+    /**
+     * @param list<int> $studentIds
+     * @return array<int, array{cursosConAsistencia:int,certificacionesValidas:int,certificacionesRevocadas:int}>
+     */
+    private function studentMetricsByIds(array $studentIds): array
+    {
+        $out = [];
+        foreach ($studentIds as $id) {
+            if ($id > 0) {
+                $out[$id] = $this->emptyStudentMetrics();
+            }
+        }
+        if ($out === []) {
+            return $out;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($out), '?'));
+        $ids = array_keys($out);
+
+        $coursesStmt = $this->pdo->prepare(<<<SQL
+            SELECT a.alumno_id AS alumno_id, COUNT(DISTINCT cf.curso_id) AS total
+            FROM cert_asistencias a
+            JOIN cert_curso_fechas cf ON cf.id = a.curso_fecha_id
+            WHERE a.eliminado_en IS NULL
+              AND a.alumno_id IN ($placeholders)
+            GROUP BY a.alumno_id
+            SQL);
+        $coursesStmt->execute($ids);
+        while (($row = $coursesStmt->fetch()) !== false) {
+            $alumnoId = (int) $row['alumno_id'];
+            if (isset($out[$alumnoId])) {
+                $out[$alumnoId]['cursosConAsistencia'] = (int) $row['total'];
+            }
+        }
+
+        $validStmt = $this->pdo->prepare(<<<SQL
+            SELECT alumno_id, COUNT(*) AS total
+            FROM cert_certificados
+            WHERE estado = 'vigente'
+              AND revocado_en IS NULL
+              AND alumno_id IN ($placeholders)
+            GROUP BY alumno_id
+            SQL);
+        $validStmt->execute($ids);
+        while (($row = $validStmt->fetch()) !== false) {
+            $alumnoId = (int) $row['alumno_id'];
+            if (isset($out[$alumnoId])) {
+                $out[$alumnoId]['certificacionesValidas'] = (int) $row['total'];
+            }
+        }
+
+        $revokedStmt = $this->pdo->prepare(<<<SQL
+            SELECT alumno_id, COUNT(*) AS total
+            FROM cert_certificados
+            WHERE estado = 'revocado'
+              AND alumno_id IN ($placeholders)
+            GROUP BY alumno_id
+            SQL);
+        $revokedStmt->execute($ids);
+        while (($row = $revokedStmt->fetch()) !== false) {
+            $alumnoId = (int) $row['alumno_id'];
+            if (isset($out[$alumnoId])) {
+                $out[$alumnoId]['certificacionesRevocadas'] = (int) $row['total'];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Cursos con presentes del alumno + estado de certificación por par.
+     *
+     * @return list<array{id:string,nombre:string,codigo:string,presentes:list<string>,estadoCert:string,certificacionId:?string}>
+     */
+    private function studentCoursesTrajectory(int $studentId): array
+    {
+        $attendanceStmt = $this->pdo->prepare(<<<'SQL'
+            SELECT cf.curso_id, c.codigo, c.nombre, cf.fecha, cf.estado AS fecha_estado
+            FROM cert_asistencias a
+            JOIN cert_curso_fechas cf ON cf.id = a.curso_fecha_id
+            JOIN cert_cursos c ON c.id = cf.curso_id
+            WHERE a.alumno_id = ?
+              AND a.eliminado_en IS NULL
+            ORDER BY c.codigo ASC, cf.fecha ASC
+            SQL);
+        $attendanceStmt->execute([$studentId]);
+
+        /** @var array<int, array{id:string,nombre:string,codigo:string,presentes:list<string>,hasRealizada:bool}> $byCourse */
+        $byCourse = [];
+        while (($row = $attendanceStmt->fetch()) !== false) {
+            $cursoId = (int) $row['curso_id'];
+            if (!isset($byCourse[$cursoId])) {
+                $byCourse[$cursoId] = [
+                    'id' => (string) $cursoId,
+                    'nombre' => (string) $row['nombre'],
+                    'codigo' => (string) $row['codigo'],
+                    'presentes' => [],
+                    'hasRealizada' => false,
+                ];
+            }
+            $fecha = (string) $row['fecha'];
+            if (!in_array($fecha, $byCourse[$cursoId]['presentes'], true)) {
+                $byCourse[$cursoId]['presentes'][] = $fecha;
+            }
+            if ((string) $row['fecha_estado'] === 'realizada') {
+                $byCourse[$cursoId]['hasRealizada'] = true;
+            }
+        }
+
+        if ($byCourse === []) {
+            return [];
+        }
+
+        $certStmt = $this->pdo->prepare(<<<'SQL'
+            SELECT id, curso_id
+            FROM cert_certificados
+            WHERE alumno_id = ?
+              AND estado = 'vigente'
+              AND revocado_en IS NULL
+            SQL);
+        $certStmt->execute([$studentId]);
+        /** @var array<int, int> $certByCourse */
+        $certByCourse = [];
+        while (($row = $certStmt->fetch()) !== false) {
+            $cursoId = (int) $row['curso_id'];
+            if ($cursoId > 0 && !isset($certByCourse[$cursoId])) {
+                $certByCourse[$cursoId] = (int) $row['id'];
+            }
+        }
+
+        $out = [];
+        foreach ($byCourse as $cursoId => $course) {
+            $certId = $certByCourse[$cursoId] ?? null;
+            if ($certId !== null) {
+                $estadoCert = 'emitida';
+            } elseif ($course['hasRealizada']) {
+                $estadoCert = 'pendiente';
+            } else {
+                $estadoCert = 'en-curso';
+            }
+            $out[] = [
+                'id' => $course['id'],
+                'nombre' => $course['nombre'],
+                'codigo' => $course['codigo'],
+                'presentes' => $course['presentes'],
+                'estadoCert' => $estadoCert,
+                'certificacionId' => $certId !== null ? (string) $certId : null,
+            ];
+        }
+
+        return $out;
     }
 
     private function composeApellidoNombre(string $apellido, string $nombre): string
