@@ -17,6 +17,8 @@ export interface Alumno {
   readonly cursosConAsistencia: number | null;
   /** null = sin dato en API. */
   readonly certificacionesValidas: number | null;
+  /** null = sin dato en API. */
+  readonly certificacionesRevocadas: number | null;
 }
 
 /** Body de POST /admin/alumnos. */

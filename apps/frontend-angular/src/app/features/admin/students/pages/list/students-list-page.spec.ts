@@ -14,6 +14,7 @@ const alumnos: Alumno[] = Array.from({ length: 7 }, (_, i) => ({
   tieneEmail: i % 2 === 0,
   cursosConAsistencia: i,
   certificacionesValidas: i % 3,
+  certificacionesRevocadas: 0,
 }));
 
 /** Fixture > page size para ejercitar página 2. */
@@ -27,6 +28,7 @@ const alumnosMuchos: Alumno[] = Array.from({ length: STUDENTS_PAGE_SIZE + 5 }, (
   tieneEmail: i % 2 === 0,
   cursosConAsistencia: i % 4,
   certificacionesValidas: i % 3,
+  certificacionesRevocadas: 0,
 }));
 
 function stubSource(
@@ -161,7 +163,7 @@ describe('StudentsListPage', () => {
     const mixed: Alumno[] = [
       { ...alumnos[0], id: 1, tieneEmail: true },
       { ...alumnos[1], id: 2, tieneEmail: false },
-      { ...alumnos[2], id: 3, tieneEmail: null, cursosConAsistencia: null, certificacionesValidas: null },
+      { ...alumnos[2], id: 3, tieneEmail: null, cursosConAsistencia: null, certificacionesValidas: null, certificacionesRevocadas: null },
     ];
     const f = await render(stubSource({ listar: () => Promise.resolve(mixed) }));
     const page = f.componentInstance;

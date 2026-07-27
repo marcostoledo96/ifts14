@@ -65,6 +65,7 @@ describe('CertificationNewPage', () => {
     tieneEmail: false,
     cursosConAsistencia: 2,
     certificacionesValidas: 0,
+    certificacionesRevocadas: 0,
   };
   const alumnoInactivo: Alumno = {
     ...alumnoActivo,

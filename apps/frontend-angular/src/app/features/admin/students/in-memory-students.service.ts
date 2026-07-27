@@ -7,13 +7,13 @@ interface SeedAlumnoRaw extends Alumno {
 }
 
 const initialSeed: readonly SeedAlumnoRaw[] = [
-  { id: 1, apellido: 'Ficticia', nombre: 'Persona Uno', dniMostrar: '20111222', email: 'persona.uno@example.invalid', estado: 'activo', tieneEmail: true, cursosConAsistencia: 4, certificacionesValidas: 2, ingreso: '2021' },
-  { id: 2, apellido: 'Ficticia', nombre: 'Persona Dos', dniMostrar: '20222333', email: null, estado: 'activo', tieneEmail: false, cursosConAsistencia: 1, certificacionesValidas: 0, ingreso: '2022' },
-  { id: 3, apellido: 'Demostración', nombre: 'Estudiante Tres', dniMostrar: '20333444', email: 'estudiante.tres@example.invalid', estado: 'activo', tieneEmail: true, cursosConAsistencia: 6, certificacionesValidas: 3, ingreso: '2021' },
-  { id: 4, apellido: 'Demostración', nombre: 'Estudiante Cuatro', dniMostrar: '20444555', email: null, estado: 'activo', tieneEmail: false, cursosConAsistencia: 3, certificacionesValidas: 1, ingreso: '2023' },
-  { id: 5, apellido: 'Ejemplo', nombre: 'Alumno Cinco', dniMostrar: '20555666', email: 'alumno.cinco@example.invalid', estado: 'inactivo', tieneEmail: true, cursosConAsistencia: 2, certificacionesValidas: 0, ingreso: '2022' },
-  { id: 6, apellido: 'Ejemplo', nombre: 'Alumno Seis', dniMostrar: '20666777', email: null, estado: 'activo', tieneEmail: false, cursosConAsistencia: 5, certificacionesValidas: 2, ingreso: '2021' },
-  { id: 7, apellido: 'Muestra', nombre: 'Alumno Siete', dniMostrar: '20777888', email: 'alumno.siete@example.invalid', estado: 'activo', tieneEmail: true, cursosConAsistencia: 1, certificacionesValidas: 1, ingreso: '2024' },
+  { id: 1, apellido: 'Ficticia', nombre: 'Persona Uno', dniMostrar: '20111222', email: 'persona.uno@example.invalid', estado: 'activo', tieneEmail: true, cursosConAsistencia: 4, certificacionesValidas: 2, certificacionesRevocadas: 0, ingreso: '2021' },
+  { id: 2, apellido: 'Ficticia', nombre: 'Persona Dos', dniMostrar: '20222333', email: null, estado: 'activo', tieneEmail: false, cursosConAsistencia: 1, certificacionesValidas: 0, certificacionesRevocadas: 0, ingreso: '2022' },
+  { id: 3, apellido: 'Demostración', nombre: 'Estudiante Tres', dniMostrar: '20333444', email: 'estudiante.tres@example.invalid', estado: 'activo', tieneEmail: true, cursosConAsistencia: 6, certificacionesValidas: 3, certificacionesRevocadas: 0, ingreso: '2021' },
+  { id: 4, apellido: 'Demostración', nombre: 'Estudiante Cuatro', dniMostrar: '20444555', email: null, estado: 'activo', tieneEmail: false, cursosConAsistencia: 3, certificacionesValidas: 1, certificacionesRevocadas: 0, ingreso: '2023' },
+  { id: 5, apellido: 'Ejemplo', nombre: 'Alumno Cinco', dniMostrar: '20555666', email: 'alumno.cinco@example.invalid', estado: 'inactivo', tieneEmail: true, cursosConAsistencia: 2, certificacionesValidas: 0, certificacionesRevocadas: 1, ingreso: '2022' },
+  { id: 6, apellido: 'Ejemplo', nombre: 'Alumno Seis', dniMostrar: '20666777', email: null, estado: 'activo', tieneEmail: false, cursosConAsistencia: 5, certificacionesValidas: 2, certificacionesRevocadas: 0, ingreso: '2021' },
+  { id: 7, apellido: 'Muestra', nombre: 'Alumno Siete', dniMostrar: '20777888', email: 'alumno.siete@example.invalid', estado: 'activo', tieneEmail: true, cursosConAsistencia: 1, certificacionesValidas: 1, certificacionesRevocadas: 0, ingreso: '2024' },
 ];
 
 /** Exportado solo para tests de seed / privacy checks. */
@@ -69,7 +69,7 @@ export class InMemoryStudentsService implements StudentsService {
 
   async listar(): Promise<readonly Alumno[]> {
     return this.rows.map(
-      ({ id, apellido, nombre, dniMostrar, email, estado, tieneEmail, cursosConAsistencia, certificacionesValidas }) => ({
+      ({
         id,
         apellido,
         nombre,
@@ -79,6 +79,18 @@ export class InMemoryStudentsService implements StudentsService {
         tieneEmail,
         cursosConAsistencia,
         certificacionesValidas,
+        certificacionesRevocadas,
+      }) => ({
+        id,
+        apellido,
+        nombre,
+        dniMostrar,
+        email,
+        estado,
+        tieneEmail,
+        cursosConAsistencia,
+        certificacionesValidas,
+        certificacionesRevocadas,
       }),
     );
   }
@@ -101,6 +113,7 @@ export class InMemoryStudentsService implements StudentsService {
       tieneEmail: found.tieneEmail,
       cursosConAsistencia: found.cursosConAsistencia,
       certificacionesValidas: found.certificacionesValidas,
+      certificacionesRevocadas: found.certificacionesRevocadas,
       ingreso: found.ingreso,
       cursos: JSON.parse(JSON.stringify(cursos)) as CursoPresente[],
     };
@@ -129,6 +142,7 @@ export class InMemoryStudentsService implements StudentsService {
       tieneEmail: email !== null,
       cursosConAsistencia: 0,
       certificacionesValidas: 0,
+      certificacionesRevocadas: 0,
       ingreso: String(new Date().getFullYear()),
     };
     this.rows = [...this.rows, row];
