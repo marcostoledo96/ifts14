@@ -314,8 +314,7 @@ describe('CertificationPdfPreviewPage', () => {
   // --- Estados del documento ---
 
   for (const [id, marca, texto] of [
-    ['3', 'BORRADOR', 'borrador'],
-    ['4', 'VENCIDO', 'vencido'],
+    ['4', 'REVOCADO', 'revocada'],
     ['5', 'REVOCADO', 'revocada'],
   ] as const) {
     it(`certificado ${id} muestra marca y banda ${marca}`, async () => {

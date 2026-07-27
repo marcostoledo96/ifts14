@@ -79,17 +79,17 @@ export function seed(): CertificacionDetalle[] {
       numero: 'IFTS14-CERT-0003',
       nombreAlumno: 'Alumno Demo Tres',
       cursoNombre: 'Curso de prácticas documentales',
-      estado: 'borrador',
+      estado: 'vigente',
       documentMasked: '34567890',
       tokenPrefix: 'prefijo_demo_e3f',
-      emitidoEn: null,
+      emitidoEn: '2026-05-04',
       venceEn: null,
       alumnoId: 3,
       cursoId: 3,
       publicValidationUrl: 'https://ifrm/validar/prefijo_demo_e3f…',
       attendedDates: ['2026-05-04'],
       auditEvents: [
-        { at: '2026-05-01', accion: 'borrador', detalle: 'Borrador mock.' },
+        { at: '2026-05-04', accion: 'emision', detalle: 'Emisión mock.' },
       ],
     },
     {
@@ -97,7 +97,7 @@ export function seed(): CertificacionDetalle[] {
       numero: 'IFTS14-CERT-0004',
       nombreAlumno: 'Alumno Demo Cuatro',
       cursoNombre: 'Curso de procedimientos básicos',
-      estado: 'vencido',
+      estado: 'revocado',
       documentMasked: '45678901',
       tokenPrefix: 'prefijo_demo_g4h',
       emitidoEn: '2025-09-01',
@@ -108,7 +108,7 @@ export function seed(): CertificacionDetalle[] {
       attendedDates: ['2025-09-01', '2025-09-08'],
       auditEvents: [
         { at: '2025-09-01', accion: 'emision', detalle: 'Emisión mock.' },
-        { at: '2026-09-02', accion: 'vencimiento', detalle: 'Vencimiento automático.' },
+        { at: '2025-10-01', accion: 'revocacion', detalle: 'Revocación mock (ex-vencido).' },
       ],
     },
     {
@@ -186,9 +186,11 @@ export class InMemoryCertificationsService implements CertificationsService {
         mockPublicValidationToken(certificado.tokenPrefix),
       );
       if (status) {
+        const estadoAdmin: EstadoCertificado =
+          status === 'vigente' ? 'vigente' : 'revocado';
         this.certificados[index] = {
           ...certificado,
-          estado: status === 'expirado' ? 'vencido' : status,
+          estado: estadoAdmin,
         };
       }
     }
@@ -268,14 +270,14 @@ export class InMemoryCertificationsService implements CertificationsService {
     if (!found) {
       return Promise.reject(new Error(`Certificación no encontrada: ${id}`));
     }
-    // ponytail: mock construye URL canónica a partir del seed; pdfStatus 'valid' salvo id 4 (vencido).
+    // ponytail: mock construye URL canónica a partir del seed; pdfStatus 'valid' salvo id 4 (revocado).
     const pdfStatus: PdfStatus = found.id === 4 ? 'outdated' : 'valid';
     return Promise.resolve({
       certificadoId: found.id,
       publicValidationUrl: mockPublicValidationUrl(found.tokenPrefix),
       pdfDownloadUrl: `${found.id}/pdf`,
       tokenPrefix: found.tokenPrefix,
-      pdfAvailable: found.estado !== 'borrador',
+      pdfAvailable: found.estado === 'vigente',
       pdfStatus,
     });
   }

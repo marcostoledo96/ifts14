@@ -126,7 +126,7 @@ $expectedColumns = [
  */
 $expectedEnumValues = [
     'cert_cursos.estado' => ['borrador', 'activo', 'cerrado', 'archivado'],
-    'cert_certificados.estado' => ['borrador', 'vigente', 'revocado', 'vencido'],
+    'cert_certificados.estado' => ['vigente', 'revocado'],
     'cert_certificados.pdf_estado' => ['vigente', 'desactualizado', 'no_generado'],
     'cert_eventos_auditoria.tipo_evento' => ['emision', 'verificacion', 'revocacion', 'reenvio', 'error', 'sync_snapshot'],
     'cert_parametros_sistema.tipo' => ['texto', 'textarea', 'url', 'email'],
