@@ -11,10 +11,8 @@ import {
 type VistaQa = 'datos' | 'cargando' | 'error' | 'vacio-total';
 
 const ESTADO_LABEL: Record<EstadoCertificado, string> = {
-  borrador: 'Borrador',
   vigente: 'Válida',
   revocado: 'Revocado',
-  vencido: 'Vencido',
 };
 
 export const CERTIFICATIONS_QA_ENABLED = new InjectionToken<boolean>('CERTIFICATIONS_QA_ENABLED', {
@@ -34,7 +32,7 @@ export class CertificationsListPage {
   // ponytail: descarta respuestas de filtros que ya no son la generación activa.
   private loadGeneration = 0;
 
-  readonly estados: readonly EstadoCertificado[] = ['borrador', 'vigente', 'revocado', 'vencido'];
+  readonly estados: readonly EstadoCertificado[] = ['vigente', 'revocado'];
   readonly estadoLabel = ESTADO_LABEL;
   readonly q = signal('');
   readonly estado = signal<EstadoCertificado | 'todos'>('todos');

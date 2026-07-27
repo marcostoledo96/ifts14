@@ -193,7 +193,7 @@ describe('CertificationsListPage', () => {
     ).toBeTruthy();
   });
 
-  it('muestra badges de validez con punto y borde para los cuatro estados', async () => {
+  it('muestra badges de validez con punto y borde para vigente y revocado', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const badges = Array.from(el.querySelectorAll('.validez-badge'));
@@ -201,14 +201,11 @@ describe('CertificationsListPage', () => {
     expect(badges.every((b) => b.querySelector('.validez-dot'))).toBeTrue();
     const labels = new Set(badges.map((b) => b.textContent?.trim()));
     expect(labels.has('Válida')).toBeTrue();
-    // Seed incluye al menos vigente; labels de otros estados si están presentes.
-    for (const estado of ['borrador', 'vigente', 'revocado', 'vencido'] as const) {
+    for (const estado of ['vigente', 'revocado'] as const) {
       const badge = el.querySelector(`.validez-badge[data-estado="${estado}"]`);
       if (badge) {
         expect(badge.querySelector('.validez-dot')).not.toBeNull();
-        expect(badge.textContent?.trim()).toBe(
-          estado === 'vigente' ? 'Válida' : estado === 'borrador' ? 'Borrador' : estado === 'revocado' ? 'Revocado' : 'Vencido',
-        );
+        expect(badge.textContent?.trim()).toBe(estado === 'vigente' ? 'Válida' : 'Revocado');
       }
     }
   });

@@ -59,7 +59,7 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'token_pepper' => $pepper,
     'admin_username' => 'bedelia',
     'admin_password_hash' => password_hash($adminKey, PASSWORD_DEFAULT),
-    'admin_session_idle_seconds' => 1800,
+    'admin_session_idle_seconds' => 14400,
     'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $ratePath,
     'app_salt' => 'salt_demo_http_e2e',
@@ -242,8 +242,8 @@ try {
         'issuedAt' => '2026-07-02',
         'expiresAt' => null,
     ]);
-    assertStatus($expiredStateEmission, 201, 'emisión HTTP tras estado vencido');
-    $expiredStateBody = assertJson($expiredStateEmission, 'emisión HTTP tras estado vencido');
+    assertStatus($expiredStateEmission, 201, 'emisión HTTP tras estado revocado');
+    $expiredStateBody = assertJson($expiredStateEmission, 'emisión HTTP tras estado revocado');
     $expiredStateCertificateId = (int) ($expiredStateBody['data']['id'] ?? 0);
 
     $pdo->prepare('UPDATE cert_tokens_verificacion SET token_cifrado = NULL WHERE certificado_id = ?')
