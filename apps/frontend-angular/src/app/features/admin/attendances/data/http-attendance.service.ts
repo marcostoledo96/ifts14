@@ -191,29 +191,37 @@ export class HttpAttendanceService implements AttendanceService {
     fechaId: number,
     marcados: readonly AsistenciaMarcado[],
   ): Promise<readonly Asistencia[]> {
-    // 1. GET asistencias existentes del curso.
+    // 1. GET asistencias existentes de la fecha (filtro client-side por fechaId).
     const existing = await this.listarAsistencias(cursoId, fechaId);
 
-    // 2. DELETE cada asistencia existente para esa fecha.
-    for (const a of existing) {
-      const url = `${environment.apiBaseUrl}/admin/asistencias/${a.id}`;
-      await firstValueFrom(this.http.delete<ApiEnvelope<unknown>>(url));
-    }
+    // 2. DELETE en paralelo; si uno falla, Promise.all rechaza (fail-fast).
+    await Promise.all(
+      existing.map((a) =>
+        firstValueFrom(
+          this.http.delete<ApiEnvelope<unknown>>(
+            `${environment.apiBaseUrl}/admin/asistencias/${a.id}`,
+          ),
+        ),
+      ),
+    );
 
-    // 3. POST cada marcado presente.
-    const creadas: Asistencia[] = [];
-    for (const m of marcados) {
-      if (!m.presente) continue;
-      const url = `${environment.apiBaseUrl}/admin/asistencias`;
-      const envelope = await firstValueFrom(
-        this.http.post<ApiEnvelope<AsistenciaDto>>(url, {
-          alumnoId: m.alumnoId,
-          cursoId,
-          cursoFechaId: fechaId,
-        }),
-      );
-      creadas.push(this.toAsistencia(envelope.data));
-    }
+    // 3. POST presentes en paralelo (mismo fail-fast).
+    const presentes = marcados.filter((m) => m.presente);
+    const creadas = await Promise.all(
+      presentes.map(async (m) => {
+        const envelope = await firstValueFrom(
+          this.http.post<ApiEnvelope<AsistenciaDto>>(
+            `${environment.apiBaseUrl}/admin/asistencias`,
+            {
+              alumnoId: m.alumnoId,
+              cursoId,
+              cursoFechaId: fechaId,
+            },
+          ),
+        );
+        return this.toAsistencia(envelope.data);
+      }),
+    );
 
     this.invalidateAsistencias(cursoId);
     return creadas;
