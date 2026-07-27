@@ -710,7 +710,11 @@ final class AdminCertificateService
         $row = $statement->fetch();
 
         if (!is_array($row)) {
-            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+            throw new AdminCertificateException(
+                400,
+                'VALIDATION_ERROR',
+                'El alumno no está activo o no existe.',
+            );
         }
 
         return $row;
@@ -724,7 +728,11 @@ final class AdminCertificateService
         $row = $statement->fetch();
 
         if (!is_array($row)) {
-            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+            throw new AdminCertificateException(
+                400,
+                'VALIDATION_ERROR',
+                'El curso no está activo o no existe.',
+            );
         }
 
         return $row;
@@ -785,7 +793,11 @@ final class AdminCertificateService
         }
 
         if ($rows === []) {
-            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+            throw new AdminCertificateException(
+                400,
+                'VALIDATION_ERROR',
+                'No hay asistencias en fechas realizadas. Si la clase es futura, la fecha queda programada y no se puede emitir.',
+            );
         }
 
         return $rows;
@@ -920,21 +932,8 @@ final class AdminCertificateService
 
         if (isset($filters['estado']) && is_string($filters['estado']) && $filters['estado'] !== '') {
             $reqEstado = $this->enumCertificadoEstado($filters['estado']);
-            $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
-
-            if ($reqEstado === 'vigente') {
-                $where[] = '(c.estado = ? AND (c.vence_en IS NULL OR c.vence_en >= ?))';
-                $params[] = 'vigente';
-                $params[] = $today;
-            } elseif ($reqEstado === 'vencido') {
-                $where[] = '(c.estado = ? OR (c.estado = ? AND c.vence_en < ?))';
-                $params[] = 'vencido';
-                $params[] = 'vigente';
-                $params[] = $today;
-            } else {
-                $where[] = 'c.estado = ?';
-                $params[] = $reqEstado;
-            }
+            $where[] = 'c.estado = ?';
+            $params[] = $reqEstado;
         }
         if (isset($filters['cursoId']) && $filters['cursoId'] !== null) {
             $where[] = 'c.curso_id = ?';
@@ -1011,13 +1010,8 @@ final class AdminCertificateService
     /** @param array<string, mixed> $row @return array<string, mixed> */
     private function certificateListDto(array $row): array
     {
+        // Solo vigente|revocado en producto; no materializar "vencido" por vence_en.
         $status = (string) $row['estado'];
-        if ($status === 'vigente' && is_string($row['vence_en'])) {
-            $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
-            if ($row['vence_en'] < $today) {
-                $status = 'vencido';
-            }
-        }
 
         return [
             'id' => (int) $row['id'],
@@ -1106,7 +1100,7 @@ final class AdminCertificateService
 
     private function enumCertificadoEstado(string $estado): string
     {
-        $allowed = ['borrador', 'vigente', 'revocado', 'vencido'];
+        $allowed = ['vigente', 'revocado'];
         if (!in_array($estado, $allowed, true)) {
             throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
         }
