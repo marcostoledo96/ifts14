@@ -97,7 +97,7 @@ export function seed(): CertificacionDetalle[] {
       numero: 'IFTS14-CERT-0004',
       nombreAlumno: 'Alumno Demo Cuatro',
       cursoNombre: 'Curso de procedimientos básicos',
-      estado: 'vencido',
+      estado: 'revocado',
       documentMasked: '45678901',
       tokenPrefix: 'prefijo_demo_g4h',
       emitidoEn: '2025-09-01',
@@ -108,6 +108,7 @@ export function seed(): CertificacionDetalle[] {
       attendedDates: ['2025-09-01', '2025-09-08'],
       auditEvents: [
         { at: '2025-09-01', accion: 'emision', detalle: 'Emisión mock.' },
+        { at: '2025-10-01', accion: 'revocacion', detalle: 'Revocación mock (ex-vencido).' },
         { at: '2026-09-02', accion: 'vencimiento', detalle: 'Vencimiento automático.' },
       ],
     },
