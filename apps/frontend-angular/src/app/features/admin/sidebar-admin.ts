@@ -49,10 +49,13 @@ export class SidebarAdmin {
   readonly navegando = input(false);
   /** URL de destino durante la navegación (NavigationStart). */
   readonly rutaPendiente = input<string | null>(null);
+  /** Muestra la X de cierre (drawer mobile). */
+  readonly mostrarCerrar = input(false);
   readonly items = ITEMS;
   readonly configItem = CONFIG_ITEM;
   readonly logoSrc = INSTITUTIONAL_BRAND.logoIfts;
   readonly cerrarSesion = output<void>();
+  readonly cerrarMenu = output<void>();
 
   // Inicio usa igualdad exacta; Cursos, Asistencias y Certificaciones usan
   // prefijo para que sus rutas hijas también queden activos. La ruta de

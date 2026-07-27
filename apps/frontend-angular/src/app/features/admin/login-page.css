@@ -1,10 +1,20 @@
 :host {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+  min-height: 100svh;
   background: var(--color-paper);
   color: var(--color-foreground);
   font-family: var(--font-sans);
+  box-sizing: border-box;
+}
+
+:host *,
+:host *::before,
+:host *::after {
+  box-sizing: border-box;
 }
 
 .skip-link {
@@ -24,8 +34,12 @@
 .login-layout {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+  min-height: 100svh;
+  overflow-x: clip;
 }
 
 .login-aside {
@@ -34,7 +48,9 @@
   flex-direction: row;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-6) var(--space-5);
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--space-4) var(--space-4);
   background: var(--color-ink);
   color: var(--color-ink-foreground);
   overflow: hidden;
@@ -86,15 +102,17 @@
 }
 
 .brand-text {
+  min-width: 0;
   line-height: 1.2;
 }
 
 .aside-kicker {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: clamp(0.9375rem, 4vw, 1rem);
   font-weight: 600;
   letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
 }
 
 .aside-sub {
@@ -117,7 +135,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1.25rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--space-5) var(--space-4);
   background: var(--color-paper);
 }
 
@@ -136,11 +156,14 @@
   z-index: 1;
   width: 100%;
   max-width: 28rem;
+  min-width: 0;
 }
 
 .card {
   width: 100%;
-  padding: var(--space-6) var(--space-5);
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--space-5) var(--space-4);
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: 0;
@@ -148,16 +171,18 @@
 }
 
 .card-header {
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
 }
 
 .card-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: clamp(1.25rem, 5vw, 1.5rem);
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.02em;
   color: var(--color-foreground);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .card-subtitle {
@@ -174,12 +199,14 @@
 }
 
 .login-footer {
-  margin-top: var(--space-6);
+  margin-top: var(--space-5);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
+  padding-inline: var(--space-2);
   text-align: center;
+  max-width: 100%;
 }
 
 .footer-kicker {
@@ -189,12 +216,15 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-muted-foreground) 70%, transparent);
+  overflow-wrap: anywhere;
 }
 
 .footer-copy {
   margin: 0;
   font-size: 0.75rem;
   color: color-mix(in srgb, var(--color-muted-foreground) 70%, transparent);
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 @media (min-width: 40rem) {
@@ -208,6 +238,14 @@
 
   .card {
     padding: 2.5rem 2.25rem;
+  }
+
+  .card-header {
+    margin-bottom: 1.75rem;
+  }
+
+  .login-footer {
+    margin-top: var(--space-6);
   }
 }
 

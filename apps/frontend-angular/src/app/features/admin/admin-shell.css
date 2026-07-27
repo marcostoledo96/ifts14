@@ -61,7 +61,8 @@
 
 /* Sticky al viewport: el footer (Configuración / Cerrar sesión) queda
    visible sin scroll de página. Sin esto el aside crece con el main y
-   empuja el pie fuera de la ventana (paridad con muestra_pagina fixed). */
+   empuja el pie fuera de la ventana (paridad con muestra_pagina fixed).
+   Preferir svh: en móvil 100vh incluye chrome del browser y oculta el pie. */
 .sidebar-desktop {
   display: none;
   width: 16rem;
@@ -71,6 +72,8 @@
   top: 0;
   height: 100vh;
   height: 100dvh;
+  height: 100svh;
+  max-height: 100svh;
   overflow: hidden;
   background: var(--color-ink);
 }
@@ -79,6 +82,8 @@
 .drawer-mobile app-sidebar-admin {
   display: block;
   height: 100%;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .content {
@@ -166,12 +171,20 @@ footer {
   position: fixed;
   top: 0;
   left: 0;
-  bottom: 0;
+  /* svh = área visible real (sin barra URL / home indicator). */
+  bottom: auto;
+  height: 100vh;
+  height: 100dvh;
+  height: 100svh;
+  max-height: 100svh;
   z-index: 50;
   width: 16rem;
   max-width: 80vw;
+  display: flex;
+  flex-direction: column;
   background: var(--color-ink);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* --- Print: ocultar chrome admin para impresión limpia del contenido. --- */

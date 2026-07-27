@@ -1,11 +1,15 @@
 :host {
   display: block;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .expediente {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .breadcrumb {
@@ -73,16 +77,18 @@
 
 .title {
   margin: 0.25rem 0 0;
-  font-size: 1.5rem;
+  font-size: clamp(1.25rem, 4.5vw, 1.5rem);
   font-weight: 600;
   line-height: 1.2;
   color: var(--color-foreground);
+  overflow-wrap: anywhere;
 }
 
 .subtitle {
   margin: 0.25rem 0 0;
   font-size: 0.875rem;
   color: var(--color-muted-foreground);
+  overflow-wrap: anywhere;
 }
 
 .estado-badge {
@@ -129,7 +135,8 @@
 .expediente-grid {
   display: grid;
   gap: var(--space-5);
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
 }
 
 @media (min-width: 64rem) {
@@ -144,6 +151,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  /* Evita que tablas/URLs con min-width intrínseco expandan la grilla en móvil. */
+  min-width: 0;
+  max-width: 100%;
 }
 
 .panel {
@@ -151,6 +161,8 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .panel-header {
@@ -230,6 +242,7 @@
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--color-foreground);
+  overflow-wrap: anywhere;
 }
 
 .mono {
@@ -411,6 +424,7 @@
 
 .qr-layout {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
   align-items: flex-start;
 }
@@ -487,8 +501,8 @@
   width: 100%;
   max-width: 100%;
   min-height: 2.5rem;
-  height: 2.5rem;
-  padding: 0 var(--space-4);
+  height: auto;
+  padding: 0.625rem var(--space-4);
   border: 1px solid color-mix(in srgb, var(--color-destructive) 45%, transparent);
   border-radius: var(--radius-sm);
   background: var(--color-card);
@@ -496,9 +510,10 @@
   font: inherit;
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.2;
   text-decoration: none;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
   cursor: pointer;
 }
 
@@ -513,9 +528,10 @@ button.btn-revocar:disabled {
 
 .doc-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
 }
 
 .doc-toolbar-der {
@@ -529,6 +545,8 @@ button.btn-revocar:disabled {
   background: var(--color-card);
   box-shadow: 0 1px 0 0 var(--color-border);
   overflow: hidden;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .doc-header {
@@ -551,7 +569,7 @@ button.btn-revocar:disabled {
   top: 50%;
   transform: translateY(-50%);
   font-family: var(--font-mono);
-  font-size: 3rem;
+  font-size: clamp(2rem, 12vw, 3rem);
   font-weight: 700;
   color: color-mix(in srgb, var(--color-destructive) 25%, transparent);
   pointer-events: none;
@@ -592,11 +610,12 @@ button.btn-revocar:disabled {
 
 .doc-partners {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: var(--space-5);
+  gap: var(--space-3) var(--space-4);
   margin: 0;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4);
   list-style: none;
   border-top: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-muted) 35%, transparent);
@@ -610,7 +629,7 @@ button.btn-revocar:disabled {
 }
 
 .doc-partners img {
-  max-width: 5.5rem;
+  max-width: min(5.5rem, 22vw);
   max-height: 2.5rem;
   width: auto;
   height: auto;
@@ -631,10 +650,11 @@ button.btn-revocar:disabled {
 
 .doc-inst-name {
   margin: var(--space-1) 0 0;
-  font-size: 1.125rem;
+  font-size: clamp(0.95rem, 3.5vw, 1.125rem);
   font-weight: 600;
   line-height: 1.25;
   color: var(--color-ink-foreground);
+  overflow-wrap: anywhere;
 }
 
 .doc-inst-sub {
@@ -726,10 +746,11 @@ button.btn-revocar:disabled {
 
 .doc-protagonista {
   margin: var(--space-3) 0 0;
-  font-size: 1.5rem;
+  font-size: clamp(1.25rem, 5vw, 1.5rem);
   font-weight: 600;
   line-height: 1.2;
   color: var(--color-foreground);
+  overflow-wrap: anywhere;
 }
 
 .doc-doc {
@@ -757,9 +778,10 @@ button.btn-revocar:disabled {
 
 .doc-asistencia-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
 }
 
 .doc-section-kicker {
@@ -779,13 +801,22 @@ button.btn-revocar:disabled {
 
 .doc-table-wrap {
   margin-top: var(--space-3);
+  max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 .doc-asistencia table {
   width: 100%;
-  min-width: 28rem;
+  min-width: 0;
   border-collapse: collapse;
+}
+
+@media (min-width: 40rem) {
+  .doc-asistencia table {
+    min-width: 28rem;
+  }
 }
 
 .doc-asistencia th {

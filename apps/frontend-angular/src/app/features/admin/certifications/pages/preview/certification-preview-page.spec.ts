@@ -545,7 +545,7 @@ describe('CertificationPreviewPage', () => {
     expect(padL).toBeGreaterThanOrEqual(14);
   });
 
-  it('REQ-PAR-EXP-002: QR real en validación y note footer muted', async () => {
+  it('REQ-PAR-EXP-002: QR real en validación sin note de datos personales', async () => {
     const f = await render('1');
     await f.whenStable();
     await new Promise((r) => setTimeout(r, 50));
@@ -554,8 +554,8 @@ describe('CertificationPreviewPage', () => {
     const qr = el.querySelector('.validacion-panel img.qr-real');
     expect(qr).not.toBeNull();
     expect(el.querySelector('.qr-decorativo')).toBeNull();
-    const note = el.querySelector('.validacion-panel .panel-note-footer');
-    expect(note?.textContent).toContain('no contiene datos personales');
+    expect(el.querySelector('.validacion-panel .panel-note-footer')).toBeNull();
+    expect(el.textContent).not.toContain('no contiene datos personales');
   });
 
   it('REQ-PAR-EXP-003: PDF primary ink; sin Entrega manual; Copiar/Descargar QR OK', async () => {
