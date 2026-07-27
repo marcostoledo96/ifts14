@@ -7,8 +7,23 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { StudentDuplicateError } from './student-duplicate.error';
-import { Alumno, AlumnoDetalle, AlumnoDraft } from './students.models';
+import {
+  Alumno,
+  AlumnoDetalle,
+  AlumnoDraft,
+  CursoPresente,
+  EstadoCertCertificado,
+} from './students.models';
 import { StudentsService } from './students.service';
+
+interface CursoPresenteDto {
+  id: string;
+  nombre: string;
+  codigo: string;
+  presentes: string[];
+  estadoCert: string;
+  certificacionId: string | null;
+}
 
 interface AlumnoDto {
   id: number;
@@ -18,6 +33,10 @@ interface AlumnoDto {
   dniMostrar: string;
   email?: string | null;
   estado: string;
+  cursosConAsistencia?: number;
+  certificacionesValidas?: number;
+  certificacionesRevocadas?: number;
+  cursos?: CursoPresenteDto[];
 }
 
 interface ApiEnvelope<T> {
@@ -166,6 +185,29 @@ export class HttpStudentsService implements StudentsService {
     return { apellido: trimmed.slice(0, idx), nombre: trimmed.slice(idx + 1).trim() };
   }
 
+  private optionalCount(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  }
+
+  private toCursoPresente(dto: CursoPresenteDto): CursoPresente {
+    const estado = dto.estadoCert;
+    const estadoCert: EstadoCertCertificado =
+      estado === 'emitida' || estado === 'pendiente' || estado === 'en-curso'
+        ? estado
+        : 'pendiente';
+    return {
+      id: String(dto.id),
+      nombre: dto.nombre,
+      codigo: dto.codigo,
+      presentes: Array.isArray(dto.presentes) ? dto.presentes : [],
+      estadoCert,
+      certificacionId:
+        dto.certificacionId != null && String(dto.certificacionId).trim() !== ''
+          ? String(dto.certificacionId)
+          : null,
+    };
+  }
+
   private toAlumno(dto: AlumnoDto): Alumno {
     let apellido = typeof dto.apellido === 'string' ? dto.apellido.trim() : '';
     let nombre = typeof dto.nombre === 'string' ? dto.nombre.trim() : '';
@@ -184,8 +226,9 @@ export class HttpStudentsService implements StudentsService {
       email,
       estado: dto.estado === 'inactivo' ? 'inactivo' : 'activo',
       tieneEmail: email !== null,
-      cursosConAsistencia: null,
-      certificacionesValidas: null,
+      cursosConAsistencia: this.optionalCount(dto.cursosConAsistencia),
+      certificacionesValidas: this.optionalCount(dto.certificacionesValidas),
+      certificacionesRevocadas: this.optionalCount(dto.certificacionesRevocadas),
     };
   }
 
@@ -193,7 +236,7 @@ export class HttpStudentsService implements StudentsService {
     return {
       ...this.toAlumno(dto),
       ingreso: '',
-      cursos: [],
+      cursos: Array.isArray(dto.cursos) ? dto.cursos.map((c) => this.toCursoPresente(c)) : [],
     };
   }
 }
