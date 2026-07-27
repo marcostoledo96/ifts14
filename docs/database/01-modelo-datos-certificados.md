@@ -23,7 +23,7 @@ Registra el certificado emitido y los datos mínimos necesarios para la respuest
 |---|---|---|
 | `id` | `BIGINT UNSIGNED` | PK autoincremental |
 | `codigo_certificado` | `VARCHAR(40)` | Único, visible públicamente |
-| `estado` | `ENUM` | `borrador`, `vigente`, `revocado`, `vencido` |
+| `estado` | `ENUM` | `vigente`, `revocado` |
 | `alumno_nombre_mostrar` | `VARCHAR(160)` | Nombre de visualización para respuesta pública |
 | `documento_hash` | `BINARY(32)` | Huella no reversible para control interno futuro |
 | `documento_enmascarado` | `VARCHAR(20)` | Ejemplo: `12******90`. Columna legacy presente en la migración `001`. El DTO público usa DNI completo por D0; este campo no alcanza para la validación pública. |
@@ -57,7 +57,7 @@ Guarda tokens verificables por QR sin conservar el valor público.
 | `token_hash` | `BINARY(32)` | Único; hash del token público con pepper. Lookup y verificación pública. No reversible. |
 | `token_prefijo` | `VARCHAR(12)` | Prefijo mínimo para soporte, nunca token completo |
 | `token_cifrado` | `VARBINARY(512) NULL` | Token completo cifrado con AES-256-GCM, clave externa a Git. Envelope `v1.<iv_b64url>.<tag_b64url>.<ciphertext_b64url>`. Habilita entrega manual y regeneración de PDF conservando el QR sin rotar. Hash-only NO permite entrega manual. Migración `002_token_cifrado_entrega_manual.sql`. Certificados previos sin esta columna quedan limitados (`409 TOKEN_NOT_RECOVERABLE`). |
-| `estado` | `ENUM` | `activo`, `revocado`, `vencido` |
+| `estado` | `ENUM` | `activo`, `revocado` |
 | `vigente_desde`, `vigente_hasta` | `DATETIME` | Ventana de validez |
 | `ultimo_uso_en` | `DATETIME NULL` | Última verificación pública |
 | `created_at`, `revocado_en` | `DATETIME` | Timestamps técnicos |

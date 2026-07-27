@@ -47,6 +47,8 @@ composer.lock
 # SQL controlado versionable
 !database/migrations/**/*.sql
 !database/seeds/**/*.sql
+!deploy/staging/LIMPIA-DATOS-NEGOCIO.sql
+!deploy/staging/LIMPIA-ESTADOS-CERTIFICADO.sql
 *.sql.gz
 *.dump
 *.bak
