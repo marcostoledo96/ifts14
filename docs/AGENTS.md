@@ -2,16 +2,14 @@
 
 ## Alcance
 
-Esta carpeta es la fuente de documentación humana e IA del proyecto.
+Documentación humana y de agentes del proyecto.
 
 ## Reglas
 
-- Mantener español argentino formal, breve y claro.
+- Español argentino formal, breve y claro.
 - No copiar secretos, dumps SQL, logs ni datos reales.
-- No duplicar documentación: enlazar la fuente vigente.
+- No duplicar: enlazar la fuente vigente.
 - Verificar que cada ruta documentada exista.
-- Si cambia arquitectura, flujo, deploy, frontend, backend, base o seguridad, actualizar el documento correspondiente durante `sdd-archive`.
-
-## Lectura sugerida
-
-Empezar por `00-indice-general.md` y leer solo el área afectada.
+- Índice: `00-indice-general.md`.
+- Cambios de producto visibles → viñeta en `03-changelog.md`.
+- Cierre recomendado: `07-sdd-archive-y-mantenimiento-documentacion.md`.

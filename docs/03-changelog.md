@@ -1,0 +1,57 @@
+# Changelog del producto
+
+Registro consolidado de lo implementado. No reemplaza el historial Git ni `openspec/changes/archive/`; resume el estado útil para onboarding.
+
+## 2026-07 — Operación en staging
+
+- Staging `/certificados_staging/` operativo como entorno de trabajo.
+- Auth admin: sesión PHP, CSRF, idle 4 h / absoluto 8 h, rate limit de login.
+- Estados de certificado reducidos a **vigente | revocado** (migración `015`).
+- Firmas institucionales con ratio 3:2, preview en expediente/folio y upload con recorte centrado.
+- Métricas de certificaciones en listado/detalle de alumnos.
+- Entrega manual sin rotar token; QR PNG admin on-demand.
+- Idle/401: redirect limpio a login sin ruido de error en UI.
+- Paquetes de deploy por ZIP + migraciones SQL (Composer/`vendor` como artefacto).
+
+## Frontend (Angular 20)
+
+- Shell admin, login, dashboard / mesa de trabajo.
+- Cursos: listado, alta/edición, fechas, detalle.
+- Alumnos: listado, alta/edición, detalle/expediente con trayectoria.
+- Asistencias: por curso, marcado, emisión/regeneración desde presentes.
+- Certificaciones: listado, nueva, preview/expediente, folio PDF, entrega manual, revocación.
+- Validación pública `/validar/:token` (vigente / revocado / no encontrado).
+- Configuración institucional (textos y firmas).
+- Sistema visual alineado a `muestra_pagina/` (tokens en `styles.css` + primitivos shared).
+- Interceptor CSRF; servicios HTTP con envelope `data/meta`.
+
+## Backend (PHP 8.4)
+
+- `GET /health`.
+- Validación pública por token (GET y consulta POST).
+- CRUD admin de cursos, alumnos, fechas y asistencias.
+- Emisión, consulta, entrega manual, QR PNG, PDF TCPDF, revocación.
+- Config institucional y parámetros de sistema.
+- Cifrado de DNI y token recuperable; hashes para búsqueda/validación.
+- Hardening de rutas, rate limiting, readiness scripts.
+
+## Base de datos
+
+Migraciones `001`–`015` bajo `database/migrations/` (certificados, tokens, alumnos/cursos/asistencias, integridad, email opcional, apellido/nombre, parámetros, firmas, estados vigente/revocado). Detalle en `docs/database/` y `database/docs/`.
+
+## Calidad y proceso
+
+- Specs en `openspec/specs/` por módulo.
+- Tests PHP y specs Angular en áreas críticas (auth, emisión, PDF, HTTP).
+- Checklist QA manual en `docs/qa/CHECKLIST-TESTING-MANUAL.md`.
+- Gates CI documentados para frontend/backend/MariaDB/seguridad documental.
+
+## Fuera de alcance actual
+
+- Producción del módulo aún no activada.
+- SMTP / mails automáticos.
+- Gestor de usuarios y roles.
+- Importación masiva real.
+- Colas de trabajos asíncronos.
+
+Ver roadmap: [`04-roadmap.md`](04-roadmap.md).

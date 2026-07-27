@@ -31,7 +31,8 @@ F0-02 es un ciclo de documentación pura que verifica, mediante una corrida real
 | `openspec/changes/archive/2026-06-28-f0-02-verificar-opencode-gentle-ai/apply-progress.md` | sdd-apply |
 | `openspec/changes/archive/2026-06-28-f0-02-verificar-opencode-gentle-ai/verify-report.md` | reservado para sdd-verify |
 | `docs/opencode/verificacion-flujo-opencode-sdd.md` | sdd-apply |
-| `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` | sdd-apply (ciclos F0-02 y F0-03) |
+| `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` (en `docs/opencode/`) | Referencia histórica F0–F6 |
+| `docs/opencode/verificacion-flujo-opencode-sdd.md` | Verificación de flujo OpenCode |
 
 ## Validaciones
 

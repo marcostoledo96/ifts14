@@ -1,16 +1,18 @@
 # Matías — guía ejecutable SDD para Angular 20 en Windows
 
+> **Ubicación:** `docs/opencode/` (movido desde la raíz). Onboarding vigente: `README.md`, `GUIA.md`, `docs/frontend/03-modulos-admin.md`, `docs/03-changelog.md`, `docs/04-roadmap.md`.
+>
 > **Estado global (2026-07-17): F0–F6 del MVP — SIN CICLOS ACTIVOS PENDIENTES.**
 >
-> - **Hechos:** F0-01…F5-03, F5-04, F6-01, F6-03 (alcance efectivo), F6-04.
-> - **Diferido fuera de MVP:** F6-02 (placeholder carga masiva) → backlog P9 / decisión posterior; no bloquea cierre de esta guía.
-> - Paridad visual adicional (`docs/frontend/PROMPT-PARIDAD-MUESTRA-PAGINA.md` y archives `frontend-parity-*`) y QA staging (P8-04/P8-05) se siguen fuera de F0–F6.
+> - **Hechos:** F0–F6 (alcance efectivo del MVP).
+> - **Diferido:** carga masiva real → `docs/04-roadmap.md` (#2).
+> - Docs de paridad/prompts F3–F6 sueltos se **retiraron**; esta guía queda como referencia histórica.
 >
-> Esta guía queda como **referencia histórica ejecutable**. No abrir ciclos F0–F6 nuevos salvo regresión o decisión explícita de reabrir alcance (p. ej. F6-02).
+> Referencias a `docs/frontend/PROMPT-PARIDAD-…`, `parity-*` o planificación preproducción están obsoletas.
 
-Esta guía es el punto de entrada único y vigente para que Matías trabaje el frontend Angular 20 del módulo `/certificados/` desde Windows. Se trabaja en ciclos chicos, con Spec-Driven Development, validación explícita y cierre obligatorio con `sdd-archive`.
+Esta guía fue el punto de entrada unificado F0–F6 para el frontend Angular 20. `muestra_pagina/` sigue siendo la referencia visual.
 
-> Estado de esta guía: cubre F0-F6 en una secuencia unificada. `muestra_pagina/` es la referencia visual v0 final y completa (export de Next.js/React con capturas para todos los prompts 4-22); no hay prompts pendientes de export v0. Los ciclos F4-F6 al final de esta guía detallan los flujos administrativos, PDF, entrega manual, revocación, carga masiva (diferida), auditoría/copiar link y configuración.
+> Trabajo nuevo recomendado: specs en `openspec/specs/` + cierre documental en el área tocada. SDD no es obligatorio para fixes chicos.
 
 ## Índice de estado de fases (F0-F6)
 
