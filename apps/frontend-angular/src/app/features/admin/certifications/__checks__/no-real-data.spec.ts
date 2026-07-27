@@ -188,6 +188,7 @@ describe('no-real-data en seed de certificaciones', () => {
       providers: [
         provideRouter([]),
         { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+        { provide: INSTITUTIONAL_CONFIG_SOURCE, useClass: InMemoryInstitutionalConfigService },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(CertificationPdfPreviewPage);

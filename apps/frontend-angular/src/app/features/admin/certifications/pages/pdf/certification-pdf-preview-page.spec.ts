@@ -4,6 +4,8 @@ import { CertificationPdfPreviewPage } from './certification-pdf-preview-page';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
 import { CertificacionDetalle, EntregaManualDto } from '../../certifications.models';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
+import { INSTITUTIONAL_CONFIG_SOURCE } from '../../../institutional-config/institutional-config.service';
+import { InMemoryInstitutionalConfigService } from '../../../institutional-config/in-memory-institutional-config.service';
 import { resetMockAdminPublicStatus } from '../../../../../shared/certificates/mock-tokens';
 
 describe('CertificationPdfPreviewPage', () => {
@@ -14,6 +16,10 @@ describe('CertificationPdfPreviewPage', () => {
       providers: [
         provideRouter([]),
         { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+        {
+          provide: INSTITUTIONAL_CONFIG_SOURCE,
+          useClass: InMemoryInstitutionalConfigService,
+        },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(CertificationPdfPreviewPage);
@@ -21,7 +27,7 @@ describe('CertificationPdfPreviewPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
-    // QR + entrega-manual cargan en paralelo tras el detalle.
+    // QR + entrega-manual + firmas cargan en paralelo tras el detalle.
     await fixture.whenStable();
     await new Promise((r) => setTimeout(r, 30));
     fixture.detectChanges();
@@ -108,9 +114,9 @@ describe('CertificationPdfPreviewPage', () => {
     expect(el.querySelector('.qr-decorativo')).toBeNull();
   });
 
-  // --- Autoridades neutras ---
+  // --- Autoridades desde configuración institucional ---
 
-  it('muestra autoridades firmantes neutras (Autoridad Demo Uno/Dos)', async () => {
+  it('muestra autoridades firmantes desde configuración (Autoridad Demo Uno/Dos)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
     const firmas = el.querySelectorAll('.cert-firma-nombre');
@@ -126,6 +132,18 @@ describe('CertificationPdfPreviewPage', () => {
     expect(cargos.length).toBe(2);
     expect(cargos[0]?.textContent).toMatch(/Rector/i);
     expect(cargos[1]?.textContent).toMatch(/Asesor.*Pedag[oó]gica/i);
+  });
+
+  it('muestra imágenes de firma cuando están cargadas en configuración', async () => {
+    const f = await render('1');
+    await f.whenStable();
+    await new Promise((r) => setTimeout(r, 40));
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const imgs = el.querySelectorAll('img.cert-firma-img');
+    expect(imgs.length).toBe(2);
+    expect(imgs[0]?.getAttribute('alt')).toContain('rector');
+    expect(imgs[1]?.getAttribute('alt')).toContain('asesor');
   });
 
   // --- Acciones no imprimibles ---
@@ -431,6 +449,10 @@ describe('CertificationPdfPreviewPage', () => {
       providers: [
         provideRouter([]),
         { provide: CERTIFICATIONS_SOURCE, useValue: fakeCerts },
+        {
+          provide: INSTITUTIONAL_CONFIG_SOURCE,
+          useClass: InMemoryInstitutionalConfigService,
+        },
       ],
     }).compileComponents();
 
