@@ -23,7 +23,7 @@ import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 type EstadoPresentacion = {
-  clave: Exclude<EstadoCertificado, 'vigente'>;
+  clave: 'revocado';
   marca: string;
   titulo: string;
   detalle: string;
@@ -100,31 +100,13 @@ export class CertificationPdfPreviewPage {
   });
 
   readonly estadoPresentacion = computed<EstadoPresentacion | null>(() => {
-    switch (this.detalle()?.estado) {
-      case 'borrador':
-        return {
-          clave: 'borrador',
-          marca: 'BORRADOR',
-          titulo: 'Certificado borrador.',
-          detalle: 'Este documento aún no tiene validez.',
-        };
-      case 'vencido':
-        return {
-          clave: 'vencido',
-          marca: 'VENCIDO',
-          titulo: 'Certificado vencido.',
-          detalle: 'La vigencia del documento finalizó.',
-        };
-      case 'revocado':
-        return {
-          clave: 'revocado',
-          marca: 'REVOCADO',
-          titulo: 'Certificación revocada.',
-          detalle: 'El documento carece de validez.',
-        };
-      default:
-        return null;
-    }
+    if (this.detalle()?.estado !== 'revocado') return null;
+    return {
+      clave: 'revocado',
+      marca: 'REVOCADO',
+      titulo: 'Certificación revocada.',
+      detalle: 'El documento carece de validez.',
+    };
   });
 
   formatearFechaAsistida(fecha: string): string {

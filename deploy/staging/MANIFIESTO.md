@@ -29,6 +29,7 @@ Lista revisable de artefactos que el operador debe copiar al paquete de staging 
 | `dist/` (carpeta raíz del repo) | Artefactos de build previos. Solo se copia el `dist/frontend-angular/` del build `production-staging` reciente. |
 | `node_modules/` | Dependencias frontend. |
 | Credenciales, tokens, peppers, claves privadas | Nunca en el paquete. |
+| `deploy/staging/LIMPIA-DATOS-NEGOCIO.sql` | Solo para operador en phpMyAdmin/CLI de staging; no subir al webroot. |
 
 ## Regla de exclusión
 
