@@ -224,7 +224,7 @@ function fetchAdminSeedToken(
       error: errorEnvelope('CERTIFICATE_REVOKED', 'revocado', 'req-admin-live-revoked'),
     };
   }
-  if (estado === 'vencido' || estado === 'expirado') {
+  if (estado === 'expirado') {
     return {
       ok: false,
       error: errorEnvelope('CERTIFICATE_EXPIRED', 'expirado', 'req-admin-live-expired'),
