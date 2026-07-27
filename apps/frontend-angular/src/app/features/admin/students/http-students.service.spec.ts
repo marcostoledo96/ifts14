@@ -42,6 +42,9 @@ describe('HttpStudentsService', () => {
             dniMostrar: '12345678',
             email: 'juan.perez@example.invalid',
             estado: 'activo',
+            cursosConAsistencia: 1,
+            certificacionesValidas: 2,
+            certificacionesRevocadas: 0,
           },
           {
             id: 2,
@@ -51,6 +54,9 @@ describe('HttpStudentsService', () => {
             dniMostrar: '34567890',
             email: null,
             estado: 'activo',
+            cursosConAsistencia: 0,
+            certificacionesValidas: 0,
+            certificacionesRevocadas: 0,
           },
         ],
       },
@@ -67,8 +73,46 @@ describe('HttpStudentsService', () => {
     expect(result[0].tieneEmail).toBeTrue();
     expect(result[1].email).toBeNull();
     expect(result[1].tieneEmail).toBeFalse();
-    expect(result[0].cursosConAsistencia).toBeNull();
-    expect(result[0].certificacionesValidas).toBeNull();
+    expect(result[0].cursosConAsistencia).toBe(1);
+    expect(result[0].certificacionesValidas).toBe(2);
+    expect(result[0].certificacionesRevocadas).toBe(0);
+  });
+
+  it('obtener mapea cursos y métricas del detalle', async () => {
+    const p = service.obtener(7);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/alumnos/7`);
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      data: {
+        id: 7,
+        apellido: 'Suarez',
+        nombre: 'Celeste',
+        apellidoNombre: 'Suarez Celeste',
+        dniMostrar: '30111222',
+        email: null,
+        estado: 'activo',
+        cursosConAsistencia: 1,
+        certificacionesValidas: 2,
+        certificacionesRevocadas: 0,
+        cursos: [
+          {
+            id: '4',
+            nombre: 'Curso demo',
+            codigo: 'CUR-004',
+            presentes: ['2026-07-20'],
+            estadoCert: 'emitida',
+            certificacionId: '8',
+          },
+        ],
+      },
+      meta: { requestId: 'r-detail' },
+    });
+    const result = await p;
+    expect(result).not.toBeNull();
+    expect(result!.certificacionesValidas).toBe(2);
+    expect(result!.cursos.length).toBe(1);
+    expect(result!.cursos[0].estadoCert).toBe('emitida');
+    expect(result!.cursos[0].certificacionId).toBe('8');
   });
 
   it('crear hace POST a /admin/alumnos con body exacto y mapea 201', async () => {
