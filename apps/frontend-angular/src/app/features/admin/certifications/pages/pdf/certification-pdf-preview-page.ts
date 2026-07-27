@@ -11,10 +11,15 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 import { INSTITUTIONAL_BRAND } from '../../../../../shared/brand/institutional-brand';
+import {
+  INSTITUTIONAL_CONFIG_SOURCE,
+  InstitutionalConfig,
+  SignatureRole,
+} from '../../../institutional-config/institutional-config.service';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EstadoCertificado } from '../../certifications.models';
 import { truncarUrl } from '../../url-publica';
@@ -29,8 +34,20 @@ type EstadoPresentacion = {
   detalle: string;
 };
 
+type AutoridadesFolio = {
+  readonly institutionName: string;
+  readonly certificateText: string;
+  readonly rectorName: string;
+  readonly rectorRole: string;
+  readonly advisorName: string;
+  readonly advisorRole: string;
+  readonly rectorSignaturePresent: boolean;
+  readonly advisorSignaturePresent: boolean;
+};
+
 // Vista previa imprimible. Impresión nativa + descarga PDF del folio visible
 // (misma apariencia que la previsualización). QR real vía descargarQrPng.
+// Autoridades y firmas desde Configuración institucional.
 @Component({
   selector: 'app-certification-pdf-preview-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,6 +58,9 @@ type EstadoPresentacion = {
 export class CertificationPdfPreviewPage {
   readonly id = input<string>('');
   private readonly certs = inject(CERTIFICATIONS_SOURCE);
+  private readonly configSource = inject(INSTITUTIONAL_CONFIG_SOURCE);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly host = inject(ElementRef<HTMLElement>);
 
@@ -50,6 +70,9 @@ export class CertificationPdfPreviewPage {
   readonly brand = INSTITUTIONAL_BRAND;
 
   readonly detalle = signal<CertificacionDetalle | null>(null);
+  readonly autoridades = signal<AutoridadesFolio | null>(null);
+  readonly rectorFirmaUrl = signal<string | null>(null);
+  readonly advisorFirmaUrl = signal<string | null>(null);
   readonly error = signal('');
   readonly cargando = signal(true);
   readonly printFeedback = signal('');
@@ -100,31 +123,13 @@ export class CertificationPdfPreviewPage {
   });
 
   readonly estadoPresentacion = computed<EstadoPresentacion | null>(() => {
-    switch (this.detalle()?.estado) {
-      case 'borrador':
-        return {
-          clave: 'borrador',
-          marca: 'BORRADOR',
-          titulo: 'Certificado borrador.',
-          detalle: 'Este documento aún no tiene validez.',
-        };
-      case 'vencido':
-        return {
-          clave: 'vencido',
-          marca: 'VENCIDO',
-          titulo: 'Certificado vencido.',
-          detalle: 'La vigencia del documento finalizó.',
-        };
-      case 'revocado':
-        return {
-          clave: 'revocado',
-          marca: 'REVOCADO',
-          titulo: 'Certificación revocada.',
-          detalle: 'El documento carece de validez.',
-        };
-      default:
-        return null;
-    }
+    if (this.detalle()?.estado !== 'revocado') return null;
+    return {
+      clave: 'revocado',
+      marca: 'REVOCADO',
+      titulo: 'Certificación revocada.',
+      detalle: 'El documento carece de validez.',
+    };
   });
 
   formatearFechaAsistida(fecha: string): string {
@@ -133,11 +138,18 @@ export class CertificationPdfPreviewPage {
 
   // ponytail: generación de carga para descartar stale en route reuse.
   private loadGen = 0;
+  private rectorPreviewGen = 0;
+  private advisorPreviewGen = 0;
   private downloadTimer: ReturnType<typeof setTimeout> | null = null;
   private qrObjectUrl: string | null = null;
+  private autoDownloadStarted = false;
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.revokeQrUrl());
+    this.destroyRef.onDestroy(() => {
+      this.revokeQrUrl();
+      this.revokeFirmaUrl('rector');
+      this.revokeFirmaUrl('asesor');
+    });
     effect(() => {
       this.id();
       untracked(() => void this.load());
@@ -156,28 +168,118 @@ export class CertificationPdfPreviewPage {
     const gen = ++this.loadGen;
     const cid = this.certId();
     this.detalle.set(null);
+    this.autoridades.set(null);
     this.error.set('');
     this.cargando.set(true);
     this.printFeedback.set('');
     this.downloadFeedback.set('');
     this.qrError.set('');
     this.validacionUrl.set('');
+    this.autoDownloadStarted = false;
     this.revokeQrUrl();
+    this.revokeFirmaUrl('rector');
+    this.revokeFirmaUrl('asesor');
     if (cid === null) {
       if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
       this.cargando.set(false);
       return;
     }
     try {
-      const det = await this.certs.obtener(cid);
+      const [det, cfg] = await Promise.all([
+        this.certs.obtener(cid),
+        this.configSource.obtener().catch(() => null as InstitutionalConfig | null),
+      ]);
       if (gen !== this.loadGen) return;
       this.detalle.set(det);
+      await this.aplicarConfig(cfg, gen);
       // URL + QR desde entrega-manual (detalle no trae URL pública canónica).
       void this.cargarValidacion(cid, gen, '');
+      void this.maybeAutoDownload(gen);
     } catch (e) {
       if (gen === this.loadGen) this.error.set((e as Error).message);
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
+    }
+  }
+
+  private async aplicarConfig(
+    cfg: InstitutionalConfig | null,
+    gen: number,
+  ): Promise<void> {
+    if (!cfg) {
+      this.autoridades.set(null);
+      return;
+    }
+    this.autoridades.set({
+      institutionName: cfg.institutionName,
+      certificateText: cfg.certificateText,
+      rectorName: (cfg.rectorName ?? '').trim() || 'Autoridad Demo Uno',
+      rectorRole: (cfg.rectorRole ?? '').trim() || 'Rector/a — IFTS N.° 14',
+      advisorName: (cfg.advisorName ?? '').trim() || 'Autoridad Demo Dos',
+      advisorRole:
+        (cfg.advisorRole ?? '').trim() || 'Asesor/a Pedagógica — IFTS N.° 14',
+      rectorSignaturePresent: cfg.rectorSignaturePresent,
+      advisorSignaturePresent: cfg.advisorSignaturePresent,
+    });
+    await Promise.all([
+      this.loadFirmaPreview('rector', cfg.rectorSignaturePresent, gen),
+      this.loadFirmaPreview('asesor', cfg.advisorSignaturePresent, gen),
+    ]);
+  }
+
+  private async loadFirmaPreview(
+    role: SignatureRole,
+    present: boolean,
+    loadGen: number,
+  ): Promise<void> {
+    const previewGen = role === 'rector' ? ++this.rectorPreviewGen : ++this.advisorPreviewGen;
+    this.revokeFirmaUrl(role);
+    if (!present) return;
+    try {
+      const blob = await this.configSource.previewFirma(role);
+      if (loadGen !== this.loadGen) return;
+      const current = role === 'rector' ? this.rectorPreviewGen : this.advisorPreviewGen;
+      if (previewGen !== current) return;
+      const url = URL.createObjectURL(blob);
+      if (
+        loadGen !== this.loadGen ||
+        previewGen !== (role === 'rector' ? this.rectorPreviewGen : this.advisorPreviewGen)
+      ) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      if (role === 'rector') this.rectorFirmaUrl.set(url);
+      else this.advisorFirmaUrl.set(url);
+    } catch {
+      // Preview opcional: el flag de presencia ya indica estado.
+    }
+  }
+
+  private revokeFirmaUrl(role: SignatureRole): void {
+    const current = role === 'rector' ? this.rectorFirmaUrl() : this.advisorFirmaUrl();
+    if (current) URL.revokeObjectURL(current);
+    if (role === 'rector') this.rectorFirmaUrl.set(null);
+    else this.advisorFirmaUrl.set(null);
+  }
+
+  /** Desde asistencias/entrega: `/pdf?descargar=1` dispara la exportación del folio. */
+  private async maybeAutoDownload(gen: number): Promise<void> {
+    if (this.autoDownloadStarted) return;
+    if (this.route.snapshot.queryParamMap.get('descargar') !== '1') return;
+    this.autoDownloadStarted = true;
+    await nextFrame();
+    await nextFrame();
+    if (gen !== this.loadGen) return;
+    try {
+      await this.descargarPdf();
+    } finally {
+      if (gen === this.loadGen) {
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {},
+          replaceUrl: true,
+        });
+      }
     }
   }
 

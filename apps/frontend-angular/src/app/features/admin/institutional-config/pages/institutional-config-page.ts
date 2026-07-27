@@ -19,8 +19,10 @@ import {
   SYSTEM_PARAMETER_KEYS,
   SystemParameterKey,
 } from '../institutional-config.service';
+import { prepareSignatureImage } from '../prepare-signature-image';
 import { UiSpinner } from '../../../../shared/ui/ui-spinner';
 import { INSTITUTIONAL_LOGOS } from '../../../../shared/brand/institutional-brand';
+import { HttpErrorResponse } from '@angular/common/http';
 
 // Página de configuración institucional: layout calca v0 (nav sticky +
 // secciones). Persistidos: 6 campos institucionales + 9 parámetros tipados.
@@ -274,7 +276,8 @@ export class InstitutionalConfigPage {
     this.firmaOk.set('');
     this.firmaBusy.set(true);
     try {
-      const updated = await this.source.subirFirma(role, file);
+      const prepared = await prepareSignatureImage(file);
+      const updated = await this.source.subirFirma(role, prepared);
       this.rectorSignaturePresent.set(updated.rectorSignaturePresent);
       this.advisorSignaturePresent.set(updated.advisorSignaturePresent);
       this.updatedAt.set(updated.updatedAt);
@@ -285,11 +288,21 @@ export class InstitutionalConfigPage {
       this.firmaOk.set(
         role === 'rector' ? 'Firma del rector/a cargada.' : 'Firma del asesor/a cargada.',
       );
-    } catch {
-      this.firmaError.set('No se pudo cargar la firma. Usá PNG o JPEG de hasta 1 MB.');
+    } catch (e) {
+      this.firmaError.set(this.mensajeErrorFirma(e));
     } finally {
       this.firmaBusy.set(false);
     }
+  }
+
+  private mensajeErrorFirma(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const body = err.error as { error?: { message?: string } } | null;
+      const msg = body?.error?.message;
+      if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    }
+    if (err instanceof Error && err.message.trim()) return err.message.trim();
+    return 'No se pudo cargar la firma. Usá PNG o JPEG de hasta 1 MB; la web recorta y ajusta el tamaño.';
   }
 
   async quitarFirma(role: 'rector' | 'asesor'): Promise<void> {

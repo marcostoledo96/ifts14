@@ -259,9 +259,11 @@ describe('InMemoryInstitutionalConfigService', () => {
   it('obtener devuelve el seed con defaults institucionales', async () => {
     const config = await service.obtener();
     expect(config.institutionName).toBe('Instituto de Formación Técnica Superior N.° 14');
+    expect(config.rectorName).toBe('');
+    expect(config.advisorName).toBe('');
     expect(config.rectorRole).toBeTruthy();
     expect(config.advisorRole).toBeTruthy();
-    expect(config.rectorSignaturePresent).toBeFalse();
+    expect(config.rectorSignaturePresent).toBeTrue();
     expect(config.advisorSignaturePresent).toBeTrue();
     expect(config.parameters.titulo_certificado.value).toBe('Certificado de Aprobación');
   });
