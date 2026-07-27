@@ -119,9 +119,7 @@ export class DateCertificatesPage {
 
   etiquetaEstado(estado: Certificacion['estado']): string {
     if (estado === 'vigente') return 'Válida';
-    if (estado === 'borrador') return 'Borrador';
     if (estado === 'revocado') return 'Revocado';
-    if (estado === 'vencido') return 'Vencido';
     return estado;
   }
 
@@ -136,7 +134,7 @@ export class DateCertificatesPage {
   }
 
   puedeEntregar(c: Certificacion): boolean {
-    return c.estado !== 'borrador' && c.estado !== 'revocado';
+    return c.estado === 'vigente';
   }
 
   async copiarLink(certId: number): Promise<void> {
