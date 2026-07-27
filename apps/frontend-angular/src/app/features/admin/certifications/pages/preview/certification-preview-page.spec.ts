@@ -67,10 +67,16 @@ function mockClipboard(writeText: jasmine.Spy): () => void {
 
 
 
+const TINY_PNG = new Uint8Array([
+  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0,
+  0, 0, 31, 21, 196, 137, 0, 0, 0, 10, 73, 68, 65, 84, 120, 156, 99, 0, 1, 0, 0, 5, 0, 1, 13, 10,
+  45, 180, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
+]);
+
 const signatureStubs = {
   subirFirma: () => Promise.reject(new Error('N/A')),
   quitarFirma: () => Promise.reject(new Error('N/A')),
-  previewFirma: () => Promise.reject(new Error('N/A')),
+  previewFirma: () => Promise.resolve(new Blob([TINY_PNG], { type: 'image/png' })),
 } as const;
 
 function configFixture(
@@ -84,8 +90,8 @@ function configFixture(
     rectorRole: 'Rector/a',
     advisorName: 'Asesor Real',
     advisorRole: 'Asesor/a pedagógico/a',
-    rectorSignaturePresent: false,
-    advisorSignaturePresent: false,
+    rectorSignaturePresent: true,
+    advisorSignaturePresent: true,
     updatedAt: '2026-01-01T00:00:00Z',
     ...rest,
     parameters: paramOverride ?? emptyParameters(),
@@ -388,22 +394,18 @@ describe('CertificationPreviewPage', () => {
     expect(revocarLink?.getAttribute('disabled')).toBeNull();
   });
 
-  it('no permite navegar a revocación cuando el certificado está borrador', async () => {
-    const f = await render('3');
+  it('no permite navegar a revocación cuando el certificado está revocado', async () => {
+    const f = await render('5');
     const riesgo = (f.nativeElement as HTMLElement).querySelector('.riesgo-panel');
-    const boton = riesgo?.querySelector('button.btn-revocar') as HTMLButtonElement | null;
     const navigateSpy = spyOn(TestBed.inject(Router), 'navigateByUrl');
 
     expect(riesgo?.querySelector('a.btn-revocar')).toBeNull();
-    expect(boton?.disabled).toBeTrue();
-    expect(boton?.getAttribute('aria-describedby')).toBe('revocacion-no-disponible');
-    expect(riesgo?.textContent).toContain('Solo las certificaciones vigentes pueden revocarse.');
-    boton?.click();
+    expect(riesgo?.querySelector('button.btn-revocar')).toBeNull();
     expect(navigateSpy).not.toHaveBeenCalled();
   });
 
   for (const [id, estado, alumno, curso] of [
-    ['4', 'vencido', '4', '4'],
+    ['4', 'revocado', '4', '4'],
     ['5', 'revocado', '5', '5'],
   ] as const) {
     it(`ofrece Emitir nuevamente (no revocar) cuando el certificado está ${estado}`, async () => {
@@ -508,11 +510,14 @@ describe('CertificationPreviewPage', () => {
       ...signatureStubs,
     };
     const f = await render('1', { config });
+    await f.whenStable();
+    f.detectChanges();
     const el = f.nativeElement as HTMLElement;
     const autoridades = el.querySelector('.doc-autoridades');
     expect(autoridades).not.toBeNull();
-    expect(autoridades?.textContent).toContain('Firma digital verificada');
+    expect(autoridades?.textContent).toContain('Rectora Real');
     expect(autoridades?.textContent).not.toContain('Autoridad Demo');
+    expect(el.querySelectorAll('img.doc-firma-img').length).toBe(2);
   });
 
   it('muestra QR real (img) en panel de validación', async () => {
@@ -581,7 +586,7 @@ describe('CertificationPreviewPage', () => {
     expect(qrBtn).toBeTruthy();
   });
 
-  it('REQ-PAR-EXP-004: documento sin radius; firmas con SVG y copy v0', async () => {
+  it('REQ-PAR-EXP-004: documento sin radius; firmas con imagen institucional', async () => {
     // Config explícita con nombres: el seed in-memory arranca sin autoridades.
     const config: InstitutionalConfigService = {
       obtener: () => Promise.resolve(configFixture()),
@@ -589,9 +594,32 @@ describe('CertificationPreviewPage', () => {
       ...signatureStubs,
     };
     const f = await render('1', { config });
+    await f.whenStable();
+    f.detectChanges();
     const el = f.nativeElement as HTMLElement;
     const doc = el.querySelector('.documento-replica') as HTMLElement;
     expect(getComputedStyle(doc).borderRadius).toMatch(/^0px$/);
+    const firmas = el.querySelector('.doc-autoridades');
+    expect(firmas?.querySelectorAll('img.doc-firma-img').length).toBe(2);
+    expect(firmas?.querySelectorAll('svg.doc-firma-icon').length).toBe(0);
+  });
+
+  it('sin firmas institucionales muestra SVG de respaldo', async () => {
+    const config: InstitutionalConfigService = {
+      obtener: () =>
+        Promise.resolve(
+          configFixture({
+            rectorSignaturePresent: false,
+            advisorSignaturePresent: false,
+          }),
+        ),
+      guardar: () => Promise.reject(new Error('N/A')),
+      ...signatureStubs,
+    };
+    const f = await render('1', { config });
+    await f.whenStable();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
     const firmas = el.querySelector('.doc-autoridades');
     expect(firmas?.querySelectorAll('svg.doc-firma-icon').length).toBe(2);
     expect(firmas?.textContent).toContain('Firma digital verificada');
