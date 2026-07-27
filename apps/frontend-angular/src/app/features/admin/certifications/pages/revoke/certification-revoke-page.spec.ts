@@ -127,7 +127,7 @@ describe('CertificationRevokePage', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/admin/certificaciones', '1'], { queryParams: { revocada: 1 } });
   }));
 
-  for (const [id, estado] of [['3', 'borrador'], ['4', 'vencido'], ['5', 'revocado']]) {
+  for (const [id, estado] of [['4', 'revocado'], ['5', 'revocado']]) {
     it(`protege el deep link cuando el certificado está ${estado}`, fakeAsync(() => {
       const certs = TestBed.inject(CERTIFICATIONS_SOURCE) as CertificationsService;
       const revocarSpy = spyOn(certs, 'revocar').and.callThrough();

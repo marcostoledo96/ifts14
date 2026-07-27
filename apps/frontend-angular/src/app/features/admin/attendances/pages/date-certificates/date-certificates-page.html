@@ -127,7 +127,7 @@
                 class="btn-accion btn-accion-primary"
                 data-testid="cert-descargar-pdf"
                 (click)="descargarPdf(c)"
-                [disabled]="accionCertId() === c.id || c.estado === 'borrador'"
+                [disabled]="accionCertId() === c.id"
               >
                 Descargar PDF
               </button>
