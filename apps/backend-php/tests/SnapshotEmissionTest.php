@@ -210,7 +210,7 @@ $expiredStateResult = $service->emitir([
     'expiresAt' => null,
 ]);
 if (($expiredStateResult['status'] ?? '') !== 'vigente') {
-    throw new RuntimeException('Certificado con estado vencido bloqueó una nueva emisión.');
+    throw new RuntimeException('Certificado con estado revocado bloqueó una nueva emisión.');
 }
 
 $pdo->prepare('UPDATE cert_certificados SET estado = \'revocado\', revocado_en = CURRENT_TIMESTAMP WHERE id = ?')->execute([(int) $expiredStateResult['id']]);

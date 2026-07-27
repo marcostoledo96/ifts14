@@ -68,22 +68,10 @@ describe('InMemoryCertificationsService', () => {
     vigentes.forEach((c) => expect(c.estado).toBe('vigente'));
   });
 
-  it('listar filtra por estado borrador', async () => {
-    const svc = setup();
-    const borradores = await svc.listar({ estado: 'borrador' });
-    borradores.forEach((c) => expect(c.estado).toBe('borrador'));
-  });
-
   it('listar filtra por estado revocado', async () => {
     const svc = setup();
     const revocados = await svc.listar({ estado: 'revocado' });
     revocados.forEach((c) => expect(c.estado).toBe('revocado'));
-  });
-
-  it('listar filtra por estado vencido', async () => {
-    const svc = setup();
-    const vencidos = await svc.listar({ estado: 'vencido' });
-    vencidos.forEach((c) => expect(c.estado).toBe('vencido'));
   });
 
   it('listar filtra por texto (q) sobre nombre, curso y alumno', async () => {
@@ -240,11 +228,10 @@ describe('InMemoryCertificationsService', () => {
   });
 
   for (const [estado, id] of [
-    ['borrador', 3],
-    ['vencido', 4],
+    ['revocado', 4],
     ['revocado', 5],
   ] as const) {
-    it(`revocar rechaza un certificado ${estado} sin mutarlo`, async () => {
+    it(`revocar rechaza un certificado ${estado} id=${id} sin mutarlo`, async () => {
       const svc = setup();
       const before = await svc.obtener(id);
 

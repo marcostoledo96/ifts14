@@ -54,7 +54,7 @@ writeConfig($configPath, [
     'token_pepper' => 'pepper_consulta_demo_2026',
     'admin_username' => 'bedelia',
     'admin_password_hash' => password_hash($adminKey, PASSWORD_DEFAULT),
-    'admin_session_idle_seconds' => 1800,
+    'admin_session_idle_seconds' => 14400,
     'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $tmpDir . '/rate-limit.json',
     'app_salt' => 'salt_demo_consulta',
@@ -213,17 +213,16 @@ try {
     }
 
     $expiredAsVigente = request($port, 'GET', '/admin/certificados?estado=vigente&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, $authHeaders);
-    $items = assertJson($expiredAsVigente, 'vencido excluido del filtro vigente')['data']['items'] ?? [];
-    if ($items !== []) {
-        throw new RuntimeException('El filtro vigente incluyó un certificado vencido.');
+    $items = assertJson($expiredAsVigente, 'vigente con vence_en pasado sigue vigente')['data']['items'] ?? [];
+    if (!is_array($items) || count($items) !== 1 || (int) ($items[0]['id'] ?? 0) !== $expiredCertificateId) {
+        throw new RuntimeException('El certificado con vence_en pasado debía seguir listándose como vigente.');
+    }
+    if (($items[0]['status'] ?? '') !== 'vigente') {
+        throw new RuntimeException('No debe materializarse status=vencido por fecha.');
     }
 
-    $filteredVencido = request($port, 'GET', '/admin/certificados?estado=vencido&cursoId=' . $curso2Id . '&alumnoId=' . $alumnoId, $authHeaders);
-    assertStatus($filteredVencido, 200, 'listado filtrado vencido');
-    $filteredVencidoItems = assertJson($filteredVencido, 'listado filtrado vencido')['data']['items'] ?? [];
-    if (!is_array($filteredVencidoItems) || count($filteredVencidoItems) !== 1 || (int) ($filteredVencidoItems[0]['id'] ?? 0) !== $expiredCertificateId) {
-        throw new RuntimeException('listado filtrado vencido no devolvió el certificado esperado o incluyó el vigente.');
-    }
+    assertError(request($port, 'GET', '/admin/certificados?estado=vencido', $authHeaders), 400, 'VALIDATION_ERROR', 'filtro estado vencido retirado');
+    assertError(request($port, 'GET', '/admin/certificados?estado=borrador', $authHeaders), 400, 'VALIDATION_ERROR', 'filtro estado borrador retirado');
 
     assertError(request($port, 'GET', '/admin/certificados?estado=invalido', $authHeaders), 400, 'VALIDATION_ERROR', 'filtro estado inválido');
     assertError(request($port, 'GET', '/admin/certificados?estado%5B%5D=invalido', $authHeaders), 400, 'VALIDATION_ERROR', 'filtro estado no escalar');
