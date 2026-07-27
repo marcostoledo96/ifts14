@@ -242,8 +242,8 @@ try {
         'issuedAt' => '2026-07-02',
         'expiresAt' => null,
     ]);
-    assertStatus($expiredStateEmission, 201, 'emisión HTTP tras estado vencido');
-    $expiredStateBody = assertJson($expiredStateEmission, 'emisión HTTP tras estado vencido');
+    assertStatus($expiredStateEmission, 201, 'emisión HTTP tras estado revocado');
+    $expiredStateBody = assertJson($expiredStateEmission, 'emisión HTTP tras estado revocado');
     $expiredStateCertificateId = (int) ($expiredStateBody['data']['id'] ?? 0);
 
     $pdo->prepare('UPDATE cert_tokens_verificacion SET token_cifrado = NULL WHERE certificado_id = ?')

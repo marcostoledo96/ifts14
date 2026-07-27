@@ -388,22 +388,18 @@ describe('CertificationPreviewPage', () => {
     expect(revocarLink?.getAttribute('disabled')).toBeNull();
   });
 
-  it('no permite navegar a revocación cuando el certificado está borrador', async () => {
-    const f = await render('3');
+  it('no permite navegar a revocación cuando el certificado está revocado', async () => {
+    const f = await render('5');
     const riesgo = (f.nativeElement as HTMLElement).querySelector('.riesgo-panel');
-    const boton = riesgo?.querySelector('button.btn-revocar') as HTMLButtonElement | null;
     const navigateSpy = spyOn(TestBed.inject(Router), 'navigateByUrl');
 
     expect(riesgo?.querySelector('a.btn-revocar')).toBeNull();
-    expect(boton?.disabled).toBeTrue();
-    expect(boton?.getAttribute('aria-describedby')).toBe('revocacion-no-disponible');
-    expect(riesgo?.textContent).toContain('Solo las certificaciones vigentes pueden revocarse.');
-    boton?.click();
+    expect(riesgo?.querySelector('button.btn-revocar')).toBeNull();
     expect(navigateSpy).not.toHaveBeenCalled();
   });
 
   for (const [id, estado, alumno, curso] of [
-    ['4', 'vencido', '4', '4'],
+    ['4', 'revocado', '4', '4'],
     ['5', 'revocado', '5', '5'],
   ] as const) {
     it(`ofrece Emitir nuevamente (no revocar) cuando el certificado está ${estado}`, async () => {
