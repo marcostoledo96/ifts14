@@ -28,7 +28,7 @@ No versionar `.env`, `config.php`, `db.php`, `database.php`, `conexion.php` ni c
 
 ### Sesión administrativa
 
-`admin_username`, `admin_password_hash`, `admin_session_idle_seconds` (`1800`) y `admin_session_absolute_seconds` (`28800`) son obligatorios para login. El hash se genera con `PASSWORD_DEFAULT` fuera de Git. Las rutas de browser son `POST /admin/auth/login`, `GET /admin/auth/session` y `POST /admin/auth/logout`; toda mutación admin requiere `X-CSRF-Token` emitido por la sesión. `X-Admin-Key` no autoriza HTTP.
+`admin_username`, `admin_password_hash`, `admin_session_idle_seconds` (`14400`) y `admin_session_absolute_seconds` (`28800`) son obligatorios para login. El hash se genera con `PASSWORD_DEFAULT` fuera de Git. Las rutas de browser son `POST /admin/auth/login`, `GET /admin/auth/session` y `POST /admin/auth/logout`; toda mutación admin requiere `X-CSRF-Token` emitido por la sesión. `X-Admin-Key` no autoriza HTTP.
 
 ### Entrega manual
 

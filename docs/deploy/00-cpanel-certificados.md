@@ -20,8 +20,8 @@
 |---|---|---|
 | `admin_username` | string | Ej: `bedelia_admin` |
 | `admin_password_hash` | bcrypt | `password_hash()` |
-| `admin_session_idle_seconds` | **1800** exacto | `Config::adminSessionSettings()` compara igualdad estricta |
-| `admin_session_absolute_seconds` | **28800** exacto | Cualquier otro valor → login 401 silencioso |
+| `admin_session_idle_seconds` | **14400** exacto (4 h) | `Config::adminSessionSettings()` compara igualdad estricta |
+| `admin_session_absolute_seconds` | **28800** exacto (8 h) | Cualquier otro valor → login 401 silencioso |
 | `CERTIFICADOS_CONFIG_PATH` | path al `.php` de config | **Nunca `IFTS14_CONFIG_PATH`** — ese nombre no lo lee el código |
 
 ### Lecciones del entorno
@@ -33,7 +33,7 @@
 5. **PHP-FPM no disponible.** CGI/FastCGI funciona correctamente.
 6. **Rate-limit login:** 5 intentos / 300s por IP → 429. Borrar bucket `ifts14-admin-login-*.json` en `runtime/` para resetear.
 7. **Backend usa envelope `{ data, meta }`.** El frontend debe leer `res.data.*`, no `res.*`. Fix commiteado en `875e3dc`.
-8. **TTL admin son fijos (1800/28800).** No son configurables sin cambiar constantes en `Config.php`.
+8. **TTL admin son fijos (14400/28800).** No son configurables sin cambiar constantes en `Config.php`.
 9. **Nunca compartir:** contraseñas, hashes, tokens, DNI, rutas privadas, IPs, credenciales DB.
 
 ## Objetivo
