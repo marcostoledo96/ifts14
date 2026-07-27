@@ -125,10 +125,11 @@ describe('HttpAttendanceService', () => {
     expect(result.every((a) => a.alumnoId === 10)).toBeTrue();
   });
 
-  it('marcar: DELETE existing + POST present, all-or-nothing', async () => {
+  it('marcar: DELETE y POST en paralelo (all-or-nothing)', async () => {
     const p = service.marcar(5, 200, [
       { alumnoId: 10, presente: true },
       { alumnoId: 11, presente: false },
+      { alumnoId: 12, presente: true },
     ]);
 
     // 1. GET asistencias existentes.
@@ -136,33 +137,92 @@ describe('HttpAttendanceService', () => {
     reqGet.flush({
       data: {
         items: [
-          { id: 50, alumnoId: 99, cursoId: 5, cursoFechaId: 200, fecha: '2026-03-01', fechaEstado: 'realizada', registradoEn: '2026-03-01T10:00:00Z' },
+          {
+            id: 50,
+            alumnoId: 99,
+            cursoId: 5,
+            cursoFechaId: 200,
+            fecha: '2026-03-01',
+            fechaEstado: 'realizada',
+            registradoEn: '2026-03-01T10:00:00Z',
+          },
+          {
+            id: 51,
+            alumnoId: 98,
+            cursoId: 5,
+            cursoFechaId: 200,
+            fecha: '2026-03-01',
+            fechaEstado: 'realizada',
+            registradoEn: '2026-03-01T10:00:00Z',
+          },
+          {
+            id: 52,
+            alumnoId: 97,
+            cursoId: 5,
+            cursoFechaId: 199,
+            fecha: '2026-02-01',
+            fechaEstado: 'realizada',
+            registradoEn: '2026-02-01T10:00:00Z',
+          },
         ],
       },
       meta: { requestId: 'rg' },
     });
-    // Flush resuelve el firstValueFrom del GET; el servicio continúa al DELETE.
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-    // 2. DELETE la asistencia existente.
-    const reqDelete = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias/50`);
-    expect(reqDelete.request.method).toBe('DELETE');
-    reqDelete.flush({ data: { id: 50, voided: true }, meta: { requestId: 'rd' } });
-    await new Promise(resolve => setTimeout(resolve, 0));
+    // 2. DELETE solo las de fecha 200, en paralelo.
+    const deletes = httpMock.match(
+      (r) =>
+        r.method === 'DELETE' &&
+        (r.url === `${environment.apiBaseUrl}/admin/asistencias/50` ||
+          r.url === `${environment.apiBaseUrl}/admin/asistencias/51`),
+    );
+    expect(deletes.length).toBe(2);
+    for (const req of deletes) {
+      req.flush({ data: { voided: true }, meta: { requestId: 'rd' } });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-    // 3. POST solo el presente (alumnoId 10; 11 es false → no se postea).
-    const reqPost = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`);
-    expect(reqPost.request.method).toBe('POST');
-    expect(reqPost.request.body).toEqual({ alumnoId: 10, cursoId: 5, cursoFechaId: 200 });
-    reqPost.flush({
-      data: { id: 60, alumnoId: 10, cursoId: 5, cursoFechaId: 200, fecha: '2026-03-01', fechaEstado: 'realizada', registradoEn: '2026-03-01T10:00:00Z' },
-      meta: { requestId: 'rp' },
+    // 3. POST presentes en paralelo (10 y 12; 11 es false).
+    const posts = httpMock.match(
+      (r) => r.method === 'POST' && r.url === `${environment.apiBaseUrl}/admin/asistencias`,
+    );
+    expect(posts.length).toBe(2);
+    const bodies = posts
+      .map((r) => r.request.body as { alumnoId: number; cursoId: number; cursoFechaId: number })
+      .sort((a, b) => a.alumnoId - b.alumnoId);
+    expect(bodies).toEqual([
+      { alumnoId: 10, cursoId: 5, cursoFechaId: 200 },
+      { alumnoId: 12, cursoId: 5, cursoFechaId: 200 },
+    ]);
+    posts[0].flush({
+      data: {
+        id: 60,
+        alumnoId: (posts[0].request.body as { alumnoId: number }).alumnoId,
+        cursoId: 5,
+        cursoFechaId: 200,
+        fecha: '2026-03-01',
+        fechaEstado: 'realizada',
+        registradoEn: '2026-03-01T10:00:00Z',
+      },
+      meta: { requestId: 'rp1' },
+    });
+    posts[1].flush({
+      data: {
+        id: 61,
+        alumnoId: (posts[1].request.body as { alumnoId: number }).alumnoId,
+        cursoId: 5,
+        cursoFechaId: 200,
+        fecha: '2026-03-01',
+        fechaEstado: 'realizada',
+        registradoEn: '2026-03-01T10:00:00Z',
+      },
+      meta: { requestId: 'rp2' },
     });
 
     const result = await p;
-    expect(result.length).toBe(1);
-    expect(result[0].id).toBe(60);
-    expect(result[0].alumnoId).toBe(10);
+    expect(result.length).toBe(2);
+    expect(result.map((a) => a.alumnoId).sort((a, b) => a - b)).toEqual([10, 12]);
     httpMock.verify();
   });
 

@@ -119,9 +119,7 @@ export class DateCertificatesPage {
 
   etiquetaEstado(estado: Certificacion['estado']): string {
     if (estado === 'vigente') return 'Válida';
-    if (estado === 'borrador') return 'Borrador';
     if (estado === 'revocado') return 'Revocado';
-    if (estado === 'vencido') return 'Vencido';
     return estado;
   }
 
@@ -136,7 +134,7 @@ export class DateCertificatesPage {
   }
 
   puedeEntregar(c: Certificacion): boolean {
-    return c.estado !== 'borrador' && c.estado !== 'revocado';
+    return c.estado === 'vigente';
   }
 
   async copiarLink(certId: number): Promise<void> {
@@ -182,21 +180,15 @@ export class DateCertificatesPage {
   }
 
   async descargarPdf(cert: Certificacion): Promise<void> {
+    // Mismo folio institucional que /admin/certificaciones/:id/pdf (no TCPDF backend).
     this.accionCertId.set(cert.id);
     this.error.set('');
     try {
-      const blob = await this.certs.descargarPdf(cert.id);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${cert.numero}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await this.router.navigate(['/admin/certificaciones', cert.id, 'pdf'], {
+        queryParams: { descargar: '1' },
+      });
     } catch (e) {
-      this.error.set((e as Error).message || 'No se pudo descargar el PDF.');
-    } finally {
+      this.error.set((e as Error).message || 'No se pudo abrir el PDF.');
       this.accionCertId.set(null);
     }
   }

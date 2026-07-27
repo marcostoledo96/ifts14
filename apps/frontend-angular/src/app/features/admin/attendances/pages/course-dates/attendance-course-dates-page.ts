@@ -163,11 +163,13 @@ export class AttendanceCourseDatesPage {
           presentes: presentesPorFecha.get(f.id) ?? 0,
         }));
 
+      // Cronológico: más antigua → más reciente (sin priorizar sin asistencia).
       filas.sort((a, b) => {
-        const prio = (e: string) => (e === 'programada' ? 0 : e === 'realizada' ? 1 : 2);
-        const pe = prio(a.estado) - prio(b.estado);
-        if (pe !== 0) return pe;
-        return a.fecha.localeCompare(b.fecha);
+        const byFecha = a.fecha.localeCompare(b.fecha);
+        if (byFecha !== 0) return byFecha;
+        const byOrden = a.orden - b.orden;
+        if (byOrden !== 0) return byOrden;
+        return a.id - b.id;
       });
       this.filas.set(filas);
     } catch {

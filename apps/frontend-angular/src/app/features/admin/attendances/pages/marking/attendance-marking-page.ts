@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -92,7 +93,17 @@ export class AttendanceMarkingPage {
   readonly cambios = computed(() => this.agregados() + this.quitados());
   readonly dirty = computed(() => this.cambios() > 0);
 
-  readonly fechasOrdenadas = computed(() => this.detalle()?.fechas ?? []);
+  /** Selector de fechas: siempre más antigua → más reciente. */
+  readonly fechasOrdenadas = computed(() => {
+    const list = this.detalle()?.fechas ?? [];
+    return [...list].sort((a, b) => {
+      const byFecha = a.fecha.localeCompare(b.fecha);
+      if (byFecha !== 0) return byFecha;
+      const byOrden = a.orden - b.orden;
+      if (byOrden !== 0) return byOrden;
+      return a.id - b.id;
+    });
+  });
 
   readonly alumnosFiltrados = computed<readonly AsistenciaAlumno[]>(() => {
     const texto = this.q().trim().toLowerCase();
@@ -174,6 +185,17 @@ export class AttendanceMarkingPage {
   private parseId(s: string): number | null {
     const n = Number(s);
     return !s || Number.isNaN(n) || n <= 0 ? null : n;
+  }
+
+  /** Extrae message del envelope API o fallback genérico. */
+  private mensajeErrorApi(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const body = err.error as { error?: { message?: string } } | null;
+      const msg = body?.error?.message;
+      if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    }
+    if (err instanceof Error && err.message.trim()) return err.message.trim();
+    return 'Solicitud inválida.';
   }
 
   private hoyIso(): string {
@@ -288,34 +310,56 @@ export class AttendanceMarkingPage {
       let actualizados = 0;
       let fallidos = 0;
       const issuedAt = this.hoyIso();
+      const fechaClase = this.fechaActual()?.fecha ?? null;
+      let motivoFallo: string | null = null;
 
-      for (const alumnoId of presentesIds) {
+      // Fecha futura: permanece programada; emitir exige fecha realizada.
+      if (fechaClase !== null && fechaClase > issuedAt) {
+        fallidos = presentesIds.length;
+        motivoFallo =
+          'La fecha de clase es futura: queda programada y no se pueden emitir certificados hasta el día de la clase (o anterior).';
+      } else {
+        // Un listado por curso (no N listados por alumno) + emitir/regenerar en paralelo.
+        const vigentesCurso = await this.certs.listar({
+          cursoId: cid,
+          estado: 'vigente',
+        });
         if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
-        try {
-          const vigentes = await this.certs.listar({
-            cursoId: cid,
-            alumnoId,
-            estado: 'vigente',
-          });
-          const vigente = vigentes[0];
-          if (vigente) {
-            await this.certs.regenerarPdf(vigente.id);
-            actualizados++;
-          } else {
+
+        const vigentePorAlumno = new Map<number, (typeof vigentesCurso)[number]>();
+        for (const c of vigentesCurso) {
+          if (c.alumnoId != null) vigentePorAlumno.set(c.alumnoId, c);
+        }
+
+        const resultados = await Promise.allSettled(
+          presentesIds.map(async (alumnoId) => {
+            const vigente = vigentePorAlumno.get(alumnoId);
+            if (vigente) {
+              await this.certs.regenerarPdf(vigente.id);
+              return 'actualizado' as const;
+            }
             await this.certs.emitir({
               alumnoId,
               cursoId: cid,
               issuedAt,
               expiresAt: null,
             });
-            emitidos++;
+            return 'emitido' as const;
+          }),
+        );
+
+        if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
+
+        for (const r of resultados) {
+          if (r.status === 'rejected') {
+            fallidos++;
+            motivoFallo ??= this.mensajeErrorApi(r.reason);
+            continue;
           }
-        } catch {
-          fallidos++;
+          if (r.value === 'emitido') emitidos++;
+          else actualizados++;
         }
       }
-
-      if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
       const resumen: ResumenGeneracion = { emitidos, actualizados, fallidos };
       this.resumenGen.set(resumen);
 
@@ -325,7 +369,9 @@ export class AttendanceMarkingPage {
         actualizados > 0
           ? `${actualizados} actualizado${actualizados === 1 ? '' : 's'}`
           : null,
-        fallidos > 0 ? `${fallidos} con error` : null,
+        fallidos > 0
+          ? `${fallidos} con error${motivoFallo ? `: ${motivoFallo}` : ''}`
+          : null,
       ].filter(Boolean);
       const mensaje = partes.join(' ');
       this.ok.set(mensaje);
