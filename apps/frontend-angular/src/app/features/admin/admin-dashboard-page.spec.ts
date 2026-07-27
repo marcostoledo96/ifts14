@@ -175,7 +175,7 @@ describe('AdminDashboardPage', () => {
     const cursos = await courses.listar();
     const alumnos = await students.contar();
     const list = await certs.listar();
-    const emitidas = list.filter((c) => c.estado === 'vigente' || c.estado === 'vencido').length;
+    const emitidas = list.filter((c) => c.estado === 'vigente').length;
     const revocadas = list.filter((c) => c.estado === 'revocado').length;
 
     expect(el.querySelector('[data-metric="cursos"]')?.textContent?.trim()).toBe(String(cursos.length));
@@ -277,7 +277,7 @@ describe('AdminDashboardPage', () => {
         numero: 'C',
         nombreAlumno: 'Demo',
         cursoNombre: 'C',
-        estado: 'vencido',
+        estado: 'vigente',
         documentMasked: '12345678',
         tokenPrefix: 'ghi',
         emitidoEn: '2026-01-01',
