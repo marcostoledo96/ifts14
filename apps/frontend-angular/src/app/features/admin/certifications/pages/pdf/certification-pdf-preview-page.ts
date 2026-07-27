@@ -28,7 +28,7 @@ import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
 
 type EstadoPresentacion = {
-  clave: Exclude<EstadoCertificado, 'vigente'>;
+  clave: 'revocado';
   marca: string;
   titulo: string;
   detalle: string;

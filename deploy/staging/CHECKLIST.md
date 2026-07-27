@@ -41,6 +41,8 @@ Sin los 7 gates: el cambio queda en preparación local/documental. No subir, no 
 - [ ] 3.7 Subir `composer.json` + `composer.lock`; Composer en hosting o `vendor/` local (nunca commitear).
 - [ ] 3.8 SMTP `stub`; SMTP real solo si gate 0.g lo aprobó.
 - [ ] 3.9 Smoke: `curl /certificados_staging/api/health` → 200; sin 404.
+- [ ] 3.9b Confirmar `token_encryption_key` en config externa (32 bytes decode); no registrar el valor.
+- [ ] 3.9c Si hay `409` en entrega-manual de certificados viejos: backup DB staging + ejecutar `LIMPIA-DATOS-NEGOCIO.sql` solo en staging; reemitir.
 - [ ] 3.10 Si falla, rollback limitado a `/certificados_staging/`. Nunca tocar `/certificados/`.
 
 ## Rollback

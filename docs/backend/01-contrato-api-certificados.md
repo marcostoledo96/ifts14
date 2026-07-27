@@ -29,8 +29,8 @@ Este contrato define la API PHP bajo `/certificados/api/` para validar certifica
 | `GET` | `/certificados/api/admin/cursos/{id}` | Consultar curso. | Admin con `X-Admin-Key`. |
 | `PATCH` | `/certificados/api/admin/cursos/{id}/estado` | Actualizar estado del curso. | Admin con `X-Admin-Key`. |
 | `POST` | `/certificados/api/admin/alumnos` | Crear alumno con DNI cifrado/hash, DTO admin con DNI completo y email opcional. | Admin con sesión/CSRF. |
-| `GET` | `/certificados/api/admin/alumnos` | Listar alumnos con DNI completo en `dniMostrar`/`documentMasked`. | Admin con sesión/CSRF. |
-| `GET` | `/certificados/api/admin/alumnos/{id}` | Consultar alumno con DNI completo en DTO admin. | Admin con sesión/CSRF. |
+| `GET` | `/certificados/api/admin/alumnos` | Listar alumnos con DNI completo en `dniMostrar`/`documentMasked`, más `cursosConAsistencia`, `certificacionesValidas` y `certificacionesRevocadas`. | Admin con sesión/CSRF. |
+| `GET` | `/certificados/api/admin/alumnos/{id}` | Consultar alumno con DNI completo; incluye métricas y `cursos[]` (presentes, `estadoCert`, `certificacionId`). | Admin con sesión/CSRF. |
 | `PATCH` | `/certificados/api/admin/alumnos/{id}/estado` | Actualizar estado del alumno. | Admin con `X-Admin-Key`. |
 | `POST` | `/certificados/api/admin/cursos/{cursoId}/fechas` | Crear fecha de curso. | Admin con `X-Admin-Key`. |
 | `GET` | `/certificados/api/admin/cursos/{cursoId}/fechas` | Listar fechas ordenadas por `orden` y `fecha`. | Admin con `X-Admin-Key`. |
@@ -199,7 +199,7 @@ Query opcionales:
 
 | Parámetro | Regla |
 |---|---|
-| `estado` | `borrador`, `vigente`, `revocado` o `vencido`. Valor inválido → `400 VALIDATION_ERROR`. |
+| `estado` | `vigente` o `revocado`. Valor inválido → `400 VALIDATION_ERROR`. |
 | `cursoId` | Entero positivo. |
 | `alumnoId` | Entero positivo. |
 
@@ -312,7 +312,7 @@ Opción A: persistencia inmediata de firma imagen por rol (`rector` | `asesor`).
 
 | Método | Body | Efecto |
 |--------|------|--------|
-| `POST` | `multipart/form-data` campo `file` (o `firma`) | Valida PNG/JPEG (finfo), ≤1 MB, ≤~1200×400; replace atómico tmp→rename→DB→unlink ext vieja |
+| `POST` | `multipart/form-data` campo `file` (o `firma`) | Valida PNG/JPEG (finfo), ≤1 MB; normaliza con recorte centrado ratio 3:2 a ≤~1200×800; replace atómico tmp→rename→DB→unlink ext vieja |
 | `DELETE` | — | NULL metadatos + unlink archivo |
 | `GET` | — | Bytes de preview; `Content-Type` real (`image/png` \| `image/jpeg`) + `X-Content-Type-Options: nosniff` + `Cache-Control: no-store` |
 
