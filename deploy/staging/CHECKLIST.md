@@ -1,52 +1,41 @@
 # Checklist de staging — /certificados_staging/
 
-Gates manuales obligatorios. La ejecución real en cPanel queda bloqueada hasta que todos los gates estén confirmados por Marcos. El agente no ejecuta estos pasos: solo documenta.
+Gates manuales. La subida real la ejecuta un humano (Marcos). El agente no toca cPanel.
 
-## Phase 0 — Gates previos (confirmar con Marcos antes de aplicar/ejecutar)
+## Phase 0 — Antes de subir
 
-- [ ] **0.a Ruta final**: staging bajo `/certificados_staging/` en dominio principal o subdominio.
-- [ ] **0.b Ventana cPanel**: pasos manuales aprobados y ventana operativa acordada. El agente no toca cPanel.
-- [ ] **0.c Config externa staging**: `CERTIFICADOS_CONFIG_PATH` apuntando a archivo externo propio de staging, separado de producción, con `admin_api_key` presente fuera de Git, 16+ caracteres y coincidente con el `X-Admin-Key` de los smokes. Sin fallback a config productiva.
-- [ ] **0.d DB/schema staging**: nombre, usuario, esquema, migración y seed ficticios confirmados. No usar datos reales.
-- [ ] **0.e Backup**: copia de resguardo de `/certificados_staging/` si la carpeta existe. Si es primera instalación, plan de reversión por retiro/renombre.
-- [ ] **0.f Composer/vendor**: `composer install --no-dev` en hosting o `vendor/` generado localmente. Nunca versionar `vendor/`.
-- [ ] **0.g SMTP**: `stub` por defecto. SMTP real solo con credenciales de prueba y aprobación explícita.
+- [ ] Ventana y backup de `/certificados_staging/` acordados.
+- [ ] Config externa de **staging** (`CERTIFICADOS_CONFIG_PATH` vía `.user.ini` + bootstrap; **no** `SetEnv`).
+- [ ] DB staging dedicada; migraciones pendientes identificadas.
+- [ ] `admin_username` + `admin_password_hash` + TTL **14400** / **28800**.
+- [ ] `token_encryption_key` y `dni_cipher_key` (32 bytes decode) presentes; no registrar valores.
+- [ ] `vendor/` generado local con `composer install --no-dev` si el host no tiene Composer.
+- [ ] SMTP: seguir en modo manual (sin envío automático) salvo aprobación explícita.
 
-Sin los 7 gates: el cambio queda en preparación local/documental. No subir, no tocar `public_html`, no modificar DB real, no acceder a cPanel.
+## Phase 1 — Paquete local
 
-## Phase 1 — Preparación local (agente, ya realizada)
+- [ ] Build `production-staging` (`baseHref` `/certificados_staging/`).
+- [ ] Backend sin secretos versionados; `vendor/` solo en el artefacto ZIP.
+- [ ] Plantillas `.htaccess` de root y api.
+- [ ] Scan del paquete: sin `.env`, passwords, dumps, `public_html/` anidado.
 
-- [x] `normalizePath()` soporta `/certificados_staging/api`.
-- [x] `environment.staging.ts` con `apiBaseUrl: '/certificados_staging/api'`.
-- [x] `production-staging` en `angular.json` con `baseHref: /certificados_staging/`.
-- [x] `deploy/staging/` con manifiesto, plantillas `.htaccess` y este checklist.
-- [x] Runbook `docs/deploy/01-staging-cpanel-certificados.md` reescrito.
+## Phase 2 — Subida (manual)
 
-## Phase 2 — Verificación local (agente)
+- [ ] Backup remoto.
+- [ ] Subir front a `certificados_staging/`.
+- [ ] Subir API a `certificados_staging/api/`.
+- [ ] Verificar `.user.ini` / bootstrap de config.
+- [ ] Aplicar migraciones SQL nuevas.
+- [ ] Permisos: config `0600`, dirs runtime `0700` cuando aplique.
 
-- [ ] Build `npm run build -- --configuration production-staging` verde.
-- [ ] Lint PHP limpio.
-- [ ] Test procedural `normalizePath()` con 3 prefijos verde.
-- [ ] Scan `deploy/staging/` sin `.env`, `password`, `secret`, `vendor/`, `*.sql`, `public_html/`, `*.dump`, `*.bak`.
-- [ ] `git status` sin `dist/`, `vendor/`, `public_html/`, `.env*`.
+## Phase 3 — Smoke
 
-## Phase 3 — Ejecución real en cPanel (MANUAL, Marcos, NO agente)
-
-- [ ] 3.1 Backup de `/certificados_staging/` si existe.
-- [ ] 3.2 Subir `dist/frontend-angular/` a `public_html/certificados_staging/`.
-- [ ] 3.3 Subir backend PHP (sin `vendor/`) a `public_html/certificados_staging/api/`.
-- [ ] 3.4 Instalar `.htaccess-root` y `.htaccess-api` desde plantillas.
-- [ ] 3.5 `SetEnv CERTIFICADOS_CONFIG_PATH` en `.htaccess-api` con ruta externa staging; confirmar `admin_api_key` externo a Git sin registrar su valor.
-- [ ] 3.6 Migración + seed en DB staging (datos ficticios).
-- [ ] 3.7 Subir `composer.json` + `composer.lock`; Composer en hosting o `vendor/` local (nunca commitear).
-- [ ] 3.8 SMTP `stub`; SMTP real solo si gate 0.g lo aprobó.
-- [ ] 3.9 Smoke: `curl /certificados_staging/api/health` → 200; sin 404.
-- [ ] 3.10 Si falla, rollback limitado a `/certificados_staging/`. Nunca tocar `/certificados/`.
+- [ ] `GET /certificados_staging/api/health` → 200.
+- [ ] Login admin OK; mutación con CSRF OK.
+- [ ] Bloqueo `403` a `/api/src/`, vendor, configs.
+- [ ] Emisión o entrega manual de un certificado de prueba; validación pública.
+- [ ] Si `409 TOKEN_NOT_RECOVERABLE` en datos viejos: backup + `LIMPIA-DATOS-NEGOCIO.sql` **solo staging**, reemitir.
 
 ## Rollback
 
-- Detener cambios manuales en curso.
-- Restaurar copia de `/certificados_staging/` si existía.
-- Si era primera instalación, retirar o renombrar la carpeta nueva.
-- Verificar `GET /certificados_staging/api/health` cuando corresponda.
-- Confirmar que `/certificados/` no fue modificado.
+Restaurar backup de `/certificados_staging/` o retirar la carpeta nueva. **No tocar** `/certificados/`.

@@ -44,19 +44,26 @@ Los tokens públicos no se guardan en texto plano. El backend futuro debe compar
 
 ## Migraciones vigentes
 
-| Migración | Estado | Contenido |
+| # | Archivo | Contenido |
 |---|---|---|
-| `database/migrations/001_certificados_qr.sql` | Base | Certificados, tokens de verificación y auditoría segura. |
-| `database/migrations/002_token_cifrado_entrega_manual.sql` | Aditiva | `token_cifrado` recuperable para entrega manual sin rotar QR/token. |
-| `database/migrations/003_cursos_alumnos_asistencias.sql` | Aditiva | Alumnos, cursos, fechas, asistencias, snapshot de fechas y configuración institucional. |
-| `database/migrations/004_certificados_alumno_curso.sql` | Aditiva | `alumno_id` y `curso_id` nullable en certificados, con índices y FKs para emisión desde asistencias. |
-| `database/migrations/005_prevenir_certificados_duplicados.sql` | Integridad | Columna generada determinística e índice único para impedir un certificado activo duplicado por alumno y curso. |
+| 001 | `001_certificados_qr.sql` | Certificados, tokens, auditoría. |
+| 002 | `002_token_cifrado_entrega_manual.sql` | `token_cifrado` recuperable (sin rotar QR). |
+| 003 | `003_cursos_alumnos_asistencias.sql` | Alumnos, cursos, fechas, asistencias, snapshot, config institucional. |
+| 004 | `004_certificados_alumno_curso.sql` | FK alumno/curso en certificados. |
+| 005 | `005_prevenir_certificados_duplicados.sql` | Un certificado activo por alumno+curso. |
+| 006 | `006_reconciliar_esquema_m4_02.sql` | Reconciliación de esquema. |
+| 007 | `007_schema_migrations.sql` | Tabla de control de migraciones. |
+| 008 | `008_certificados_revision_contenido.sql` | Revisión de contenido PDF. |
+| 009 | `009_auditoria_sync_snapshot.sql` | Auditoría de sync de snapshot. |
+| 010 | `010_backfill_pdf_revision.sql` | Backfill revisión PDF. |
+| 011 | `011_alumnos_email_opcional.sql` | Email nullable. |
+| 012 | `012_alumnos_apellido_nombre_separados.sql` | Apellido/nombre separados. |
+| 013 | `013_parametros_sistema.sql` | Parámetros de sistema. |
+| 014 | `014_firmas_autoridades.sql` | Firmas institucionales. |
+| 015 | `015_certificados_estados_vigente_revocado.sql` | Estados `vigente` \| `revocado`. |
 
-El detalle operativo de `004` vive en `database/docs/004-certificados-alumno-curso.md`; el de `005`, en `database/docs/005-prevenir-certificados-duplicados.md`. El seed ficticio opcional `database/seeds/002_cursos_alumnos_asistencias_demo.sql` sirve para verificar relaciones locales. No se usa en producción ni contiene datos reales.
+Detalle por migración en `database/docs/` cuando exista. Seeds solo ficticios bajo `database/seeds/`.
 
-## Hallazgos de auditoría (hipótesis)
+## Material privado
 
-- **Observado**: hay dos dumps SQL originales bajo `material_privado_no_versionar/db_dumps_originales/`, ambos ignorados por Git.
-- **Observado**: la extracción DDL segura detectó tablas vinculadas a materias, docentes, carreras/tecnicaturas, horarios, publicaciones, anuncios y contacto.
-- **Hipótesis**: los dumps corresponden a modelos relacionados pero no equivalentes; cualquier reutilización requiere migración controlada.
-- **Hipótesis**: el módulo de certificaciones debe crear tablas nuevas con prefijo `cert_` y no depender de dumps reales versionados.
+Dumps originales (si existen) solo en `material_privado_no_versionar/`. Nunca versionar. El módulo usa tablas `cert_*` propias.

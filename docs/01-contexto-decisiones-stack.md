@@ -1,41 +1,52 @@
-# Contexto, decisiones y stack confirmado
+# Contexto, decisiones y stack
 
 ## Contexto
 
-El IFTS N.° 14 necesita un módulo de certificaciones QR integrado en su web bajo la ruta:
+El IFTS N.° 14 necesita un módulo de certificaciones QR bajo:
 
 ```txt
-/certificados/
+/certificados/            → producción (pendiente de activación)
+/certificados_staging/    → staging operativo (entorno de trabajo)
 ```
 
-El módulo permitirá validar constancias/certificaciones por QR o link.
+Permite emitir certificados de curso con fechas asistidas y validarlos públicamente por QR o link.
 
 ## Stack confirmado
 
 ```txt
 Frontend: Angular 20
-Backend: PHP 8.4.21
-Base de datos: MariaDB 10.6.27
-Hosting: cPanel
-Gestión base: phpMyAdmin y herramientas MySQL de cPanel
+Backend:  PHP 8.4.22 CGI/FastCGI (verificado en staging)
+Base:     MariaDB 10.6.27
+Hosting:  cPanel
+Gestión DB: phpMyAdmin / MySQL de cPanel
 ```
 
-## Decisiones vigentes
+## Decisiones vigentes (D0)
 
-- El repositorio es privado.
-- El material descargado del servidor no se versiona.
-- La implementación nueva vive separada en `apps/frontend-angular/` y `apps/backend-php/`.
-- El diseño generado en v0 se coloca en `muestra_pagina/` como referencia.
-- El frontend se porta a Angular 20, sin copiar Next/React literalmente.
-- El backend se implementa en PHP 8.4.21.
-- La base de datos usa MariaDB 10.6.27.
-- El deploy objetivo es `/certificados/` en cPanel.
-- **D0 (2026-07-20):** DNI completo visible en validación pública y UI admin (listados/detalle/expediente); logs, auditoría, errores y dumps no-UI sin DNI ni token completos. Email opcional al crear/editar alumno.
+| ID | Decisión |
+|---|---|
+| D0-QR | Token/QR permanente. Actualizar certificado, regenerar PDF o reenviar link **no** rota el token. Solo revocación explícita o regeneración excepcional auditada. |
+| D0-DNI | DNI completo en validación pública y UI admin. Logs/auditoría/errores/dumps sin DNI ni token completos. |
+| D0-AUTH | Sesión PHP nativa + CSRF. `X-Admin-Key` solo CLI/smokes; no autoriza HTTP. |
+| D0-MAIL | Email de alumno opcional. Entrega manual. SMTP futuro sin proveedor elegido. |
+| D0-PDF | Folio Angular y TCPDF backend son ambos válidos; el instituto elige el canal de entrega. |
+| D0-COMPOSER | `vendor/` no versionado; se puede subir como artefacto si no hay Composer en hosting. |
+| D0-FIRMAS | Rector/a y Asesor/a Pedagógica desde configuración institucional. |
+| D0-UI | Paridad visual con `muestra_pagina/` (intención, no copia React/Next). |
 
-## Pendientes
+## Principios de implementación
 
-- Confirmar si Composer está disponible.
-- Confirmar mecanismo final de email.
-- Confirmar si se podrá usar Git Version Control de cPanel.
-- Confirmar estructura exacta del document root.
-- Conseguir logos limpios y autorizados.
+- Código nuevo en `apps/frontend-angular/` y `apps/backend-php/`.
+- Tablas nuevas con prefijo `cert_`.
+- Configuración real fuera de Git y fuera del webroot.
+- Envelope JSON `{ data, meta }` / `{ error, meta }` en la API.
+- Specs en `openspec/` recomendadas para cambios no triviales.
+
+## Pendientes abiertos (no bloquean staging)
+
+- Proveedor SMTP / plantillas de mail.
+- Gestor de usuarios y roles (reemplazo del admin único por config).
+- Importación masiva de alumnos/cursos.
+- Activación de producción (operación de Marcos; no es ítem de roadmap de producto).
+
+Ver [`04-roadmap.md`](04-roadmap.md).

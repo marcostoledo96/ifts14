@@ -1,16 +1,16 @@
 # Marcos — guía operativa SDD para backend, datos y deploy
 
+> **Ubicación:** `docs/opencode/` (movido desde la raíz). Onboarding vigente: `README.md`, `GUIA.md`, `docs/00-indice-general.md`, `docs/03-changelog.md`, `docs/04-roadmap.md`.
+>
 > **Estado global (2026-07-17): CERRADA — sin ciclos pendientes en esta guía.**
 >
-> Todos los bloques planificados **M1 → M4** están completados, verificados y documentados (`sdd-archive`). No quedan tareas M1-01..M4-07 por abrir desde este archivo.
+> Todos los bloques planificados **M1 → M4** están completados. Esta guía es **referencia histórica** de prompts/checkpoints. Trabajo nuevo: docs canónicos + specs en `openspec/specs/`. QA: `docs/qa/CHECKLIST-TESTING-MANUAL.md`.
 >
-> Trabajo operativo posterior (auth sesión PHP, CI P7, staging P8, QA manual, producción) **no forma parte de esta guía de 3 semanas**: se sigue en `docs/planificacion/IFTS14_PLAN_CORRECCIONES_PREPRODUCCION_SDD_TDD.md` y en `docs/qa/CHECKLIST-TESTING-MANUAL.md`.
->
-> Esta guía queda como **referencia histórica ejecutable** (prompts, checkpoints, plantillas). No iniciar ciclos M1–M4 nuevos salvo regresión o decisión explícita de reabrir alcance.
+> Referencias internas a `docs/auditoria/` o `docs/planificacion/` están **obsoletas** (esas carpetas se retiraron).
 
-Esta guía fue el punto de entrada para que Marcos trabaje ciclos chicos del módulo `/certificados/` con Spec-Driven Development. Marcos ya conoce el proyecto: prioriza ruta rápida, puntos de parada para QA manual y handoff revisable.
+Esta guía fue el punto de entrada para ciclos chicos del módulo `/certificados/` con Spec-Driven Development.
 
-> Regla base (sigue vigente para ciclos futuros fuera de M1–M4): un ciclo por vez. Cerrar siempre con `sdd-archive` antes de proponer commit.
+> Regla base recomendada: un ciclo por vez; cerrar con actualización documental (`docs/07-sdd-archive-y-mantenimiento-documentacion.md`).
 
 ## Herramientas de reducción de tokens y costo
 

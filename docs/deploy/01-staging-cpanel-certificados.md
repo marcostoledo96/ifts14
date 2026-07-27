@@ -1,10 +1,10 @@
 # Staging cPanel — /certificados_staging/
 
-> **Estado vigente:** candidato de staging PASS para P5-01 el 2026-07-15. Producción no fue activada ni validada. El host no dispone de `mod_env`/`SetEnv`; se usa `.user.ini` protegido con `auto_prepend_file` hacia bootstrap privado fuera del webroot. El esquema es dedicado, vacío y cubre migraciones 001–010; permisos sanitizados: configuración `0600`, directorios `0700`.
+> **Estado vigente:** staging operativo (entorno de trabajo diario). Producción del módulo aún no activada. Host sin `mod_env`/`SetEnv`: `.user.ini` + `auto_prepend_file` → bootstrap de config fuera del webroot. Migraciones `001`–`015`+. Checklist corto: [`deploy/staging/CHECKLIST.md`](../../deploy/staging/CHECKLIST.md).
 
-Runbook de preparación local ejecutable y ejecución manual gated para staging del módulo de certificaciones. Distingue staging (`/certificados_staging/`) de producción (`/certificados/`). El agente no ejecuta deploy remoto, no sube archivos, no modifica cPanel, no toca DB real. No hay SMTP/email en el MVP: la entrega es manual (copiar link / descargar PDF).
+Runbook de preparación local y ejecución manual para staging. El agente no ejecuta deploy remoto ni toca cPanel/DB real. Entrega sin SMTP automático (copiar link / descargar PDF). Folio Angular y TCPDF son ambos válidos.
 
-La guía productiva vigente sigue siendo [`00-cpanel-certificados.md`](00-cpanel-certificados.md). Este documento solo cubre staging.
+Guía general del host: [`00-cpanel-certificados.md`](00-cpanel-certificados.md).
 
 ## Objetivo
 
