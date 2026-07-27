@@ -223,10 +223,45 @@ final class CertificatePdfService
         $imageDrawn = false;
         if (is_string($signaturePath) && $signaturePath !== '' && is_file($signaturePath) && is_readable($signaturePath)) {
             // TCPDF Image usa GD/Imagick internamente; QR ya depende de GD.
-            $imageHeight = 14;
-            $imageY = $y - $imageHeight;
+            // Sin estirar: mantener aspect ratio dentro del box (la subida ya recorta al centro).
+            $boxW = self::SIGNATORY_WIDTH - 10;
+            // Slot ~3:2 (misma proporción que la normalización al subir).
+            $boxH = ($boxW * 2.0) / 3.0;
+            $imageY = $y - $boxH;
+            $drawW = (float) $boxW;
+            $drawH = $boxH;
+            $imgX = $x + 5.0;
+            $imgY = $imageY;
+            $dims = @getimagesize($signaturePath);
+            if (is_array($dims) && isset($dims[0], $dims[1]) && (int) $dims[0] > 0 && (int) $dims[1] > 0) {
+                $srcW = (float) $dims[0];
+                $srcH = (float) $dims[1];
+                $scale = min($boxW / $srcW, $boxH / $srcH);
+                $drawW = $srcW * $scale;
+                $drawH = $srcH * $scale;
+                $imgX = $x + 5.0 + ($boxW - $drawW) / 2.0;
+                $imgY = $imageY + ($boxH - $drawH) / 2.0;
+            }
             try {
-                $tcpdf->Image($signaturePath, $x + 5, $imageY, self::SIGNATORY_WIDTH - 10, $imageHeight, '', '', '', false, 300, '', false, false, 0, false, false, false);
+                $tcpdf->Image(
+                    $signaturePath,
+                    $imgX,
+                    $imgY,
+                    $drawW,
+                    $drawH,
+                    '',
+                    '',
+                    '',
+                    false,
+                    300,
+                    '',
+                    false,
+                    false,
+                    0,
+                    false,
+                    false,
+                    false,
+                );
                 $imageDrawn = true;
             } catch (Throwable) {
                 $imageDrawn = false;

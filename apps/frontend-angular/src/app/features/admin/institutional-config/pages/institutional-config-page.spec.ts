@@ -243,14 +243,20 @@ describe('InstitutionalConfigPage', () => {
     const f = await render();
     const page = f.componentInstance;
     expect(page.dirty()).toBeFalse();
-    const file = new File([new Uint8Array([1, 2, 3])], 'rector.png', { type: 'image/png' });
+    const canvas = document.createElement('canvas');
+    canvas.width = 60;
+    canvas.height = 20;
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('blob'))), 'image/png');
+    });
+    const file = new File([blob], 'rector.png', { type: 'image/png' });
     const inputEl = el(f).querySelector('#firma-rector') as HTMLInputElement;
-    Object.defineProperty(inputEl, 'files', { value: [file] });
-    inputEl.dispatchEvent(new Event('change'));
-    await f.whenStable();
+    Object.defineProperty(inputEl, 'files', { configurable: true, value: [file] });
+    await page.onFirmaSeleccionada('rector', { target: inputEl } as unknown as Event);
     f.detectChanges();
     expect(stub.subirFirmaCalls).toBe(1);
-    expect(stub.lastUpload).toEqual({ role: 'rector', fileName: 'rector.png' });
+    expect(stub.lastUpload?.role).toBe('rector');
+    expect(stub.lastUpload?.fileName).toMatch(/\.jpe?g$/i);
     expect(stub.guardarCalls).toBe(0);
     expect(page.dirty()).toBeFalse();
     expect(page.rectorSignaturePresent()).toBeTrue();
