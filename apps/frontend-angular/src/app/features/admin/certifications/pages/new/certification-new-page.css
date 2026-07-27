@@ -1,5 +1,7 @@
 :host {
   display: block;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .sr-only {
@@ -588,14 +590,23 @@
 
 .table-wrap {
   margin-top: 0.75rem;
+  max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 .asist-table {
   width: 100%;
-  min-width: 28rem;
+  min-width: 0;
   border-collapse: collapse;
   font-size: 0.8125rem;
+}
+
+@media (min-width: 40rem) {
+  .asist-table {
+    min-width: 28rem;
+  }
 }
 
 .asist-table th {

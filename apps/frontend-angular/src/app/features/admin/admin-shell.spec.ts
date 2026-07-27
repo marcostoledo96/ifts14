@@ -144,6 +144,11 @@ describe('AdminShell', () => {
     const logoutBtn = drawer.querySelector('.logout-btn') as HTMLButtonElement | null;
     expect(logoutBtn).not.toBeNull();
     expect(logoutBtn?.textContent).toContain('Cerrar sesión');
+    const configLink = drawer.querySelector('a[href*="configuracion"]') as HTMLAnchorElement | null;
+    expect(configLink).not.toBeNull();
+    expect(configLink?.textContent).toContain('Configuración');
+    expect(configLink?.closest('.sidebar-footer')).not.toBeNull();
+    expect(drawer.querySelector('button.sidebar-close')).not.toBeNull();
   });
 
   it('cerrar sesión llama logout y navega a /admin/login', async () => {
