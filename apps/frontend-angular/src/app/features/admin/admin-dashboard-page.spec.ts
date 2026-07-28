@@ -1,6 +1,6 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { AdminDashboardPage } from './admin-dashboard-page';
+import { AdminDashboardPage, METRICAS_SEAM_TIMEOUT_MS } from './admin-dashboard-page';
 import { COURSES_SOURCE } from './courses/courses.service';
 import type { CoursesService } from './courses/courses.service';
 import { InMemoryCoursesService } from './courses/in-memory-courses.service';
@@ -50,28 +50,32 @@ describe('AdminDashboardPage', () => {
     expect(el.textContent).not.toContain('Abrir Asistencias');
   });
 
-  it('enlaza las cinco tiles v0 y deja Carga masiva deshabilitada', async () => {
+  it('enlaza las tiles de acciones con asistencias como primaria', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const links = Array.from(el.querySelectorAll('.acciones-grid a')) as HTMLAnchorElement[];
     const labels = links.map((a) => a.querySelector('.accion-label')?.textContent?.trim());
     expect(labels).toEqual([
-      'Nueva certificación',
-      'Nuevo curso',
       'Cargar asistencias',
+      'Nuevo curso',
       'Entrega manual',
+      'Nueva certificación',
     ]);
 
-    const nueva = links.find((a) => a.textContent?.includes('Nueva certificación'));
-    const curso = links.find((a) => a.textContent?.includes('Nuevo curso'));
     const asist = links.find((a) => a.textContent?.includes('Cargar asistencias'));
+    const curso = links.find((a) => a.textContent?.includes('Nuevo curso'));
     const entrega = links.find((a) => a.textContent?.includes('Entrega manual'));
+    const nueva = links.find((a) => a.textContent?.includes('Nueva certificación'));
 
-    expect(nueva?.getAttribute('href')).toContain('/admin/certificaciones/nueva');
-    expect(nueva?.classList.contains('accion--primary')).toBeTrue();
-    expect(curso?.getAttribute('href')).toContain('/admin/cursos/nuevo');
     expect(asist?.getAttribute('href')).toContain('/admin/asistencias');
+    expect(asist?.classList.contains('accion--primary')).toBeTrue();
+    expect(asist?.textContent).toContain('Registrar presentes y emitir desde la clase');
+    expect(el.querySelectorAll('.acciones-grid a.accion--primary').length).toBe(1);
+    expect(curso?.getAttribute('href')).toContain('/admin/cursos/nuevo');
     expect(entrega?.getAttribute('href')).toContain('/admin/certificaciones');
+    expect(nueva?.getAttribute('href')).toContain('/admin/certificaciones/nueva');
+    expect(nueva?.classList.contains('accion--primary')).toBeFalse();
+    expect(nueva?.textContent).toContain('alternativa');
     // Configuración / Alumnos no son tiles de Acciones (sí se mencionan en el instructivo).
     const accionLabels = Array.from(el.querySelectorAll('.acciones-grid .accion-label')).map(
       (n) => n.textContent?.trim(),
@@ -215,6 +219,215 @@ describe('AdminDashboardPage', () => {
     expect(el.querySelector('[data-metric="emitidas"]')?.textContent?.trim()).toBe('—');
     expect(el.querySelector('[data-metric="revocadas"]')?.textContent?.trim()).toBe('—');
     expect(el.querySelector('.metricas-error')?.textContent).toContain('No se pudieron cargar');
+    expect(el.querySelector('[data-testid="metricas-reintentar"]')).not.toBeNull();
+  });
+
+  it('reintentar métricas vuelve a consultar los seams', async () => {
+    let courseCalls = 0;
+    let studentCalls = 0;
+    let certCalls = 0;
+    let resolveRetryCourses!: (v: readonly Curso[]) => void;
+    const courses: Pick<CoursesService, 'listar'> = {
+      listar: () => {
+        courseCalls += 1;
+        if (courseCalls === 1) {
+          return Promise.reject(new Error('fail'));
+        }
+        return new Promise<readonly Curso[]>((resolve) => {
+          resolveRetryCourses = resolve;
+        });
+      },
+    };
+    const students: Pick<StudentsService, 'contar'> = {
+      contar: () => {
+        studentCalls += 1;
+        return Promise.resolve(3);
+      },
+    };
+    const certs: Pick<CertificationsService, 'listar'> = {
+      listar: () => {
+        certCalls += 1;
+        return Promise.resolve([]);
+      },
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [AdminDashboardPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useValue: courses },
+        { provide: STUDENTS_SOURCE, useValue: students },
+        { provide: CERTIFICATIONS_SOURCE, useValue: certs },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(AdminDashboardPage);
+    fixture.detectChanges();
+    await settle(fixture);
+    await settle(fixture);
+
+    const el = fixture.nativeElement as HTMLElement;
+    const retry = el.querySelector<HTMLButtonElement>('[data-testid="metricas-reintentar"]');
+    expect(retry).not.toBeNull();
+    expect(retry?.disabled).toBeFalse();
+    expect(retry?.textContent).toContain('Reintentá');
+    retry!.click();
+    fixture.detectChanges();
+    expect(retry!.disabled).toBeTrue();
+    expect(retry!.getAttribute('aria-busy')).toBe('true');
+    const callsWhileLoading = courseCalls;
+    retry!.click();
+    expect(courseCalls).toBe(callsWhileLoading);
+
+    resolveRetryCourses([
+      {
+        id: 1,
+        codigo: 'C1',
+        nombre: 'Curso 1',
+        estado: 'activo',
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
+        cuatrimestre: 'Sin programar',
+        cantidadFechas: 1,
+        alumnosPresentes: null,
+        certificaciones: null,
+      },
+    ]);
+    await settle(fixture);
+    await settle(fixture);
+
+    expect(courseCalls).toBe(2);
+    expect(studentCalls).toBe(2);
+    expect(certCalls).toBe(2);
+    expect(el.querySelector('[data-metric="cursos"]')?.textContent?.trim()).toBe('1');
+    expect(el.querySelector('[data-metric="alumnos"]')?.textContent?.trim()).toBe('3');
+    expect(el.querySelector('.metricas-error')).toBeNull();
+    expect(el.querySelector('[data-testid="metricas-reintentar"]')).toBeNull();
+  });
+
+  it('timeout de un seam cuelga libera loading y muestra Reintentá', fakeAsync(() => {
+    const courses: Pick<CoursesService, 'listar'> = {
+      listar: () => new Promise(() => undefined),
+    };
+    const students: Pick<StudentsService, 'contar'> = {
+      contar: () => Promise.resolve(1),
+    };
+    const certs: Pick<CertificationsService, 'listar'> = {
+      listar: () => Promise.resolve([]),
+    };
+
+    TestBed.configureTestingModule({
+      imports: [AdminDashboardPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useValue: courses },
+        { provide: STUDENTS_SOURCE, useValue: students },
+        { provide: CERTIFICATIONS_SOURCE, useValue: certs },
+      ],
+    });
+    const fixture = TestBed.createComponent(AdminDashboardPage);
+    fixture.detectChanges();
+    tick(METRICAS_SEAM_TIMEOUT_MS);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-metric="cursos"]')?.textContent?.trim()).toBe('—');
+    expect(el.querySelector('.metricas-error')?.textContent).toContain('No se pudieron cargar');
+    const retry = el.querySelector<HTMLButtonElement>('[data-testid="metricas-reintentar"]');
+    expect(retry).not.toBeNull();
+    expect(retry?.disabled).toBeFalse();
+  }));
+
+  it('carga stale no sobrescribe métricas de un reintento más nuevo', async () => {
+    let resolveSlow!: (v: readonly Curso[]) => void;
+    let resolveFast!: (v: readonly Curso[]) => void;
+    let courseCalls = 0;
+    const courses: Pick<CoursesService, 'listar'> = {
+      listar: () => {
+        courseCalls += 1;
+        if (courseCalls === 1) {
+          return new Promise<readonly Curso[]>((resolve) => {
+            resolveSlow = resolve;
+          });
+        }
+        return new Promise<readonly Curso[]>((resolve) => {
+          resolveFast = resolve;
+        });
+      },
+    };
+    const students: Pick<StudentsService, 'contar'> = {
+      contar: () => Promise.resolve(1),
+    };
+    const certs: Pick<CertificationsService, 'listar'> = {
+      listar: () => Promise.resolve([]),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [AdminDashboardPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useValue: courses },
+        { provide: STUDENTS_SOURCE, useValue: students },
+        { provide: CERTIFICATIONS_SOURCE, useValue: certs },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(AdminDashboardPage);
+    fixture.detectChanges();
+    // Gen1 (constructor) queda pendiente en courses; gen2 supersede.
+    void fixture.componentInstance['cargarMetricas']();
+    await settle(fixture);
+
+    resolveFast([
+      {
+        id: 99,
+        codigo: 'FAST',
+        nombre: 'Rápido',
+        estado: 'activo',
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
+        cuatrimestre: 'Sin programar',
+        cantidadFechas: 2,
+        alumnosPresentes: null,
+        certificaciones: null,
+      },
+    ]);
+    await settle(fixture);
+    await settle(fixture);
+    expect(fixture.nativeElement.querySelector('[data-metric="cursos"]')?.textContent?.trim()).toBe(
+      '1',
+    );
+
+    resolveSlow([
+      {
+        id: 1,
+        codigo: 'SLOW',
+        nombre: 'Lento',
+        estado: 'activo',
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
+        cuatrimestre: 'Sin programar',
+        cantidadFechas: 0,
+        alumnosPresentes: null,
+        certificaciones: null,
+      },
+      {
+        id: 2,
+        codigo: 'SLOW2',
+        nombre: 'Lento 2',
+        estado: 'activo',
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
+        cuatrimestre: 'Sin programar',
+        cantidadFechas: 0,
+        alumnosPresentes: null,
+        certificaciones: null,
+      },
+    ]);
+    await settle(fixture);
+    await settle(fixture);
+    // El resultado lento (gen1) no debe pisar el conteo de gen2.
+    expect(fixture.nativeElement.querySelector('[data-metric="cursos"]')?.textContent?.trim()).toBe(
+      '1',
+    );
   });
 
   it('usa OnPush', () => {
@@ -296,6 +509,7 @@ describe('AdminDashboardPage', () => {
     }).compileComponents();
     const fixture = TestBed.createComponent(AdminDashboardPage);
     fixture.detectChanges();
+    await settle(fixture);
     await settle(fixture);
 
     const el = fixture.nativeElement as HTMLElement;

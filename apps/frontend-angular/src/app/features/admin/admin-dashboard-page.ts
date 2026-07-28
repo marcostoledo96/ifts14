@@ -137,14 +137,21 @@ export class AdminDashboardPage {
   readonly certificacionesRevocadas = signal<Metric>(null);
   readonly metricasCargando = signal(true);
   readonly errorMetricas = signal(false);
+  /** Descarta resultados de un reintento anterior si ya hay una carga más nueva. */
+  private loadGeneration = 0;
 
   constructor() {
     void this.cargarMetricas();
   }
 
+  onReintentarMetricas(): void {
+    if (this.metricasCargando()) return;
+    void this.cargarMetricas();
+  }
+
   private async cargarMetricas(): Promise<void> {
+    const generation = ++this.loadGeneration;
     this.metricasCargando.set(true);
-    this.errorMetricas.set(false);
 
     const coursesP = this.courses
       ? this.courses.listar()
@@ -156,38 +163,50 @@ export class AdminDashboardPage {
       ? this.certs.listar()
       : Promise.reject(new Error('CERTIFICATIONS_SOURCE ausente'));
 
-    const [cursosR, alumnosR, certsR] = await Promise.allSettled([coursesP, studentsP, certsP]);
+    try {
+      const [cursosR, alumnosR, certsR] = await Promise.allSettled([
+        conTimeout(coursesP),
+        conTimeout(studentsP),
+        conTimeout(certsP),
+      ]);
+      // Si llegó un reintento más nuevo, no tocar señales ni el flag de carga:
+      // esa generación es dueña del finally.
+      if (generation !== this.loadGeneration) return;
 
-    let huboError = false;
+      let huboError = false;
 
-    if (cursosR.status === 'fulfilled') {
-      this.cursosCargados.set(cursosR.value.length);
-      this.cursosSinFechas.set(cursosR.value.filter((c) => c.cantidadFechas === 0).length);
-    } else {
-      this.cursosCargados.set(null);
-      this.cursosSinFechas.set(null);
-      huboError = true;
+      if (cursosR.status === 'fulfilled') {
+        this.cursosCargados.set(cursosR.value.length);
+        this.cursosSinFechas.set(cursosR.value.filter((c) => c.cantidadFechas === 0).length);
+      } else {
+        this.cursosCargados.set(null);
+        this.cursosSinFechas.set(null);
+        huboError = true;
+      }
+
+      if (alumnosR.status === 'fulfilled') {
+        this.alumnosRegistrados.set(alumnosR.value);
+      } else {
+        this.alumnosRegistrados.set(null);
+        huboError = true;
+      }
+
+      if (certsR.status === 'fulfilled') {
+        const list = certsR.value;
+        this.certificacionesEmitidas.set(list.filter((c) => c.estado === 'vigente').length);
+        this.certificacionesRevocadas.set(list.filter((c) => c.estado === 'revocado').length);
+      } else {
+        this.certificacionesEmitidas.set(null);
+        this.certificacionesRevocadas.set(null);
+        huboError = true;
+      }
+
+      this.errorMetricas.set(huboError);
+    } finally {
+      if (generation === this.loadGeneration) {
+        this.metricasCargando.set(false);
+      }
     }
-
-    if (alumnosR.status === 'fulfilled') {
-      this.alumnosRegistrados.set(alumnosR.value);
-    } else {
-      this.alumnosRegistrados.set(null);
-      huboError = true;
-    }
-
-    if (certsR.status === 'fulfilled') {
-      const list = certsR.value;
-      this.certificacionesEmitidas.set(list.filter((c) => c.estado === 'vigente').length);
-      this.certificacionesRevocadas.set(list.filter((c) => c.estado === 'revocado').length);
-    } else {
-      this.certificacionesEmitidas.set(null);
-      this.certificacionesRevocadas.set(null);
-      huboError = true;
-    }
-
-    this.errorMetricas.set(huboError);
-    this.metricasCargando.set(false);
   }
 
   formatoMetrica(value: Metric): string {
@@ -199,4 +218,24 @@ export class AdminDashboardPage {
     if (item.id !== 'sin-fechas') return '—';
     return this.formatoMetrica(this.cursosSinFechas());
   }
+}
+
+/** Tope de espera por seam de métricas; evita skeletons eternos sin AbortSignal en el HTTP. */
+export const METRICAS_SEAM_TIMEOUT_MS = 15_000;
+
+/** Evita skeletons eternos si un seam HTTP no resuelve. */
+function conTimeout<T>(promise: Promise<T>, ms = METRICAS_SEAM_TIMEOUT_MS): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
 }
