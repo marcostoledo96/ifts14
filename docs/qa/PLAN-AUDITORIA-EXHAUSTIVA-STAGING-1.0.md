@@ -266,7 +266,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P6 Cursos listado | `audit/p06-cursos-list` | hecha | #91 | Mergeado a staging1.0 |
 | P7 Cursos editor | `audit/p07-cursos-editor` | hecha | #92 | Mergeado a staging1.0 |
 | P8 Cursos detalle | `audit/p08-cursos-detail` | hecha | #93 | Mergeado a staging1.0 |
-| P9 Alumnos listado | `audit/p09-alumnos-list` | apply listo | | SDD `audit-p09-alumnos-list` — HTTP omitido (mapeo OK); pendiente verify |
+| P9 Alumnos listado | `audit/p09-alumnos-list` | en PR | #94 | SDD verify PASS WITH WARNINGS; HTTP omitido (mapeo OK) |
 | P10 Alumnos editor | `audit/p10-alumnos-editor` | pendiente | | |
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | pendiente | | |
 | P12 Asistencias hub | `audit/p12-asist-hub` | pendiente | | |
@@ -593,8 +593,8 @@ Artefactos SDD en español argentino formal.
 Fase P9 — Listado alumnos (/admin/alumnos).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p09-alumnos-list.
 Cambio SDD Gentle-AI: audit-p09-alumnos-list (openspec/).
-Estado apply: copy sin legajo; HTTP omitido (optionalCount/toAlumno OK); tests list page verdes.
-Siguiente: sdd-verify / gate 4R. No tocar editor/detalle.
+Estado: PR #94 → staging1.0; verify PASS WITH WARNINGS; copy sin legajo; HTTP omitido.
+Siguiente tras merge: sdd-archive. No tocar editor/detalle (P10/P11).
 Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
