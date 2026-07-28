@@ -1,97 +1,84 @@
 # IFTS14 — Certificaciones QR
 
-Repositorio privado para estudiar el sitio actual del IFTS N.° 14 y desarrollar el módulo de certificaciones QR dentro de:
+Módulo de certificaciones de curso con validación pública por QR/link, integrado en la web del IFTS N.° 14.
 
 ```txt
-/certificados/
+Staging (entorno de trabajo):  /certificados_staging/
+Producción (aún no activada):  /certificados/
 ```
 
-## Stack confirmado
+## Stack
 
 ```txt
 Frontend: Angular 20
-Backend: PHP 8.4.22 CGI/FastCGI en el candidato de staging; producción aún no fue validada
-Base de datos: MariaDB 10.6.27
-Hosting: cPanel
-Gestión DB: phpMyAdmin / herramientas MySQL de cPanel
-Ruta objetivo: /certificados/
-Staging: /certificados_staging/
+Backend:  PHP 8.4.22 (CGI/FastCGI en staging)
+Base:     MariaDB 10.6.27
+Hosting:  cPanel
 ```
 
-## Estado actual y decisiones vigentes (D0)
+## Estado actual
 
-Decisiones confirmadas por Marcos, fuente de verdad del proyecto hasta nueva orden:
-
-| Tema | Decisión |
+| Entorno | Estado |
 |---|---|
-| QR / token | Permanente. El reenvío normal NO rota token/QR. Solo revocación explícita o regeneración excepcional auditada invalidan el token. |
-| DNI en validación pública y UI admin | DNI completo visible en `/validar/…` vigente y en listados/detalle/expediente admin (`dniMostrar`/`documentMasked` con dígitos completos). Logs, auditoría, errores y dumps no exponen DNI completo. |
-| Tipo de documento | Certificado de curso. Debajo muestra las fechas del curso a las que asistió el alumno. |
-| Auth admin | Sesión PHP nativa con cookie segura y CSRF. `X-Admin-Key` solo CLI/smokes server-side; no autoriza HTTP. |
-| Email alumno | Opcional (nullable) al crear/editar alumno. Entrega manual sin SMTP automático; email de notificación queda gated hasta aprobación. |
-| Composer en cPanel | Gate: si no está disponible, `vendor/` se genera localmente y se sube como artefacto operativo, nunca versionado. |
-| Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |
-| Staging | `/certificados_staging/` separado de producción `/certificados/`. |
+| Staging (`/certificados_staging/`) | Operativo; es el entorno de trabajo diario. |
+| Producción (`/certificados/`) | Aún no activada ni validada para este módulo. |
 
-## Estado del desarrollo
+El producto admin cubre: login con sesión, cursos, alumnos, fechas, asistencias, emisión, expediente, PDF/QR, entrega manual, revocación y configuración institucional (firmas). La validación pública muestra el certificado vigente o revocado.
 
-La etapa de aseguramiento inicial (`P0`, `P1`, `P2`) ya concluyó: el material del servidor está ordenado, los datos sensibles protegidos y la arquitectura documentada.
+## Decisiones vigentes (D0)
 
-Actualmente, el desarrollo del producto (Frontend y Backend) está en curso bajo Spec-Driven Development y TDD.
+| Tema | Regla |
+|---|---|
+| QR / token | Permanente. Actualizar, reenviar o regenerar PDF **no** rota el token/QR. Solo revocación explícita o regeneración excepcional auditada lo invalidan. |
+| DNI en UI | Completo en validación pública y en listados/detalle/expediente admin. Logs, auditoría, errores y dumps **no** exponen DNI ni token completos. |
+| Certificado | De curso, con fechas asistidas del alumno. |
+| Auth admin | Sesión PHP (cookie `HttpOnly`/`Secure`/`SameSite=Strict`) + CSRF. `X-Admin-Key` solo CLI/smokes server-side; no autoriza HTTP. |
+| Email | Campo opcional en alumno. Entrega manual (copiar link / descargar PDF). SMTP automático aún no definido. |
+| PDF | Hay dos salidas válidas: folio Angular y PDF TCPDF del backend. El instituto elige cuál usar. |
+| Composer | Si no hay Composer en cPanel, `vendor/` se genera local y se sube como artefacto; nunca se versiona. |
+| Firmantes | Rector/a y Asesor/a Pedagógica vía configuración institucional. |
+
+## Cómo empezar
+
+1. Leer [`GUIA.md`](GUIA.md) (onboarding humano).
+2. Ver el índice [`docs/00-indice-general.md`](docs/00-indice-general.md).
+3. Levantar entorno local: [`docs/05-desarrollo-local.md`](docs/05-desarrollo-local.md).
+4. Revisar qué ya está hecho: [`docs/03-changelog.md`](docs/03-changelog.md).
+5. Ver pendientes recomendados: [`docs/04-roadmap.md`](docs/04-roadmap.md).
+
+Para agentes IA: [`AGENTS.md`](AGENTS.md) y prompts en [`docs/opencode/`](docs/opencode/).
 
 ## Responsables
 
-### Marcos
-
-- Backend PHP.
-- Base de datos MariaDB.
-- Integración backend/frontend.
-- Desbloqueos frontend técnicos cuando haga falta: base Angular, validación pública, mocks/contratos y build `/certificados/`.
-- Deploy en cPanel.
-- Arquitectura, seguridad y documentación.
-- Estructura funcional y contratos API.
-
-### Matías
-
-- Liderazgo UI/UX del frontend Angular 20.
-- Adaptación del diseño generado en v0 desde `muestra_pagina/`.
-- Port visual a Angular (sin copiar React/Next literalmente).
-- Admin, sistema visual, responsive, accesibilidad, QA y handoff visual.
+| Rol | Alcance |
+|---|---|
+| Marcos | Backend PHP, MariaDB, integración, deploy cPanel, arquitectura, seguridad, documentación. |
+| Matías | UI/UX Angular 20, port visual desde `muestra_pagina/`, admin, responsive, a11y, QA visual. |
 
 ## Carpetas principales
 
 | Carpeta | Uso |
 |---|---|
-| `docs/` | Documentación del proyecto. |
-| `openspec/` | Specs SDD por módulo. |
-| `apps/frontend-angular/` | Aplicación Angular 20. |
-| `apps/backend-php/` | API PHP 8.4.21. |
-| `database/` | Migraciones, seeds ficticios y documentación de MariaDB. |
-| `deploy/` | Documentación y archivos de deploy cPanel. |
-| `muestra_pagina/` | Referencia visual exportada desde v0. No es código de producto; no se compila ni porta literalmente. |
+| `apps/frontend-angular/` | SPA Angular 20. |
+| `apps/backend-php/` | API PHP. |
+| `database/` | Migraciones SQL y seeds ficticios. |
+| `docs/` | Documentación humana y de agentes. |
+| `openspec/` | Specs por módulo (recomendadas para cambios no triviales). |
+| `deploy/` | Artefactos y checklists de deploy (sin secretos). |
+| `muestra_pagina/` | Referencia visual v0. No compilar ni portar React/Next literalmente. |
 | `scripts/` | Scripts auxiliares seguros. |
-| `material_privado_no_versionar/` | Material descargado del servidor. No se versiona. |
-| `docs/auditoria/` | Auditorías e insumos de ajuste documental. |
+| `material_privado_no_versionar/` | Material del servidor. **Nunca** versionar. |
 
-## Regla de seguridad
+## Seguridad
 
-No subir al repositorio:
+No subir al repositorio: dumps SQL reales, backups, ZIPs del servidor, logs, credenciales, `.env`, configs reales de conexión, ni `.codegraph/`.
 
-- dumps SQL reales;
-- backups;
-- ZIPs descargados del servidor;
-- logs;
-- credenciales;
-- archivos `.env`;
-- configuraciones reales de conexión;
-- carpetas `.git` internas descargadas desde cPanel;
-- `.codegraph/` (metadata local de indexado, no se versiona).
+## Lectura mínima por área
 
-## Cómo empezar
-
-1. Leer `GUIA.md`.
-2. Leer `AGENTS.md`.
-3. Leer `docs/00-indice-general.md`.
-4. Ejecutar un ciclo chico desde el prompt raíz correspondiente: `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` o `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`.
-5. Implementar Angular/PHP siguiendo las directivas del tablero de planificación.
-6. Cerrar cada ciclo con `sdd-archive` antes de proponer commit.
+| Área | Documento |
+|---|---|
+| Deploy staging | [`docs/deploy/01-staging-cpanel-certificados.md`](docs/deploy/01-staging-cpanel-certificados.md) |
+| API | [`docs/backend/API.md`](docs/backend/API.md) y contrato en [`docs/backend/01-contrato-api-certificados.md`](docs/backend/01-contrato-api-certificados.md) |
+| Frontend | [`docs/frontend/00-angular20-port-v0.md`](docs/frontend/00-angular20-port-v0.md) |
+| Base de datos | [`docs/database/00-mariadb.md`](docs/database/00-mariadb.md) |
+| QA manual | [`docs/qa/CHECKLIST-TESTING-MANUAL.md`](docs/qa/CHECKLIST-TESTING-MANUAL.md) |
