@@ -549,8 +549,8 @@ No tocar listado salvo link roto hacia el editor.
 
 ## Fase P8 — Cursos · detalle
 
-**Rama:** `audit/p08-cursos-detail`  
-**Cambio SDD:** `openspec/changes/audit-p08-cursos-detail/`  
+**Rama:** `audit/p08-cursos-detail`
+**Cambio SDD:** `openspec/changes/audit-p08-cursos-detail/`
 **Ruta:** `/admin/cursos/:id`
 
 **Checklist**

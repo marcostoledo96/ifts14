@@ -1,9 +1,9 @@
 # Verification Report
 
-**Change**: audit-p08-cursos-detail  
-**Version**: N/A (delta MODIFIED admin-courses-frontend)  
-**Mode**: Standard (`strict_tdd: false`)  
-**Branch**: audit/p08-cursos-detail  
+**Change**: audit-p08-cursos-detail
+**Version**: N/A (delta MODIFIED admin-courses-frontend)
+**Mode**: Standard (`strict_tdd: false`)
+**Branch**: audit/p08-cursos-detail
 **Verified**: 2026-07-28
 
 ### Completeness

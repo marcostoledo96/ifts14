@@ -1,9 +1,9 @@
 # Archive Report: audit-p08-cursos-detail
 
-**Fecha de cierre**: 2026-07-28  
-**Change archivado**: `audit-p08-cursos-detail`  
-**Archived to**: `openspec/changes/archive/2026-07-28-audit-p08-cursos-detail/`  
-**Veredicto sdd-verify**: PASS WITH WARNINGS (CRITICAL: none)  
+**Fecha de cierre**: 2026-07-28
+**Change archivado**: `audit-p08-cursos-detail`
+**Archived to**: `openspec/changes/archive/2026-07-28-audit-p08-cursos-detail/`
+**Veredicto sdd-verify**: PASS WITH WARNINGS (CRITICAL: none)
 **Mode**: hybrid (OpenSpec filesystem + Engram)
 
 ## Resumen
@@ -71,7 +71,7 @@ Requirements no tocados por el delta se preservaron (rutas protegidas, UI contra
 
 ## SDD Cycle Complete
 
-Planned → implemented → verified (PASS WITH WARNINGS) → archived.  
+Planned → implemented → verified (PASS WITH WARNINGS) → archived.
 **No commit / no push** por instrucción explícita del archive.
 
 ## Next recommended
