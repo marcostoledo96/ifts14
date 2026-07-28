@@ -28,7 +28,6 @@
             [value]="q()"
             (input)="onSearch($event)"
             placeholder="Ej. Desarrollo Web…"
-            aria-label="Buscar curso por código o nombre"
           />
         </span>
       </label>
@@ -50,8 +49,8 @@
         </div>
       </div>
       <div class="filtro-fechas">
-        <span class="filtro-label">Fechas de cursada</span>
-        <div class="filter-chips">
+        <span class="filtro-label" id="filtro-fechas-label">Fechas de cursada</span>
+        <div class="filter-chips" role="group" aria-labelledby="filtro-fechas-label">
           <button type="button" data-fechas="con" [attr.aria-pressed]="conFechas() === true" (click)="onConFechas(true)">Con fechas</button>
           <button type="button" data-fechas="sin" [attr.aria-pressed]="conFechas() === false" (click)="onConFechas(false)">Sin fechas</button>
         </div>
@@ -60,8 +59,8 @@
     @if (mostrarResumen()) {
       <div class="results-summary">
         <p aria-live="polite">
-          <span class="count-mono">{{ cursos().length }}</span>
-          {{ cursos().length === 1 ? 'curso' : 'cursos' }}
+          <span class="count-mono">{{ resultadosFiltrados().length }}</span>
+          {{ resultadosFiltrados().length === 1 ? 'curso' : 'cursos' }}
           {{ hayFiltrosActivos() ? 'coinciden con el filtro' : 'en el archivo' }}
         </p>
         @if (hayFiltrosActivos()) {
@@ -122,7 +121,7 @@
         </svg>
       </span>
       <h2 class="estado-title">No pudimos cargar los cursos</h2>
-      <p>{{ error() || 'Hubo un problema de conexión con el archivo académico. Revisá la red e intentá nuevamente.' }}</p>
+      <p>{{ error() || 'No pudimos cargar el listado de cursos. Reintentá.' }}</p>
       <button type="button" class="btn-secondary" (click)="onReintentar()">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
           <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke-linecap="round"/>
@@ -187,7 +186,7 @@
               <td>
                 <span class="row-accent row-accent--{{ claseEstado(c.estado) }}" aria-hidden="true"></span>
                 <strong>{{ c.nombre }}</strong>
-                <span class="course-code">{{ c.codigo }} · {{ c.cuatrimestre }}</span>
+                <span class="course-code">{{ etiquetaCodigo(c) }}</span>
               </td>
               <td>
                 <span class="metrica" [class.metrica--muted]="c.cantidadFechas === 0 || esInactivoVisual(c.estado)">
@@ -243,7 +242,7 @@
           Mostrando
           <span class="count-mono">{{ itemsVisibles().length }}</span>
           de
-          <span class="count-mono">{{ cursos().length }}</span>
+          <span class="count-mono">{{ resultadosFiltrados().length }}</span>
           registros
         </p>
         <nav class="pager" aria-label="Paginación de cursos">
@@ -284,7 +283,7 @@
             <header>
               <div>
                 <h2>{{ c.nombre }}</h2>
-                <p>{{ c.codigo }} · {{ c.cuatrimestre }}</p>
+                <p>{{ etiquetaCodigo(c) }}</p>
               </div>
               <span class="estado-badge estado-badge--{{ claseEstado(c.estado) }}">
                 <span class="estado-dot" aria-hidden="true"></span>
@@ -358,7 +357,7 @@
         Mostrando
         <span class="count-mono">{{ itemsVisibles().length }}</span>
         de
-        <span class="count-mono">{{ cursos().length }}</span>
+        <span class="count-mono">{{ resultadosFiltrados().length }}</span>
         registros
       </p>
       <nav class="pager" aria-label="Paginación de cursos (móvil)">
@@ -377,6 +376,9 @@
             [attr.aria-label]="'Página ' + p"
             (click)="onPagina(p)"
           >{{ p }}</button>
+        }
+        @if (totalPaginas() > 5 && paginaSegura() < totalPaginas() - 2) {
+          <span class="pager-ellipsis" aria-hidden="true">…</span>
         }
         <button
           type="button"
