@@ -502,9 +502,11 @@ Cuando exista integración real:
 
 ## Ver también
 
-- [F4-04 — Detalle de curso con paridad v0](./F4-04-detalle-curso-paridad-v0.md) — ficha, tabla desktop, tarjetas mobile y métricas opcionales de asistencia; evidencia de desktop, mobile, vacío, cancelada y realizadas con acción `Ver`.
-- [Reporte de QA manual F3-04](./03-qa-manual-f3-04.md) — checklist transversal de build, responsive, teclado/foco, contraste, estados, consola y datos sensibles. Estado BLOCKED hasta ejecutar QA manual y checks automáticos; F3-05 no satisface esos pendientes por sí solo.
-- [Verificación de build F3-05](./04-build-validacion-f3-05.md) — build de producción con `base-href /certificados/`, artefactos generados, tamaños, warnings y pendientes.
+- Módulos admin vigentes: [`03-modulos-admin.md`](./03-modulos-admin.md).
+- Sistema visual: [`02-sistema-visual-v0-f1-02.md`](./02-sistema-visual-v0-f1-02.md).
+- Changelog y roadmap: [`../03-changelog.md`](../03-changelog.md), [`../04-roadmap.md`](../04-roadmap.md).
+- QA manual: [`../qa/CHECKLIST-TESTING-MANUAL.md`](../qa/CHECKLIST-TESTING-MANUAL.md).
+- Specs de cursos/asistencias: `openspec/specs/admin-courses-frontend/spec.md`, `openspec/specs/admin-attendances-frontend/spec.md`.
 
 ## Cierre P5-03 — Environments
 
@@ -622,8 +624,9 @@ Verificación: archive `openspec/changes/archive/2026-07-15-p6-05-css-accesibili
 P6 cierra con 5/5 ciclos archivados (P6-01 a P6-05). Este ciclo no introdujo delta de spec canónica nueva: los cambios son mejoras de implementación que no alteran el contrato observable de las specs existentes (`frontend-public-validation`, `admin-certificate-delivery-frontend`, `admin-certificate-revocation`, `frontend-angular-shell`).
 
 Límites explícitos (P6-05): no agrega dependencias nuevas, no rota token/QR, no cambia el backend, no introduce un sistema de diseño distinto del vigente, no modifica la ruta ni el token, no toca la lógica de los flujos 4–22, no agrega diferenciación pública entre estados (D1-03), no reescribe `muestra_pagina/`. Próximo ciclo: P7-01 (CI frontend).
-- [Handoff a Marcos — F3-06](./05-handoff-marcos-f3-06.md) — reporte de handoff final de Fase 3 a Marcos con F3-04/F3-05 y roadmap F4-F6.
+
+Handoff histórico F3 y notas de paridad por ciclo se retiraron en la limpieza documental 2026-07; ver [`../03-changelog.md`](../03-changelog.md) y [`03-modulos-admin.md`](./03-modulos-admin.md).
 
 ## Cierre — listado de asistencias por curso (2026-07-22)
 
-Ciclo `frontend-asistencias-listado-por-curso` (rama `feat/asistencias-listado-por-curso`): hub FE reorganizado a cursos → intermedia de fechas → marcado. Detalle operativo: [asistencias-listado-por-curso.md](./asistencias-listado-por-curso.md). Archive: `openspec/changes/archive/2026-07-22-frontend-asistencias-listado-por-curso/`. Spec canónica actualizada: `openspec/specs/admin-attendances-frontend/spec.md`.
+Ciclo `frontend-asistencias-listado-por-curso` (rama `feat/asistencias-listado-por-curso`): hub FE reorganizado a cursos → intermedia de fechas → marcado. Detalle operativo: [`03-modulos-admin.md`](./03-modulos-admin.md) y spec `openspec/specs/admin-attendances-frontend/spec.md`. Archive: `openspec/changes/archive/2026-07-22-frontend-asistencias-listado-por-curso/`.
