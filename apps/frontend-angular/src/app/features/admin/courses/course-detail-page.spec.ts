@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ATTENDANCE_SOURCE } from '../attendances/data/attendance.token';
@@ -6,7 +7,7 @@ import { CourseDetailPage } from './course-detail-page';
 import { CursoDetalle } from './courses.models';
 import { COURSES_SOURCE, CoursesService } from './courses.service';
 
-const detail = (id: number, fechas: CursoDetalle['fechas'] = []): CursoDetalle => ({
+const detail = (id: number, fechas: CursoDetalle['fechas'] = [], overrides: Partial<CursoDetalle> = {}): CursoDetalle => ({
   id,
   codigo: `CUR-00${id}`,
   nombre: `Curso demo ${id}`,
@@ -16,6 +17,7 @@ const detail = (id: number, fechas: CursoDetalle['fechas'] = []): CursoDetalle =
   cuatrimestre: '1.er cuatrimestre 2026',
   cantidadFechas: fechas.length,
   fechas,
+  ...overrides,
 });
 
 const fecha = (id: number, estado: 'programada' | 'realizada' | 'cancelada' = 'programada') => ({
@@ -127,8 +129,9 @@ describe('CourseDetailPage', () => {
     f.detectChanges();
     await f.whenStable();
     f.detectChanges();
-    expect((f.nativeElement as HTMLElement).textContent).toContain('Curso no encontrado');
+    expect((f.nativeElement as HTMLElement).textContent).toContain('Curso no encontrado.');
     expect((f.nativeElement as HTMLElement).textContent).not.toContain('Curso demo 2');
+    expect((f.nativeElement as HTMLElement).querySelector('[data-testid="cta-reintentar-curso"]')).toBeNull();
   });
 
   it('muestra la ficha con acento y una tabla y tarjetas equivalentes', async () => {
@@ -201,9 +204,11 @@ describe('CourseDetailPage', () => {
     expect((el.querySelector('[data-testid="cta-editar-curso"]') as HTMLAnchorElement).getAttribute('href')).toContain(
       '/admin/cursos/1/editar',
     );
-    // Sin fechas: no hay CTA a hub genérico de asistencias.
+    // Sin fechas asistibles: no hay «Abrir primera fecha»; sí CTA al hub.
     expect(el.querySelector('[data-testid="cta-cargar-asistencias"]')).toBeNull();
-    expect(el.querySelector('a[href*="/admin/asistencias"]')).toBeNull();
+    const hub = el.querySelector('[data-testid="cta-ver-fechas-curso"]') as HTMLAnchorElement;
+    expect(hub).not.toBeNull();
+    expect(hub.getAttribute('href')).toContain('/admin/asistencias/curso/1');
   });
 
   it('enlaza Abrir primera fecha a la primera fecha disponible', async () => {
@@ -235,9 +240,11 @@ describe('CourseDetailPage', () => {
   });
 
   it('muestra un error recuperable cuando courses.obtener rechaza', async () => {
-    const failed = await render(courses(() => Promise.reject(new Error('No se pudo cargar el curso.'))));
+    const failed = await render(courses(() => Promise.reject(new Error('fallo de red'))));
     const el = failed.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('No se pudo cargar el curso.');
+    expect(el.textContent).toContain('No se pudo cargar el curso. Reintentá.');
+    expect(el.textContent).not.toContain('fallo de red');
+    expect(el.querySelector('[data-testid="cta-reintentar-curso"]')).not.toBeNull();
     expect(el.querySelectorAll('[role="alert"]').length).toBe(0);
     expect(el.querySelectorAll('output[aria-live="polite"]').length).toBe(1);
   });
@@ -248,5 +255,140 @@ describe('CourseDetailPage', () => {
     const text = (f.nativeElement as HTMLElement).textContent ?? '';
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(text).not.toMatch(/dni|email|token|uuid|legajo|matr[ií]cula/i);
+  });
+
+  // --- P8: not-found limpio (id / in-memory / HTTP 404) ---
+
+  it('not-found limpio para id inválido sin Reintentar ni ruido técnico', async () => {
+    const f = await render(courses(() => Promise.resolve(detail(1))), '0');
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Curso no encontrado.');
+    expect(el.querySelector('[data-testid="cta-reintentar-curso"]')).toBeNull();
+    expect(el.textContent).not.toMatch(/Http failure|status code|404/i);
+  });
+
+  it('not-found limpio para Error in-memory con prefijo Curso no encontrado', async () => {
+    const f = await render(
+      courses(() => Promise.reject(new Error('Curso no encontrado: 99'))),
+      '99',
+    );
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Curso no encontrado.');
+    expect(el.textContent).not.toContain('Curso no encontrado: 99');
+    expect(el.querySelector('[data-testid="cta-reintentar-curso"]')).toBeNull();
+  });
+
+  it('not-found limpio para HttpErrorResponse 404 sin cuerpo técnico', async () => {
+    const err = new HttpErrorResponse({
+      status: 404,
+      statusText: 'Not Found',
+      url: '/api/v1/admin/courses/42',
+      error: { error: { message: 'Resource not found', code: 'NOT_FOUND' } },
+    });
+    const f = await render(courses(() => Promise.reject(err)), '42');
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Curso no encontrado.');
+    expect(el.textContent).not.toContain('Resource not found');
+    expect(el.textContent).not.toContain('/api/v1/admin/courses');
+    expect(el.textContent).not.toContain('NOT_FOUND');
+    expect(el.querySelector('[data-testid="cta-reintentar-curso"]')).toBeNull();
+  });
+
+  it('Reintentar en fallo recuperable recupera la ficha y quita el CTA', async () => {
+    let calls = 0;
+    const source = courses(() => {
+      calls += 1;
+      if (calls === 1) return Promise.reject(new Error('timeout'));
+      return Promise.resolve(detail(7, [fecha(71)]));
+    });
+    const f = await render(source, '7');
+    const el = f.nativeElement as HTMLElement;
+    expect(calls).toBe(1);
+    expect(el.textContent).toContain('No se pudo cargar el curso. Reintentá.');
+    expect(el.querySelector('[data-testid="cta-reintentar-curso"]')).not.toBeNull();
+    (el.querySelector('[data-testid="cta-reintentar-curso"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(calls).toBe(2);
+    expect(f.componentInstance.detalle()?.id).toBe(7);
+    expect(f.componentInstance.error()).toBe('');
+    expect(el.querySelector('[data-testid="cta-reintentar-curso"]')).toBeNull();
+    expect(el.textContent).toContain('CUR-007');
+  });
+
+  it('HttpErrorResponse 500 es recuperable sin filtrar cuerpo técnico', async () => {
+    const err = new HttpErrorResponse({
+      status: 500,
+      statusText: 'Internal Server Error',
+      url: '/api/v1/admin/courses/7',
+      error: { error: { message: 'stacktrace secret', code: 'INTERNAL' } },
+    });
+    const f = await render(courses(() => Promise.reject(err)), '7');
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('No se pudo cargar el curso. Reintentá.');
+    expect(el.textContent).not.toContain('stacktrace');
+    expect(el.textContent).not.toContain('/api/v1');
+    expect(el.querySelector('[data-testid="cta-reintentar-curso"]')).not.toBeNull();
+  });
+
+  it('HttpErrorResponse 403 no ofrece Reintentar', async () => {
+    const err = new HttpErrorResponse({
+      status: 403,
+      statusText: 'Forbidden',
+      url: '/api/v1/admin/courses/7',
+      error: { error: { message: 'Forbidden' } },
+    });
+    const f = await render(courses(() => Promise.reject(err)), '7');
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('No tenés permiso para ver este curso.');
+    expect(el.querySelector('[data-testid="cta-reintentar-curso"]')).toBeNull();
+  });
+
+  it('CTA hub, labels humanas, fecha es-AR, sin guión junto a Pendiente y Ver y entregar intacto', async () => {
+    const f = await render(
+      courses(() =>
+        Promise.resolve(
+          detail(1, [fecha(11), fecha(12, 'realizada')], {
+            estado: 'cerrado',
+            cuatrimestre: 'Sin programar',
+          }),
+        ),
+      ),
+      '1',
+      attendance(() =>
+        Promise.resolve([{ cursoId: 1, cursoFechaId: 12 }] as never),
+      ),
+    );
+    const el = f.nativeElement as HTMLElement;
+
+    const hub = el.querySelector('[data-testid="cta-ver-fechas-curso"]') as HTMLAnchorElement;
+    expect(hub.textContent?.trim()).toBe('Ver fechas del curso');
+    expect(hub.getAttribute('href')).toBe('/admin/asistencias/curso/1');
+
+    expect(el.textContent).toContain('Inactivo');
+    expect(el.textContent).not.toMatch(/\bcerrado\b/);
+    expect(el.textContent).toContain('Programada');
+    expect(el.textContent).toContain('Realizada');
+    expect(el.textContent).not.toMatch(/\bprogramada\b/);
+    expect(el.textContent).not.toContain('Sin programar');
+
+    // Fecha humana es-AR (no ISO crudo como único texto de celda).
+    expect(el.querySelector('.fechas-tabla td.fecha')?.textContent).not.toBe('2026-03-15');
+    expect(el.querySelector('.fechas-tabla td.fecha')?.textContent).toMatch(/15/);
+
+    // Sin «—» junto a Pendiente (tabla + cards).
+    const pendientes = [...el.querySelectorAll('.fechas-tabla td, .fechas-cards li')].filter((n) =>
+      (n.textContent ?? '').includes('Pendiente'),
+    );
+    expect(pendientes.length).toBeGreaterThan(0);
+    for (const node of pendientes) {
+      expect(node.textContent).not.toContain('—');
+    }
+
+    expect(el.querySelectorAll('.fechas-tabla a[href*="/fechas/12/asistencias"]')[0]?.textContent).toContain(
+      'Ver y entregar',
+    );
+    expect(el.querySelector('[data-testid="cta-cargar-asistencias"]')).not.toBeNull();
   });
 });
