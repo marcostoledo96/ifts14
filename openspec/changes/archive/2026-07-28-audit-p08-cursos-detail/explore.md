@@ -1,12 +1,12 @@
 # Exploration: audit-p08-cursos-detail
 
-**Cambio**: `audit-p08-cursos-detail`  
-**Tipo**: exploration (sin implementación)  
-**Proyecto**: `ifts14`  
-**Fecha**: 2026-07-28  
-**Almacén**: openspec  
-**Rama**: `audit/p08-cursos-detail`  
-**Alcance de fase**: solo detalle `/admin/cursos/:id` → `course-detail-page.*`  
+**Cambio**: `audit-p08-cursos-detail`
+**Tipo**: exploration (sin implementación)
+**Proyecto**: `ifts14`
+**Fecha**: 2026-07-28
+**Almacén**: openspec
+**Rama**: `audit/p08-cursos-detail`
+**Alcance de fase**: solo detalle `/admin/cursos/:id` → `course-detail-page.*`
 **Referencias**: `docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md` §P8; `openspec/specs/admin-courses-frontend/spec.md`; `muestra_pagina/components/admin/curso-detalle.tsx`; ciclo histórico F4-04
 
 ## Exploration: Detalle de curso admin (P8)
