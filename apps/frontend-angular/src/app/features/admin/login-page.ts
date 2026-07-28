@@ -29,7 +29,7 @@ export class LoginPage {
     this.loading.set(true);
     try {
       await this.auth.login(credentials);
-      void this.router.navigate(['/admin/dashboard']);
+      await this.router.navigate(['/admin/dashboard']);
     } catch (err: unknown) {
       this.errorMsg.set(mensajeErrorLogin(err));
     } finally {
@@ -46,7 +46,8 @@ function mensajeErrorLogin(err: unknown): string {
   if (status === 401) {
     return 'Las credenciales no coinciden con un registro autorizado. Verificá los datos e intentá nuevamente.';
   }
-  if (status === 0 || status === undefined) {
+  // status 0 = fallo de red típico de HttpClient; el resto (502 payload, 5xx, undefined) → genérico.
+  if (status === 0) {
     return 'No se pudo conectar con el servidor. Verificá tu conexión e intentá nuevamente.';
   }
   return 'No se pudo completar el acceso. Intentá nuevamente en unos momentos.';

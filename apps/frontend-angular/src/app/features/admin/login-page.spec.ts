@@ -72,14 +72,17 @@ describe('LoginPage', () => {
     expect(f.componentInstance.loading()).toBe(false);
   });
 
-  it('login con error 401 muestra mensaje de credenciales no autorizadas', async () => {
+  it('login con error 401 muestra mensaje de credenciales y no navega', async () => {
     const f = await render();
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
     const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
     spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 401 }));
     await f.componentInstance.onLoginSubmitted({ username: 'bad', password: 'wrong' });
     f.detectChanges();
     expect(f.componentInstance.errorMsg()).toContain('no coinciden con un registro autorizado');
     expect(f.componentInstance.loading()).toBe(false);
+    expect(navSpy).not.toHaveBeenCalled();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('.error-login')).toBeNull();
     expect(el.querySelector('#login-error[role="alert"]')?.textContent).toContain(
@@ -87,28 +90,46 @@ describe('LoginPage', () => {
     );
   });
 
-  it('login con error 429 muestra mensaje de rate limit', async () => {
+  it('login con error 429 muestra mensaje de rate limit y no navega', async () => {
     const f = await render();
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
     const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
     spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 429 }));
     await f.componentInstance.onLoginSubmitted({ username: 'x', password: 'y' });
     expect(f.componentInstance.errorMsg()).toContain('Demasiados intentos');
+    expect(navSpy).not.toHaveBeenCalled();
   });
 
-  it('login con error de red muestra mensaje de conexión', async () => {
+  it('login con error de red muestra mensaje de conexión y no navega', async () => {
     const f = await render();
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
     const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
     spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 0 }));
     await f.componentInstance.onLoginSubmitted({ username: 'admin', password: 'clave123' });
     expect(f.componentInstance.errorMsg()).toContain('No se pudo conectar con el servidor');
+    expect(navSpy).not.toHaveBeenCalled();
   });
 
-  it('login con 5xx muestra mensaje genérico de reintento', async () => {
+  it('login con 5xx o payload inválido muestra mensaje genérico y no navega', async () => {
     const f = await render();
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
     const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
-    spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 500 }));
+    spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 502 }));
     await f.componentInstance.onLoginSubmitted({ username: 'admin', password: 'clave123' });
     expect(f.componentInstance.errorMsg()).toContain('No se pudo completar el acceso');
+    expect(navSpy).not.toHaveBeenCalled();
+  });
+
+  it('rechazo sin status usa mensaje genérico (no lo trata como red)', async () => {
+    const f = await render();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    spyOn(auth, 'login').and.callFake(() => Promise.reject(new Error('boom')));
+    await f.componentInstance.onLoginSubmitted({ username: 'admin', password: 'clave123' });
+    expect(f.componentInstance.errorMsg()).toContain('No se pudo completar el acceso');
+    expect(f.componentInstance.errorMsg()).not.toContain('conectar con el servidor');
   });
 
   it('no llama fetch al renderizar', async () => {
