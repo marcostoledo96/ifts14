@@ -295,6 +295,226 @@ describe('CourseEditorPage', () => {
     expect(f.componentInstance.detalle()).toBeNull();
     expect(f.componentInstance.fechas().length).toBe(0);
     expect(f.componentInstance.error()).toContain('Curso no encontrado');
+    expect(f.componentInstance.sinCurso()).toBeTrue();
+    expect((f.nativeElement as HTMLElement).querySelector('#curso-codigo')).toBeNull();
+  });
+
+  it('omite fechas canceladas al cargar y al guardar conserva su orden en el payload', async () => {
+    const reemplazar = jasmine
+      .createSpy('reemplazarFechas')
+      .and.callFake((_id: number, dtos: { id: number | null; orden: number; estado: string }[]) => {
+        expect(dtos.map((d) => d.id).sort()).toEqual([91, 92]);
+        expect(dtos.find((d) => d.id === 92)?.estado).toBe('cancelada');
+        expect(dtos.find((d) => d.id === 91)?.orden).toBe(1);
+        expect(dtos.find((d) => d.id === 92)?.orden).toBe(2);
+        return Promise.resolve([]);
+      });
+    const detalle = {
+      id: 9,
+      codigo: 'CUR-009',
+      nombre: 'Con cancelada',
+      estado: 'activo' as const,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+      cuatrimestre: 'Sin programar',
+      cantidadFechas: 2,
+      fechas: [
+        {
+          id: 91,
+          cursoId: 9,
+          fecha: '2026-03-01',
+          descripcion: null,
+          orden: 1,
+          estado: 'programada' as const,
+        },
+        {
+          id: 92,
+          cursoId: 9,
+          fecha: '2026-03-08',
+          descripcion: null,
+          orden: 2,
+          estado: 'cancelada' as const,
+        },
+      ],
+    };
+    const fake: CoursesService = {
+      listar: () => Promise.resolve([]),
+      obtener: () => Promise.resolve(detalle),
+      crear: () => Promise.reject(new Error('noop')),
+      actualizar: () => Promise.reject(new Error('noop')),
+      actualizarEstado: () => Promise.reject(new Error('noop')),
+      listarFechas: () => Promise.resolve([]),
+      guardarFecha: () => Promise.reject(new Error('noop')),
+      reemplazarFechas: reemplazar,
+    };
+    await TestBed.configureTestingModule({
+      imports: [CourseEditorPage],
+      providers: [provideRouter([]), { provide: COURSES_SOURCE, useValue: fake }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CourseEditorPage);
+    fixture.componentRef.setInput('mode', 'edit');
+    fixture.componentRef.setInput('id', '9');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.fechas().length).toBe(1);
+    expect(fixture.componentInstance.fechas()[0]?.id).toBe(91);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.fecha-row').length).toBe(1);
+    await fixture.componentInstance.guardar();
+    expect(reemplazar).toHaveBeenCalled();
+  });
+
+  it('409 en reemplazarFechas no se etiqueta como código de curso', async () => {
+    const { HttpErrorResponse } = await import('@angular/common/http');
+    const fake: CoursesService = {
+      listar: () => Promise.resolve([]),
+      obtener: () =>
+        Promise.resolve({
+          id: 1,
+          codigo: 'CUR-001',
+          nombre: 'Curso',
+          estado: 'activo',
+          createdAt: '',
+          updatedAt: '',
+          cuatrimestre: 'Sin programar',
+          cantidadFechas: 0,
+          fechas: [],
+        }),
+      crear: () => Promise.reject(new Error('noop')),
+      actualizar: () => Promise.reject(new Error('noop')),
+      actualizarEstado: () => Promise.reject(new Error('noop')),
+      listarFechas: () => Promise.resolve([]),
+      guardarFecha: () => Promise.reject(new Error('noop')),
+      reemplazarFechas: () =>
+        Promise.reject(
+          new HttpErrorResponse({
+            status: 409,
+            error: { error: { message: 'El recurso ya existe.' } },
+          }),
+        ),
+    };
+    await TestBed.configureTestingModule({
+      imports: [CourseEditorPage],
+      providers: [provideRouter([]), { provide: COURSES_SOURCE, useValue: fake }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CourseEditorPage);
+    fixture.componentRef.setInput('mode', 'edit');
+    fixture.componentRef.setInput('id', '1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.agregarFecha();
+    fixture.componentInstance.onFechaInput(0, {
+      target: { value: '2026-07-01' },
+    } as unknown as Event);
+    await fixture.componentInstance.guardar();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.error()).toContain('fecha');
+    expect(fixture.componentInstance.error()).not.toContain('código');
+  });
+
+  it('muestra mensaje de negocio en 409 sin URL del endpoint', async () => {
+    const { HttpErrorResponse } = await import('@angular/common/http');
+    const fake: CoursesService = {
+      listar: () => Promise.resolve([]),
+      obtener: () => Promise.reject(new Error('noop')),
+      crear: () =>
+        Promise.reject(
+          new HttpErrorResponse({
+            status: 409,
+            statusText: 'Conflict',
+            url: 'https://example.test/certificados/api/admin/cursos',
+            error: { error: { code: 'CONFLICT', message: 'El recurso ya existe.' } },
+          }),
+        ),
+      actualizar: () => Promise.reject(new Error('noop')),
+      actualizarEstado: () => Promise.reject(new Error('noop')),
+      listarFechas: () => Promise.resolve([]),
+      guardarFecha: () => Promise.reject(new Error('noop')),
+      reemplazarFechas: () => Promise.reject(new Error('noop')),
+    };
+    await TestBed.configureTestingModule({
+      imports: [CourseEditorPage],
+      providers: [provideRouter([]), { provide: COURSES_SOURCE, useValue: fake }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CourseEditorPage);
+    fixture.componentRef.setInput('mode', 'create');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.codigo.set('CUR-DUP');
+    fixture.componentInstance.nombre.set('Duplicado');
+    await fixture.componentInstance.guardar();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.error()).toBe('Ya existe un curso con ese código.');
+    expect(fixture.componentInstance.error()).not.toContain('example.test');
+    expect(fixture.componentInstance.error()).not.toContain('Http failure');
+  });
+
+  it('rechaza fechas duplicadas en el borrador', async () => {
+    const f = await render('create');
+    f.componentInstance.codigo.set('CUR-DUP-F');
+    f.componentInstance.nombre.set('Duplicadas');
+    f.componentInstance.agregarFecha();
+    f.componentInstance.agregarFecha();
+    f.componentInstance.onFechaInput(0, { target: { value: '2026-05-01' } } as unknown as Event);
+    f.componentInstance.onFechaInput(1, { target: { value: '2026-05-01' } } as unknown as Event);
+    await f.componentInstance.guardar();
+    f.detectChanges();
+    expect(f.componentInstance.error()).toContain('fechas duplicadas');
+  });
+
+  it('create parcial: si fallan fechas navega al editor con flash', async () => {
+    const { HttpErrorResponse } = await import('@angular/common/http');
+    const fake: CoursesService = {
+      listar: () => Promise.resolve([]),
+      obtener: () => Promise.reject(new Error('noop')),
+      crear: () =>
+        Promise.resolve({
+          id: 77,
+          codigo: 'CUR-77',
+          nombre: 'Parcial',
+          estado: 'activo',
+          createdAt: '',
+          updatedAt: '',
+          cuatrimestre: 'Sin programar',
+          cantidadFechas: 0,
+          fechas: [],
+        }),
+      actualizar: () => Promise.reject(new Error('noop')),
+      actualizarEstado: () => Promise.reject(new Error('noop')),
+      listarFechas: () => Promise.resolve([]),
+      guardarFecha: () =>
+        Promise.reject(
+          new HttpErrorResponse({
+            status: 409,
+            error: { error: { message: 'El recurso ya existe.' } },
+          }),
+        ),
+      reemplazarFechas: () => Promise.reject(new Error('noop')),
+    };
+    await TestBed.configureTestingModule({
+      imports: [CourseEditorPage],
+      providers: [provideRouter([]), { provide: COURSES_SOURCE, useValue: fake }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CourseEditorPage);
+    fixture.componentRef.setInput('mode', 'create');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const navSpy = spyOn(TestBed.inject(Router), 'navigate').and.returnValue(Promise.resolve(true));
+    fixture.componentInstance.codigo.set('CUR-77');
+    fixture.componentInstance.nombre.set('Parcial');
+    fixture.componentInstance.agregarFecha();
+    fixture.componentInstance.onFechaInput(0, {
+      target: { value: '2026-06-01' },
+    } as unknown as Event);
+    await fixture.componentInstance.guardar();
+    expect(navSpy).toHaveBeenCalledWith(
+      ['/admin/cursos', 77, 'editar'],
+      jasmine.objectContaining({
+        state: jasmine.objectContaining({
+          flashError: jasmine.stringMatching(/curso se creó/i),
+        }),
+      }),
+    );
   });
 
   it('route reuse: carga stale de curso 1 no sobrescribe form de curso 2', async () => {
