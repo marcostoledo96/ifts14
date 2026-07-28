@@ -13,7 +13,7 @@ import { COURSES_SOURCE } from './courses.service';
 import {
   COURSES_PAGE_SIZE,
   Curso,
-  CursosFiltros,
+  CUATRIMESTRE_PLACEHOLDER,
   EstadoCurso,
   FiltroEstadoCurso,
 } from './courses.models';
@@ -42,7 +42,7 @@ export const COURSES_QA_ENABLED = new InjectionToken<boolean>('COURSES_QA_ENABLE
   factory: isDevMode,
 });
 
-// Listado de cursos: filtros reales + estados de UI (skeleton/vacío/error).
+// Listado de cursos: una carga HTTP + filtros locales (paridad alumnos).
 // Filtro visual activo/inactivo (paridad v0); backend conserva 4 estados.
 @Component({
   selector: 'app-courses-list-page',
@@ -54,7 +54,7 @@ export const COURSES_QA_ENABLED = new InjectionToken<boolean>('COURSES_QA_ENABLE
 export class CoursesListPage {
   private readonly courses = inject(COURSES_SOURCE);
   readonly qaEnabled = inject(COURSES_QA_ENABLED);
-  // ponytail: contador local; descarta respuestas de filtros que ya no están activos.
+  /** Descarta respuestas de un reintento anterior si ya hay una carga más nueva. */
   private loadGeneration = 0;
 
   readonly estados: readonly FiltroEstadoCurso[] = ['activo', 'inactivo'];
@@ -68,20 +68,42 @@ export class CoursesListPage {
   readonly pagina = signal(1);
   readonly vistaQA = signal<VistaQa>('datos');
 
+  /** Archivo completo cargado del seam (sin filtros). */
   readonly cursos = signal<readonly Curso[]>([]);
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly hayFiltrosActivos = computed(
     () => !!this.q().trim() || this.estado() !== 'todos' || this.conFechas() !== null,
   );
+
+  readonly resultadosFiltrados = computed(() => {
+    const q = this.q().trim().toLowerCase();
+    const filtroEstado = this.estado();
+    const conFechas = this.conFechas();
+    return this.cursos().filter((c) => {
+      const matchTexto =
+        !q || c.codigo.toLowerCase().includes(q) || c.nombre.toLowerCase().includes(q);
+      const matchEstado =
+        filtroEstado === 'todos' ||
+        (filtroEstado === 'activo' && c.estado === 'activo') ||
+        (filtroEstado === 'inactivo' && c.estado !== 'activo');
+      const matchFechas =
+        conFechas === null || (c.cantidadFechas > 0) === conFechas;
+      return matchTexto && matchEstado && matchFechas;
+    });
+  });
+
   readonly totalPaginas = computed(() =>
-    Math.max(1, Math.ceil(this.cursos().length / COURSES_PAGE_SIZE)),
+    Math.max(1, Math.ceil(this.resultadosFiltrados().length / COURSES_PAGE_SIZE)),
   );
   readonly paginaSegura = computed(() => Math.min(this.pagina(), this.totalPaginas()));
   readonly itemsVisibles = computed(() => {
     if (this.vistaQA() !== 'datos') return [];
     const page = this.paginaSegura();
-    return this.cursos().slice((page - 1) * COURSES_PAGE_SIZE, page * COURSES_PAGE_SIZE);
+    return this.resultadosFiltrados().slice(
+      (page - 1) * COURSES_PAGE_SIZE,
+      page * COURSES_PAGE_SIZE,
+    );
   });
   /** Páginas visibles en el pager numerado (máx. 5 botones + elipsis). */
   readonly paginasVisibles = computed(() => {
@@ -112,7 +134,7 @@ export class CoursesListPage {
       this.vistaQA() === 'datos' &&
       !this.cargando() &&
       !this.error() &&
-      this.cursos().length === 0 &&
+      this.resultadosFiltrados().length === 0 &&
       this.hayFiltrosActivos(),
   );
   readonly mostrarResumen = computed(
@@ -136,6 +158,13 @@ export class CoursesListPage {
     return valor == null ? '—' : String(valor);
   }
 
+  /** Oculta el placeholder hasta que exista cuatrimestre real en API. */
+  etiquetaCodigo(curso: Curso): string {
+    const c = curso.cuatrimestre?.trim();
+    if (!c || c === CUATRIMESTRE_PLACEHOLDER) return curso.codigo;
+    return `${curso.codigo} · ${c}`;
+  }
+
   esInactivoVisual(estado: EstadoCurso): boolean {
     return estado !== 'activo';
   }
@@ -146,21 +175,13 @@ export class CoursesListPage {
     this.cargando.set(true);
     this.error.set('');
     try {
-      const texto = this.q().trim();
-      const filtroEstado = this.estado();
-      const filtros: CursosFiltros = {
-        ...(filtroEstado === 'activo' ? { activo: true } : {}),
-        ...(filtroEstado === 'inactivo' ? { activo: false } : {}),
-        ...(texto ? { q: texto } : {}),
-        ...(this.conFechas() !== null ? { conFechas: this.conFechas() as boolean } : {}),
-      };
-      const list = await this.courses.listar(filtros);
+      const list = await this.courses.listar();
       if (generation !== this.loadGeneration) return;
       this.cursos.set(list);
       this.pagina.set(Math.min(this.pagina(), this.totalPaginas()));
     } catch {
       if (generation !== this.loadGeneration) return;
-      this.error.set('No se pudo cargar el listado de cursos. Reintentá.');
+      this.error.set('No pudimos cargar el listado de cursos. Reintentá.');
     } finally {
       if (generation !== this.loadGeneration) return;
       this.cargando.set(false);
@@ -171,19 +192,16 @@ export class CoursesListPage {
     const value = (event.target as HTMLInputElement).value;
     this.q.set(value);
     this.pagina.set(1);
-    void this.recargar();
   }
 
   onEstado(value: FiltroEstadoCurso): void {
     this.estado.update((current) => (current === value ? 'todos' : value));
     this.pagina.set(1);
-    void this.recargar();
   }
 
   onConFechas(value: boolean): void {
     this.conFechas.update((current) => (current === value ? null : value));
     this.pagina.set(1);
-    void this.recargar();
   }
 
   onPagina(page: number): void {
@@ -195,7 +213,6 @@ export class CoursesListPage {
     this.estado.set('todos');
     this.conFechas.set(null);
     this.pagina.set(1);
-    void this.recargar();
   }
 
   onVistaQA(value: VistaQa): void {
