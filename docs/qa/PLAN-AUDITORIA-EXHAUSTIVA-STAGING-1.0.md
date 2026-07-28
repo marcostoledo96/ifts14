@@ -204,8 +204,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P0 Setup ramas | `staging1.0` | hecha | — | Rama integración + flujo Git documentado |
 | P1 Login | `audit/p01-login` | hecha | #86 | Mergeado a staging1.0 |
 | P2 Shell / sidebar / nav | `audit/p02-shell-nav` | hecha | #87 | Mergeado a staging1.0 |
-| P3 Dashboard | `audit/p03-dashboard` | en PR | | 4R + 12/12 tests |
-| P4 Guía admin | `audit/p04-guia` | pendiente | | |
+| P3 Dashboard | `audit/p03-dashboard` | hecha | #88 | Mergeado a staging1.0 |
+| P4 Guía admin | `audit/p04-guia` | en PR | | 4R + 3/3 tests |
 | P5 Config institucional | `audit/p05-config` | pendiente | | |
 | P6 Cursos listado | `audit/p06-cursos-list` | pendiente | | |
 | P7 Cursos editor | `audit/p07-cursos-editor` | pendiente | | |
@@ -974,6 +974,7 @@ Unificar mensajes/patrones inconsistentes entre listados. Verificar interceptor 
 - [ ] Envelope `data/meta` consistente
 - [ ] Códigos/mensajes 400/409 alineados a UI
 - [ ] session_write_close / locks en rutas sensibles
+- [ ] **D-009:** TTL idle/absolute reales (`admin_session_idle_seconds` / `absolute`) vs config staging; `lastSeen` se renueva en lecturas auth (`GET /admin/auth/session` y GETs autorizados), no solo en mutaciones
 - [ ] Sin PII en logs
 - [ ] Tests PHP del área tocada
 
@@ -983,6 +984,7 @@ Unificar mensajes/patrones inconsistentes entre listados. Verificar interceptor 
 Fase U6 — Backend PHP auditoría.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u06-backend.
 Auditar endpoints usados por admin y validación pública: contrato, mensajes, auth/CSRF, PII en logs, prolijidad.
+Incluir D-009 (sesión ~30 min en staging QA): verificar TTL config vs código y renovación de lastSeen.
 Fixes de bajo riesgo. No rotar encryption keys. No cambiar semántica de token permanente.
 ```
 
@@ -996,6 +998,7 @@ Fixes de bajo riesgo. No rotar encryption keys. No cambiar semántica de token p
 
 - [ ] CSRF en mutaciones
 - [ ] Rate limit login
+- [ ] **D-009:** política de sesión admin documentada y aplicada (idle ≥ jornada operativa esperada; absolute acotado; cookie Secure/HttpOnly/SameSite; sin sorpresa ~30 min si el producto promete 4 h)
 - [ ] Bloqueo path traversal / exposición `src/`
 - [ ] Headers / cookies Secure/HttpOnly según entorno
 - [ ] DNI/token nunca en logs ni en URLs de analytics
@@ -1006,7 +1009,7 @@ Fixes de bajo riesgo. No rotar encryption keys. No cambiar semántica de token p
 ```text
 Fase U7 — Seguridad + PII.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u07-seguridad.
-Revisión: CSRF, sesión, rate limit, exposición de archivos, PII en logs/respuestas de error, checks no-secrets.
+Revisión: CSRF, sesión (D-009 TTL idle/absolute), rate limit, exposición de archivos, PII en logs/respuestas de error, checks no-secrets.
 Corregir hallazgos P0/P1. Documentar P2 diferidos.
 ```
 
@@ -1047,6 +1050,7 @@ Español argentino formal. Sin dumps ni secretos. Listar drift de specs sin obli
 - [ ] Revocar → validación muestra revocado
 - [ ] Regenerar PDF no cambia token
 - [ ] Idle/sesión 401 limpio
+- [ ] **D-009:** en staging real, sesión **no** debe caer ~30 min de uso/idle corta si la config es 14400/28800; repro con reloj y evidencia sin PII (hora login → hora 401)
 - [ ] Smokes CLI si existen
 
 **Prompt**
@@ -1055,6 +1059,7 @@ Español argentino formal. Sin dumps ni secretos. Listar drift de specs sin obli
 Fase U9 — QA staging real.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md.
 Ejecutar/guiar checklist docs/qa/CHECKLIST-TESTING-MANUAL.md contra staging.
+Incluir D-009: comprobar que la sesión no cae ~30 min si idle/absolute son 14400/28800.
 Registrar evidencias sin PII (IDs, no DNI/token completos). Abrir fix/* solo para fallos bloqueantes → merge a staging1.0.
 No mergear a main en esta fase.
 ```
@@ -1142,9 +1147,10 @@ Podés adelantar U7 si aparece un hallazgo de seguridad en cualquier fase págin
 | D-003 | P1/R4 | Guard `session()` falla post-login → bounce silencioso | P2 | Mitigado por D-002; toast queda U5 |
 | D-004 | P1/R4 | Backend 429 por fallo de storage de rate-limit | P2 | U6 |
 | D-005 | P1/R4 | Clave limpiada antes de conocer resultado (reintento red) | P3 | U5 |
-| D-006 | P2 | Guía (`/admin/guia`) solo desde dashboard, no en sidebar | P3 | P4 / producto |
+| D-006 | P2 | Guía (`/admin/guia`) solo desde dashboard, no en sidebar | — | **Cerrado en P4** (by design: instructivo, no módulo operativo; TOC en la propia guía) |
 | D-007 | P3 | Pasos del instructivo no son links (solo CTA a guía) | P3 | producto |
 | D-008 | P3/R4 | `conTimeout` no aborta HTTP; reintento puede apilar requests | P2 | U2 / seams con AbortSignal |
+| D-009 | QA staging (`main`) | Sesión admin se cae ~**30 min** en `certificados-qa…/certificados_staging/admin/login` (reportado 2026-07-28). Código/ejemplo esperan idle **14400** (4 h) y absolute **28800** (8 h) vía `admin_session_*` + `AdminSessionAuth::sessionIsActive`. Hipótesis a probar: config staging con TTL corto; `lastSeen` no refresca en `GET /admin/auth/session` (solo en `authorize`); GC/cookie del hosting. | **P1** | **U6** (TTL + `lastSeen`) → **U7** (política sesión) → **U9** (repro staging) |
 
 Severidad: `P0` bloquea staging · `P1` debe ir antes de L1 · `P2` puede diferir · `P3` nice-to-have
 
