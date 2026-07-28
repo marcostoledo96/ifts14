@@ -65,7 +65,7 @@
         <app-login-form
           [loading]="loading()"
           [serverError]="errorMsg()"
-          (accesoSimulado)="onAccesoSimulado($event)"
+          (submitted)="onLoginSubmitted($event)"
         />
       </section>
 

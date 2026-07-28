@@ -149,10 +149,10 @@ describe('LoginForm', () => {
     expect(el.querySelector('#login-error')?.textContent).toContain('al menos 6 caracteres');
   });
 
-  it('emite accesoSimulado con credenciales y limpia el error', async () => {
+  it('emite submitted con credenciales y limpia el error', async () => {
     const f = await render();
     let emitted: { username: string; password: string } | undefined;
-    f.componentInstance.accesoSimulado.subscribe((creds) => (emitted = creds));
+    f.componentInstance.submitted.subscribe((creds) => (emitted = creds));
     f.componentInstance.usuario.set('admin');
     f.componentInstance.clave.set('clave123');
     f.componentInstance.enviar();
@@ -164,14 +164,20 @@ describe('LoginForm', () => {
     expect(el.querySelector('#login-error')).toBeNull();
   });
 
-  it('limpia los campos tras el envío exitoso', async () => {
+  it('limpia solo la clave tras el envío válido (conserva el usuario)', async () => {
     const f = await render();
     f.componentInstance.usuario.set('admin');
     f.componentInstance.clave.set('clave123');
     f.componentInstance.enviar();
     f.detectChanges();
-    expect(f.componentInstance.usuario()).toBe('');
+    expect(f.componentInstance.usuario()).toBe('admin');
     expect(f.componentInstance.clave()).toBe('');
+  });
+
+  it('acepta ID institucional sin formato email (type=text)', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('#login-usuario')?.getAttribute('type')).toBe('text');
   });
 
   it('no invoca fetch ni HttpClient al enviar', async () => {

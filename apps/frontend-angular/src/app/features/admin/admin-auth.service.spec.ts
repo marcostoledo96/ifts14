@@ -52,6 +52,15 @@ describe('HttpAdminAuthService', () => {
     expect(service.csrfToken()).toBe('csrf-abc');
   });
 
+  it('login 2xx sin sesión usable rechaza y no guarda token', async () => {
+    const creds: AdminAuthCredentials = { username: 'admin', password: 'clave123' };
+    const promise = service.login(creds);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/login`);
+    req.flush(authEnvelope({ authenticated: false }));
+    await expectAsync(promise).toBeRejected();
+    expect(service.csrfToken()).toBeNull();
+  });
+
   it('login con 401 lanza error y no guarda token', async () => {
     const creds: AdminAuthCredentials = { username: 'bad', password: 'wrong' };
     const promise = service.login(creds);

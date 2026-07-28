@@ -185,7 +185,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | Fase | Rama sugerida | Estado | PR → staging1.0 | Notas |
 |---|---|---|---|---|
 | P0 Setup ramas | `staging1.0` | hecha | — | Rama integración + flujo Git documentado |
-| P1 Login | `audit/p01-login` | pendiente | | |
+| P1 Login | `audit/p01-login` | en PR | | Fixes UX/errores/naming; specs 40/40 |
 | P2 Shell / sidebar / nav | `audit/p02-shell-nav` | pendiente | | |
 | P3 Dashboard | `audit/p03-dashboard` | pendiente | | |
 | P4 Guía admin | `audit/p04-guia` | pendiente | | |
