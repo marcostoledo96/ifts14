@@ -2,7 +2,7 @@
 // Reemplaza la sesión mock en memoria por HTTP + cookies de sesión.
 import { HttpClient } from '@angular/common/http';
 import { Injectable, InjectionToken, Signal, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, of, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AdminAuthCredentials {
@@ -59,19 +59,27 @@ export class HttpAdminAuthService implements AdminAuthService {
         ),
       );
       const data = res.data;
-      if (data?.authenticated && data.csrfToken) {
+      // Misma barra que login: sin CSRF usable no hay sesión de mutaciones.
+      if (data?.authenticated === true && data.csrfToken) {
         this._csrfToken.set(data.csrfToken);
+        return true;
       }
-      return data?.authenticated === true;
+      this.clearSession();
+      return false;
     } catch {
+      this.clearSession();
       return false;
     }
   }
 
   async logout(): Promise<void> {
     try {
+      // timeout: el interceptor 401 puede devolver NEVER; no colgar el shell.
       await firstValueFrom(
-        this.http.post(`${environment.apiBaseUrl}/admin/auth/logout`, {}),
+        this.http.post(`${environment.apiBaseUrl}/admin/auth/logout`, {}).pipe(
+          timeout({ first: 8_000 }),
+          catchError(() => of(null)),
+        ),
       );
     } finally {
       this.clearSession();
@@ -92,18 +100,25 @@ export class FakeAdminAuthService implements AdminAuthService {
 
   setAuthenticated(value: boolean): void {
     this.authenticated = value;
+    if (value) {
+      if (!this._csrfToken()) this._csrfToken.set('fake-csrf-token');
+    } else {
+      this._csrfToken.set(null);
+    }
   }
 
   async login(): Promise<void> {
     this.authenticated = true;
+    this._csrfToken.set('fake-csrf-token');
   }
 
   async session(): Promise<boolean> {
-    return this.authenticated;
+    return this.authenticated && !!this._csrfToken();
   }
 
   async logout(): Promise<void> {
     this.authenticated = false;
+    this.clearSession();
   }
 
   clearSession(): void {

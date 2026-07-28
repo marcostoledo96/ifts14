@@ -16,6 +16,7 @@
       [active]="rutaActual()"
       [navegando]="navegando()"
       [rutaPendiente]="rutaPendiente()"
+      [logoutDisabled]="cerrandoSesion()"
       (cerrarSesion)="cerrarSesion()"
     />
   </aside>
@@ -25,7 +26,7 @@
         type="button"
         class="menu-btn"
         aria-label="Abrir navegación admin"
-        aria-expanded="{{ menuAbierto() }}"
+        [attr.aria-expanded]="menuAbierto()"
         [attr.aria-controls]="menuAbierto() ? 'admin-drawer' : null"
         (click)="abrirMenu()"
       >
@@ -43,7 +44,12 @@
   </div>
 </div>
 @if (menuAbierto()) {
-  <div class="drawer-overlay" (click)="cerrarMenu()" aria-hidden="true"></div>
+  <button
+    type="button"
+    class="drawer-overlay"
+    aria-label="Cerrar menú"
+    (click)="cerrarMenu()"
+  ></button>
   <aside
     id="admin-drawer"
     class="drawer-mobile drawer-open"
@@ -55,6 +61,7 @@
       [navegando]="navegando()"
       [rutaPendiente]="rutaPendiente()"
       [mostrarCerrar]="true"
+      [logoutDisabled]="cerrandoSesion()"
       (cerrarMenu)="cerrarMenu()"
       (cerrarSesion)="cerrarSesion()"
     />

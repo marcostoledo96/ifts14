@@ -89,6 +89,31 @@ describe('HttpAdminAuthService', () => {
     expect(service.csrfToken()).toBe('csrf-session');
   });
 
+  it('session retorna false si authenticated sin csrfToken', async () => {
+    const promise = service.session();
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/session`);
+    req.flush(authEnvelope({ authenticated: true }));
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(service.csrfToken()).toBeNull();
+  });
+
+  it('session sin CSRF usable limpia un token previo en memoria', async () => {
+    const loginPromise = service.login({ username: 'admin', password: 'clave123' });
+    httpMock
+      .expectOne(`${environment.apiBaseUrl}/admin/auth/login`)
+      .flush(authEnvelope({ authenticated: true, csrfToken: 'csrf-prev' }));
+    await loginPromise;
+    expect(service.csrfToken()).toBe('csrf-prev');
+
+    const sessionPromise = service.session();
+    httpMock
+      .expectOne(`${environment.apiBaseUrl}/admin/auth/session`)
+      .flush(authEnvelope({ authenticated: true }));
+    expect(await sessionPromise).toBe(false);
+    expect(service.csrfToken()).toBeNull();
+  });
+
   it('session retorna false cuando authenticated=false', async () => {
     const promise = service.session();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/session`);
