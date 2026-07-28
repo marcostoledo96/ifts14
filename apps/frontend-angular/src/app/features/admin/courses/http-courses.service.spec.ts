@@ -34,6 +34,7 @@ describe('HttpCoursesService', () => {
     estado: 'activo',
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-02T00:00:00Z',
+    cantidadFechas: 0,
     ...overrides,
   });
 
@@ -78,6 +79,24 @@ describe('HttpCoursesService', () => {
     const result = await p;
     expect(result[0].alumnosPresentes).toBeNull();
     expect(result[0].certificaciones).toBeNull();
+  });
+
+  it('listar hidrata cantidadFechas vía /fechas si el listado la omite', async () => {
+    const base = cursoDto({ id: 9 });
+    const { cantidadFechas, ...sinCount } = base;
+    void cantidadFechas;
+    const p = service.listar();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/cursos`).flush({
+      data: { items: [sinCount] },
+      meta: { requestId: 'r1c' },
+    });
+    await Promise.resolve();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/cursos/9/fechas`).flush({
+      data: { items: [fechaDto({ cursoId: 9 }), fechaDto({ id: 101, cursoId: 9 })] },
+      meta: { requestId: 'r1c-f' },
+    });
+    const result = await p;
+    expect(result[0].cantidadFechas).toBe(2);
   });
 
   it('filtro q aplicado client-side', async () => {
