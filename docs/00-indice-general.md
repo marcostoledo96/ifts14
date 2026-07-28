@@ -24,7 +24,7 @@ Empezar por `README.md` y `GUIA.md`. Abrir solo el área del cambio.
 | Backend | `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md`, `docs/backend/API.md`, `docs/backend/01-contrato-api-certificados.md` |
 | Base de datos | `database/AGENTS.md`, `docs/database/00-mariadb.md`, `docs/database/01-modelo-datos-certificados.md`, `database/README.md` |
 | Deploy | `docs/deploy/00-cpanel-certificados.md`, `docs/deploy/01-staging-cpanel-certificados.md`, `deploy/README.md`, `deploy/staging/CHECKLIST.md` |
-| QA | `docs/qa/CHECKLIST-TESTING-MANUAL.md` |
+| QA | `docs/qa/CHECKLIST-TESTING-MANUAL.md`, `docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md` |
 | Specs | `openspec/AGENTS.md`, `openspec/specs/README.md` |
 | OpenCode / IA | `docs/opencode/optimizacion-tokens.md`, prompts `docs/opencode/MARCOS_…` y `docs/opencode/MATIAS_…` |
 | Graphify | `docs/arquitectura/graphify/README.md` (solo con `.graphifyignore`) |

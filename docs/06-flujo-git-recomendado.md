@@ -5,23 +5,35 @@ Recomendaciones de trabajo en equipo. No son gates duros salvo las reglas de seg
 ## Ramas
 
 ```txt
-main                    estable / integración
+main                    PRODUCCIÓN (estable). Solo merge desde staging1.0 cuando esté validado.
+staging1.0              Integración pre-producción. Acumula PRs de audit/*, fix/*, feat/*, etc.
+audit/<fase>-…          Fases del plan de auditoría. Merge → staging1.0 (no a main).
 docs/<tema>             solo documentación
 frontend/<tema>         UI Angular
 backend/<tema>          API PHP
 database/<tema>         migraciones
 fix/<bug>              correcciones
 deploy/<tema>           artefactos/docs de deploy
+feat/<tema>             features
 ```
 
-Crear rama desde `main` actualizado. Evitar commits enormes mezclando áreas sin necesidad.
+### Modelo actual (auditoría / pre-prod)
+
+1. Crear ramas de trabajo desde **`staging1.0` actualizado** (no desde `main`, salvo hotfix de producción acordado).
+2. Abrir PR hacia **`staging1.0`**.
+3. Deploy de hosting staging (`/certificados_staging/`) desde artefactos preparados a partir de `staging1.0`.
+4. Cuando el conjunto esté estable en staging real → PR **`staging1.0` → `main`** (producción), con checklist QA completo y aprobación explícita.
+
+Plan de fases: `docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md`.
+
+Crear rama desde la base acordada (`staging1.0` o `main` según el caso). Evitar commits enormes mezclando áreas sin necesidad.
 
 ## Pull requests
 
 1. Diff revisable (preferir PRs chicos).
 2. Descripción: qué / por qué / cómo probar.
 3. Tests o checklist QA del área tocada.
-4. Merge a `main` tras revisión.
+4. Merge a **`staging1.0`** tras revisión; a **`main`** solo en el land de release.
 
 ## Buenas prácticas
 
