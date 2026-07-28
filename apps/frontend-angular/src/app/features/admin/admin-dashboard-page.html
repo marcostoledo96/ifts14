@@ -7,20 +7,19 @@
   <section class="acciones" aria-labelledby="acciones-titulo">
     <h2 id="acciones-titulo" class="section-kicker">Acciones</h2>
     <div class="acciones-grid">
-      <a
-        class="accion accion--primary"
-        routerLink="/admin/certificaciones/nueva"
-      >
+      <a class="accion accion--primary" routerLink="/admin/asistencias">
         <span class="accion-icon" aria-hidden="true">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
-            <line x1="12" x2="12" y1="8" y2="16" />
-            <line x1="8" x2="16" y1="12" y2="12" />
+            <path d="M8 2v4" />
+            <path d="M16 2v4" />
+            <rect width="18" height="18" x="3" y="4" rx="2" />
+            <path d="M3 10h18" />
+            <path d="m9 16 2 2 4-4" />
           </svg>
         </span>
         <span class="accion-text">
-          <span class="accion-label">Nueva certificación</span>
-          <span class="accion-desc">Emitir certificado con QR</span>
+          <span class="accion-label">Cargar asistencias</span>
+          <span class="accion-desc">Registrar presentes y emitir desde la clase</span>
         </span>
       </a>
 
@@ -38,22 +37,6 @@
         </span>
       </a>
 
-      <a class="accion" routerLink="/admin/asistencias">
-        <span class="accion-icon" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 2v4" />
-            <path d="M16 2v4" />
-            <rect width="18" height="18" x="3" y="4" rx="2" />
-            <path d="M3 10h18" />
-            <path d="m9 16 2 2 4-4" />
-          </svg>
-        </span>
-        <span class="accion-text">
-          <span class="accion-label">Cargar asistencias</span>
-          <span class="accion-desc">Registrar presentes por clase</span>
-        </span>
-      </a>
-
       <a class="accion" routerLink="/admin/certificaciones">
         <span class="accion-icon" aria-hidden="true">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -65,6 +48,20 @@
         <span class="accion-text">
           <span class="accion-label">Entrega manual</span>
           <span class="accion-desc">Copiar link y descargar PDF</span>
+        </span>
+      </a>
+
+      <a class="accion" routerLink="/admin/certificaciones/nueva">
+        <span class="accion-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+            <line x1="12" x2="12" y1="8" y2="16" />
+            <line x1="8" x2="16" y1="12" y2="12" />
+          </svg>
+        </span>
+        <span class="accion-text">
+          <span class="accion-label">Nueva certificación</span>
+          <span class="accion-desc">Emisión directa (alternativa)</span>
         </span>
       </a>
 
@@ -229,14 +226,24 @@
     </div>
   </section>
 
-  <section class="resumen" aria-label="Resumen operativo">
-    <h2 class="section-kicker">Resumen operativo</h2>
+  <section class="resumen" aria-labelledby="resumen-titulo">
+    <h2 id="resumen-titulo" class="section-kicker">Resumen operativo</h2>
     @if (errorMetricas()) {
       <p class="metricas-error" role="status">
         No se pudieron cargar algunas métricas.
+        <button
+          type="button"
+          class="metricas-reintentar"
+          data-testid="metricas-reintentar"
+          [disabled]="metricasCargando()"
+          [attr.aria-busy]="metricasCargando() ? 'true' : null"
+          (click)="onReintentarMetricas()"
+        >
+          Reintentá
+        </button>
       </p>
     }
-    <div class="resumen-grid" [attr.aria-busy]="metricasCargando() ? 'true' : null" aria-label="Resumen operativo">
+    <div class="resumen-grid" [attr.aria-busy]="metricasCargando() ? 'true' : null">
       <div class="resumen-cell">
         <span class="resumen-label">Cursos cargados</span>
         <span class="resumen-value" data-metric="cursos">

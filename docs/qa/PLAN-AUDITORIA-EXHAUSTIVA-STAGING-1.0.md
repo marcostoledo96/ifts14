@@ -203,8 +203,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 |---|---|---|---|---|
 | P0 Setup ramas | `staging1.0` | hecha | — | Rama integración + flujo Git documentado |
 | P1 Login | `audit/p01-login` | hecha | #86 | Mergeado a staging1.0 |
-| P2 Shell / sidebar / nav | `audit/p02-shell-nav` | en PR | | 4R + 59/59 tests |
-| P3 Dashboard | `audit/p03-dashboard` | pendiente | | |
+| P2 Shell / sidebar / nav | `audit/p02-shell-nav` | hecha | #87 | Mergeado a staging1.0 |
+| P3 Dashboard | `audit/p03-dashboard` | en PR | | 4R + 12/12 tests |
 | P4 Guía admin | `audit/p04-guia` | pendiente | | |
 | P5 Config institucional | `audit/p05-config` | pendiente | | |
 | P6 Cursos listado | `audit/p06-cursos-list` | pendiente | | |
@@ -1143,6 +1143,8 @@ Podés adelantar U7 si aparece un hallazgo de seguridad en cualquier fase págin
 | D-004 | P1/R4 | Backend 429 por fallo de storage de rate-limit | P2 | U6 |
 | D-005 | P1/R4 | Clave limpiada antes de conocer resultado (reintento red) | P3 | U5 |
 | D-006 | P2 | Guía (`/admin/guia`) solo desde dashboard, no en sidebar | P3 | P4 / producto |
+| D-007 | P3 | Pasos del instructivo no son links (solo CTA a guía) | P3 | producto |
+| D-008 | P3/R4 | `conTimeout` no aborta HTTP; reintento puede apilar requests | P2 | U2 / seams con AbortSignal |
 
 Severidad: `P0` bloquea staging · `P1` debe ir antes de L1 · `P2` puede diferir · `P3` nice-to-have
 
