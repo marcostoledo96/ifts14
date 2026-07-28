@@ -5,6 +5,9 @@
 /** Tamaño de página del listado admin de cursos (paridad alumnos/certificaciones). */
 export const COURSES_PAGE_SIZE = 20;
 
+/** Placeholder de cuatrimestre hasta que el backend lo exponga. */
+export const CUATRIMESTRE_PLACEHOLDER = 'Sin programar';
+
 export type EstadoCurso = 'borrador' | 'activo' | 'cerrado' | 'archivado';
 /** Filtro visual del listado: activo vs resto (cerrado/borrador/archivado). */
 export type FiltroEstadoCurso = 'activo' | 'inactivo';

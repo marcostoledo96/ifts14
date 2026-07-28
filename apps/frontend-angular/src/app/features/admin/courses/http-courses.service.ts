@@ -1,7 +1,8 @@
 // Fuente HTTP de cursos. Implementa CoursesService contra la API PHP admin.
 // GET /admin/cursos → envelope { data: { items: CursoDto[] } }.
-// Filtros q y conFechas aplicados client-side (conFechas requiere listarFechas por curso).
-// reemplazarFechas: backend sin DELETE de fecha → PATCH estado='cancelada' como fallback.
+// Filtros q/estado/conFechas client-side. Si el listado omite cantidadFechas,
+// hidrata vía N× listarFechas (coalesced) para que el archivo y el chip de fechas
+// no clasifiquen mal. reemplazarFechas: sin DELETE → PATCH cancelada.
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -13,6 +14,7 @@ import {
   CursoFecha,
   CursoFechaDraft,
   CursosFiltros,
+  CUATRIMESTRE_PLACEHOLDER,
   EstadoCurso,
 } from './courses.models';
 import { CoursesService } from './courses.service';
@@ -58,6 +60,16 @@ export class HttpCoursesService implements CoursesService {
       this.http.get<ApiEnvelope<ListResponse>>(url),
     );
     let list = envelope.data.items.map((dto) => this.toCurso(dto, dto.cantidadFechas ?? 0));
+    // Preferir cantidadFechas del listado; si falta en algún DTO, hidratar todo el archivo.
+    const hasCounts = envelope.data.items.every((dto) => typeof dto.cantidadFechas === 'number');
+    if (!hasCounts) {
+      list = await Promise.all(
+        list.map(async (c) => {
+          const fechas = await this.listarFechas(c.id);
+          return { ...c, cantidadFechas: fechas.length };
+        }),
+      );
+    }
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
     }
@@ -74,22 +86,8 @@ export class HttpCoursesService implements CoursesService {
         );
       }
     }
-    // Preferir cantidadFechas del listado (backend); fallback a N× listarFechas.
     if (filtros?.conFechas !== undefined) {
-      const hasCounts = envelope.data.items.every((dto) => typeof dto.cantidadFechas === 'number');
-      if (hasCounts) {
-        list = list.filter((c) => (c.cantidadFechas > 0) === filtros.conFechas);
-      } else {
-        const withFechas = await Promise.all(
-          list.map(async (c) => {
-            const fechas = await this.listarFechas(c.id);
-            return { curso: { ...c, cantidadFechas: fechas.length }, tiene: fechas.length > 0 };
-          }),
-        );
-        list = withFechas
-          .filter((r) => r.tiene === filtros.conFechas)
-          .map((r) => r.curso);
-      }
+      list = list.filter((c) => (c.cantidadFechas > 0) === filtros.conFechas);
     }
     return list;
   }
@@ -233,8 +231,8 @@ export class HttpCoursesService implements CoursesService {
       estado: dto.estado as Curso['estado'],
       createdAt: dto.createdAt,
       updatedAt: dto.updatedAt,
-      // ponytail: backend sin cuatrimestre; default 'Sin programar' para matchear modelo.
-      cuatrimestre: 'Sin programar',
+      // ponytail: backend sin cuatrimestre; placeholder compartido con el listado.
+      cuatrimestre: CUATRIMESTRE_PLACEHOLDER,
       cantidadFechas,
       alumnosPresentes: typeof dto.alumnosPresentes === 'number' ? dto.alumnosPresentes : null,
       certificaciones: typeof dto.certificaciones === 'number' ? dto.certificaciones : null,

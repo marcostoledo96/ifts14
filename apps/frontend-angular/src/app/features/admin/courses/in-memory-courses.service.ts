@@ -10,6 +10,7 @@ import {
   CursoFecha,
   CursoFechaDraft,
   CursosFiltros,
+  CUATRIMESTRE_PLACEHOLDER,
   EstadoCurso,
 } from './courses.models';
 import { CoursesService } from './courses.service';
@@ -91,7 +92,7 @@ function seed(): CursoRecord[] {
       estado: 'archivado',
       createdAt: now,
       updatedAt: now,
-      cuatrimestre: 'Sin programar',
+      cuatrimestre: CUATRIMESTRE_PLACEHOLDER,
       fechas: [{ id: 51, cursoId: 5, fecha: '2025-06-10', descripcion: null, orden: 1, estado: 'cancelada' }],
     },
     {
@@ -101,7 +102,7 @@ function seed(): CursoRecord[] {
       estado: 'activo',
       createdAt: now,
       updatedAt: now,
-      cuatrimestre: 'Sin programar',
+      cuatrimestre: CUATRIMESTRE_PLACEHOLDER,
       fechas: [
         { id: 61, cursoId: 6, fecha: '2026-06-01', descripcion: null, orden: 1, estado: 'programada' },
         { id: 62, cursoId: 6, fecha: '2026-06-08', descripcion: null, orden: 2, estado: 'programada' },
@@ -168,7 +169,7 @@ export class InMemoryCoursesService implements CoursesService {
       estado: dto.estado,
       createdAt: now,
       updatedAt: now,
-      cuatrimestre: 'Sin programar',
+      cuatrimestre: CUATRIMESTRE_PLACEHOLDER,
       fechas: [],
     };
     this.cursos.push(nuevo);
