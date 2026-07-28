@@ -205,8 +205,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P1 Login | `audit/p01-login` | hecha | #86 | Mergeado a staging1.0 |
 | P2 Shell / sidebar / nav | `audit/p02-shell-nav` | hecha | #87 | Mergeado a staging1.0 |
 | P3 Dashboard | `audit/p03-dashboard` | hecha | #88 | Mergeado a staging1.0 |
-| P4 Guía admin | `audit/p04-guia` | en PR | | 4R + 3/3 tests |
-| P5 Config institucional | `audit/p05-config` | pendiente | | |
+| P4 Guía admin | `audit/p04-guia` | hecha | #89 | Mergeado a staging1.0 |
+| P5 Config institucional | `audit/p05-config` | en PR | | 4R + 27/27 tests |
 | P6 Cursos listado | `audit/p06-cursos-list` | pendiente | | |
 | P7 Cursos editor | `audit/p07-cursos-editor` | pendiente | | |
 | P8 Cursos detalle | `audit/p08-cursos-detail` | pendiente | | |
