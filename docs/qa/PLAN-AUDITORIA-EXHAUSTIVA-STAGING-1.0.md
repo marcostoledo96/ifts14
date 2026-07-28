@@ -265,7 +265,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P5 Config institucional | `audit/p05-config` | hecha | #90 | Mergeado a staging1.0 |
 | P6 Cursos listado | `audit/p06-cursos-list` | hecha | #91 | Mergeado a staging1.0 |
 | P7 Cursos editor | `audit/p07-cursos-editor` | hecha | #92 | Mergeado a staging1.0 |
-| P8 Cursos detalle | `audit/p08-cursos-detail` | en PR | | SDD archive 2026-07-28; 4R OK |
+| P8 Cursos detalle | `audit/p08-cursos-detail` | en PR | #93 | SDD archive 2026-07-28; 4R OK |
 | P9 Alumnos listado | `audit/p09-alumnos-list` | pendiente | | |
 | P10 Alumnos editor | `audit/p10-alumnos-editor` | pendiente | | |
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | pendiente | | |
