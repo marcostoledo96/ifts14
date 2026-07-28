@@ -78,7 +78,13 @@
         </a>
       </li>
       <li>
-        <button type="button" class="logout-btn" (click)="cerrarSesion.emit()">
+        <button
+          type="button"
+          class="logout-btn"
+          [disabled]="logoutDisabled()"
+          [attr.aria-busy]="logoutDisabled() ? 'true' : null"
+          (click)="cerrarSesion.emit()"
+        >
           <ng-container *ngTemplateOutlet="navIcon; context: { $implicit: 'log-out' }" />
           <span>Cerrar sesión</span>
         </button>

@@ -202,8 +202,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | Fase | Rama sugerida | Estado | PR → staging1.0 | Notas |
 |---|---|---|---|---|
 | P0 Setup ramas | `staging1.0` | hecha | — | Rama integración + flujo Git documentado |
-| P1 Login | `audit/p01-login` | en PR | | Fixes UX/errores/naming; specs 40/40 |
-| P2 Shell / sidebar / nav | `audit/p02-shell-nav` | pendiente | | |
+| P1 Login | `audit/p01-login` | hecha | #86 | Mergeado a staging1.0 |
+| P2 Shell / sidebar / nav | `audit/p02-shell-nav` | en PR | | 4R + 59/59 tests |
 | P3 Dashboard | `audit/p03-dashboard` | pendiente | | |
 | P4 Guía admin | `audit/p04-guia` | pendiente | | |
 | P5 Config institucional | `audit/p05-config` | pendiente | | |
@@ -1138,10 +1138,11 @@ Podés adelantar U7 si aparece un hallazgo de seguridad en cualquier fase págin
 | ID | Fase origen | Hallazgo | Severidad | Destino sugerido |
 |---|---|---|---|---|
 | D-001 | P1 | Aside “SHA-256 / SSL” cosmético | P3 | U3 / dejar |
-| D-002 | P1/R4 | `session()` autenticado sin CSRF en cliente | P2 | P2 / U7 |
-| D-003 | P1/R4 | Guard `session()` falla post-login → bounce silencioso | P2 | P2 |
+| D-002 | P1/R4 | `session()` autenticado sin CSRF en cliente | — | **Cerrado en P2** |
+| D-003 | P1/R4 | Guard `session()` falla post-login → bounce silencioso | P2 | Mitigado por D-002; toast queda U5 |
 | D-004 | P1/R4 | Backend 429 por fallo de storage de rate-limit | P2 | U6 |
 | D-005 | P1/R4 | Clave limpiada antes de conocer resultado (reintento red) | P3 | U5 |
+| D-006 | P2 | Guía (`/admin/guia`) solo desde dashboard, no en sidebar | P3 | P4 / producto |
 
 Severidad: `P0` bloquea staging · `P1` debe ir antes de L1 · `P2` puede diferir · `P3` nice-to-have
 
