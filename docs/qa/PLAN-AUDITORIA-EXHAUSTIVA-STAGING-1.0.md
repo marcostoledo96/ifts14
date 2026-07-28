@@ -323,7 +323,7 @@ Cada fase: **una página (o par create/edit del mismo editor)**. Auditar con las
 
 ## Fase P1 — Login (`/admin/login`)
 
-**Rama:** `audit/p01-login`  
+**Rama:** `audit/p01-login`
 **Archivos:** `login-page.*`, `login-form.*`, auth service/interceptor si el hallazgo lo exige (mínimo).
 
 **Checklist**
@@ -350,7 +350,7 @@ Entregar: hallazgos, fixes, tests login-*.spec, deferidos.
 
 ## Fase P2 — Shell, sidebar y navegación
 
-**Rama:** `audit/p02-shell-nav`  
+**Rama:** `audit/p02-shell-nav`
 **Archivos:** `admin-shell.*`, `sidebar-admin.*`, `admin-guard.ts`
 
 **Checklist**
@@ -375,7 +375,7 @@ No reescribir features hijas. Fix solo shell/nav/guard.
 
 ## Fase P3 — Dashboard
 
-**Rama:** `audit/p03-dashboard`  
+**Rama:** `audit/p03-dashboard`
 **Ruta:** `/admin/dashboard`
 
 **Checklist**
@@ -421,7 +421,7 @@ Sin cambios de backend.
 
 ## Fase P5 — Configuración institucional
 
-**Rama:** `audit/p05-config`  
+**Rama:** `audit/p05-config`
 **Ruta:** `/admin/configuracion`
 
 **Checklist**
@@ -445,7 +445,7 @@ No rotar claves ni tocar deploy.
 
 ## Fase P6 — Cursos · listado
 
-**Rama:** `audit/p06-cursos-list`  
+**Rama:** `audit/p06-cursos-list`
 **Ruta:** `/admin/cursos`
 
 **Checklist**
@@ -469,7 +469,7 @@ No rediseñar el editor ni el detalle en esta fase.
 
 ## Fase P7 — Cursos · editor (nuevo / editar)
 
-**Rama:** `audit/p07-cursos-editor`  
+**Rama:** `audit/p07-cursos-editor`
 **Rutas:** `/admin/cursos/nuevo`, `/admin/cursos/:id/editar`
 
 **Checklist**
@@ -493,7 +493,7 @@ No tocar listado salvo link roto hacia el editor.
 
 ## Fase P8 — Cursos · detalle
 
-**Rama:** `audit/p08-cursos-detail`  
+**Rama:** `audit/p08-cursos-detail`
 **Ruta:** `/admin/cursos/:id`
 
 **Checklist**
@@ -514,7 +514,7 @@ Auditar course-detail-page. Lentes UI/UX, copy, errores id inválido, links a as
 
 ## Fase P9 — Alumnos · listado
 
-**Rama:** `audit/p09-alumnos-list`  
+**Rama:** `audit/p09-alumnos-list`
 **Ruta:** `/admin/alumnos`
 
 **Checklist**
@@ -537,7 +537,7 @@ DNI completo en UI. Sin PII en logs. Lentes UI/filtros/copy/errores/carga/prolij
 
 ## Fase P10 — Alumnos · editor
 
-**Rama:** `audit/p10-alumnos-editor`  
+**Rama:** `audit/p10-alumnos-editor`
 **Rutas:** `/admin/alumnos/nuevo`, `/admin/alumnos/:id/editar`
 
 **Checklist**
@@ -558,7 +558,7 @@ Auditar student-editor-page. Formularios, copy, errores negocio, a11y, prolijida
 
 ## Fase P11 — Alumnos · detalle
 
-**Rama:** `audit/p11-alumnos-detail`  
+**Rama:** `audit/p11-alumnos-detail`
 **Ruta:** `/admin/alumnos/:id`
 
 **Checklist**
@@ -580,7 +580,7 @@ Auditar student-detail-page. Verificar métricas/cursos[]/links a certificacione
 
 ## Fase P12 — Asistencias · hub
 
-**Rama:** `audit/p12-asist-hub`  
+**Rama:** `audit/p12-asist-hub`
 **Ruta:** `/admin/asistencias`
 
 **Checklist**
@@ -601,7 +601,7 @@ Auditar attendances-list-page. UI/métricas/copy/errores/carga/prolijidad. No re
 
 ## Fase P13 — Asistencias · fechas del curso
 
-**Rama:** `audit/p13-asist-fechas`  
+**Rama:** `audit/p13-asist-fechas`
 **Ruta:** `/admin/asistencias/curso/:id`
 
 **Checklist**
@@ -623,7 +623,7 @@ Auditar attendance-course-dates-page. Orden cronológico, filtros, copy, errores
 
 ## Fase P14 — Asistencias · marcado y emisión
 
-**Rama:** `audit/p14-asist-marcado`  
+**Rama:** `audit/p14-asist-marcado`
 **Ruta:** `/admin/cursos/:id/fechas/:fechaId/asistencias`
 
 **Checklist**
@@ -648,7 +648,7 @@ Lentes UI/UX, copy, errores 400/401/409, carga, prolijidad. Tests del área.
 
 ## Fase P15 — Certificados por fecha
 
-**Rama:** `audit/p15-asist-certs`  
+**Rama:** `audit/p15-asist-certs`
 **Ruta:** `…/asistencias/certificados`
 
 **Checklist**
@@ -669,7 +669,7 @@ Auditar date-certificates-page. Links, estados, copy, errores, prolijidad.
 
 ## Fase P16 — Certificaciones · listado
 
-**Rama:** `audit/p16-certs-list`  
+**Rama:** `audit/p16-certs-list`
 **Ruta:** `/admin/certificaciones`
 
 **Checklist**
@@ -690,7 +690,7 @@ Auditar certifications-list-page. Filtros, copy estados, UI, errores, carga, pro
 
 ## Fase P17 — Certificación · nueva
 
-**Rama:** `audit/p17-certs-nueva`  
+**Rama:** `audit/p17-certs-nueva`
 **Ruta:** `/admin/certificaciones/nueva`
 
 **Checklist**
@@ -712,7 +712,7 @@ Si la pantalla está obsoleta parcialmente, proponer ajuste mínimo (no eliminar
 
 ## Fase P18 — Expediente / preview
 
-**Rama:** `audit/p18-certs-preview`  
+**Rama:** `audit/p18-certs-preview`
 **Ruta:** `/admin/certificaciones/:id`
 
 **Checklist**
@@ -734,7 +734,7 @@ Auditar certification-preview-page. Firmas desde config, acciones, copy, D0 (no 
 
 ## Fase P19 — Folio PDF
 
-**Rama:** `audit/p19-certs-pdf`  
+**Rama:** `audit/p19-certs-pdf`
 **Ruta:** `/admin/certificaciones/:id/pdf`
 
 **Checklist**
@@ -760,7 +760,7 @@ No rotar token. No reintroducir textos institucionales no deseados en el PDF.
 
 ## Fase P20 — Entrega manual
 
-**Rama:** `audit/p20-certs-entrega`  
+**Rama:** `audit/p20-certs-entrega`
 **Ruta:** `/admin/certificaciones/:id/entrega`
 
 **Checklist**
@@ -783,7 +783,7 @@ D0 token permanente. UX copiar/descargar. Errores 409 claros sin filtrar secreto
 
 ## Fase P21 — Revocación
 
-**Rama:** `audit/p21-certs-revocar`  
+**Rama:** `audit/p21-certs-revocar`
 **Ruta:** `/admin/certificaciones/:id/revocar`
 
 **Checklist**
@@ -805,7 +805,7 @@ Auditar certification-revoke-page. Confirmación, copy, errores, efecto en UI, p
 
 ## Fase P22 — Validación pública
 
-**Rama:** `audit/p22-validacion`  
+**Rama:** `audit/p22-validacion`
 **Ruta:** `/validar/:token`
 
 **Checklist**
@@ -1088,26 +1088,26 @@ Seguir docs/deploy/. No incluir secretos.
 
 ### Oleada 1 — Fundaciones
 
-1. P0 Setup  
-2. P1 Login → P2 Shell → P3 Dashboard → P4 Guía → P5 Config  
+1. P0 Setup
+2. P1 Login → P2 Shell → P3 Dashboard → P4 Guía → P5 Config
 
 ### Oleada 2 — Maestros
 
-3. P6–P8 Cursos  
-4. P9–P11 Alumnos  
+3. P6–P8 Cursos
+4. P9–P11 Alumnos
 
 ### Oleada 3 — Núcleo de negocio (prioridad máxima)
 
-5. P12–P15 Asistencias  
-6. P16–P21 Certificaciones  
-7. P22 Validación pública → P23 404  
+5. P12–P15 Asistencias
+6. P16–P21 Certificaciones
+7. P22 Validación pública → P23 404
 
 ### Oleada 4 — Universal
 
-8. U5 Errores → U3 Copy → U4 a11y → U1 Prolijidad → U2 Perf  
-9. U6 Backend → U7 Seguridad → U8 Docs  
-10. U9 QA staging  
-11. L1 → `main` cuando esté estable  
+8. U5 Errores → U3 Copy → U4 a11y → U1 Prolijidad → U2 Perf
+9. U6 Backend → U7 Seguridad → U8 Docs
+10. U9 QA staging
+11. L1 → `main` cuando esté estable
 
 Podés adelantar U7 si aparece un hallazgo de seguridad en cualquier fase página (abrir `fix/` o rama U7 temprana).
 
