@@ -17,6 +17,7 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 
 - Shell admin, login, dashboard / mesa de trabajo.
 - Cursos: listado, alta/edición, fechas, detalle.
+- Detalle de curso (P8): not-found amigable, Reintentar en fallos recuperables, CTA «Ver fechas del curso» al hub, labels humanas y fechas es-AR.
 - Alumnos: listado, alta/edición, detalle/expediente con trayectoria.
 - Asistencias: por curso, marcado, emisión/regeneración desde presentes.
 - Certificaciones: listado, nueva, preview/expediente, folio PDF, entrega manual, revocación.

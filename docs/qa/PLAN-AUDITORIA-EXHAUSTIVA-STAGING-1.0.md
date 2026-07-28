@@ -76,16 +76,67 @@ No abrir PR “para después revisar”: el gate es **antes** del PR (o, si el P
 
 ---
 
+## 0.1 Protocolo SDD Gentle-AI (obligatorio desde P8)
+
+A partir de **P8** (y todas las fases pendientes), cada fase se ejecuta como **un ciclo Spec-Driven Development** con Gentle-AI / subagents `sdd-*`, store **`openspec/`** del repo. No improvisar fixes “a ojo” sin artifacts del cambio activo.
+
+### Ciclo por fase (orden fijo)
+
+```txt
+sdd-explore → sdd-propose → sdd-spec → sdd-design → sdd-tasks
+    → sdd-apply → gate 4R + tests → (OK humano) commit/push/PR
+    → sdd-verify → sdd-archive
+```
+
+| Paso | Qué produce | Notas |
+|---|---|---|
+| `sdd-explore` | `openspec/changes/<change>/explore.md` | Alcance = checklist de la fase; leer spec canónica si existe |
+| `sdd-propose` | `proposal.md` | Objetivo, fuera de alcance, riesgo, reversión |
+| `sdd-spec` | `specs/…/spec.md` | Requirements + escenarios Given/When/Then |
+| `sdd-design` | `design.md` | Decisiones técnicas mínimas |
+| `sdd-tasks` | `tasks.md` | Tareas numeradas, una sesión |
+| `sdd-apply` | código + `apply-progress.md` | Solo lo listado en tasks |
+| Gate 4R + tests | — | Igual que § «Gate previo a cada PR» |
+| `sdd-verify` | `verify-report.md` | Tras apply (+ preferible tras PR verde) |
+| `sdd-archive` | archive + specs canónicas si cambió contrato | Cierre del cambio |
+
+### Convención de nombre del cambio
+
+```txt
+audit-pNN-<slug>     ej. audit-p08-cursos-detail
+audit-uNN-<slug>     ej. audit-u06-backend
+```
+
+Carpeta activa: `openspec/changes/<change>/` (un cambio a la vez).
+
+### Orquestación en Cursor
+
+1. Rama `audit/…` desde `staging1.0`.
+2. Invocar subagents `sdd-*` en orden (o `gentle-ai sdd-continue` para el siguiente paso).
+3. Artefactos SDD en **español argentino formal** (convención del repo); código sigue el estilo existente.
+4. Spec canónica del módulo (`openspec/specs/…`) se actualiza en **archive** si el contrato cambió.
+5. El prompt de cada fase (abajo) **incluye** el ciclo SDD; no sustituye el gate 4R.
+
+### Excepciones (no saltan el ciclo)
+
+- Typo / copy de una línea ya cubierta por el change activo: se puede incluir en el mismo `sdd-apply`.
+- Hotfix de producción fuera de auditoría: rama `fix/…` + ciclo SDD corto si el cambio no es trivial.
+
+Fases **P0–P7** ya mergeadas quedan como historial sin re-abrir SDD.
+
+---
+
 ## 1. Cómo usar esta guía
 
 ### Ritmo de sesión
 
 1. Elegí la siguiente fase **pendiente** (tabla de estado abajo).
 2. Creá la rama desde `staging1.0`.
-3. Pegá el **prompt de la fase** al agente.
-4. El agente **audita → propone plan corto → implementa fixes en alcance → tests/checks**.
+3. Pegá el **prompt de la fase** al agente (incluye ciclo SDD).
+4. El agente corre **SDD completo** del alcance → apply → tests → **4R** → pide OK para PR.
 5. Vos revisás el diff; si OK, merge a `staging1.0`.
-6. Marcá la fase como hecha en la tabla de estado (editar este archivo al cerrar).
+6. El agente cierra con **sdd-verify** + **sdd-archive** (puede ir en el mismo PR o follow-up docs).
+7. Marcá la fase como hecha en la tabla de estado.
 
 ### Reglas duras del producto (no negociables en ninguna fase)
 
@@ -106,20 +157,25 @@ No abrir PR “para después revisar”: el gate es **antes** del PR (o, si el P
 
 ### Definición de “hecho” de una fase
 
+- [ ] Ciclo SDD Gentle-AI completo (explore→…→apply; verify+archive al cerrar)
 - [ ] Hallazgos listados (qué quedó fuera de alcance / deuda consciente)
 - [ ] Fixes en alcance mergeados a `staging1.0`
 - [ ] Tests del área verde o justificación
+- [ ] Gate 4R sin CRITICAL/WARNING introducidos sin resolver
 - [ ] Sin secretos ni PII en diffs
-- [ ] PR con checklist de la fase
+- [ ] PR con checklist de la fase + link al change `openspec/changes/…`
 - [ ] Tabla de estado de este archivo actualizada
 
 ### Plantilla base de prompt (todas las fases la extienden)
 
 ```text
 Contexto: repo ifts14. Rama base: staging1.0. Rama de trabajo: audit/<id>.
-Modo: auditar + corregir SOLO el alcance de esta fase. No refactorizar fuera de alcance.
+Cambio SDD: openspec/changes/audit-<id>/ (Gentle-AI, un change a la vez).
+Modo: ciclo SDD obligatorio — explore → propose → spec → design → tasks → apply.
+Luego gate 4R + tests del área. No refactorizar fuera de alcance.
+Artefactos SDD en español argentino formal. Specs Given/When/Then.
 Respetar D0 (token permanente, DNI en UI, sin PII en logs), AGENTS.md, paridad con muestra_pagina/.
-Al final: resumen de hallazgos, cambios hechos, tests corridos, ítems deferidos.
+Al final: resumen de hallazgos, cambios, tests, diferidos; verify+archive al cerrar la fase.
 Commit/push/merge solo si yo lo pido explícitamente.
 ```
 
@@ -208,8 +264,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P4 Guía admin | `audit/p04-guia` | hecha | #89 | Mergeado a staging1.0 |
 | P5 Config institucional | `audit/p05-config` | hecha | #90 | Mergeado a staging1.0 |
 | P6 Cursos listado | `audit/p06-cursos-list` | hecha | #91 | Mergeado a staging1.0 |
-| P7 Cursos editor | `audit/p07-cursos-editor` | en PR | #92 | Errores API, canceladas, races; 4R OK |
-| P8 Cursos detalle | `audit/p08-cursos-detail` | pendiente | | |
+| P7 Cursos editor | `audit/p07-cursos-editor` | hecha | #92 | Mergeado a staging1.0 |
+| P8 Cursos detalle | `audit/p08-cursos-detail` | en PR | | SDD archive 2026-07-28; 4R OK |
 | P9 Alumnos listado | `audit/p09-alumnos-list` | pendiente | | |
 | P10 Alumnos editor | `audit/p10-alumnos-editor` | pendiente | | |
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | pendiente | | |
@@ -493,7 +549,8 @@ No tocar listado salvo link roto hacia el editor.
 
 ## Fase P8 — Cursos · detalle
 
-**Rama:** `audit/p08-cursos-detail`
+**Rama:** `audit/p08-cursos-detail`  
+**Cambio SDD:** `openspec/changes/audit-p08-cursos-detail/`  
 **Ruta:** `/admin/cursos/:id`
 
 **Checklist**
@@ -507,7 +564,12 @@ No tocar listado salvo link roto hacia el editor.
 ```text
 Fase P8 — Detalle de curso (/admin/cursos/:id).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p08-cursos-detail.
+Cambio SDD Gentle-AI: audit-p08-cursos-detail (openspec/).
+Correr ciclo completo: explore → propose → spec → design → tasks → apply.
 Auditar course-detail-page. Lentes UI/UX, copy, errores id inválido, links a asistencias/edición, carga.
+Spec canónica de referencia: openspec/specs/admin-courses-frontend/.
+Tras apply: tests del área + gate 4R. No tocar listado/editor salvo links rotos.
+Artefactos SDD en español argentino formal.
 ```
 
 ---
