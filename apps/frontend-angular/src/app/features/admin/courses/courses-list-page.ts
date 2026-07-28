@@ -10,22 +10,24 @@ import {
 import { RouterLink } from '@angular/router';
 import { UiSpinner } from '../../../shared/ui/ui-spinner';
 import { COURSES_SOURCE } from './courses.service';
-import { COURSES_PAGE_SIZE, Curso, CursosFiltros, EstadoCurso } from './courses.models';
+import {
+  COURSES_PAGE_SIZE,
+  Curso,
+  CursosFiltros,
+  EstadoCurso,
+  FiltroEstadoCurso,
+} from './courses.models';
 
 type VistaQa = 'datos' | 'cargando' | 'error' | 'vacio-total';
 
-const ESTADO_LABEL: Record<EstadoCurso, string> = {
-  borrador: 'Borrador',
+const ESTADO_LABEL: Record<FiltroEstadoCurso, string> = {
   activo: 'Activo',
-  cerrado: 'Cerrado',
-  archivado: 'Archivado',
+  inactivo: 'Inactivo',
 };
 
-const ESTADO_CHIP_LABEL: Record<EstadoCurso, string> = {
-  borrador: 'Borrador',
+const ESTADO_CHIP_LABEL: Record<FiltroEstadoCurso, string> = {
   activo: 'Activos',
-  cerrado: 'Cerrados',
-  archivado: 'Archivados',
+  inactivo: 'Inactivos',
 };
 
 const VISTA_QA_LABEL: Record<VistaQa, string> = {
@@ -41,7 +43,7 @@ export const COURSES_QA_ENABLED = new InjectionToken<boolean>('COURSES_QA_ENABLE
 });
 
 // Listado de cursos: filtros reales + estados de UI (skeleton/vacío/error).
-// Estados de curso: contrato backend (4 valores), no el binario activo/inactivo de v0.
+// Filtro visual activo/inactivo (paridad v0); backend conserva 4 estados.
 @Component({
   selector: 'app-courses-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,13 +57,13 @@ export class CoursesListPage {
   // ponytail: contador local; descarta respuestas de filtros que ya no están activos.
   private loadGeneration = 0;
 
-  readonly estados: readonly EstadoCurso[] = ['borrador', 'activo', 'cerrado', 'archivado'];
+  readonly estados: readonly FiltroEstadoCurso[] = ['activo', 'inactivo'];
   readonly vistasQa: readonly VistaQa[] = ['datos', 'cargando', 'error', 'vacio-total'];
   readonly estadoChipLabel = ESTADO_CHIP_LABEL;
   readonly vistaQaLabel = VISTA_QA_LABEL;
 
   readonly q = signal('');
-  readonly estado = signal<EstadoCurso | 'todos'>('todos');
+  readonly estado = signal<FiltroEstadoCurso | 'todos'>('todos');
   readonly conFechas = signal<boolean | null>(null);
   readonly pagina = signal(1);
   readonly vistaQA = signal<VistaQa>('datos');
@@ -122,7 +124,12 @@ export class CoursesListPage {
   }
 
   etiquetaEstado(estado: EstadoCurso): string {
-    return ESTADO_LABEL[estado];
+    return ESTADO_LABEL[estado === 'activo' ? 'activo' : 'inactivo'];
+  }
+
+  /** Clase CSS del badge: activo vs inactivo (agrupa cerrado/borrador/archivado). */
+  claseEstado(estado: EstadoCurso): FiltroEstadoCurso {
+    return estado === 'activo' ? 'activo' : 'inactivo';
   }
 
   formatoMetrica(valor: number | null | undefined): string {
@@ -140,8 +147,10 @@ export class CoursesListPage {
     this.error.set('');
     try {
       const texto = this.q().trim();
+      const filtroEstado = this.estado();
       const filtros: CursosFiltros = {
-        ...(this.estado() !== 'todos' ? { estado: this.estado() as EstadoCurso } : {}),
+        ...(filtroEstado === 'activo' ? { activo: true } : {}),
+        ...(filtroEstado === 'inactivo' ? { activo: false } : {}),
         ...(texto ? { q: texto } : {}),
         ...(this.conFechas() !== null ? { conFechas: this.conFechas() as boolean } : {}),
       };
@@ -165,7 +174,7 @@ export class CoursesListPage {
     void this.recargar();
   }
 
-  onEstado(value: EstadoCurso): void {
+  onEstado(value: FiltroEstadoCurso): void {
     this.estado.update((current) => (current === value ? 'todos' : value));
     this.pagina.set(1);
     void this.recargar();

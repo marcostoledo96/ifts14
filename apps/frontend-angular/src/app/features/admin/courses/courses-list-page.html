@@ -185,7 +185,7 @@
           @for (c of itemsVisibles(); track c.id) {
             <tr class="curso-row" [class.curso-row--muted]="esInactivoVisual(c.estado)">
               <td>
-                <span class="row-accent row-accent--{{ c.estado }}" aria-hidden="true"></span>
+                <span class="row-accent row-accent--{{ claseEstado(c.estado) }}" aria-hidden="true"></span>
                 <strong>{{ c.nombre }}</strong>
                 <span class="course-code">{{ c.codigo }} · {{ c.cuatrimestre }}</span>
               </td>
@@ -196,27 +196,27 @@
                 </span>
               </td>
               <td>
-                <span class="metrica" [class.metrica--muted]="esInactivoVisual(c.estado)" title="Dato disponible con integración real">
+                <span class="metrica" [class.metrica--muted]="esInactivoVisual(c.estado)">
                   <span class="metrica-valor">{{ formatoMetrica(c.alumnosPresentes) }}</span>
                   @if (c.alumnosPresentes == null) {
-                    <span class="sr-only">Dato disponible con integración real</span>
+                    <span class="sr-only">Sin dato</span>
                   } @else {
                     <span class="metrica-unidad">alumnos</span>
                   }
                 </span>
               </td>
               <td>
-                <span class="metrica" [class.metrica--muted]="esInactivoVisual(c.estado)" title="Dato disponible con integración real">
+                <span class="metrica" [class.metrica--muted]="esInactivoVisual(c.estado)">
                   <span class="metrica-valor">{{ formatoMetrica(c.certificaciones) }}</span>
                   @if (c.certificaciones == null) {
-                    <span class="sr-only">Dato disponible con integración real</span>
+                    <span class="sr-only">Sin dato</span>
                   } @else {
                     <span class="metrica-unidad">emitidas</span>
                   }
                 </span>
               </td>
               <td>
-                <span class="estado-badge estado-badge--{{ c.estado }}">
+                <span class="estado-badge estado-badge--{{ claseEstado(c.estado) }}">
                   <span class="estado-dot" aria-hidden="true"></span>
                   {{ etiquetaEstado(c.estado) }}
                 </span>
@@ -279,14 +279,14 @@
     <ul class="cards-mobile">
       @for (c of itemsVisibles(); track c.id) {
         <li class="card-curso" [class.card-curso--muted]="esInactivoVisual(c.estado)">
-          <span class="card-accent card-accent--{{ c.estado }}" aria-hidden="true"></span>
+          <span class="card-accent card-accent--{{ claseEstado(c.estado) }}" aria-hidden="true"></span>
           <div class="card-body">
             <header>
               <div>
                 <h2>{{ c.nombre }}</h2>
                 <p>{{ c.codigo }} · {{ c.cuatrimestre }}</p>
               </div>
-              <span class="estado-badge estado-badge--{{ c.estado }}">
+              <span class="estado-badge estado-badge--{{ claseEstado(c.estado) }}">
                 <span class="estado-dot" aria-hidden="true"></span>
                 {{ etiquetaEstado(c.estado) }}
               </span>
@@ -311,10 +311,10 @@
                   </svg>
                   Presentes
                 </dt>
-                <dd title="Dato disponible con integración real">
+                <dd>
                   {{ formatoMetrica(c.alumnosPresentes) }}
                   @if (c.alumnosPresentes == null) {
-                    <span class="sr-only">Dato disponible con integración real</span>
+                    <span class="sr-only">Sin dato</span>
                   }
                 </dd>
               </div>
@@ -326,10 +326,10 @@
                   </svg>
                   Certif.
                 </dt>
-                <dd title="Dato disponible con integración real">
+                <dd>
                   {{ formatoMetrica(c.certificaciones) }}
                   @if (c.certificaciones == null) {
-                    <span class="sr-only">Dato disponible con integración real</span>
+                    <span class="sr-only">Sin dato</span>
                   }
                 </dd>
               </div>

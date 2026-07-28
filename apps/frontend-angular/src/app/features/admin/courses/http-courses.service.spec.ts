@@ -51,7 +51,12 @@ describe('HttpCoursesService', () => {
     const p = service.listar();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/cursos`);
     expect(req.request.method).toBe('GET');
-    req.flush({ data: { items: [cursoDto()] }, meta: { requestId: 'r1' } });
+    req.flush({
+      data: {
+        items: [cursoDto({ cantidadFechas: 2, alumnosPresentes: 5, certificaciones: 3 })],
+      },
+      meta: { requestId: 'r1' },
+    });
     const result = await p;
     expect(result.length).toBe(1);
     expect(result[0].id).toBe(1);
@@ -59,8 +64,20 @@ describe('HttpCoursesService', () => {
     expect(result[0].nombre).toBe('Curso Demo');
     expect(result[0].estado).toBe('activo');
     expect(result[0].cuatrimestre).toBe('Sin programar');
-    expect(result[0].cantidadFechas).toBe(0);
+    expect(result[0].cantidadFechas).toBe(2);
+    expect(result[0].alumnosPresentes).toBe(5);
+    expect(result[0].certificaciones).toBe(3);
+  });
+
+  it('listar deja métricas null si el backend no las envía', async () => {
+    const p = service.listar();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/cursos`).flush({
+      data: { items: [cursoDto()] },
+      meta: { requestId: 'r1b' },
+    });
+    const result = await p;
     expect(result[0].alumnosPresentes).toBeNull();
+    expect(result[0].certificaciones).toBeNull();
   });
 
   it('filtro q aplicado client-side', async () => {
@@ -79,6 +96,23 @@ describe('HttpCoursesService', () => {
     const result = await p;
     expect(result.length).toBe(1);
     expect(result[0].estado).toBe('cerrado');
+  });
+
+  it('filtro activo=false agrupa no activos client-side', async () => {
+    const p = service.listar({ activo: false });
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/cursos`).flush({
+      data: {
+        items: [
+          cursoDto({ id: 1, estado: 'activo' }),
+          cursoDto({ id: 2, estado: 'cerrado' }),
+          cursoDto({ id: 3, estado: 'borrador' }),
+          cursoDto({ id: 4, estado: 'archivado' }),
+        ],
+      },
+      meta: { requestId: 'r3b' },
+    });
+    const result = await p;
+    expect(result.map((c) => c.id)).toEqual([2, 3, 4]);
   });
 
   it('obtener hace GET a /admin/cursos/:id y /admin/cursos/:id/fechas, mergea', async () => {

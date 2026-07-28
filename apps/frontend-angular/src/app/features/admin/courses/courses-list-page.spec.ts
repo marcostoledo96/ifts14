@@ -70,20 +70,24 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('[aria-live="polite"]')?.textContent).toContain('cursos');
   });
 
-  it('expone chips de estado con dots y no usa select de estado', async () => {
+  it('expone chips Activos/Inactivos y no usa select ni borrador/cerrado/archivado', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('select')).toBeNull();
     expect(el.querySelector('input[type="search"]')).not.toBeNull();
-    for (const estado of ['borrador', 'activo', 'cerrado', 'archivado']) {
+    for (const estado of ['activo', 'inactivo']) {
       const chip = el.querySelector(`button[data-estado="${estado}"]`) as HTMLButtonElement | null;
       expect(chip).not.toBeNull();
       expect(chip?.querySelector('.chip-dot')).not.toBeNull();
     }
+    expect(el.querySelector('button[data-estado="borrador"]')).toBeNull();
+    expect(el.querySelector('button[data-estado="cerrado"]')).toBeNull();
+    expect(el.querySelector('button[data-estado="archivado"]')).toBeNull();
     expect(el.textContent).toContain('Activos');
-    expect(el.textContent).toContain('Cerrados');
-    expect(el.textContent).toContain('Archivados');
-    expect(el.textContent).toContain('Borrador');
+    expect(el.textContent).toContain('Inactivos');
+    expect(el.textContent).not.toContain('Cerrados');
+    expect(el.textContent).not.toContain('Archivados');
+    expect(el.textContent).not.toContain('Borrador');
   });
 
   it('limpia filtros y mantiene acciones de detalle y edición accesibles', async () => {
@@ -107,7 +111,7 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('a[aria-label^="Editar"]')).not.toBeNull();
   });
 
-  it('renderiza items del seed (6 cursos) con badge, acento, iconos y placeholders', async () => {
+  it('renderiza items del seed (6 cursos) con badge, acento, iconos y métricas', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const cards = el.querySelectorAll('.card-curso');
@@ -118,10 +122,13 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('.action-icon svg')).not.toBeNull();
     expect(el.querySelector('.metrics .metric-icon')).not.toBeNull();
     expect(el.textContent).toContain('Activo');
+    expect(el.textContent).toContain('Inactivo');
     expect(el.textContent).toContain('fechas');
-    const presentes = el.querySelectorAll('td span[title="Dato disponible con integración real"]');
-    expect(presentes.length).toBeGreaterThan(0);
-    expect(presentes[0].textContent).toContain('—');
+    // Seed in-memory ya expone números; no placeholders de integración.
+    expect(el.textContent).not.toContain('Dato disponible con integración real');
+    const metricas = el.querySelectorAll('td .metrica-valor');
+    expect(metricas.length).toBeGreaterThan(0);
+    expect(metricas[1].textContent?.trim()).not.toBe('—');
   });
 
   it('enlaces de detalle apuntan a /admin/cursos/:id', async () => {
@@ -143,6 +150,22 @@ describe('CoursesListPage', () => {
     expect(chip.getAttribute('aria-pressed')).toBe('true');
     const cards = el.querySelectorAll('.card-curso');
     expect(cards.length).toBe(3);
+  });
+
+  it('filtrar por Inactivos agrupa cerrado/borrador/archivado', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const chip = el.querySelector('button[data-estado="inactivo"]') as HTMLButtonElement;
+    chip.click();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelectorAll('.card-curso').length).toBe(3);
+    expect(el.textContent).toContain('Inactivo');
+    expect(el.textContent).not.toContain('Borrador');
+    expect(el.textContent).not.toContain('Cerrado');
+    expect(el.textContent).not.toContain('Archivado');
   });
 
   it('segundo click en el mismo chip limpia el filtro de estado', async () => {

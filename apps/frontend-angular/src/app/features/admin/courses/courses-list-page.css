@@ -160,9 +160,7 @@
 }
 
 .chip-dot--activo { background: var(--color-valid); }
-.chip-dot--borrador { background: var(--color-muted-foreground); }
-.chip-dot--cerrado { background: var(--color-muted-foreground); opacity: .7; }
-.chip-dot--archivado { background: var(--color-muted-foreground); opacity: .45; }
+.chip-dot--inactivo { background: var(--color-muted-foreground); }
 .chip-estado[aria-pressed='true'] .chip-dot {
   background: var(--color-ink-foreground);
   opacity: .9;
@@ -387,9 +385,7 @@
   background: var(--color-border);
 }
 .row-accent--activo { background: var(--color-circuit, var(--color-valid)); }
-.row-accent--borrador { background: var(--color-muted-foreground); opacity: .55; }
-.row-accent--cerrado { background: var(--color-muted-foreground); opacity: .7; }
-.row-accent--archivado { background: var(--color-border); }
+.row-accent--inactivo { background: var(--color-border); }
 
 /* Código + cuatrimestre: mono, sin uppercase forzado (paridad v0). */
 .course-code {
@@ -436,12 +432,9 @@
   background: var(--color-valid-soft);
   color: var(--color-valid);
 }
-.estado-badge--borrador,
-.estado-badge--cerrado { background: var(--color-muted); color: var(--color-muted-foreground); }
-.estado-badge--archivado {
-  background: color-mix(in srgb, var(--color-muted) 70%, transparent);
+.estado-badge--inactivo {
+  background: var(--color-muted);
   color: var(--color-muted-foreground);
-  opacity: .9;
 }
 
 .actions { display: flex; justify-content: flex-end; gap: .25rem; }
@@ -515,9 +508,7 @@
 .card-curso { position: relative; overflow: hidden; padding: 0; }
 .card-accent { display: block; height: .25rem; width: 100%; background: var(--color-border); }
 .card-accent--activo { background: var(--color-circuit, var(--color-valid)); }
-.card-accent--borrador { background: var(--color-muted-foreground); opacity: .55; }
-.card-accent--cerrado { background: var(--color-muted-foreground); opacity: .7; }
-.card-accent--archivado { background: var(--color-border); }
+.card-accent--inactivo { background: var(--color-border); }
 .card-body { padding: var(--space-4); }
 .card-curso header { display: flex; justify-content: space-between; gap: var(--space-2); }
 .card-curso h2,

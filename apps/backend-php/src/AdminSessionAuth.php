@@ -174,7 +174,11 @@ final class AdminSessionAuth
             return null;
         }
 
-        if (!self::start($settings) || !self::sessionIsActive($_SESSION, $config, $now)) {
+        if (!self::start($settings)) {
+            return null;
+        }
+
+        if (!self::sessionIsActive($_SESSION, $config, $now)) {
             self::destroy($settings);
             return null;
         }
@@ -186,10 +190,18 @@ final class AdminSessionAuth
     public static function authorize(array $config, string $basePath, bool $mutates, string $csrf, int $now): int
     {
         $settings = self::settings($config, $basePath);
-        if ($settings === null || !isset($_COOKIE[$settings['name']]) || !self::start($settings) || !self::sessionIsActive($_SESSION, $config, $now)) {
-            if ($settings !== null) {
-                self::destroy($settings);
-            }
+        if ($settings === null || !isset($_COOKIE[$settings['name']])) {
+            return 401;
+        }
+
+        // Fallo de session_start (p. ej. contención de lock bajo PDF paralelos en
+        // hosting compartido) no debe expirar la cookie: eso echa al admin.
+        if (!self::start($settings)) {
+            return 401;
+        }
+
+        if (!self::sessionIsActive($_SESSION, $config, $now)) {
+            self::destroy($settings);
             return 401;
         }
 
@@ -198,6 +210,8 @@ final class AdminSessionAuth
         }
 
         $_SESSION['lastSeen'] = $now;
+        // Liberar lock de sesión antes del trabajo pesado (PDF, lotes de mutaciones).
+        session_write_close();
 
         return 200;
     }
