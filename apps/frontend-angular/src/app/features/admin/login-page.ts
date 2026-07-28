@@ -24,23 +24,31 @@ export class LoginPage {
   readonly logoSrc = INSTITUTIONAL_BRAND.logoIfts;
   readonly partnerLogos = INSTITUTIONAL_PARTNER_LOGOS;
 
-  async onAccesoSimulado(credentials: AdminAuthCredentials): Promise<void> {
+  async onLoginSubmitted(credentials: AdminAuthCredentials): Promise<void> {
     this.errorMsg.set('');
     this.loading.set(true);
     try {
       await this.auth.login(credentials);
-      void this.router.navigate(['/admin/dashboard']);
+      await this.router.navigate(['/admin/dashboard']);
     } catch (err: unknown) {
-      const status = (err as { status?: number }).status;
-      if (status === 429) {
-        this.errorMsg.set('Demasiados intentos. Aguardá unos minutos e intentá nuevamente.');
-      } else {
-        this.errorMsg.set(
-          'Las credenciales no coinciden con un registro autorizado. Verificá los datos e intentá nuevamente.',
-        );
-      }
+      this.errorMsg.set(mensajeErrorLogin(err));
     } finally {
       this.loading.set(false);
     }
   }
+}
+
+function mensajeErrorLogin(err: unknown): string {
+  const status = (err as { status?: number }).status;
+  if (status === 429) {
+    return 'Demasiados intentos. Aguardá unos minutos e intentá nuevamente.';
+  }
+  if (status === 401) {
+    return 'Las credenciales no coinciden con un registro autorizado. Verificá los datos e intentá nuevamente.';
+  }
+  // status 0 = fallo de red típico de HttpClient; el resto (502 payload, 5xx, undefined) → genérico.
+  if (status === 0) {
+    return 'No se pudo conectar con el servidor. Verificá tu conexión e intentá nuevamente.';
+  }
+  return 'No se pudo completar el acceso. Intentá nuevamente en unos momentos.';
 }

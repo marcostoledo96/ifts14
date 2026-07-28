@@ -45,7 +45,10 @@ export class HttpAdminAuthService implements AdminAuthService {
     const data = res.data;
     if (data?.authenticated && data.csrfToken) {
       this._csrfToken.set(data.csrfToken);
+      return;
     }
+    // 2xx sin sesión usable: no es “credenciales inválidas” (eso viene como 401 real).
+    throw { status: 502 };
   }
 
   async session(): Promise<boolean> {
