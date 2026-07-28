@@ -45,7 +45,10 @@ export class HttpAdminAuthService implements AdminAuthService {
     const data = res.data;
     if (data?.authenticated && data.csrfToken) {
       this._csrfToken.set(data.csrfToken);
+      return;
     }
+    // Respuesta 2xx sin sesión usable: no navegar como si el login hubiera funcionado.
+    throw { status: 401 };
   }
 
   async session(): Promise<boolean> {

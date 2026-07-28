@@ -48,7 +48,7 @@ describe('LoginPage', () => {
     const router = TestBed.inject(Router);
     const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
     const creds: AdminAuthCredentials = { username: 'admin', password: 'clave123' };
-    await f.componentInstance.onAccesoSimulado(creds);
+    await f.componentInstance.onLoginSubmitted(creds);
     expect(navSpy).toHaveBeenCalledWith(['/admin/dashboard']);
     expect(f.componentInstance.loading()).toBe(false);
   });
@@ -62,7 +62,7 @@ describe('LoginPage', () => {
         resolveLogin = resolve;
       }),
     );
-    const pending = f.componentInstance.onAccesoSimulado({
+    const pending = f.componentInstance.onLoginSubmitted({
       username: 'admin',
       password: 'clave123',
     });
@@ -76,7 +76,7 @@ describe('LoginPage', () => {
     const f = await render();
     const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
     spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 401 }));
-    await f.componentInstance.onAccesoSimulado({ username: 'bad', password: 'wrong' });
+    await f.componentInstance.onLoginSubmitted({ username: 'bad', password: 'wrong' });
     f.detectChanges();
     expect(f.componentInstance.errorMsg()).toContain('no coinciden con un registro autorizado');
     expect(f.componentInstance.loading()).toBe(false);
@@ -91,8 +91,24 @@ describe('LoginPage', () => {
     const f = await render();
     const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
     spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 429 }));
-    await f.componentInstance.onAccesoSimulado({ username: 'x', password: 'y' });
+    await f.componentInstance.onLoginSubmitted({ username: 'x', password: 'y' });
     expect(f.componentInstance.errorMsg()).toContain('Demasiados intentos');
+  });
+
+  it('login con error de red muestra mensaje de conexión', async () => {
+    const f = await render();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 0 }));
+    await f.componentInstance.onLoginSubmitted({ username: 'admin', password: 'clave123' });
+    expect(f.componentInstance.errorMsg()).toContain('No se pudo conectar con el servidor');
+  });
+
+  it('login con 5xx muestra mensaje genérico de reintento', async () => {
+    const f = await render();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    spyOn(auth, 'login').and.callFake(() => Promise.reject({ status: 500 }));
+    await f.componentInstance.onLoginSubmitted({ username: 'admin', password: 'clave123' });
+    expect(f.componentInstance.errorMsg()).toContain('No se pudo completar el acceso');
   });
 
   it('no llama fetch al renderizar', async () => {
