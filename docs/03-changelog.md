@@ -49,7 +49,7 @@ Migraciones `001`–`015` bajo `database/migrations/` (certificados, tokens, alu
 ## Fuera de alcance actual
 
 - Producción del módulo aún no activada.
-- SMTP / mails automáticos.
+- Sin SMTP ni mails automáticos.
 - Gestor de usuarios y roles.
 - Importación masiva real.
 - Colas de trabajos asíncronos.

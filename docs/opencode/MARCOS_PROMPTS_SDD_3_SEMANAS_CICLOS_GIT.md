@@ -433,7 +433,7 @@ Commit sugerido: `docs(integracion): cerrar checklist angular api`.
 | Ciclo | Nombre | Objetivo | Rama sugerida |
 |---|---|---|---|
 | M4-01A | `backend-contrato-token-permanente-dni-fechas` | Contrato documental: DTO público con DNI completo + `attendedDates`, reenvío sin rotación, estrategia de token recuperable (`token_cifrado`), revocación invalida token, storage seguro de DNI (`dni_hash`+`dni_cifrado`). No implementa producto. | `backend/contrato-token-permanente-dni-fechas` |
-| M4-01B | `backend-token-permanente-dni-fechas` | Implementación del contrato M4-01A sobre backend/modelo. Depende de M4-02 (modelo de cursos/alumnos/asistencias) para emisión real desde asistencias y del storage de token recuperable. | `backend/token-permanente-dni-fechas` |
+| M4-01B (mvp cerrado) | `backend-token-permanente-dni-fechas` | Implementación del contrato M4-01A sobre backend/modelo. Depende de M4-02 (modelo de cursos/alumnos/asistencias) para emisión real desde asistencias y del storage de token recuperable. | `backend/token-permanente-dni-fechas` |
 | M4-02 | `database-cursos-alumnos-asistencias` | Modelo real de cursos, alumnos, fechas y asistencias con prefijo `cert_`. | `database/cursos-alumnos-asistencias` |
 | M4-03 | `backend-cursos-alumnos-asistencias-api` | API admin mínima para cursos, alumnos, fechas y asistencias con `X-Admin-Key`. | `backend/cursos-alumnos-asistencias-api` |
 | M4-04 | `backend-emision-desde-asistencias` | Emisión desde alumno+curso+fechas presentes, no texto libre. Token permanente. | `backend/emision-desde-asistencias` |
