@@ -79,6 +79,8 @@ ifts14_dev.sql.gz
 .cpanel.yml.local
 deploy_tmp/
 tmp_deploy/
+# Paquetes ZIP locales de subida a staging (artefactos, no fuente)
+deploy/staging/paquetes/
 
 # Cache local de tooling IA
 .atl/*.cache.json
