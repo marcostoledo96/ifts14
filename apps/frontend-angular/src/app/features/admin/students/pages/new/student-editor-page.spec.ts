@@ -29,6 +29,7 @@ describe('StudentEditorPage', () => {
         tieneEmail: false,
         cursosConAsistencia: 0,
         certificacionesValidas: 0,
+        certificacionesRevocadas: 0,
         ingreso: '2026',
         cursos: [],
       } satisfies AlumnoDetalle),
@@ -42,6 +43,7 @@ describe('StudentEditorPage', () => {
         tieneEmail: false,
         cursosConAsistencia: 0,
         certificacionesValidas: 0,
+        certificacionesRevocadas: 0,
         ingreso: '2021',
         cursos: [],
       } satisfies AlumnoDetalle),
@@ -156,6 +158,7 @@ describe('StudentEditorPage', () => {
         tieneEmail: false,
         cursosConAsistencia: 0,
         certificacionesValidas: 0,
+        certificacionesRevocadas: 0,
         ingreso: '2026',
         cursos: [],
       } satisfies AlumnoDetalle;
@@ -198,6 +201,7 @@ describe('StudentEditorPage', () => {
       tieneEmail: false,
       cursosConAsistencia: 0,
       certificacionesValidas: 0,
+        certificacionesRevocadas: 0,
       ingreso: '',
       cursos: [],
     });
@@ -219,6 +223,7 @@ describe('StudentEditorPage', () => {
         tieneEmail: false,
         cursosConAsistencia: 0,
         certificacionesValidas: 0,
+        certificacionesRevocadas: 0,
         ingreso: '2026',
         cursos: [],
       } satisfies AlumnoDetalle;

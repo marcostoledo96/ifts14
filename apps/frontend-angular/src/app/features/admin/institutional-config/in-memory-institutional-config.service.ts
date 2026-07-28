@@ -17,15 +17,23 @@ const SEED: InstitutionalConfig = {
   institutionName: 'Instituto de Formación Técnica Superior N.° 14',
   certificateText:
     'Se certifica que la persona mencionada ha aprobado satisfactoriamente el curso detallado, cumpliendo con la asistencia y las evaluaciones requeridas.',
+  // Nombres vacíos → expediente muestra “config pendiente”; el folio PDF usa fallback tipográfico.
   rectorName: '',
-  rectorRole: 'Rectora del IFTS N.° 14',
+  rectorRole: 'Rector/a — IFTS N.° 14',
   advisorName: '',
-  advisorRole: 'Asesora Pedagógica del IFTS N.° 14',
-  rectorSignaturePresent: false,
+  advisorRole: 'Asesor/a Pedagógica — IFTS N.° 14',
+  rectorSignaturePresent: true,
   advisorSignaturePresent: true,
   parameters: emptyParameters(),
   updatedAt: '2026-01-01T00:00:00Z',
 };
+
+/** PNG 1×1 mínimo (válido) para previews de firma en demo/offline. */
+const TINY_PNG = new Uint8Array([
+  137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0,
+  0, 0, 31, 21, 196, 137, 0, 0, 0, 10, 73, 68, 65, 84, 120, 156, 99, 0, 1, 0, 0, 5, 0, 1, 13, 10,
+  45, 180, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
+]);
 
 @Injectable({ providedIn: 'root' })
 export class InMemoryInstitutionalConfigService implements InstitutionalConfigService {
@@ -35,7 +43,8 @@ export class InMemoryInstitutionalConfigService implements InstitutionalConfigSe
   };
 
   private readonly blobs: Partial<Record<SignatureRole, Blob>> = {
-    asesor: new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' }),
+    rector: new Blob([TINY_PNG], { type: 'image/png' }),
+    asesor: new Blob([TINY_PNG], { type: 'image/png' }),
   };
 
   async obtener(): Promise<InstitutionalConfig> {

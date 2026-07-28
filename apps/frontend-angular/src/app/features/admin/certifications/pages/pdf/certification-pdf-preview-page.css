@@ -611,7 +611,18 @@
   max-width: 15rem;
   margin: 0 auto;
   padding-bottom: var(--space-1);
-  height: 2.5rem;
+  min-height: 7rem;
+  height: auto;
+}
+
+.cert-firma-img {
+  display: block;
+  width: 10.5rem;
+  height: 7rem; /* slot 3:2 */
+  max-width: 100%;
+  object-fit: cover;
+  object-position: center;
+  margin: 0 auto;
 }
 
 .cert-firma-icon {
@@ -954,7 +965,17 @@
 }
 
 .certificado-folio.folio-export-a4 .cert-firma-sello {
-  height: 2rem !important;
+  height: auto !important;
+  min-height: 6rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-firma-img {
+  width: 9rem !important;
+  height: 6rem !important; /* 3:2 */
+  max-height: 6rem !important;
+  max-width: 9rem !important;
+  object-fit: cover !important;
+  object-position: center !important;
 }
 
 .certificado-folio.folio-export-a4 .cert-firma-nombre {

@@ -11,7 +11,7 @@ file_put_contents($configPath, '<?php return ' . var_export([
     'db_host' => '127.0.0.1', 'db_name' => 'demo', 'db_user' => 'demo', 'db_pass' => 'demo',
     'token_pepper' => 'pepper_demo_matrix', 'admin_username' => 'bedelia',
     'admin_password_hash' => password_hash($password, PASSWORD_DEFAULT),
-    'admin_session_idle_seconds' => 1800, 'admin_session_absolute_seconds' => 28800,
+    'admin_session_idle_seconds' => 14400, 'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $tmpDir . '/rate-limit.json',
 ], true) . ';');
 $port = random_int(25000, 25999);

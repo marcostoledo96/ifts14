@@ -242,7 +242,7 @@ final class AdminSessionAuth
 
         return $name === null ? null : [
             'name' => $name, 'path' => $basePath . '/', 'lifetime' => 0, 'secure' => true,
-            'httponly' => true, 'samesite' => 'Strict', 'idleSeconds' => 1800, 'absoluteSeconds' => 28800,
+            'httponly' => true, 'samesite' => 'Strict', 'idleSeconds' => 14400, 'absoluteSeconds' => 28800,
         ];
     }
 

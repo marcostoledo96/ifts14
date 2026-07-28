@@ -148,15 +148,11 @@ function makePng(string $path, int $w, int $h): void
 
 function makeJpeg(string $path, int $w, int $h): void
 {
-    // Sin imagejpeg en la imagen Docker: JPEG 1×1 válido (dims dentro del límite).
-    unset($w, $h);
-    $jpeg1x1 = base64_decode(
-        '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACv/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEAMQAAAABSf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/IL//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/AX//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/AX//2Q==',
-    );
-    if (!is_string($jpeg1x1) || $jpeg1x1 === '') {
-        throw new RuntimeException('JPEG fixture missing');
-    }
-    file_put_contents($path, $jpeg1x1);
+    $im = imagecreatetruecolor($w, $h);
+    $white = imagecolorallocate($im, 255, 255, 255);
+    imagefill($im, 0, 0, $white);
+    imagejpeg($im, $path, 90);
+    imagedestroy($im);
 }
 
 $storage = sys_get_temp_dir() . '/ifts14-firmas-val-' . bin2hex(random_bytes(4));
@@ -193,28 +189,25 @@ try {
 assertTrue($threw, '>1 MB rechazado con 400 VALIDATION_ERROR');
 assertTrue($pdo->row['rector_firma_filename'] === null, '>1 MB no persistió');
 
-// Dimensiones > ~1200×400
+// Dimensiones grandes: se normalizan (recorte centrado + escala), no se rechazan.
 $wide = $storage . '/wide.png';
 makePng($wide, 1201, 100);
-$threw = false;
-try {
-    $svc->uploadSignature('rector', ['tmp_name' => $wide, 'error' => UPLOAD_ERR_OK, 'size' => filesize($wide)]);
-} catch (AdminCertificateException $e) {
-    $threw = $e->status === 400 && $e->errorCode === 'VALIDATION_ERROR';
-}
-assertTrue($threw, 'Ancho >1200 rechazado');
+$dtoWide = $svc->uploadSignature('rector', ['tmp_name' => $wide, 'error' => UPLOAD_ERR_OK, 'size' => filesize($wide)]);
+assertTrue($dtoWide['rectorSignaturePresent'] === true, 'Ancho >1200 se normaliza y acepta');
+assertTrue(is_file($storage . '/rector.png'), 'PNG ancho normalizado persistido');
+$wideDims = getimagesize($storage . '/rector.png');
+assertTrue(is_array($wideDims) && $wideDims[0] <= 1200 && $wideDims[1] <= 800, 'Normalizado ≤1200×800');
 
 $tall = $storage . '/tall.png';
 makePng($tall, 100, 401);
-$threw = false;
-try {
-    $svc->uploadSignature('asesor', ['tmp_name' => $tall, 'error' => UPLOAD_ERR_OK, 'size' => filesize($tall)]);
-} catch (AdminCertificateException $e) {
-    $threw = $e->status === 400 && $e->errorCode === 'VALIDATION_ERROR';
-}
-assertTrue($threw, 'Alto >400 rechazado');
+$dtoTall = $svc->uploadSignature('asesor', ['tmp_name' => $tall, 'error' => UPLOAD_ERR_OK, 'size' => filesize($tall)]);
+assertTrue($dtoTall['advisorSignaturePresent'] === true, 'Alto grande se normaliza y acepta');
+assertTrue(is_file($storage . '/asesor.png'), 'PNG alto normalizado persistido');
+$tallDims = getimagesize($storage . '/asesor.png');
+assertTrue(is_array($tallDims) && $tallDims[0] <= 1200 && $tallDims[1] <= 800, 'Tall normalizado ≤1200×800');
+assertTrue(abs(($tallDims[0] / $tallDims[1]) - 1.5) < 0.05, 'Ratio ~3:2 tras recorte');
 
-// Happy path PNG
+// Happy path PNG (reemplaza rector)
 $ok = $storage . '/ok.png';
 makePng($ok, 400, 120);
 $dto = $svc->uploadSignature('rector', ['tmp_name' => $ok, 'error' => UPLOAD_ERR_OK, 'size' => filesize($ok)]);

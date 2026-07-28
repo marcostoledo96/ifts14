@@ -10,7 +10,7 @@ final class AdminInstitutionalConfigService
 {
     private const int MAX_BYTES = 1_048_576;
     private const int MAX_WIDTH = 1200;
-    private const int MAX_HEIGHT = 400;
+    private const int MAX_HEIGHT = 800; // Ratio 3:2 con MAX_WIDTH.
 
     /** @var array<string, array{filenameCol:string,hashCol:string,flag:string}> */
     private const array ROLES = [
@@ -172,32 +172,49 @@ final class AdminInstitutionalConfigService
 
         $size = $file['size'] ?? filesize($tmp);
         if (!is_int($size) || $size <= 0 || $size > self::MAX_BYTES) {
-            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+            throw new AdminCertificateException(
+                400,
+                'VALIDATION_ERROR',
+                'La firma debe pesar como máximo 1 MB.',
+            );
         }
 
         $mime = $this->detectMime($tmp);
-        $ext = match ($mime) {
-            'image/png' => 'png',
-            'image/jpeg' => 'jpg',
-            default => null,
-        };
-        if ($ext === null) {
-            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        if ($mime !== 'image/png' && $mime !== 'image/jpeg') {
+            throw new AdminCertificateException(
+                400,
+                'VALIDATION_ERROR',
+                'La firma debe ser PNG o JPEG.',
+            );
         }
 
         $dims = @getimagesize($tmp);
-        if ($dims === false || !isset($dims[0], $dims[1])) {
-            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+        if ($dims === false || !isset($dims[0], $dims[1]) || (int) $dims[0] < 1 || (int) $dims[1] < 1) {
+            throw new AdminCertificateException(
+                400,
+                'VALIDATION_ERROR',
+                'No se pudo leer la imagen de firma.',
+            );
         }
-        if ((int) $dims[0] > self::MAX_WIDTH || (int) $dims[1] > self::MAX_HEIGHT) {
-            throw new AdminCertificateException(400, 'VALIDATION_ERROR', 'Solicitud inválida.');
+
+        // Recorte centrado al ratio 3:2 + escala a ≤1200×800 (también si llega cruda por API).
+        $normalized = $this->normalizeSignatureImage($tmp, $mime);
+        if ($normalized === null) {
+            throw new AdminCertificateException(
+                400,
+                'VALIDATION_ERROR',
+                'No se pudo procesar la imagen de firma. Usá PNG o JPEG.',
+            );
         }
+        $ext = $normalized['ext'];
+        $normalizedPath = $normalized['path'];
 
         $basename = $role . '.' . $ext;
         $this->assertSafeBasename($basename);
 
-        $sha256 = hash_file('sha256', $tmp);
+        $sha256 = hash_file('sha256', $normalizedPath);
         if (!is_string($sha256) || strlen($sha256) !== 64) {
+            @unlink($normalizedPath);
             throw new AdminCertificateException(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.');
         }
 
@@ -206,12 +223,16 @@ final class AdminInstitutionalConfigService
         $tmpPath = $finalPath . '.tmp';
 
         if (!is_dir($storage) && !@mkdir($storage, 0750, true) && !is_dir($storage)) {
+            @unlink($normalizedPath);
             throw new AdminCertificateException(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.');
         }
 
-        if (!@copy($tmp, $tmpPath)) {
+        if (!@copy($normalizedPath, $tmpPath)) {
+            @unlink($normalizedPath);
+            @unlink($tmpPath);
             throw new AdminCertificateException(500, 'CONFIGURATION_ERROR', 'No se pudo procesar la solicitud.');
         }
+        @unlink($normalizedPath);
 
         if (!@rename($tmpPath, $finalPath)) {
             @unlink($tmpPath);
@@ -333,6 +354,129 @@ final class AdminInstitutionalConfigService
         }
 
         return $this->signatureStoragePath;
+    }
+
+    /**
+     * Recorte centrado al ratio MAX_WIDTH/MAX_HEIGHT y escala a ≤ límites.
+     * PNG conserva transparencia; JPEG → jpg.
+     *
+     * @return array{path:string,ext:string}|null
+     */
+    private function normalizeSignatureImage(string $sourcePath, string $mime): ?array
+    {
+        if (!function_exists('imagecreatetruecolor') || !function_exists('imagecopyresampled')) {
+            $dims = @getimagesize($sourcePath);
+            if (
+                is_array($dims)
+                && (int) $dims[0] <= self::MAX_WIDTH
+                && (int) $dims[1] <= self::MAX_HEIGHT
+            ) {
+                $ext = $mime === 'image/png' ? 'png' : 'jpg';
+                $out = tempnam(sys_get_temp_dir(), 'firma_');
+                if ($out === false || !@copy($sourcePath, $out)) {
+                    if (is_string($out)) {
+                        @unlink($out);
+                    }
+
+                    return null;
+                }
+
+                return ['path' => $out, 'ext' => $ext];
+            }
+
+            return null;
+        }
+
+        $src = match ($mime) {
+            'image/png' => @imagecreatefrompng($sourcePath),
+            'image/jpeg' => @imagecreatefromjpeg($sourcePath),
+            default => false,
+        };
+        if ($src === false) {
+            return null;
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+        if ($srcW < 1 || $srcH < 1) {
+            imagedestroy($src);
+
+            return null;
+        }
+
+        $aspect = self::MAX_WIDTH / self::MAX_HEIGHT;
+        if (($srcW / $srcH) > $aspect) {
+            $cropW = (int) round($srcH * $aspect);
+            $cropH = $srcH;
+            $sx = (int) round(($srcW - $cropW) / 2);
+            $sy = 0;
+        } else {
+            $cropW = $srcW;
+            $cropH = (int) round($srcW / $aspect);
+            $sx = 0;
+            $sy = (int) round(($srcH - $cropH) / 2);
+        }
+        $cropW = max(1, $cropW);
+        $cropH = max(1, $cropH);
+
+        $scale = min(1.0, self::MAX_WIDTH / $cropW, self::MAX_HEIGHT / $cropH);
+        $dstW = max(1, (int) round($cropW * $scale));
+        $dstH = max(1, (int) round($cropH * $scale));
+
+        $dst = imagecreatetruecolor($dstW, $dstH);
+        if ($dst === false) {
+            imagedestroy($src);
+
+            return null;
+        }
+
+        if ($mime === 'image/png') {
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+            if ($transparent !== false) {
+                imagefilledrectangle($dst, 0, 0, $dstW, $dstH, $transparent);
+            }
+        } else {
+            $white = imagecolorallocate($dst, 255, 255, 255);
+            if ($white !== false) {
+                imagefilledrectangle($dst, 0, 0, $dstW, $dstH, $white);
+            }
+        }
+
+        imagecopyresampled($dst, $src, 0, 0, $sx, $sy, $dstW, $dstH, $cropW, $cropH);
+        imagedestroy($src);
+
+        $out = tempnam(sys_get_temp_dir(), 'firma_');
+        if ($out === false) {
+            imagedestroy($dst);
+
+            return null;
+        }
+
+        $ok = $mime === 'image/png'
+            ? imagepng($dst, $out, 6)
+            : imagejpeg($dst, $out, 90);
+        imagedestroy($dst);
+        if ($ok !== true || !is_file($out)) {
+            @unlink($out);
+
+            return null;
+        }
+
+        $ext = $mime === 'image/png' ? 'png' : 'jpg';
+        clearstatcache(true, $out);
+        $bytes = filesize($out);
+        if (is_int($bytes) && $bytes > self::MAX_BYTES && $ext === 'jpg') {
+            // Recomprimir una vez más si quedó pesada.
+            $re = @imagecreatefromjpeg($out);
+            if ($re !== false) {
+                imagejpeg($re, $out, 75);
+                imagedestroy($re);
+            }
+        }
+
+        return ['path' => $out, 'ext' => $ext];
     }
 
     private function assertSafeBasename(string $basename): void

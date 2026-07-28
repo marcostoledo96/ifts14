@@ -229,15 +229,10 @@ export class CertificationDeliveryPage {
     this.descargando.set(true);
     this.qrError.set('');
     try {
-      const blob = await this.certs.descargarPdf(cid);
-      const objUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = objUrl;
-      a.download = this.pdfFilename();
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(objUrl);
+      // Mismo folio institucional que la vista /pdf (no TCPDF backend).
+      await this.router.navigate(['/admin/certificaciones', cid, 'pdf'], {
+        queryParams: { descargar: '1' },
+      });
       this.descargado.set(true);
     } catch (e) {
       this.qrError.set((e as Error).message || 'No se pudo descargar el PDF.');

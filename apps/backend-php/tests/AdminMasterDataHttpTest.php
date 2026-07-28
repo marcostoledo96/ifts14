@@ -52,7 +52,7 @@ $baseConfig = [
     'token_pepper' => 'pepper_master_data_demo_2026',
     'admin_username' => 'bedelia',
     'admin_password_hash' => password_hash($adminKey, PASSWORD_DEFAULT),
-    'admin_session_idle_seconds' => 1800,
+    'admin_session_idle_seconds' => 14400,
     'admin_session_absolute_seconds' => 28800,
     'rate_limit_storage_path' => $tmpDir . '/rate-limit.json',
     'app_salt' => 'salt_demo_master_data',
@@ -155,7 +155,30 @@ try {
     $studentDetail = request($port, 'GET', '/admin/alumnos/' . $studentId, $authHeaders);
     assertStatus($studentDetail, 200, 'detalle alumno');
     assertNoSensitiveStudentData($studentDetail['body']);
-    assertStatus(request($port, 'GET', '/admin/alumnos', $authHeaders), 200, 'listar alumnos');
+    $studentDetailBody = assertJson($studentDetail, 'detalle alumno');
+    if (($studentDetailBody['data']['cursosConAsistencia'] ?? null) !== 0
+        || ($studentDetailBody['data']['certificacionesValidas'] ?? null) !== 0
+        || ($studentDetailBody['data']['certificacionesRevocadas'] ?? null) !== 0
+        || !is_array($studentDetailBody['data']['cursos'] ?? null)
+    ) {
+        throw new RuntimeException('Detalle alumno debe incluir métricas en 0 y cursos[].');
+    }
+    $studentsList = request($port, 'GET', '/admin/alumnos', $authHeaders);
+    assertStatus($studentsList, 200, 'listar alumnos');
+    $studentsListBody = assertJson($studentsList, 'listar alumnos');
+    $listed = null;
+    foreach (($studentsListBody['data']['items'] ?? []) as $item) {
+        if ((int) ($item['id'] ?? 0) === $studentId) {
+            $listed = $item;
+            break;
+        }
+    }
+    if ($listed === null
+        || ($listed['certificacionesValidas'] ?? null) !== 0
+        || ($listed['cursosConAsistencia'] ?? null) !== 0
+    ) {
+        throw new RuntimeException('Listado alumno debe incluir métricas numéricas.');
+    }
 
     writeConfig($configPath, $baseConfig);
     assertStatus(patchJson($port, '/admin/alumnos/' . $studentId . '/estado', $adminKey, ['estado' => 'inactivo']), 200, 'estado alumno sin dni key');

@@ -37,8 +37,11 @@ export class StudentDetailPage {
     return a ? `${a.nombre} ${a.apellido}` : '';
   });
 
-  /** Sin fuente de revocadas en el detalle: siempre 0 (honesto). */
-  readonly certificacionesRevocadas = computed(() => 0);
+  /** Revocadas desde API/mock; 0 si aún no hay dato. */
+  readonly certificacionesRevocadas = computed(() => {
+    const n = this.alumno()?.certificacionesRevocadas;
+    return n == null ? 0 : n;
+  });
 
   constructor() {
     this.route.paramMap.subscribe((params) => {

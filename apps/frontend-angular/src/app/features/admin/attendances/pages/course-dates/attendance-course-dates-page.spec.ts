@@ -32,6 +32,74 @@ describe('AttendanceCourseDatesPage', () => {
     return el.querySelectorAll('.lista-asis .card-asis');
   }
 
+  it('lista fechas de más antigua a más reciente (sin priorizar programada)', async () => {
+    const hubStub = {
+      listarHub: async () => ({
+        cursos: [{ id: 99, codigo: 'CUR-ORD', nombre: 'Curso orden', estado: 'activo' as const }],
+        fechas: [
+          // Desordenadas a propósito: programada más nueva primero en el hub.
+          {
+            id: 3,
+            cursoId: 99,
+            fecha: '2026-07-20',
+            descripcion: null,
+            orden: 3,
+            estado: 'programada' as const,
+          },
+          {
+            id: 1,
+            cursoId: 99,
+            fecha: '2026-07-01',
+            descripcion: null,
+            orden: 1,
+            estado: 'realizada' as const,
+          },
+          {
+            id: 2,
+            cursoId: 99,
+            fecha: '2026-07-10',
+            descripcion: null,
+            orden: 2,
+            estado: 'realizada' as const,
+          },
+        ],
+        asistencias: [
+          {
+            id: 1,
+            alumnoId: 1,
+            cursoId: 99,
+            cursoFechaId: 1,
+            fecha: '2026-07-01',
+            fechaEstado: 'realizada' as const,
+            registradoEn: '2026-07-01T12:00:00Z',
+          },
+        ],
+        alumnosActivos: 1,
+      }),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [AttendanceCourseDatesPage],
+      providers: [
+        provideRouter([], withComponentInputBinding()),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        { provide: ATTENDANCE_SOURCE, useValue: hubStub },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(AttendanceCourseDatesPage);
+    fixture.componentRef.setInput('id', '99');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const fechas = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll(
+        '[data-testid="curso-fechas-tabla"] tbody time[datetime]',
+      ),
+    ).map((n) => n.getAttribute('datetime'));
+    expect(fechas).toEqual(['2026-07-01', '2026-07-10', '2026-07-20']);
+  });
+
   it('lista solo fechas no canceladas del curso', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
