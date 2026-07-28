@@ -3,7 +3,7 @@
 // documentMasked (D0): nombre histórico; en UI admin contiene DNI completo ficticio.
 // tokenPrefix y URL truncada siguen siendo datos seguros parciales.
 
-export type EstadoCertificado = 'borrador' | 'vigente' | 'revocado' | 'vencido';
+export type EstadoCertificado = 'vigente' | 'revocado';
 
 export const PAGINA_TAMANO = 20;
 

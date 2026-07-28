@@ -16,6 +16,7 @@ import { truncarUrl } from '../../url-publica';
 import {
   INSTITUTIONAL_CONFIG_SOURCE,
   InstitutionalConfig,
+  SignatureRole,
 } from '../../../institutional-config/institutional-config.service';
 import {
   INSTITUTIONAL_BRAND,
@@ -71,6 +72,8 @@ export class CertificationPreviewPage {
   readonly entregaError = signal('');
   readonly configPendiente = signal(false);
   readonly autoridades = signal<AutoridadesVista | null>(null);
+  readonly rectorFirmaUrl = signal<string | null>(null);
+  readonly advisorFirmaUrl = signal<string | null>(null);
   readonly copiado = signal(false);
   readonly qrDescargando = signal(false);
   readonly qrError = signal('');
@@ -122,7 +125,7 @@ export class CertificationPreviewPage {
   readonly puedeReemitir = computed(() => {
     const d = this.detalle();
     if (!d) return false;
-    if (d.estado !== 'revocado' && d.estado !== 'vencido') return false;
+    if (d.estado !== 'revocado') return false;
     return d.alumnoId != null && d.cursoId != null;
   });
 
@@ -142,11 +145,17 @@ export class CertificationPreviewPage {
   // ponytail: generación de carga para descartar resultados stale cuando el
   // id cambia antes de que termine la carga anterior (route reuse).
   private loadGen = 0;
+  private rectorPreviewGen = 0;
+  private advisorPreviewGen = 0;
   private copiaTimer: ReturnType<typeof setTimeout> | null = null;
   private qrObjectUrl: string | null = null;
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.revokeQrUrl());
+    this.destroyRef.onDestroy(() => {
+      this.revokeQrUrl();
+      this.revokeFirmaUrl('rector');
+      this.revokeFirmaUrl('asesor');
+    });
     // Reacciona a cambios de id() tras la ligadura inicial y cuando Angular
     // reutiliza la misma instancia al navegar entre URLs de previsualización.
     // ngOnInit no vuelve a correr en route reuse, pero el effect sí.
@@ -193,6 +202,8 @@ export class CertificationPreviewPage {
     this.entregaUrl.set(null);
     this.entregaError.set('');
     this.autoridades.set(null);
+    this.revokeFirmaUrl('rector');
+    this.revokeFirmaUrl('asesor');
     this.configPendiente.set(false);
     this.error.set('');
     this.copiado.set(false);
@@ -219,7 +230,7 @@ export class CertificationPreviewPage {
         return;
       }
       this.detalle.set(detR.value);
-      this.aplicarConfig(cfgR);
+      void this.aplicarConfig(cfgR, gen);
       this.aplicarEntrega(entR);
       const urlQr =
         entR.status === 'fulfilled' ? entR.value.publicValidationUrl?.trim() || null : null;
@@ -231,10 +242,15 @@ export class CertificationPreviewPage {
     }
   }
 
-  private aplicarConfig(cfgR: PromiseSettledResult<InstitutionalConfig>): void {
+  private async aplicarConfig(
+    cfgR: PromiseSettledResult<InstitutionalConfig>,
+    gen: number,
+  ): Promise<void> {
     if (cfgR.status === 'rejected') {
       this.configPendiente.set(true);
       this.autoridades.set(null);
+      this.revokeFirmaUrl('rector');
+      this.revokeFirmaUrl('asesor');
       return;
     }
     const cfg = cfgR.value;
@@ -245,6 +261,8 @@ export class CertificationPreviewPage {
     this.configPendiente.set(pendiente);
     if (pendiente) {
       this.autoridades.set(null);
+      this.revokeFirmaUrl('rector');
+      this.revokeFirmaUrl('asesor');
       return;
     }
     this.autoridades.set({
@@ -253,6 +271,45 @@ export class CertificationPreviewPage {
       advisorName: cfg.advisorName ?? '',
       advisorRole: cfg.advisorRole ?? '',
     });
+    await Promise.all([
+      this.loadFirmaPreview('rector', cfg.rectorSignaturePresent, gen),
+      this.loadFirmaPreview('asesor', cfg.advisorSignaturePresent, gen),
+    ]);
+  }
+
+  private async loadFirmaPreview(
+    role: SignatureRole,
+    present: boolean,
+    loadGen: number,
+  ): Promise<void> {
+    const previewGen = role === 'rector' ? ++this.rectorPreviewGen : ++this.advisorPreviewGen;
+    this.revokeFirmaUrl(role);
+    if (!present) return;
+    try {
+      const blob = await this.config.previewFirma(role);
+      if (loadGen !== this.loadGen) return;
+      const current = role === 'rector' ? this.rectorPreviewGen : this.advisorPreviewGen;
+      if (previewGen !== current) return;
+      const url = URL.createObjectURL(blob);
+      if (
+        loadGen !== this.loadGen ||
+        previewGen !== (role === 'rector' ? this.rectorPreviewGen : this.advisorPreviewGen)
+      ) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      if (role === 'rector') this.rectorFirmaUrl.set(url);
+      else this.advisorFirmaUrl.set(url);
+    } catch {
+      // Preview opcional: nombres/cargos ya están visibles.
+    }
+  }
+
+  private revokeFirmaUrl(role: SignatureRole): void {
+    const current = role === 'rector' ? this.rectorFirmaUrl() : this.advisorFirmaUrl();
+    if (current) URL.revokeObjectURL(current);
+    if (role === 'rector') this.rectorFirmaUrl.set(null);
+    else this.advisorFirmaUrl.set(null);
   }
 
   private aplicarEntrega(
@@ -391,12 +448,8 @@ function estadoToLabel(e: EstadoCertificado): string {
   switch (e) {
     case 'vigente':
       return 'Válida';
-    case 'borrador':
-      return 'Borrador';
     case 'revocado':
       return 'Revocada';
-    case 'vencido':
-      return 'Vencida';
     default:
       return e;
   }

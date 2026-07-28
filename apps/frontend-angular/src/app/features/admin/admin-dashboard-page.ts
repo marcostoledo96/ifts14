@@ -178,9 +178,7 @@ export class AdminDashboardPage {
 
     if (certsR.status === 'fulfilled') {
       const list = certsR.value;
-      this.certificacionesEmitidas.set(
-        list.filter((c) => c.estado === 'vigente' || c.estado === 'vencido').length,
-      );
+      this.certificacionesEmitidas.set(list.filter((c) => c.estado === 'vigente').length);
       this.certificacionesRevocadas.set(list.filter((c) => c.estado === 'revocado').length);
     } else {
       this.certificacionesEmitidas.set(null);

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CertificationDeliveryPage } from './certification-delivery-page';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { CERTIFICATIONS_SOURCE, CertificationsService } from '../../certifications.service';
 import { InMemoryCertificationsService } from '../../in-memory-certifications.service';
 import { EntregaManualDto } from '../../certifications.models';
@@ -71,43 +71,37 @@ describe('CertificationDeliveryPage', () => {
     expect(d).toBe('15/03/2024'); // default de 'es-AR'
   });
 
-  it('should download PDF via service Blob (REQ-PAR-DEL-001)', async () => {
+  it('should navigate to folio /pdf?descargar=1 (mismo diseño institucional)', async () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const fakeBlob = new Blob(['%PDF-mock'], { type: 'application/pdf' });
     const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
-    const pdfSpy = spyOn(svc, 'descargarPdf').and.resolveTo(fakeBlob);
-    const createUrlSpy = spyOn(URL, 'createObjectURL').and.returnValue('blob:fake-pdf');
-    const revokeSpy = spyOn(URL, 'revokeObjectURL');
-    const clickSpy = spyOn(HTMLAnchorElement.prototype, 'click');
+    const pdfSpy = spyOn(svc, 'descargarPdf');
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
 
     await component.descargarPdf();
 
-    expect(pdfSpy).toHaveBeenCalledWith(1);
-    expect(createUrlSpy).toHaveBeenCalled();
-    expect(clickSpy).toHaveBeenCalled();
-    expect(revokeSpy).toHaveBeenCalledWith('blob:fake-pdf');
+    expect(pdfSpy).not.toHaveBeenCalled();
+    expect(navSpy).toHaveBeenCalledWith(['/admin/certificaciones', 1, 'pdf'], {
+      queryParams: { descargar: '1' },
+    });
     expect(component.descargando()).toBeFalse();
     expect(component.descargado()).toBeTrue();
   });
 
-  it('PDF filename is semantic: cert-{codigo}.pdf', async () => {
+  it('PDF download route uses expediente id (IFTS14-CERT-NNNN)', async () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
-    spyOn(svc, 'descargarPdf').and.resolveTo(new Blob(['x'], { type: 'application/pdf' }));
-    spyOn(URL, 'createObjectURL').and.returnValue('blob:fake');
-    spyOn(URL, 'revokeObjectURL');
-
-    let downloadedName = '';
-    spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) {
-      downloadedName = this.download;
-    });
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
 
     await component.descargarPdf();
-    expect(downloadedName).toBe('cert-IFTS14-CERT-0001.pdf');
+    expect(navSpy).toHaveBeenCalledWith(['/admin/certificaciones', 1, 'pdf'], {
+      queryParams: { descargar: '1' },
+    });
+    expect(component.pdfFilename()).toBe('cert-IFTS14-CERT-0001.pdf');
   });
 
   it('footer has Copiar + PDF + Cancelar; QR outside footer (REQ-PAR-DEL-001)', async () => {

@@ -8,7 +8,7 @@ $password = 'password-demo-auth';
 $config = [
     'admin_username' => 'bedelia',
     'admin_password_hash' => password_hash($password, PASSWORD_DEFAULT),
-    'admin_session_idle_seconds' => 1800,
+    'admin_session_idle_seconds' => 14400,
     'admin_session_absolute_seconds' => 28800,
 ];
 
@@ -56,7 +56,12 @@ if (preg_match('/\A[A-Za-z0-9_-]{43}\z/', $csrf) !== 1 || !AdminSessionAuth::csr
 }
 
 $active = ['authenticated' => true, 'createdAt' => 100, 'lastSeen' => 200];
-if (!AdminSessionAuth::sessionIsActive($active, $config, 1999) || AdminSessionAuth::sessionIsActive($active, $config, 2000) || AdminSessionAuth::sessionIsActive($active, $config, 28900)) {
+// Idle 14400: activo en lastSeen+14399; inactivo en lastSeen+14400. Absolute: inactivo en createdAt+28800.
+if (
+    !AdminSessionAuth::sessionIsActive($active, $config, 14599)
+    || AdminSessionAuth::sessionIsActive($active, $config, 14600)
+    || AdminSessionAuth::sessionIsActive($active, $config, 28900)
+) {
     throw new RuntimeException('La vigencia de sesión no respeta idle/absolute.');
 }
 

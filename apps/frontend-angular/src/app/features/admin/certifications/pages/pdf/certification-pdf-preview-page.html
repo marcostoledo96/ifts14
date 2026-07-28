@@ -160,9 +160,15 @@
         <!-- Cuerpo -->
         <div class="cert-cuerpo">
           <p class="cert-intro">
-            El Instituto de Formación Técnica Superior N.° 14 (IFTS 14), que
-            integra la Dirección de Educación Técnica Superior — Agencia de
-            Habilidades para el Futuro, certifica que:
+            @if (autoridades(); as aut) {
+              {{ aut.institutionName || 'El Instituto de Formación Técnica Superior N.° 14' }}
+              (IFTS 14), que integra la Dirección de Educación Técnica Superior —
+              Agencia de Habilidades para el Futuro, certifica que:
+            } @else {
+              El Instituto de Formación Técnica Superior N.° 14 (IFTS 14), que
+              integra la Dirección de Educación Técnica Superior — Agencia de
+              Habilidades para el Futuro, certifica que:
+            }
           </p>
 
           <p class="cert-protagonista">{{ d.nombreAlumno }}</p>
@@ -202,12 +208,20 @@
         <div class="cert-pie-firmas">
           <div class="cert-firma">
             <div class="cert-firma-sello">
-              <span class="cert-firma-icon" aria-hidden="true">🛡</span>
-              <span class="cert-firma-italic">Autoridad firmante</span>
+              @if (rectorFirmaUrl(); as url) {
+                <img class="cert-firma-img" [src]="url" alt="Firma del rector/a" />
+              } @else {
+                <span class="cert-firma-icon" aria-hidden="true">🛡</span>
+                <span class="cert-firma-italic">Autoridad firmante</span>
+              }
             </div>
             <div class="cert-firma-linea">
-              <p class="cert-firma-nombre">Autoridad Demo Uno</p>
-              <p class="cert-firma-cargo">Rector/a — IFTS N.° 14</p>
+              <p class="cert-firma-nombre">
+                {{ autoridades()?.rectorName || 'Autoridad Demo Uno' }}
+              </p>
+              <p class="cert-firma-cargo">
+                {{ autoridades()?.rectorRole || 'Rector/a — IFTS N.° 14' }}
+              </p>
             </div>
           </div>
 
@@ -248,12 +262,20 @@
 
           <div class="cert-firma">
             <div class="cert-firma-sello">
-              <span class="cert-firma-icon" aria-hidden="true">🛡</span>
-              <span class="cert-firma-italic">Autoridad firmante</span>
+              @if (advisorFirmaUrl(); as url) {
+                <img class="cert-firma-img" [src]="url" alt="Firma del asesor/a" />
+              } @else {
+                <span class="cert-firma-icon" aria-hidden="true">🛡</span>
+                <span class="cert-firma-italic">Autoridad firmante</span>
+              }
             </div>
             <div class="cert-firma-linea">
-              <p class="cert-firma-nombre">Autoridad Demo Dos</p>
-              <p class="cert-firma-cargo">Asesor/a Pedagógica — IFTS N.° 14</p>
+              <p class="cert-firma-nombre">
+                {{ autoridades()?.advisorName || 'Autoridad Demo Dos' }}
+              </p>
+              <p class="cert-firma-cargo">
+                {{ autoridades()?.advisorRole || 'Asesor/a Pedagógica — IFTS N.° 14' }}
+              </p>
             </div>
           </div>
         </div>
@@ -269,7 +291,11 @@
             </span>
           </div>
           <p class="cert-config-note">
-            🔒 Datos institucionales desde Configuración (pendiente)
+            @if (autoridades()) {
+              🔒 Datos institucionales desde Configuración
+            } @else {
+              🔒 Datos institucionales desde Configuración (pendiente)
+            }
           </p>
         </div>
       </div>
