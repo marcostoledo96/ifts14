@@ -47,8 +47,8 @@ export class HttpAdminAuthService implements AdminAuthService {
       this._csrfToken.set(data.csrfToken);
       return;
     }
-    // Respuesta 2xx sin sesión usable: no navegar como si el login hubiera funcionado.
-    throw { status: 401 };
+    // 2xx sin sesión usable: no es “credenciales inválidas” (eso viene como 401 real).
+    throw { status: 502 };
   }
 
   async session(): Promise<boolean> {

@@ -59,6 +59,23 @@ git checkout -b audit/<id-fase>-<slug-corto>
 
 ---
 
+### Gate previo a cada PR (obligatorio)
+
+Antes de **commit + push + abrir/actualizar PR** hacia `staging1.0`:
+
+1. **4R Gentle-AI** (subagents en paralelo sobre el diff de la rama):
+   - **R1 Risk** (`review-risk`)
+   - **R2 Readability** (`review-readability`)
+   - **R3 Reliability** (`review-reliability`)
+   - **R4 Resilience** (`review-resilience`)
+2. Corregir hallazgos **CRITICAL / WARNING introducidos** por la fase (los preexistentes → registro de diferidos).
+3. **Tests del área en verde** (`ng test` con includes del módulo tocado; backend PHP si aplica).
+4. Recién entonces pedir OK humano para commit/push/PR.
+
+No abrir PR “para después revisar”: el gate es **antes** del PR (o, si el PR ya existía, push de follow-up antes de merge).
+
+---
+
 ## 1. Cómo usar esta guía
 
 ### Ritmo de sesión
@@ -1120,8 +1137,11 @@ Podés adelantar U7 si aparece un hallazgo de seguridad en cualquier fase págin
 
 | ID | Fase origen | Hallazgo | Severidad | Destino sugerido |
 |---|---|---|---|---|
-| D-001 | | | P2/P3 | Ux / roadmap |
-| | | | | |
+| D-001 | P1 | Aside “SHA-256 / SSL” cosmético | P3 | U3 / dejar |
+| D-002 | P1/R4 | `session()` autenticado sin CSRF en cliente | P2 | P2 / U7 |
+| D-003 | P1/R4 | Guard `session()` falla post-login → bounce silencioso | P2 | P2 |
+| D-004 | P1/R4 | Backend 429 por fallo de storage de rate-limit | P2 | U6 |
+| D-005 | P1/R4 | Clave limpiada antes de conocer resultado (reintento red) | P3 | U5 |
 
 Severidad: `P0` bloquea staging · `P1` debe ir antes de L1 · `P2` puede diferir · `P3` nice-to-have
 

@@ -164,6 +164,16 @@ describe('LoginForm', () => {
     expect(el.querySelector('#login-error')).toBeNull();
   });
 
+  it('trimea el usuario al emitir credenciales', async () => {
+    const f = await render();
+    let emitted: { username: string; password: string } | undefined;
+    f.componentInstance.submitted.subscribe((creds) => (emitted = creds));
+    f.componentInstance.usuario.set('  admin  ');
+    f.componentInstance.clave.set('clave123');
+    f.componentInstance.enviar();
+    expect(emitted?.username).toBe('admin');
+  });
+
   it('limpia solo la clave tras el envío válido (conserva el usuario)', async () => {
     const f = await render();
     f.componentInstance.usuario.set('admin');
