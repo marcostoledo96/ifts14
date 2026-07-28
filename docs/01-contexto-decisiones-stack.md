@@ -44,7 +44,7 @@ Gestión DB: phpMyAdmin / MySQL de cPanel
 
 ## Pendientes abiertos (no bloquean staging)
 
-- Proveedor SMTP / plantillas de mail.
+- Sin proveedor SMTP; plantillas de mail pendientes.
 - Gestor de usuarios y roles (reemplazo del admin único por config).
 - Importación masiva de alumnos/cursos.
 - Activación de producción (operación de Marcos; no es ítem de roadmap de producto).
