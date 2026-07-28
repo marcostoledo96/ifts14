@@ -51,6 +51,8 @@ export class SidebarAdmin {
   readonly rutaPendiente = input<string | null>(null);
   /** Muestra la X de cierre (drawer mobile). */
   readonly mostrarCerrar = input(false);
+  /** Evita doble clic mientras corre logout. */
+  readonly logoutDisabled = input(false);
   readonly items = ITEMS;
   readonly configItem = CONFIG_ITEM;
   readonly logoSrc = INSTITUTIONAL_BRAND.logoIfts;
