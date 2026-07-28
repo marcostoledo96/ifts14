@@ -1,11 +1,8 @@
-# Onboarding de Matías — Frontend Angular 20 (F0-03)
+# Onboarding de Matías — Frontend Angular 20
 
-- Ciclo: F0-03 — Leer documentación mínima y entender misión.
-- Propósito: dejar evidencia autocontenida del rol, alcance, fuentes de verdad y límites de Matías antes de iniciar trabajo de producto frontend (F1+).
-- Formato: síntesis enlazada; no reemplaza a las fuentes vigentes.
+Síntesis del rol. Onboarding general: `GUIA.md` + `docs/frontend/03-modulos-admin.md`. Guía histórica F0–F6: `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` en esta misma carpeta.
 
-Este documento se usa como punto de partida antes de cada ciclo frontend.
-Ante una duda de alcance, se consulta la fuente vigente correspondiente; no se asume ni se inventa.
+Ante duda de alcance, consultar la fuente vigente; no inventar.
 
 ## Misión
 

@@ -736,10 +736,10 @@ ________________________________________________
 
 | Doc | Relación |
 |---|---|
-| `docs/frontend/03-qa-manual-f3-04.md` | QA histórico F3-04 (parcial/bloqueado); este checklist lo supersede como pasada integral |
-| `docs/frontend/verificacion-global-ciclos-1-13.md` | Smoke corto mock local |
-| `docs/planificacion/IFTS14_PLAN_CORRECCIONES_PREPRODUCCION_SDD_TDD.md` | ALTO-C / P8-04 / P8-05 |
+| `docs/05-desarrollo-local.md` | Cómo levantar FE/BE local |
+| `docs/03-changelog.md` | Qué ya está implementado |
 | `docs/backend/01-contrato-api-certificados.md` | Contrato API |
+| `docs/deploy/01-staging-cpanel-certificados.md` | Runbook staging |
 | `muestra_pagina/` | Referencia visual (no ejecutar) |
 
 ---

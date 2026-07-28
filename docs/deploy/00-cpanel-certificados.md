@@ -1,6 +1,6 @@
 # Deploy cPanel — /certificados/
 
-> **Estado P8-03:** staging deploy funcional. Login admin verificado en local y staging. Fix de envelope (`res.data.*`) commiteado. Producción `/certificados/` permanece en PHP 8.1 sin tocar.
+> **Estado:** staging deploy funcional y en uso diario. Producción `/certificados/` del módulo aún no activada.
 
 ## Entorno real de staging (P8-01)
 

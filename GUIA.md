@@ -1,172 +1,121 @@
-# GUIA.md — Guía humana del proyecto IFTS14
+# GUIA.md — Onboarding del proyecto IFTS14
 
-Esta guía es para Marcos, Matías o cualquier persona que necesite entender el repositorio sin leer todos los archivos.
+Guía corta para humanos (y agentes) que necesitan entender el repo sin leerlo entero.
 
-## 1. Objetivo del repositorio
+## 1. Qué es esto
 
-Este repositorio privado se usa para:
+Módulo de **certificaciones de curso con QR** para el IFTS N.° 14.
 
-1. estudiar el sitio actual del IFTS 14 descargado desde cPanel;
-2. proteger material sensible y evitar subir credenciales;
-3. planificar el módulo de certificaciones QR;
-4. implementar una nueva sección en `/certificados/`;
-5. mantener documentación y prompts para trabajar con OpenCode/Gentle-AI.
-
-## 2. Stack confirmado
-
-```txt
-Frontend: Angular 20
-Backend: PHP 8.4.22 CGI/FastCGI en el candidato de staging; producción aún no fue activada ni validada
-Base de datos: MariaDB 10.6.27
-Hosting: cPanel
-Gestión DB: phpMyAdmin / MySQL Databases de cPanel
-Ruta final: /certificados/
-Staging: /certificados_staging/
-```
-
-## 3. Alcance del módulo `/certificados/`
-
-El módulo debe permitir que una persona externa valide un certificado de curso mediante QR o link.
-
-Ruta pública conceptual:
-
-```txt
-/certificados/validar/:tokenCertificacion
-```
-
-El flujo esperado es:
+Flujo de negocio:
 
 ```txt
 Bedelía carga curso y fechas
-→ registra asistencias presentes
-→ emite certificación (certificado de curso con fechas asistidas)
-→ genera PDF horizontal con QR (token permanente)
-→ Bedelía entrega el link/PDF por canal externo (mismo QR/token, no rota)
-→ usuario externo escanea QR
-→ verifica autenticidad (ve DNI completo del alumno)
+→ marca asistencias (presentes)
+→ emite certificación
+→ genera PDF con QR (token permanente)
+→ entrega link/PDF por canal externo (WhatsApp, mail manual, etc.)
+→ el destinatario valida en /validar/:token
 ```
 
-### Decisiones vigentes (D0)
+Entorno de trabajo diario: **staging** (`/certificados_staging/`). Producción aún no está activada para este módulo.
+
+## 2. Stack
+
+```txt
+Frontend: Angular 20
+Backend:  PHP 8.4.22 CGI/FastCGI (staging)
+Base:     MariaDB 10.6.27
+Hosting:  cPanel (sin SSH/Terminal útiles; deploy por File Manager / ZIP)
+```
+
+## 3. Decisiones que no se negocian (D0)
 
 | Tema | Regla |
 |---|---|
-| QR / token | Permanente. Reenvío normal no rota token. Solo revocación o regeneración excepcional auditada. |
-| DNI en validación pública y UI admin | DNI completo visible en `/validar/…` vigente y en listados/detalle/expediente admin (campo `dniMostrar`/`documentMasked` con dígitos completos). Logs/auditoría/errores/dumps sin DNI completo. |
-| Certificado | Certificado de curso con fechas asistidas del alumno. |
-| Auth admin | Sesión PHP nativa, cookie `HttpOnly`/`Secure`/`SameSite=Strict` y CSRF. `X-Admin-Key` no autoriza HTTP. |
-| Email alumno | Opcional (nullable) al crear/editar alumno. Entrega manual sin SMTP automático; email de notificación queda gated. |
-| Composer | Gate: si no disponible en cPanel, `vendor/` local como artefacto, nunca versionado. |
-| Firmantes PDF | Rector/a y Asesor/a Pedagógica vía configuración institucional. |
-| Staging | `/certificados_staging/` separado de `/certificados/`. |
+| Token/QR | Permanente. Reemitir PDF, actualizar contenido o reenviar link **no** rota el QR. Solo revocación o regeneración excepcional auditada. |
+| DNI | Completo en UI pública y admin. Nunca completo en logs/auditoría/errores/dumps. |
+| Auth | Sesión PHP + CSRF. `X-Admin-Key` no autoriza HTTP. |
+| Email | Opcional en alumno; sin SMTP automático todavía. |
+| PDF | Folio Angular y TCPDF backend son ambos válidos; elige el instituto. |
+| Secretos | Fuera de Git. Config real fuera del webroot. |
 
-## 4. Estado actual
+Detalle: [`docs/01-contexto-decisiones-stack.md`](docs/01-contexto-decisiones-stack.md).
 
-Al inicio puede existir material descargado del servidor en raíz:
+## 4. Mapa del repositorio
 
-- dumps SQL;
-- carpeta `well-known/`;
-- archivos PHP;
-- zips;
-- logs;
-- configuraciones con credenciales.
+| Ruta | Para qué |
+|---|---|
+| `apps/frontend-angular/` | UI admin + validación pública |
+| `apps/backend-php/` | API bajo `…/api/` |
+| `database/migrations/` | SQL versionado (`001`…`015`+) |
+| `docs/` | Documentación vigente |
+| `openspec/specs/` | Contratos/specs por módulo |
+| `deploy/staging/` | Checklists y plantillas de staging |
+| `muestra_pagina/` | Referencia visual (no ejecutar) |
+| `material_privado_no_versionar/` | Privado local; no versionar |
 
-Ese material debe moverse a:
+Índice completo: [`docs/00-indice-general.md`](docs/00-indice-general.md).
+
+## 5. Primer día (orden sugerido)
+
+1. Clonar el repo y leer este archivo + `README.md`.
+2. Seguir [`docs/05-desarrollo-local.md`](docs/05-desarrollo-local.md).
+3. Mirar [`docs/03-changelog.md`](docs/03-changelog.md) (qué ya existe).
+4. Mirar [`docs/04-roadmap.md`](docs/04-roadmap.md) (qué viene).
+5. Para un cambio concreto, abrir solo el área afectada (backend/frontend/database/deploy).
+
+## 6. Cómo trabajamos (recomendado, no obligatorio)
+
+### Spec-Driven Development (recomendado)
+
+Para cambios no triviales:
 
 ```txt
-material_privado_no_versionar/
+spec → criterios → fixture/contrato → implementación → pruebas → docs → PR
 ```
 
-y nunca debe subirse a GitHub.
+Specs en `openspec/specs/`. Al cerrar un ciclo sustancial, actualizar la doc del área (`docs/07-sdd-archive-y-mantenimiento-documentacion.md`).
 
-## 5. Carpeta `muestra_pagina/`
+Para fixes chicos: TDD o tests focalizados + PR alcanza.
 
-`muestra_pagina/` contiene la referencia visual exportada desde v0 (Next.js/React). Se usa **solo como referencia visual** para portar a Angular 20.
+### Git (recomendado)
 
-Reglas:
+- No trabajar directo en `main`.
+- Rama por tema: `docs/…`, `frontend/…`, `backend/…`, `fix/…`.
+- PR hacia `main`; revisar diff antes de merge.
+- Nunca subir secretos, `vendor/`, `dist/`, dumps ni material privado.
+- Detalle: [`docs/06-flujo-git-recomendado.md`](docs/06-flujo-git-recomendado.md).
 
-- No compilar ni ejecutar este proyecto.
-- No portar componentes, hooks, rutas ni estilos literalmente a Angular.
-- No copiar credenciales demo al producto: son mock visual v0.
-- `login-form.tsx` es mock visual; el producto usa `X-Admin-Key` temporal.
-- Respetar D0: QR permanente, DNI completo en validación pública y UI admin, fechas asistidas, auth simple temporal.
-- Inventario: `muestra_pagina/` contiene la referencia visual v0 final y completa (export de Next.js/React con capturas para flujos 4-22). El `MANIFIESTO_V0.md` histórico fue retirado al reemplazar la carpeta por el export final; el inventario se completa contra el listado seguro de la carpeta.
+### Agentes IA
 
-## 6. Roles
+- Lectura mínima + `AGENTS.md`.
+- Prompts de rol en `docs/opencode/`.
+- Operaciones Git destructivas o push solo con aprobación explícita humana.
+
+## 7. Roles
 
 ### Marcos
 
-Responsable de:
-
-- backend PHP;
-- MariaDB;
-- integración front/back;
-- desbloqueos frontend técnicos cuando hagan falta: base Angular, validación pública, mocks/contratos y build `/certificados/`;
-- deploy en cPanel;
-- arquitectura;
-- seguridad;
-- documentación;
-- auditoría del servidor descargado.
+Backend, DB, integración, deploy, seguridad, arquitectura, documentación.
 
 ### Matías
 
-Responsable de:
+Frontend Angular, paridad visual con `muestra_pagina/`, admin UX, responsive, accesibilidad, QA visual.
 
-- liderazgo UI/UX del frontend Angular 20;
-- adaptación de `muestra_pagina/` (referencia visual v0);
-- port visual a Angular (sin copiar React/Next literalmente);
-- UI/UX;
-- Tailwind o sistema visual elegido;
-- responsive;
-- accesibilidad;
-- admin, QA y handoff visual.
+## 8. Deploy (resumen)
 
-## 7. Metodología
+1. Build Angular con `baseHref` de staging o producción.
+2. Empaquetar backend (con `vendor/` local si hace falta).
+3. Subir a cPanel (File Manager / ZIP).
+4. Aplicar migraciones SQL pendientes en la DB del entorno.
+5. Smoke: `GET …/api/health`, login admin, un flujo corto de emisión/validación.
 
-Se trabaja con Spec-Driven Development.
+Guías: [`docs/deploy/`](docs/deploy/) · artefactos: [`deploy/`](deploy/).
 
-Cada ciclo debe seguir:
+## 9. Referencia visual
 
-```txt
-spec → criterios → fixture/contrato → plan → implementación → pruebas → QA → sdd-archive → commit → PR
-```
+`muestra_pagina/` es export v0 (Next/React). Sirve para **mirar** pantallas. No se compila ni se porta literalmente. Credenciales demo del login v0 no van al producto.
 
-`sdd-archive` significa cerrar el ciclo actualizando la documentación relacionada.
+## 10. Si algo no está claro
 
-## 8. Documentación mínima
-
-Para empezar:
-
-1. `README.md`
-2. `AGENTS.md`
-3. `docs/00-indice-general.md`
-4. Prompt raíz del rol: `MARCOS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md` o `MATIAS_PROMPTS_SDD_3_SEMANAS_CICLOS_GIT.md`
-5. `docs/07-sdd-archive-y-mantenimiento-documentacion.md`
-
-Los prompts viejos de `docs/opencode/` quedan como archivo histórico. Las guías operativas vigentes están en la raíz.
-
-## 9. Git
-
-No trabajar directo sobre `main` salvo primer commit de estructura inicial.
-
-Ramas sugeridas:
-
-```txt
-docs/<tema>
-frontend/<modulo>
-backend/<modulo>
-database/<tema>
-deploy/<tema>
-qa/<tema>
-```
-
-OpenCode puede ejecutar operaciones Git solo con aprobación explícita de Matías o Marcos en el mismo turno y con el comando exacto indicado. `git add` + `git commit` + `git push` a la rama de trabajo (nunca a `main`) requieren ciclo SDD verificado, diff-confirmation gate antes de stage (`git status --short` y `git diff --name-only`) y pre-push safety antes de push: si existe `origin/<rama>`, correr `git log origin/<rama>..<rama> --oneline` y `git diff origin/<rama>..<rama> --stat`; si es primer push, declarar que la ref remota no existe y comparar contra la base aprobada con `git log <base>..HEAD --oneline` y `git diff <base>...HEAD --stat`. La preparación de ramas o PR puede ocurrir antes de `sdd-verify` cuando el ciclo lo necesita; `git switch`, `git checkout`, `git branch`, `git switch -c`, `git checkout -b`, PR, merge y rebase requieren aprobación explícita, evidencia previa y árbol limpio, o una decisión explícita de stash/commit/abortar. Para Matías, la única prohibición dura es `git push` directo a `main`.
-
-## 10. Regla principal
-
-Si una tarea no está clara, no se implementa.
-
-Primero se actualiza:
-
-```txt
-spec → criterio → contrato/fixture → plan
-```
+No inventar contratos, rotación de QR, SMTP ni auth nueva. Abrir o actualizar spec/docs y acordar con el responsable del área.
