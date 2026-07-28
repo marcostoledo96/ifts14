@@ -128,6 +128,11 @@ export class InMemoryCoursesService implements CoursesService {
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
     }
+    if (filtros?.activo === true) {
+      list = list.filter((c) => c.estado === 'activo');
+    } else if (filtros?.activo === false) {
+      list = list.filter((c) => c.estado !== 'activo');
+    }
     if (filtros?.q) {
       const q = filtros.q.trim().toLowerCase();
       if (q) {
@@ -289,11 +294,14 @@ export class InMemoryCoursesService implements CoursesService {
   }
 
   private toCurso({ fechas, ...curso }: CursoRecord): Curso {
+    // Seed demo: métricas derivadas del id para no dejar columnas en blanco.
+    const alumnosPresentes = curso.estado === 'activo' ? Math.max(0, fechas.length * 3) : fechas.length;
+    const certificaciones = curso.estado === 'activo' ? Math.max(0, fechas.length * 2) : 0;
     return {
       ...clone(curso),
       cantidadFechas: fechas.length,
-      alumnosPresentes: null,
-      certificaciones: null,
+      alumnosPresentes,
+      certificaciones,
     };
   }
 }

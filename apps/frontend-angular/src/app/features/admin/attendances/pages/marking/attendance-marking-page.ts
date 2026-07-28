@@ -319,7 +319,8 @@ export class AttendanceMarkingPage {
         motivoFallo =
           'La fecha de clase es futura: queda programada y no se pueden emitir certificados hasta el día de la clase (o anterior).';
       } else {
-        // Un listado por curso (no N listados por alumno) + emitir/regenerar en paralelo.
+        // Un listado por curso; emitir/regenerar en serie para no saturar la
+        // sesión PHP (lock) en cPanel al generar varios PDF a la vez.
         const vigentesCurso = await this.certs.listar({
           cursoId: cid,
           estado: 'vigente',
@@ -331,33 +332,26 @@ export class AttendanceMarkingPage {
           if (c.alumnoId != null) vigentePorAlumno.set(c.alumnoId, c);
         }
 
-        const resultados = await Promise.allSettled(
-          presentesIds.map(async (alumnoId) => {
+        for (const alumnoId of presentesIds) {
+          if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
+          try {
             const vigente = vigentePorAlumno.get(alumnoId);
             if (vigente) {
               await this.certs.regenerarPdf(vigente.id);
-              return 'actualizado' as const;
+              actualizados++;
+            } else {
+              await this.certs.emitir({
+                alumnoId,
+                cursoId: cid,
+                issuedAt,
+                expiresAt: null,
+              });
+              emitidos++;
             }
-            await this.certs.emitir({
-              alumnoId,
-              cursoId: cid,
-              issuedAt,
-              expiresAt: null,
-            });
-            return 'emitido' as const;
-          }),
-        );
-
-        if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
-
-        for (const r of resultados) {
-          if (r.status === 'rejected') {
+          } catch (err) {
             fallidos++;
-            motivoFallo ??= this.mensajeErrorApi(r.reason);
-            continue;
+            motivoFallo ??= this.mensajeErrorApi(err);
           }
-          if (r.value === 'emitido') emitidos++;
-          else actualizados++;
         }
       }
       const resumen: ResumenGeneracion = { emitidos, actualizados, fallidos };

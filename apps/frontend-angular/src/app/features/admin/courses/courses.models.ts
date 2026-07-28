@@ -1,11 +1,13 @@
 // Modelos de cursos y fechas — admin frontend.
-// Tipan el contrato backend actual (borrador/activo/cerrado/archivado)
-// sin crear deuda de tipos. Sin DNI, email, token ni datos de estudiantes.
+// Tipan el contrato backend (borrador/activo/cerrado/archivado).
+// UI de listado usa solo activo/inactivo (paridad v0). Sin DNI/email/token.
 
 /** Tamaño de página del listado admin de cursos (paridad alumnos/certificaciones). */
 export const COURSES_PAGE_SIZE = 20;
 
 export type EstadoCurso = 'borrador' | 'activo' | 'cerrado' | 'archivado';
+/** Filtro visual del listado: activo vs resto (cerrado/borrador/archivado). */
+export type FiltroEstadoCurso = 'activo' | 'inactivo';
 export type EstadoFecha = 'programada' | 'realizada' | 'cancelada';
 
 export interface Curso {
@@ -50,6 +52,8 @@ export interface CursoFechaDraft {
 
 export interface CursosFiltros {
   readonly estado?: EstadoCurso;
+  /** true = solo activos; false = no activos (cerrado/borrador/archivado). */
+  readonly activo?: boolean;
   readonly q?: string; // texto libre sobre codigo/nombre
   readonly conFechas?: boolean;
 }

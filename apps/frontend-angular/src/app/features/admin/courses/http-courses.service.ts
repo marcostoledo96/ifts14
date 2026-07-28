@@ -25,6 +25,8 @@ interface CursoDto {
   createdAt: string;
   updatedAt: string;
   cantidadFechas?: number;
+  alumnosPresentes?: number;
+  certificaciones?: number;
 }
 
 interface CursoFechaDto {
@@ -58,6 +60,11 @@ export class HttpCoursesService implements CoursesService {
     let list = envelope.data.items.map((dto) => this.toCurso(dto, dto.cantidadFechas ?? 0));
     if (filtros?.estado) {
       list = list.filter((c) => c.estado === filtros.estado);
+    }
+    if (filtros?.activo === true) {
+      list = list.filter((c) => c.estado === 'activo');
+    } else if (filtros?.activo === false) {
+      list = list.filter((c) => c.estado !== 'activo');
     }
     if (filtros?.q) {
       const q = filtros.q.trim().toLowerCase();
@@ -229,8 +236,8 @@ export class HttpCoursesService implements CoursesService {
       // ponytail: backend sin cuatrimestre; default 'Sin programar' para matchear modelo.
       cuatrimestre: 'Sin programar',
       cantidadFechas,
-      alumnosPresentes: null,
-      certificaciones: null,
+      alumnosPresentes: typeof dto.alumnosPresentes === 'number' ? dto.alumnosPresentes : null,
+      certificaciones: typeof dto.certificaciones === 'number' ? dto.certificaciones : null,
     };
   }
 
