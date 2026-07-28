@@ -37,7 +37,19 @@
     </div>
   }
 
-  @if (!cargando()) {
+  @if (!cargando() && sinCurso()) {
+    <header class="editor-header">
+      <div class="header-text">
+        <p class="kicker">Ficha de curso</p>
+        <h1 id="editor-title" class="title">Editar curso</h1>
+      </div>
+    </header>
+    @if (error()) {
+      <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    }
+  }
+
+  @if (!cargando() && !sinCurso()) {
     <header class="editor-header">
       <div class="header-text">
         <p class="kicker">{{ mode() === 'create' ? 'Alta de curso' : 'Ficha de curso' }}</p>
@@ -71,7 +83,8 @@
       <p class="estado-linea estado-ok" role="status">{{ ok() }}</p>
     }
 
-    <form class="editor-grid" (ngSubmit)="guardar()">
+    <form (ngSubmit)="guardar()">
+      <fieldset class="editor-grid editor-fieldset" [disabled]="guardando()">
       <div class="editor-main">
         <section class="panel" aria-labelledby="datos-titulo">
           <header class="panel-header">
@@ -92,6 +105,7 @@
                 type="text"
                 [value]="codigo()"
                 (input)="onCodigo($event)"
+                [attr.maxlength]="codigoMax"
                 autocomplete="off"
                 required
               />
@@ -103,6 +117,7 @@
                 type="text"
                 [value]="nombre()"
                 (input)="onNombre($event)"
+                [attr.maxlength]="nombreMax"
                 placeholder="ej. Introducción a Redes de Datos"
                 required
               />
@@ -153,7 +168,7 @@
 
           <p class="panel-hint">
             Las fechas son la base de las asistencias y de la emisión de certificados.
-            Definí al menos la fecha de finalización para poder certificar.
+            Podés cargarlas ahora o más adelante desde este editor.
           </p>
 
           @if (mode() === 'edit' && impactoRealizadas()) {
@@ -226,7 +241,7 @@
                           [attr.aria-label]="'Estado de la fecha ' + ($index + 1)"
                         >
                           @for (e of estadosFecha; track e) {
-                            <option [value]="e">{{ e }}</option>
+                            <option [value]="e">{{ estadoFechaLabel[e] }}</option>
                           }
                         </select>
                       </label>
@@ -269,7 +284,7 @@
               </div>
               <div class="meta-item">
                 <dt>Estado</dt>
-                <dd>{{ estadoResultante() }}</dd>
+                <dd>{{ etiquetaEstadoCurso(estadoResultante()) }}</dd>
               </div>
               <div class="meta-item">
                 <dt>Creado</dt>
@@ -290,6 +305,7 @@
           </div>
         }
       </aside>
+      </fieldset>
     </form>
   }
 </section>
