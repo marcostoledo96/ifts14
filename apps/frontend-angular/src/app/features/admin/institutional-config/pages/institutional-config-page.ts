@@ -24,6 +24,9 @@ import { UiSpinner } from '../../../../shared/ui/ui-spinner';
 import { INSTITUTIONAL_LOGOS } from '../../../../shared/brand/institutional-brand';
 import { HttpErrorResponse } from '@angular/common/http';
 
+const FIRMA_ERROR_GENERICO =
+  'No se pudo cargar la firma. Usá PNG o JPEG de hasta 1 MB; la web recorta y ajusta el tamaño.';
+
 // Página de configuración institucional: layout calca v0 (nav sticky +
 // secciones). Persistidos: 6 campos institucionales + 9 parámetros tipados.
 // Logos fijos; firmas: upload inmediato Opción A (no dirty del formulario).
@@ -89,6 +92,8 @@ export class InstitutionalConfigPage {
   readonly ok = signal('');
   readonly firmaError = signal('');
   readonly firmaOk = signal('');
+  readonly rectorPreviewLoading = signal(false);
+  readonly advisorPreviewLoading = signal(false);
 
   readonly cargado = computed(() => this.snapshot() !== null);
 
@@ -191,12 +196,14 @@ export class InstitutionalConfigPage {
     const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
     this[field].set(value);
     this.ok.set('');
+    this.error.set('');
   }
 
   onParameterInput(key: SystemParameterKey, event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
     this.paramSignalByKey[key].set(value);
     this.ok.set('');
+    this.error.set('');
   }
 
   descartar(): void {
@@ -300,12 +307,20 @@ export class InstitutionalConfigPage {
       const body = err.error as { error?: { message?: string } } | null;
       const msg = body?.error?.message;
       if (typeof msg === 'string' && msg.trim()) return msg.trim();
+      // Nunca usar err.message: suele incluir la URL del endpoint.
+      return FIRMA_ERROR_GENERICO;
     }
-    if (err instanceof Error && err.message.trim()) return err.message.trim();
-    return 'No se pudo cargar la firma. Usá PNG o JPEG de hasta 1 MB; la web recorta y ajusta el tamaño.';
+    if (err instanceof Error && err.message.trim() && !/^Http failure response/i.test(err.message)) {
+      return err.message.trim();
+    }
+    return FIRMA_ERROR_GENERICO;
   }
 
   async quitarFirma(role: 'rector' | 'asesor'): Promise<void> {
+    const quien = role === 'rector' ? 'del rector/a' : 'del asesor/a';
+    if (!globalThis.confirm(`¿Quitamos la firma ${quien}? Esta acción no se puede deshacer desde acá.`)) {
+      return;
+    }
     this.firmaError.set('');
     this.firmaOk.set('');
     this.firmaBusy.set(true);
@@ -326,6 +341,19 @@ export class InstitutionalConfigPage {
     }
   }
 
+  /** Fecha/hora legible para bedelía; ISO solo como dato interno. */
+  formatoActualizacion(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return new Intl.DateTimeFormat('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(d);
+  }
+
   private async refreshFirmaPreviews(rector: boolean, advisor: boolean): Promise<void> {
     await Promise.all([
       this.loadFirmaPreview('rector', rector),
@@ -336,6 +364,8 @@ export class InstitutionalConfigPage {
   private async loadFirmaPreview(role: SignatureRole, present: boolean): Promise<void> {
     const gen = role === 'rector' ? ++this.rectorPreviewGen : ++this.advisorPreviewGen;
     this.revokeFirmaUrl(role);
+    if (role === 'rector') this.rectorPreviewLoading.set(present);
+    else this.advisorPreviewLoading.set(present);
     if (!present) return;
     try {
       const blob = await this.source.previewFirma(role);
@@ -350,6 +380,12 @@ export class InstitutionalConfigPage {
       else this.advisorFirmaUrl.set(url);
     } catch {
       // Preview opcional: el flag de presencia ya indica estado.
+    } finally {
+      const current = role === 'rector' ? this.rectorPreviewGen : this.advisorPreviewGen;
+      if (gen === current) {
+        if (role === 'rector') this.rectorPreviewLoading.set(false);
+        else this.advisorPreviewLoading.set(false);
+      }
     }
   }
 
