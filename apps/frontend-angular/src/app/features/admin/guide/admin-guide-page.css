@@ -90,34 +90,11 @@
 }
 
 .guia-nav {
-  display: none;
-}
-
-@media (min-width: 64rem) {
-  .guia-layout {
-    grid-template-columns: 13rem minmax(0, 1fr);
-    gap: var(--space-6);
-    align-items: start;
-  }
-
-  .guia-nav {
-    display: block;
-  }
+  display: block;
 }
 
 .guia-nav-sticky {
-  position: sticky;
-  top: 5.5rem;
-}
-
-.guia-nav-kicker {
-  margin: 0;
-  padding: 0 var(--space-3) var(--space-2);
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-muted-foreground);
+  position: static;
 }
 
 .guia-nav-list {
@@ -125,20 +102,26 @@
   padding: 0;
   list-style: none;
   display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
+  flex-direction: row;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+  scrollbar-width: thin;
 }
 
 .guia-nav-link {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.5rem;
   padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  font-size: 0.875rem;
+  white-space: nowrap;
+  font-size: 0.8125rem;
   line-height: 1.25;
   color: var(--color-muted-foreground);
   text-decoration: none;
+  background: var(--color-card);
 }
 
 .guia-nav-link:hover {
@@ -149,6 +132,47 @@
 .guia-nav-link:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
+}
+
+@media (min-width: 64rem) {
+  .guia-layout {
+    grid-template-columns: 13rem minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: start;
+  }
+
+  .guia-nav-sticky {
+    position: sticky;
+    top: 5.5rem;
+  }
+
+  .guia-nav-list {
+    flex-direction: column;
+    overflow-x: visible;
+    padding-bottom: 0;
+    gap: 0.125rem;
+  }
+
+  .guia-nav-link {
+    border: none;
+    background: transparent;
+    white-space: normal;
+    font-size: 0.875rem;
+  }
+
+  .guia-nav-link:hover {
+    background: var(--color-muted);
+  }
+}
+
+.guia-nav-kicker {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
 }
 
 .guia-nav-num {
@@ -171,7 +195,7 @@
   border-radius: var(--radius-md);
   background: var(--color-card);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 4%, transparent);
-  scroll-margin-top: var(--space-6);
+  scroll-margin-top: 6rem; /* ≈ chrome admin sticky (~5.5rem) + aire al anclar */
 }
 
 .seccion-head {
