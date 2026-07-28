@@ -274,7 +274,7 @@
                   [attr.maxlength]="limits.parameterTextarea"
                 ></textarea>
                 <p class="cfg-ayuda">
-                  Descripción breve del instituto. Se guarda en parámetros de sistema.
+                  Descripción breve del instituto. Se guarda con el resto de la configuración.
                 </p>
               </div>
             </div>
@@ -316,7 +316,7 @@
                   [attr.maxlength]="limits.parameterText"
                 />
                 <p class="cfg-ayuda">
-                  Encabezado del documento. Se guarda en parámetros de sistema.
+                  Encabezado del documento. Se guarda con el resto de la configuración.
                 </p>
               </div>
 
@@ -412,7 +412,7 @@
                     />
                   </div>
                   <div class="firma-block">
-                    <span class="cfg-label">Firma digital</span>
+                    <span class="cfg-label">Imagen de la firma</span>
                     <div
                       class="firma-row"
                       [class.firma-row--empty]="!rectorSignaturePresent()"
@@ -432,6 +432,7 @@
                             type="file"
                             accept="image/png,image/jpeg,.png,.jpg,.jpeg"
                             class="firma-file-input"
+                            aria-label="Subir firma del rector/a"
                             [disabled]="firmaBusy()"
                             (change)="onFirmaSeleccionada('rector', $event)"
                           />
@@ -449,9 +450,9 @@
                       </div>
                     </div>
                     <p class="cfg-ayuda">
-                      PNG o JPEG, máx. 1 MB. Si es más grande, la web recorta al centro
-                      (ratio 3:2) y ajusta a ~1200×800 sin estirar. Se guarda al elegir el
-                      archivo (no usa Guardar).
+                      PNG o JPEG. La web recorta al centro (ratio 3:2) y ajusta a ~1200×800;
+                      el archivo final debe quedar ≤ 1 MB. Se guarda al elegir el archivo
+                      (no usa Guardar).
                     </p>
                   </div>
                 </fieldset>
@@ -484,7 +485,7 @@
                     />
                   </div>
                   <div class="firma-block">
-                    <span class="cfg-label">Firma digital</span>
+                    <span class="cfg-label">Imagen de la firma</span>
                     <div
                       class="firma-row"
                       [class.firma-row--empty]="!advisorSignaturePresent()"
@@ -504,6 +505,7 @@
                             type="file"
                             accept="image/png,image/jpeg,.png,.jpg,.jpeg"
                             class="firma-file-input"
+                            aria-label="Subir firma del asesor/a"
                             [disabled]="firmaBusy()"
                             (change)="onFirmaSeleccionada('asesor', $event)"
                           />
@@ -521,14 +523,17 @@
                       </div>
                     </div>
                     <p class="cfg-ayuda">
-                      PNG o JPEG, máx. 1 MB. Si es más grande, la web recorta al centro
-                      (ratio 3:2) y ajusta a ~1200×800 sin estirar. Se guarda al elegir el
-                      archivo (no usa Guardar).
+                      PNG o JPEG. La web recorta al centro (ratio 3:2) y ajusta a ~1200×800;
+                      el archivo final debe quedar ≤ 1 MB. Se guarda al elegir el archivo
+                      (no usa Guardar).
                     </p>
                   </div>
                 </fieldset>
               </div>
 
+              @if (firmaBusy()) {
+                <p class="cfg-inline-busy" role="status">Procesando firma…</p>
+              }
               @if (firmaError()) {
                 <p class="cfg-inline-error" role="alert">{{ firmaError() }}</p>
               }
@@ -544,8 +549,10 @@
                       <img class="firma-img" [src]="url" alt="Firma del rector/a" />
                     } @else if (!rectorSignaturePresent()) {
                       <span class="firma-pending" aria-hidden="true">Firma pendiente</span>
+                    } @else if (rectorPreviewLoading()) {
+                      <span class="firma-pending">Cargando vista previa…</span>
                     } @else {
-                      <span class="firma-pending" aria-hidden="true">Firma cargada</span>
+                      <span class="firma-pending">Vista previa no disponible</span>
                     }
                     <span class="firma-nombre">{{ previewRector() }}</span>
                     <span class="firma-cargo">{{ rectorRole() || '[Cargo]' }}</span>
@@ -555,8 +562,10 @@
                       <img class="firma-img" [src]="url" alt="Firma del asesor/a" />
                     } @else if (!advisorSignaturePresent()) {
                       <span class="firma-pending" aria-hidden="true">Firma pendiente</span>
+                    } @else if (advisorPreviewLoading()) {
+                      <span class="firma-pending">Cargando vista previa…</span>
                     } @else {
-                      <span class="firma-pending" aria-hidden="true">Firma cargada</span>
+                      <span class="firma-pending">Vista previa no disponible</span>
                     }
                     <span class="firma-nombre">{{ previewAdvisor() }}</span>
                     <span class="firma-cargo">{{ advisorRole() || '[Cargo]' }}</span>
@@ -618,8 +627,8 @@
                 <p class="honest-title">La entrega de certificados es manual</p>
                 <ul class="honest-list">
                   <li>
-                    El sistema no cuenta con envío de emails (sin SMTP) ni opción de
-                    «reenviar» desde esta pantalla.
+                    El sistema no envía correos automáticamente ni ofrece «reenviar» desde
+                    esta pantalla.
                   </li>
                   <li>
                     La entrega se hace copiando el link de validación o descargando el PDF.
@@ -668,7 +677,7 @@
                   [attr.maxlength]="limits.parameterTextarea"
                 ></textarea>
                 <p class="cfg-ayuda">
-                  Introducción en la página pública. Se guarda en parámetros de sistema.
+                  Introducción en la página pública. Se guarda con el resto de la configuración.
                 </p>
               </div>
 
@@ -713,14 +722,14 @@
                   ></textarea>
                 </div>
                 <div class="msg-card">
-                  <span class="msg-chip">Token no encontrado</span>
+                  <span class="msg-chip">Certificado no encontrado</span>
                   <textarea
                     id="msg-no-encontrado"
                     rows="2"
                     [value]="msgNoEncontrado()"
                     (input)="onParameterInput('msg_no_encontrado', $event)"
                     [attr.maxlength]="limits.parameterTextarea"
-                    aria-label="Mensaje para Token no encontrado"
+                    aria-label="Mensaje para Certificado no encontrado"
                   ></textarea>
                 </div>
               </div>
@@ -728,8 +737,8 @@
               <div class="honest-block static-info" role="note">
                 <p class="honest-title">Mensajes de validación pública</p>
                 <p class="honest-text">
-                  Los textos de esta sección se guardan en parámetros de sistema. El cableado
-                  a la página pública de validación queda para un ciclo posterior.
+                  Se guardan con el resto de la configuración. Todavía no se muestran en la
+                  página pública de validación; eso queda para un ciclo posterior.
                 </p>
               </div>
             </div>
@@ -739,7 +748,9 @@
 
       <div class="sticky-bar">
         <div class="sticky-status" aria-live="polite">
-          @if (ok()) {
+          @if (error()) {
+            <p class="sticky-error">{{ error() }}</p>
+          } @else if (ok()) {
             <span class="sticky-ok">Configuración guardada.</span>
             <span class="sticky-ok-hint">Se aplicará a los próximos documentos generados.</span>
           } @else if (dirty()) {
@@ -751,7 +762,7 @@
           }
           <p class="sticky-meta">
             @if (updatedAt(); as fecha) {
-              Última actualización: {{ fecha }}
+              Última actualización: {{ formatoActualizacion(fecha) }}
             } @else {
               Sin guardados previos
             }

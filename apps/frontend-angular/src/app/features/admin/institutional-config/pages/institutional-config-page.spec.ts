@@ -159,7 +159,8 @@ describe('InstitutionalConfigPage', () => {
     expect(input(f, '#rector-role').value).toBe('Rector/a');
     expect(input(f, '#advisor-name').value).toBe('Asesora Demo');
     expect(input(f, '#advisor-role').value).toBe('Asesora pedagógica');
-    expect(el(f).querySelector('.sticky-meta')?.textContent).toContain('2026');
+    expect(el(f).querySelector('.sticky-meta')?.textContent).toMatch(/\d{2}\/\d{2}\/\d{4}/);
+    expect(f.componentInstance.updatedAt()).toBe('2026-01-01T00:00:00Z');
   });
 
   it('carga fallida muestra error y botón reintentar que recarga', async () => {
@@ -273,6 +274,7 @@ describe('InstitutionalConfigPage', () => {
     await f.whenStable();
     f.detectChanges();
     expect(el(f).querySelector('img.firma-img[alt="Firma del rector/a"]')).not.toBeNull();
+    const confirmSpy = spyOn(globalThis, 'confirm').and.returnValue(true);
     const quitar = Array.from(el(f).querySelectorAll('button')).find((b) =>
       /quitar/i.test(b.textContent || ''),
     );
@@ -280,6 +282,7 @@ describe('InstitutionalConfigPage', () => {
     quitar!.dispatchEvent(new Event('click'));
     await f.whenStable();
     f.detectChanges();
+    expect(confirmSpy).toHaveBeenCalled();
     expect(stub.quitarFirmaCalls).toBe(1);
     expect(f.componentInstance.dirty()).toBeFalse();
     expect(f.componentInstance.rectorSignaturePresent()).toBeFalse();
@@ -287,7 +290,58 @@ describe('InstitutionalConfigPage', () => {
     expect(el(f).querySelector('img.firma-img[alt="Firma del rector/a"]')).toBeNull();
   });
 
-  it('preview fallido no rompe la página y deja Firma cargada sin img', async () => {
+  it('cancelar confirmación de quitar no llama al servicio', async () => {
+    const f = await render();
+    stub.config = { ...stub.config, rectorSignaturePresent: true };
+    await f.componentInstance.cargar();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    spyOn(globalThis, 'confirm').and.returnValue(false);
+    const quitar = Array.from(el(f).querySelectorAll('button')).find((b) =>
+      /quitar/i.test(b.textContent || ''),
+    );
+    quitar!.dispatchEvent(new Event('click'));
+    await f.whenStable();
+    expect(stub.quitarFirmaCalls).toBe(0);
+    expect(f.componentInstance.rectorSignaturePresent()).toBeTrue();
+  });
+
+  it('error HTTP de firma sin body no expone la URL del endpoint', async () => {
+    const { HttpErrorResponse } = await import('@angular/common/http');
+    const f = await render();
+    const page = f.componentInstance;
+    const bare = page['mensajeErrorFirma'](
+      new HttpErrorResponse({
+        status: 500,
+        statusText: 'Server Error',
+        url: 'https://certificados-qa.example/api/admin/configuracion-institucional/firmas/rector',
+      }),
+    );
+    expect(bare.toLowerCase()).not.toContain('http');
+    expect(bare).not.toContain('firmas/rector');
+    expect(bare).toContain('PNG o JPEG');
+
+    const withBody = page['mensajeErrorFirma'](
+      new HttpErrorResponse({
+        status: 400,
+        error: { error: { message: 'La firma debe ser PNG o JPEG.' } },
+        url: 'https://example/firmas/rector',
+      }),
+    );
+    expect(withBody).toBe('La firma debe ser PNG o JPEG.');
+    expect(withBody).not.toContain('http');
+  });
+
+  it('muestra Imagen de la firma (no Firma digital) y formatea updatedAt', async () => {
+    const f = await render();
+    const text = el(f).textContent ?? '';
+    expect(text).toContain('Imagen de la firma');
+    expect(text).not.toContain('Firma digital');
+    expect(el(f).querySelector('.sticky-meta')?.textContent).toMatch(/\d{2}\/\d{2}\/\d{4}/);
+  });
+
+  it('preview fallido no rompe la página: firma presente sin img', async () => {
     stub = new StubInstitutionalConfigService();
     stub.config = { ...stub.config, rectorSignaturePresent: true };
     stub.failPreview = true;
@@ -303,6 +357,7 @@ describe('InstitutionalConfigPage', () => {
     expect(f.componentInstance.rectorSignaturePresent()).toBeTrue();
     expect(f.componentInstance.rectorFirmaUrl()).toBeNull();
     expect(el(f).textContent).toContain('Firma cargada');
+    expect(el(f).textContent).toContain('Vista previa no disponible');
     expect(el(f).querySelector('img.firma-img[alt="Firma del rector/a"]')).toBeNull();
   });
 
@@ -331,7 +386,8 @@ describe('InstitutionalConfigPage', () => {
     expect(input(f, '#texto-validacion').disabled).toBeFalse();
     expect(input(f, '#sitio-instituto').disabled).toBeFalse();
     expect(input(f, '#msg-valido').disabled).toBeFalse();
-    expect(el(f).querySelector('#contacto')!.textContent).toContain('SMTP');
+    expect(el(f).querySelector('#contacto')!.textContent).toContain('no envía correos');
+    expect(el(f).querySelector('#contacto')!.textContent).not.toContain('SMTP');
   });
 
   it('muestra preview tipográfica de autoridades que se actualiza al editar', async () => {
@@ -445,7 +501,8 @@ describe('InstitutionalConfigPage', () => {
     expect(stub.lastPayload?.institutionName).toBe('IFTS editado');
     expect(stub.lastPayload && 'updatedAt' in stub.lastPayload).toBeFalse();
     expect(el(f).querySelector('[role="status"].estado-ok')?.textContent).toContain('guardad');
-    expect(el(f).querySelector('.sticky-meta')?.textContent).toContain('2026-02-02');
+    expect(el(f).querySelector('.sticky-meta')?.textContent).toMatch(/\d{2}\/\d{2}\/\d{4}/);
+    expect(f.componentInstance.updatedAt()).toBe('2026-02-02T12:00:00Z');
     const save = el(f).querySelector('.sticky-bar button[type="submit"]') as HTMLButtonElement;
     expect(save.disabled).toBeTrue();
   });
@@ -456,8 +513,15 @@ describe('InstitutionalConfigPage', () => {
     setValue(f, '#institution-name', 'IFTS editado');
     (el(f).querySelector('.sticky-bar button[type="submit"]') as HTMLButtonElement).click();
     await settle(f);
-    expect(el(f).querySelector('[role="alert"]')?.textContent).toContain('No se pudo guardar');
+    expect(el(f).querySelector('[role="alert"].estado-error')?.textContent).toContain(
+      'No se pudo guardar',
+    );
+    expect(el(f).querySelector('.sticky-error')?.textContent).toContain('No se pudo guardar');
+    expect(el(f).querySelectorAll('[role="alert"].estado-error').length).toBe(1);
     expect(input(f, '#institution-name').value).toBe('IFTS editado');
+    setValue(f, '#institution-name', 'IFTS recuperado');
+    expect(el(f).querySelector('.sticky-error')).toBeNull();
+    expect(el(f).querySelector('.sticky-dirty')?.textContent).toContain('sin guardar');
     const save = el(f).querySelector('.sticky-bar button[type="submit"]') as HTMLButtonElement;
     expect(save.disabled).toBeFalse();
   });
@@ -468,7 +532,8 @@ describe('InstitutionalConfigPage', () => {
     (el(f).querySelector('.sticky-bar button[type="submit"]') as HTMLButtonElement).click();
     await settle(f);
     expect(stub.guardarCalls).toBe(0);
-    expect(el(f).querySelector('[role="alert"]')?.textContent).toContain('obligatorio');
+    expect(el(f).querySelector('[role="alert"].estado-error')?.textContent).toContain('obligatorio');
+    expect(el(f).querySelector('.sticky-error')?.textContent).toContain('obligatorio');
   });
 
   it('longitud excedida bloquea el PUT (160/80/255)', async () => {

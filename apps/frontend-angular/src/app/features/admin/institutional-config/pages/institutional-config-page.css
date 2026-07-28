@@ -685,6 +685,12 @@ textarea:focus-visible {
   color: var(--color-valid);
 }
 
+.cfg-inline-busy {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-muted-foreground);
+}
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;
@@ -746,7 +752,7 @@ textarea:focus-visible {
 
 .preview-firmas {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: var(--space-6);
   max-width: 32rem;
   margin: 0 auto;
@@ -754,6 +760,12 @@ textarea:focus-visible {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-paper);
+}
+
+@media (min-width: 40rem) {
+  .preview-firmas {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .firma {
@@ -780,7 +792,8 @@ textarea:focus-visible {
   display: block;
   width: 100%;
   max-width: 10.5rem;
-  height: 7rem; /* slot 3:2 */
+  aspect-ratio: 3 / 2;
+  height: auto;
   object-fit: cover;
   object-position: center;
   margin: 0 auto 0.25rem;
@@ -880,6 +893,12 @@ textarea:focus-visible {
 
 .sticky-ok {
   color: var(--color-valid);
+  font-weight: 500;
+}
+
+.sticky-error {
+  margin: 0;
+  color: var(--color-destructive);
   font-weight: 500;
 }
 
