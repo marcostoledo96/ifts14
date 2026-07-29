@@ -42,7 +42,14 @@
   } @else if (errorCarga()) {
     <div class="estado-error" role="alert">
       <p class="estado-error-msg">{{ errorCarga() }}</p>
-      <a class="estado-error-link" routerLink="/admin/alumnos">Volver a Alumnos</a>
+      <div class="estado-error-acciones">
+        @if (errorCargaRecuperable()) {
+          <button type="button" class="btn-primary" (click)="onReintentar()">
+            Reintentar
+          </button>
+        }
+        <a class="estado-error-link" routerLink="/admin/alumnos">Volver a Alumnos</a>
+      </div>
     </div>
   } @else {
     @if (resultadoLote(); as resultado) {
@@ -210,7 +217,7 @@
               @if (fila.errorEmail) {
                 <span [id]="'err-email-' + i" class="campo-error" role="alert">{{ fila.errorEmail }}</span>
               }
-              <span [id]="'ayuda-email-' + i" class="campo-ayuda">Si lo cargás, queda disponible en el legajo del alumno.</span>
+              <span [id]="'ayuda-email-' + i" class="campo-ayuda">Si lo cargás, queda disponible en la ficha del alumno.</span>
             </label>
           </div>
         </fieldset>
