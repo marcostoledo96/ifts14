@@ -268,7 +268,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P8 Cursos detalle | `audit/p08-cursos-detail` | hecha | #93 | Mergeado a staging1.0 |
 | P9 Alumnos listado | `audit/p09-alumnos-list` | hecha | #94 | Mergeado a staging1.0; archive `2026-07-28-audit-p09-alumnos-list` |
 | P10 Alumnos editor | `audit/p10-alumnos-editor` | hecha | #95 | Mergeado a staging1.0; archive `2026-07-29-audit-p10-alumnos-editor`; HTTP 409 update omitido |
-| P11 Alumnos detalle | `audit/p11-alumnos-detail` | apply listo | | SDD `audit-p11-alumnos-detail` |
+| P11 Alumnos detalle | `audit/p11-alumnos-detail` | en PR | #96 | SDD verify PASS WITH WARNINGS; incluye archive P10 |
 | P12 Asistencias hub | `audit/p12-asist-hub` | pendiente | | |
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | pendiente | | |
 | P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | pendiente | | |
@@ -630,10 +630,10 @@ Siguiente: P11 detalle (audit/p11-alumnos-detail). No reabrir editor salvo regre
 
 **Checklist**
 
-- [ ] Trayectoria cursos + estados cert
-- [ ] Links a expediente
-- [ ] Métricas válidas/revocadas
-- [ ] Id inválido
+- [x] Trayectoria cursos + estados cert
+- [x] Links a expediente
+- [x] Métricas válidas/revocadas
+- [x] Id inválido
 
 **Prompt**
 
@@ -641,10 +641,8 @@ Siguiente: P11 detalle (audit/p11-alumnos-detail). No reabrir editor salvo regre
 Fase P11 — Detalle alumno (/admin/alumnos/:id).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p11-alumnos-detail.
 Cambio SDD Gentle-AI: audit-p11-alumnos-detail (openspec/).
-Auditar student-detail-page.* (no listado/editor salvo contrato mínimo).
-Checklist: trayectoria cursos + estados cert; links a expediente; métricas válidas/revocadas;
-id inválido; DNI completo UI; sin PII en logs; Reintentar/loadGen; copy sin legajo inventado.
-Ciclo: explore→propose→spec→design→tasks→apply→4R+tests→OK→PR→verify→archive.
+Estado: PR #96 → staging1.0; verify PASS WITH WARNINGS; Ficha sin legajo; métricas —; Reintentar solo recuperable.
+Siguiente tras merge: sdd-archive. No tocar asistencias (P12).
 Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
