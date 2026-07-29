@@ -68,4 +68,4 @@ No — defaults locked (single PR, Low). Threat matrix N/A.
 
 ## Verify (sdd-verify)
 
-- [ ] Focused `ng test` certification-preview-page + `tsc --noEmit`; hard locks OK; verdict → `verify-report.md`.
+- [x] Focused `ng test` certification-preview-page + `tsc --noEmit`; hard locks OK; verdict → `verify-report.md`.
