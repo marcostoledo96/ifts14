@@ -60,3 +60,7 @@ Base: `apps/frontend-angular/src/app/features/admin/certifications/pages/list/`
 ## Decision needed
 
 No — defaults locked (single PR, Low). Threat matrix N/A.
+
+## Verify (sdd-verify)
+
+- [x] Focused `ng test` certifications-list-page **27/27 SUCCESS** + `tsc --noEmit` exit 0; hard locks OK; verdict **PASS** → `verify-report.md`.

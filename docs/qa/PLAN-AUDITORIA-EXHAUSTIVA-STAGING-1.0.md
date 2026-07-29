@@ -273,7 +273,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | hecha | #98 | Mergeado a staging1.0 (`dca5690`); archive `2026-07-29-audit-p13-asist-fechas`; verify PASS WITH WARNINGS |
 | P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | hecha | #99 | Mergeado a staging1.0 (`7e6ff10`); archive `2026-07-29-audit-p14-asist-marcado`; verify PASS WITH WARNINGS; smoke staging 4.4 pendiente |
 | P15 Certificados por fecha | `audit/p15-asist-certs` | hecha | #100 | Mergeado a staging1.0 (`101aff6`); archive `2026-07-29-audit-p15-asist-certs`; verify PASS |
-| P16 Certificaciones listado | `audit/p16-certs-list` | en curso | | SDD `audit-p16-certs-list` — apply+4R OK (pager/resumen/grammar); pendiente OK→PR/verify |
+| P16 Certificaciones listado | `audit/p16-certs-list` | en curso | #101 | SDD `audit-p16-certs-list` — PR abierto; apply+4R OK; verify en curso |
 | P17 Certificación nueva | `audit/p17-certs-nueva` | pendiente | | |
 | P18 Expediente preview | `audit/p18-certs-preview` | pendiente | | |
 | P19 Folio PDF | `audit/p19-certs-pdf` | pendiente | | |
