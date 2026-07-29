@@ -64,4 +64,4 @@ No — defaults locked (Low). Threat matrix N/A.
 
 ## Verify (sdd-verify)
 
-- [ ] Focused `ng test` certification-new-page + `tsc --noEmit`; locks OK → `verify-report.md`.
+- [x] Focused `ng test` certification-new-page + `tsc --noEmit`; locks OK → `verify-report.md`.
