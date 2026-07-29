@@ -128,8 +128,10 @@ export class HttpAttendanceService implements AttendanceService {
     const envelope = await firstValueFrom(this.http.get<ApiEnvelope<HubResponse>>(url));
     const data = envelope.data;
     const byCurso = new Map<number, Asistencia[]>();
+    const asistencias: Asistencia[] = [];
     for (const a of data.asistencias) {
       const mapped = this.toAsistencia(a);
+      asistencias.push(mapped);
       const list = byCurso.get(mapped.cursoId) ?? [];
       list.push(mapped);
       byCurso.set(mapped.cursoId, list);
@@ -152,7 +154,7 @@ export class HttpAttendanceService implements AttendanceService {
         orden: f.orden,
         estado: f.estado as EstadoFecha,
       })),
-      asistencias: data.asistencias.map((a) => this.toAsistencia(a)),
+      asistencias,
       alumnosActivos: data.alumnosActivos,
     };
   }

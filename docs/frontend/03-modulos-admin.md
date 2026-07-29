@@ -10,7 +10,7 @@ Resumen operativo del admin Angular. Detalle visual: `00-angular20-port-v0.md` y
 | `/admin` | Dashboard / mesa de trabajo |
 | `/admin/cursos` | Listado y alta/edición de cursos + fechas |
 | `/admin/cursos/:id` | Detalle: ficha, fechas, not-found/Reintentar, CTA al hub de asistencias |
-| `/admin/alumnos` | Listado (copy sin legajo; badges contacto sin email literal; métricas 0 vs —); editor create/edit (sin legajo; Reintentar carga; lote+resumen; 409 sin PII); detalle |
+| `/admin/alumnos` | Listado (copy sin legajo; badges contacto sin email literal; métricas 0 vs —); editor create/edit (sin legajo; Reintentar carga; lote+resumen; 409 sin PII); detalle (Ficha sin legajo; métricas 0 vs —; Reintentar solo recuperable) |
 | `/admin/asistencias/...` | Fechas por curso, marcado, emisión desde presentes |
 | `/admin/certificaciones` | Listado, alta, expediente, folio PDF, entrega, revocación |
 | `/admin/configuracion` | Textos institucionales y firmas (Rector/a, Asesor/a) |

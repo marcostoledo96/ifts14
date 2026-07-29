@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Listado, editor (create/edit) y detalle de alumnos vía `STUDENTS_SOURCE` (HTTP si `useRealApi`, si no in-memory) con DNI completo en UI admin (D0 2026-07-20). Contacto por badges sin email literal; copy de listado/editor sin «legajo» inventado.
+Listado, editor (create/edit) y detalle de alumnos vía `STUDENTS_SOURCE` (HTTP si `useRealApi`, si no in-memory) con DNI completo en UI admin (D0 2026-07-20). Contacto por badges sin email literal; copy de listado/editor/detalle sin «legajo» inventado; métricas del detalle `0` vs «—»; Reintentar solo en fallo recuperable.
 
 ## Requirements
 
@@ -83,28 +83,41 @@ El listado DEBE distinguir carga/error (Reintentar)/vacío/sin coincidencias. QA
 
 ### Requirement: Detalle administrativo consistente
 
-El detalle de alumno DEBE mostrar Apellido y Nombre, DNI completo en `dniMostrar` y el año de ingreso. DEBE mostrar el email registrado cuando existe, o indicador honesto cuando no. NO DEBE mostrar legajo inventado, matrícula, UUID ni token completo. DEBE listar cursos con asistencia presentes de forma consistente con las claves existentes de cursos y certificaciones, detallando nombre del curso, código, fechas de asistencia en formato abreviado, y estado de la certificación (Emitida con link al expediente, Pendiente con link a emitir, o En curso).
+El detalle `/admin/alumnos/:id` DEBE mostrar Apellido y Nombre, DNI completo en `dniMostrar` y el año de ingreso (celda vacía si `ingreso` vacío). DEBE mostrar el email registrado o indicador honesto si no hay. Copy visible (kicker, títulos, errores) DEBE omitir «legajo»/«Legajo»/«legajos»; PUEDE usar ficha, registro, perfil o `#id`. NO DEBE mostrar legajo inventado, matrícula, UUID ni token. Métricas `cursosConAsistencia`, `certificacionesValidas` y `certificacionesRevocadas` DEBEN mostrar el número (incluido `0`) cuando hay valor; «—» SOLO si null/ausente. DEBE listar cursos con asistencia de forma consistente (nombre, código, fechas abreviadas, estado cert: Emitida→expediente, Pendiente→emitir, En curso). Mensajes/errores/logs NO DEBEN incluir DNI ni token completos. Fallo recuperable de `obtener` DEBE ofrecer Reintentar y «Volver a Alumnos». Id inválido o alumno no encontrado DEBE ofrecer solo «Volver a Alumnos» (sin Reintentar).
+(Previously: ficha/cursos/id inválido sin exigir copy sin legajo, métricas 0 vs «—» en revocadas ni Reintentar solo recuperable.)
 
 #### Scenario: Ficha de alumno admin
 
-- GIVEN la pantalla del detalle `/admin/alumnos/:id` para un alumno del seed
+- GIVEN el detalle `/admin/alumnos/:id` de un alumno del seed
 - WHEN renderiza la ficha
-- THEN DEBE mostrar nombre, ingreso, DNI completo y email `@example.invalid` si corresponde.
-- AND NO DEBE mostrar legajo inventado, matrícula ni UUID.
+- THEN DEBE mostrar nombre, ingreso, DNI completo y email `@example.invalid` si corresponde
+- AND NO DEBE contener «legajo», «Legajo» ni «legajos» ni mostrar matrícula/UUID/token
 
 #### Scenario: Cursos y certificaciones consistentes
 
 - GIVEN el alumno tiene cursos asociados
-- WHEN se renderiza la lista de cursos en el detalle (desktop o mobile)
-- THEN DEBE mostrar una tabla semántica o tarjetas equivalentes.
-- AND DEBE listar las fechas de presentes con formato abreviado.
-- AND DEBE mostrar el estado de la certificación y los enlaces correspondientes ("Ver certificación" o "Emitir certificación") sin inventar datos inconsistentes.
+- WHEN se renderiza la trayectoria (desktop o mobile)
+- THEN DEBE mostrar tabla o cards con fechas abreviadas y estados/enlaces honestos («Ver certificación» / emitir / en curso)
 
-#### Scenario: ID inexistente o inválido
+#### Scenario: Métricas cero vs ausente
 
-- GIVEN se navega a `/admin/alumnos/999` o un ID inválido
+- GIVEN `certificacionesRevocadas` (u otra métrica del detalle) en `0` y en null
+- WHEN renderiza el panel de métricas
+- THEN DEBE mostrar `0` para el cero y «—» para null
+
+#### Scenario: Fallo recuperable con Reintentar
+
+- GIVEN id numérico válido y fallo recuperable de `obtener`
+- WHEN se presenta el error
+- THEN DEBE mostrar Reintentar y Volver a Alumnos sin DNI/token en el mensaje
+- AND WHEN el operador elige Reintentar
+- THEN DEBE volver a solicitar el alumno
+
+#### Scenario: ID inválido o no encontrado sin Reintentar
+
+- GIVEN `/admin/alumnos/999` o un id no numérico
 - WHEN carga la página
-- THEN DEBE mostrar un estado no encontrado seguro, permitiendo volver al listado, sin romper la shell admin.
+- THEN DEBE mostrar estado seguro con Volver a Alumnos, sin Reintentar y sin romper la shell admin
 
 ### Requirement: Copy del listado sin legajo inventado
 
