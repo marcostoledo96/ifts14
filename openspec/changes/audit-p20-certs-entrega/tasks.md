@@ -75,4 +75,6 @@ No — single PR, Low. Threat matrix N/A.
 
 ## Verify (sdd-verify)
 
-- [ ] Focused delivery `ng test` + `tsc` → `verify-report.md`.
+- [x] Focused delivery `ng test` + `tsc` → `verify-report.md`.
+
+Verify evidence (2026-07-29): `ng test` 25/25 SUCCESS (exit 0); `tsc --noEmit -p tsconfig.app.json` exit 0; verdict **PASS** — 11/11 scenarios COMPLIANT; report at `openspec/changes/audit-p20-certs-entrega/verify-report.md`. No commit from verify; `.tmp/` ignored.
