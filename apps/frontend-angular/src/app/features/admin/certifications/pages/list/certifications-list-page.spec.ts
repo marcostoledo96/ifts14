@@ -155,7 +155,22 @@ describe('CertificationsListPage', () => {
     f.detectChanges();
     expect(el.querySelectorAll('.cards-mobile article').length).toBe(1);
     expect(el.querySelector('.results-summary p')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
-      '1 certificación coinciden con el filtro',
+      '1 certificación coincide con el filtro',
+    );
+  });
+
+  it('grammar N>1: muestra coinciden con el filtro en plural', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    // Activar filtro que devuelve >1 resultado: filtrar por estado vigente (seed tiene varios vigentes)
+    (el.querySelector('button[data-estado="vigente"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const count = f.componentInstance.resultadosFiltrados().length;
+    expect(count).toBeGreaterThan(1);
+    expect(el.querySelector('.results-summary p')?.textContent?.replace(/\s+/g, ' ')).toContain(
+      'coinciden con el filtro',
     );
   });
 
@@ -349,5 +364,89 @@ describe('CertificationsListPage', () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();
     await render();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('mostrarResumen oculta el resumen mientras carga', async () => {
+    const f = await render(true);
+    const page = f.componentInstance;
+    const el = f.nativeElement as HTMLElement;
+    expect(page.vistaQA()).toBe('datos');
+    page.cargando.set(true);
+    f.detectChanges();
+    expect(el.querySelector('.tabla-skeleton[aria-busy="true"]')).not.toBeNull();
+    expect(el.querySelector('.results-summary')).toBeNull();
+  });
+
+  it('mostrarResumen oculta el resumen en estado de error', async () => {
+    const f = await render(true);
+    const page = f.componentInstance;
+    const el = f.nativeElement as HTMLElement;
+    page.onVistaQA('error');
+    f.detectChanges();
+    expect(el.querySelector('.results-summary')).toBeNull();
+  });
+
+  it('pager >5 páginas: página 6 es alcanzable y muestra ≤5 botones numéricos', async () => {
+    // Seed con >100 ítems para superar 5 páginas (PAGINA_TAMANO=20 → 6 páginas)
+    const PAGINA_TAMANO = 20;
+    const many: Certificacion[] = Array.from({ length: PAGINA_TAMANO * 5 + 1 }, (_, i) => ({
+      id: i + 1,
+      numero: `IFTS14-CERT-${String(i + 1).padStart(4, '0')}`,
+      nombreAlumno: `Alumno ${i + 1}`,
+      cursoNombre: 'Curso de introducción a la gestión',
+      estado: 'vigente' as const,
+      documentMasked: String(10000000 + i),
+      tokenPrefix: 'prefijo_demo_x',
+      emitidoEn: null,
+      venceEn: null,
+    }));
+    const serviceMock = {
+      listar: jasmine.createSpy('listar').and.returnValue(Promise.resolve(many)),
+      obtener: () => Promise.resolve({} as any),
+      obtenerEntregaManual: () => Promise.resolve({} as EntregaManualDto),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
+      contar: () => Promise.resolve(many.length),
+      revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
+    };
+    resetMockAdminPublicStatus();
+    await TestBed.configureTestingModule({
+      imports: [CertificationsListPage],
+      providers: [
+        provideRouter([]),
+        { provide: CERTIFICATIONS_SOURCE, useValue: serviceMock },
+        { provide: CERTIFICATIONS_QA_ENABLED, useValue: true },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CertificationsListPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const page = fixture.componentInstance;
+    expect(page.totalPaginas()).toBe(6);
+
+    // Navigate to page 6
+    page.onPagina(6);
+    fixture.detectChanges();
+    expect(page.paginaSegura()).toBe(6);
+    expect(page.paginasVisibles().length).toBeLessThanOrEqual(5);
+    expect(page.paginasVisibles()).toContain(6);
+
+    // Un solo nav (desktop) — hay dos pagers espejo en el DOM
+    const el = fixture.nativeElement as HTMLElement;
+    const desktopNav = el.querySelector(
+      'nav[aria-label="Paginación"]',
+    ) as HTMLElement | null;
+    expect(desktopNav).not.toBeNull();
+    const pagerButtons = Array.from(
+      desktopNav!.querySelectorAll<HTMLButtonElement>('button:not([aria-label])'),
+    );
+    expect(pagerButtons.length).toBeLessThanOrEqual(5);
+    const page6btn = pagerButtons.find((b) => b.textContent?.trim() === '6');
+    expect(page6btn).toBeTruthy();
+    expect(page6btn?.getAttribute('aria-current')).toBe('page');
   });
 });
