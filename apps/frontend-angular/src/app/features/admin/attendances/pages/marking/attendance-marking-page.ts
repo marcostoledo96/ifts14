@@ -47,6 +47,8 @@ export class AttendanceMarkingPage {
   readonly cargando = signal(true);
   readonly guardando = signal(false);
   readonly error = signal('');
+  /** True solo ante fallo recuperable de carga (no id/fecha inválidos ni not-found). */
+  readonly errorRecuperable = signal(false);
   readonly ok = signal('');
   readonly resumenGen = signal<ResumenGeneracion | null>(null);
 
@@ -155,11 +157,15 @@ export class AttendanceMarkingPage {
     this.q.set('');
     this.ok.set('');
     this.error.set('');
+    this.errorRecuperable.set(false);
     this.resumenGen.set(null);
     this.cargando.set(true);
     this.guardando.set(false);
     if (cid === null || fid === null) {
-      if (gen === this.loadGen) this.error.set('Curso o fecha no encontrados.');
+      if (gen === this.loadGen) {
+        this.error.set('Curso o fecha no encontrados.');
+        this.errorRecuperable.set(false);
+      }
       this.cargando.set(false);
       return;
     }
@@ -175,11 +181,28 @@ export class AttendanceMarkingPage {
       const presentes = new Set(asistencias.map((a) => a.alumnoId));
       this.baseline.set(presentes);
       this.seleccion.set(new Set(presentes));
+      this.errorRecuperable.set(false);
     } catch (e) {
-      if (gen === this.loadGen) this.error.set((e as Error).message);
+      if (gen === this.loadGen) {
+        const status = e instanceof HttpErrorResponse ? e.status : null;
+        const raw = e instanceof Error ? e.message : '';
+        const notFound = status === 404 || /no encontrad/i.test(raw);
+        if (notFound) {
+          this.error.set('Curso o fecha no encontrados.');
+          this.errorRecuperable.set(false);
+        } else {
+          this.error.set('No se pudieron cargar las asistencias. Reintentá.');
+          this.errorRecuperable.set(true);
+        }
+      }
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
     }
+  }
+
+  onReintentar(): void {
+    if (!this.errorRecuperable()) return;
+    void this.cargar(this.id(), this.fechaId());
   }
 
   private parseId(s: string): number | null {
@@ -376,7 +399,7 @@ export class AttendanceMarkingPage {
       );
     } catch (e) {
       if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
-      this.error.set((e as Error).message);
+      this.error.set(this.mensajeErrorApi(e));
     } finally {
       if (this.courseId() === saveCid && this.fechaIdNumber() === saveFid) {
         this.guardando.set(false);
