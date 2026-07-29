@@ -271,7 +271,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | hecha | #96 | Mergeado a staging1.0; archive `2026-07-29-audit-p11-alumnos-detail`; verify PASS WITH WARNINGS |
 | P12 Asistencias hub | `audit/p12-asist-hub` | hecha | #97 | Mergeado a staging1.0 (`dae9026`); archive `2026-07-29-audit-p12-asist-hub`; índice lineal + HTTP one-pass |
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | hecha | #98 | Mergeado a staging1.0 (`dca5690`); archive `2026-07-29-audit-p13-asist-fechas`; verify PASS WITH WARNINGS |
-| P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | en curso | | SDD `audit-p14-asist-marcado` — **apply listo** (verify pendiente: smoke multi-PDF sin 401) |
+| P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | en PR | #99 | SDD verify PASS WITH WARNINGS; smoke staging 4.4 pendiente; incluye archive P13 |
 | P15 Certificados por fecha | `audit/p15-asist-certs` | pendiente | | |
 | P16 Certificaciones listado | `audit/p16-certs-list` | pendiente | | |
 | P17 Certificación nueva | `audit/p17-certs-nueva` | pendiente | | |
@@ -703,7 +703,7 @@ Siguiente: P14 marcado + emisión (audit/p14-asist-marcado). No reabrir intermed
 **Rama:** `audit/p14-asist-marcado`
 **Cambio SDD:** `openspec/changes/audit-p14-asist-marcado/`
 **Ruta:** `/admin/cursos/:id/fechas/:fechaId/asistencias`
-**Estado apply:** listo — `errorRecuperable`+Reintentar, `mensajeErrorApi` en catch marcar, tests CRITICAL verdes; HTTP marcar / serial emit-regen / token intactos. Pendiente verify: smoke staging multi-PDF sin 401.
+**Estado:** PR #99 → staging1.0; verify PASS WITH WARNINGS (smoke staging 4.4 pendiente)
 
 **Checklist**
 
@@ -711,7 +711,7 @@ Siguiente: P14 marcado + emisión (audit/p14-asist-marcado). No reabrir intermed
 - [x] Emitir / regenerar PDF **en serie** (no 401 por session lock) — bucle intacto + test de orden
 - [x] Mensajes 400 (fecha futura/programada, sin presentes) — tests + `mensajeErrorApi`
 - [x] Token no rota al regenerar — assert `tokenPrefix` + sin tocar backend
-- [ ] Feedback UX claro post-emisión — smoke staging (verify)
+- [ ] Feedback UX claro post-emisión — smoke staging (verify 4.4)
 
 **Prompt**
 
@@ -719,11 +719,8 @@ Siguiente: P14 marcado + emisión (audit/p14-asist-marcado). No reabrir intermed
 Fase P14 — Marcado de asistencias + emisión (CRÍTICA).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p14-asist-marcado.
 Cambio SDD Gentle-AI: audit-p14-asist-marcado (openspec/).
-Auditar attendance-marking-page.* + http-attendance/http-certifications solo si el flujo de esta pantalla lo exige.
-Reglas hard: token/QR no rota al regenerar; emisión/regenerar en serie (evitar 401 session lock);
-mensajes 400 claros (fecha futura/programada, sin presentes); DNI completo UI; sin PII en logs.
-Checklist: marcar/guardar; emitir/regenerar serie; 400; token permanente; feedback UX post-emisión.
-Ciclo: explore→propose→spec→design→tasks→apply→4R+tests→OK→PR→verify→archive.
+Estado: PR #99 → staging1.0; verify PASS WITH WARNINGS; serial+token intactos.
+Siguiente tras merge: sdd-archive (+ smoke staging 4.4 si posible). No tocar P15 salvo contrato.
 Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
