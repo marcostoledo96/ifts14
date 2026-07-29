@@ -36,7 +36,14 @@
   }
 
   @if (error()) {
-    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    <div class="estado-linea estado-error" role="alert">
+      <p>{{ error() }}</p>
+      @if (errorRecuperable()) {
+        <div class="error-actions">
+          <button type="button" class="btn-primary" (click)="onReintentar()">Reintentar</button>
+        </div>
+      }
+    </div>
   }
 
   @if (!cargando() && detalle(); as d) {
@@ -102,6 +109,13 @@
               <p class="cert-meta mono">
                 {{ c.numero }} · DNI {{ c.documentMasked }} · {{ etiquetaEstado(c.estado) }}
               </p>
+              <a
+                class="link-expediente"
+                data-testid="cert-expediente"
+                [routerLink]="['/admin/certificaciones', c.id]"
+              >
+                Expediente
+              </a>
             </div>
             <div class="cert-acciones">
               <button

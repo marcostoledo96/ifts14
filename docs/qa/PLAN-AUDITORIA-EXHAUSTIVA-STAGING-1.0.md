@@ -271,8 +271,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | hecha | #96 | Mergeado a staging1.0; archive `2026-07-29-audit-p11-alumnos-detail`; verify PASS WITH WARNINGS |
 | P12 Asistencias hub | `audit/p12-asist-hub` | hecha | #97 | Mergeado a staging1.0 (`dae9026`); archive `2026-07-29-audit-p12-asist-hub`; índice lineal + HTTP one-pass |
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | hecha | #98 | Mergeado a staging1.0 (`dca5690`); archive `2026-07-29-audit-p13-asist-fechas`; verify PASS WITH WARNINGS |
-| P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | en PR | #99 | SDD verify PASS WITH WARNINGS; smoke staging 4.4 pendiente; incluye archive P13 |
-| P15 Certificados por fecha | `audit/p15-asist-certs` | pendiente | | |
+| P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | hecha | #99 | Mergeado a staging1.0 (`7e6ff10`); archive `2026-07-29-audit-p14-asist-marcado`; verify PASS WITH WARNINGS; smoke staging 4.4 pendiente |
+| P15 Certificados por fecha | `audit/p15-asist-certs` | en curso | | SDD `audit-p15-asist-certs` — apply+4R OK (honesty + Expediente); pendiente OK→PR/verify |
 | P16 Certificaciones listado | `audit/p16-certs-list` | pendiente | | |
 | P17 Certificación nueva | `audit/p17-certs-nueva` | pendiente | | |
 | P18 Expediente preview | `audit/p18-certs-preview` | pendiente | | |
@@ -701,9 +701,9 @@ Siguiente: P14 marcado + emisión (audit/p14-asist-marcado). No reabrir intermed
 ## Fase P14 — Asistencias · marcado y emisión
 
 **Rama:** `audit/p14-asist-marcado`
-**Cambio SDD:** `openspec/changes/audit-p14-asist-marcado/`
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-p14-asist-marcado/`
 **Ruta:** `/admin/cursos/:id/fechas/:fechaId/asistencias`
-**Estado:** PR #99 → staging1.0; verify PASS WITH WARNINGS (smoke staging 4.4 pendiente)
+**Estado:** hecha — PR #99 mergeado (`7e6ff10`); verify PASS WITH WARNINGS; smoke staging 4.4 pendiente (WARNING no bloqueante)
 
 **Checklist**
 
@@ -711,17 +711,16 @@ Siguiente: P14 marcado + emisión (audit/p14-asist-marcado). No reabrir intermed
 - [x] Emitir / regenerar PDF **en serie** (no 401 por session lock) — bucle intacto + test de orden
 - [x] Mensajes 400 (fecha futura/programada, sin presentes) — tests + `mensajeErrorApi`
 - [x] Token no rota al regenerar — assert `tokenPrefix` + sin tocar backend
-- [ ] Feedback UX claro post-emisión — smoke staging (verify 4.4)
+- [ ] Feedback UX claro post-emisión — smoke staging (verify 4.4) pendiente; mitigado por tests seriales
 
 **Prompt**
 
 ```text
-Fase P14 — Marcado de asistencias + emisión (CRÍTICA).
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p14-asist-marcado.
-Cambio SDD Gentle-AI: audit-p14-asist-marcado (openspec/).
-Estado: PR #99 → staging1.0; verify PASS WITH WARNINGS; serial+token intactos.
-Siguiente tras merge: sdd-archive (+ smoke staging 4.4 si posible). No tocar P15 salvo contrato.
-Artefactos SDD en español argentino formal. Sin trailing whitespace.
+Fase P14 — Marcado de asistencias + emisión — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #99 mergeado (7e6ff10).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p14-asist-marcado/.
+Verify PASS WITH WARNINGS (smoke staging 4.4 pendiente).
+Siguiente: P15 certificados por fecha (audit/p15-asist-certs). No reabrir marcado salvo regresión.
 ```
 
 ---
@@ -729,10 +728,12 @@ Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ## Fase P15 — Certificados por fecha
 
 **Rama:** `audit/p15-asist-certs`
-**Ruta:** `…/asistencias/certificados`
+**Cambio SDD:** `openspec/changes/audit-p15-asist-certs/`
+**Ruta:** `/admin/cursos/:id/fechas/:fechaId/asistencias/certificados` (o ruta canónica del page)
 
 **Checklist**
 
+- [x] Apply: honesty carga + Expediente + tests unitarios (pending 4R/verify)
 - [ ] Listado coherente con emitidos
 - [ ] Links a expediente / PDF / entrega
 - [ ] Vacíos
@@ -742,7 +743,12 @@ Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```text
 Fase P15 — Listado certificados por fecha de curso.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p15-asist-certs.
-Auditar date-certificates-page. Links, estados, copy, errores, prolijidad.
+Cambio SDD Gentle-AI: audit-p15-asist-certs (openspec/).
+Auditar date-certificates-page.* (no marcado P14 ni listado global P16 salvo contrato mínimo).
+Checklist: listado coherente con emitidos; links a expediente/PDF/entrega; vacíos;
+errores honestos (Reintentar solo recuperable; sin raw Error.message); DNI si aparece completo; sin PII en logs.
+Ciclo: explore→propose→spec→design→tasks→apply→4R+tests→OK→PR→verify→archive.
+Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
 ---
