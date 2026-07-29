@@ -52,7 +52,14 @@
   }
 
   @if (error()) {
-    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    <div class="estado-linea estado-error" role="alert">
+      <p>{{ error() }}</p>
+      @if (errorRecuperable()) {
+        <div class="error-actions">
+          <button type="button" class="btn-primary" (click)="onReintentar()">Reintentar</button>
+        </div>
+      }
+    </div>
   }
 
   @if (!cargando() && detalle(); as d) {

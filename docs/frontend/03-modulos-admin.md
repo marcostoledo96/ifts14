@@ -12,7 +12,8 @@ Resumen operativo del admin Angular. Detalle visual: `00-angular20-port-v0.md` y
 | `/admin/cursos/:id` | Detalle: ficha, fechas, not-found/Reintentar, CTA al hub de asistencias |
 | `/admin/alumnos` | Listado (copy sin legajo; badges contacto sin email literal; métricas 0 vs —); editor create/edit (sin legajo; Reintentar carga; lote+resumen; 409 sin PII); detalle (Ficha sin legajo; métricas 0 vs —; Reintentar solo recuperable) |
 | `/admin/asistencias` | Hub: una fila por curso; métricas N/M lineales (asistibles ≠ cancelada; presentes solo entre asistibles; sin alumnosActivos como total); búsqueda; pager 20 |
-| `/admin/asistencias/...` | Intermedia de fechas, marcado, emisión desde presentes |
+| `/admin/asistencias/curso/:id` | Intermedia de fechas: asistibles ≠ cancelada; chips; CTA marcado; not-found vs carga; Reintentar solo en fallo recuperable de listarHub |
+| `/admin/cursos/:id/fechas/:fechaId/asistencias` | Marcado y emisión desde presentes |
 | `/admin/certificaciones` | Listado, alta, expediente, folio PDF, entrega, revocación |
 | `/admin/configuracion` | Textos institucionales y firmas (Rector/a, Asesor/a) |
 | `/validar/:token` | Validación pública |

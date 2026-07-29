@@ -101,37 +101,47 @@ En `/admin/asistencias`, al derivar métricas por curso desde el hub, el sistema
 
 ### Requirement: Página intermedia de fechas del curso
 
-El sistema DEBE exponer `/admin/asistencias/curso/:id` (antes de rutas conflictivas) para elegir fecha asistible. DEBE listar solo fechas ≠ `cancelada` y DEBE mostrar/filtrar `programada`|`realizada`. El CTA DEBE ir a `/admin/cursos/:id/fechas/:fechaId/asistencias` (marcado intacto). Sin fechas asistibles: empty claro y DEBERÍA enlazar a detalle/agregar fecha si aplica. `:id` ausente: error controlado. NO DEBE exigir cambios de backend/`listarHub`.
+El sistema DEBE exponer `/admin/asistencias/curso/:id` (antes de rutas conflictivas) para elegir fecha asistible. DEBE listar solo fechas ≠ `cancelada` y DEBE mostrar/filtrar `programada`|`realizada`. El CTA DEBE ir a `/admin/cursos/:id/fechas/:fechaId/asistencias` (marcado intacto). Sin fechas asistibles: empty claro y DEBERÍA enlazar a detalle/agregar fecha si aplica. `:id` inválido o curso ausente del hub: error controlado con título/mensaje de no encontrado y solo «Volver a Asistencias» (sin Reintentar). Fallo recuperable de `listarHub`: título/mensaje de carga fallida y DEBE ofrecer Reintentar más Volver. Mensajes/títulos NO DEBEN incluir DNI ni token. NO DEBE exigir cambios de backend/`listarHub`.
 
 #### Scenario: Fechas asistibles
 
-- **Given** curso con `programada`, `realizada` y `cancelada`
-- **When** se abre la intermedia
-- **Then** DEBEN listarse solo no canceladas y DEBE distinguirse/filtrarse estado.
+- **GIVEN** curso con `programada`, `realizada` y `cancelada`
+- **WHEN** se abre la intermedia
+- **THEN** DEBEN listarse solo no canceladas y DEBE distinguirse/filtrarse estado.
 
 #### Scenario: CTA al marcado
 
-- **Given** fecha asistible en la intermedia
-- **When** se activa el CTA
-- **Then** DEBE navegar a `/admin/cursos/:id/fechas/:fechaId/asistencias`.
+- **GIVEN** fecha asistible en la intermedia
+- **WHEN** se activa el CTA
+- **THEN** DEBE navegar a `/admin/cursos/:id/fechas/:fechaId/asistencias`.
 
 #### Scenario: Empty sin fechas
 
-- **Given** curso sin fechas no canceladas
-- **When** se abre la intermedia
-- **Then** empty claro; DEBERÍA ofrecer enlace a detalle/agregar fecha si aplica.
+- **GIVEN** curso sin fechas no canceladas
+- **WHEN** se abre la intermedia
+- **THEN** empty claro; DEBERÍA ofrecer enlace a detalle/agregar fecha si aplica.
 
-#### Scenario: Curso inexistente
+#### Scenario: Curso inexistente o id inválido sin Reintentar
 
-- **Given** `:id` ausente en el hub
-- **When** se abre la intermedia
-- **Then** error controlado sin tumbar el panel.
+- **GIVEN** `:id` ausente en el hub o id no numérico/ inválido
+- **WHEN** se abre la intermedia
+- **THEN** DEBE mostrar error controlado con título de curso no encontrado
+- **AND** DEBE ofrecer Volver a Asistencias sin Reintentar
+- **AND** NO DEBE tumbar el panel ni incluir DNI/token.
+
+#### Scenario: Fallo recuperable con Reintentar
+
+- **GIVEN** id numérico válido y fallo recuperable de `listarHub`
+- **WHEN** se presenta el error
+- **THEN** DEBE mostrar título de carga fallida, Reintentar y Volver a Asistencias sin DNI/token
+- **AND WHEN** el operador elige Reintentar
+- **THEN** DEBE volver a solicitar el hub.
 
 #### Scenario: Orden de ruta
 
-- **Given** rutas admin de asistencias
-- **When** se resuelve `/admin/asistencias/curso/:id`
-- **Then** DEBE activarse la intermedia (no otra ruta).
+- **GIVEN** rutas admin de asistencias
+- **WHEN** se resuelve `/admin/asistencias/curso/:id`
+- **THEN** DEBE activarse la intermedia (no otra ruta).
 
 ### Requirement: Hub de fecha — asistencias
 
