@@ -103,13 +103,98 @@ describe('AttendancesListPage', () => {
         return [codigo, metric] as const;
       }),
     );
-    expect(byCode.get('CUR-001')).toMatch(/3/);
-    expect(byCode.get('CUR-001')).toMatch(/3/);
-    expect(byCode.get('CUR-005')).toMatch(/0/);
-    // No debe parecer presentes/alumnosActivos (p. ej. 3/14).
+    // CUR-001: 3 asistibles y 3 con presentes (seed); no alumnosActivos como total.
+    expect(byCode.get('CUR-001')).toBe('3 fechas asistibles · 3 con presentes');
+    expect(byCode.get('CUR-005')).toBe('0 fechas asistibles');
     for (const metric of byCode.values()) {
       expect(metric).not.toMatch(/\/14\b/);
+      expect(metric).not.toMatch(/\balumnosActivos\b/);
     }
+  });
+
+  it('fecha cancelada con presentes no suma a N ni M', async () => {
+    const hub: HubAsistencias = {
+      cursos: [{ id: 1, codigo: 'CUR-CAN', nombre: 'Curso cancelada', estado: 'activo' }],
+      fechas: [
+        {
+          id: 101,
+          cursoId: 1,
+          fecha: '2026-03-01',
+          descripcion: null,
+          orden: 1,
+          estado: 'programada',
+        },
+        {
+          id: 102,
+          cursoId: 1,
+          fecha: '2026-03-08',
+          descripcion: null,
+          orden: 2,
+          estado: 'cancelada',
+        },
+      ],
+      asistencias: [
+        {
+          id: 1,
+          alumnoId: 10,
+          cursoId: 1,
+          cursoFechaId: 101,
+          fecha: '2026-03-01',
+          fechaEstado: 'programada',
+          registradoEn: '2026-03-01T12:00:00Z',
+        },
+        {
+          id: 2,
+          alumnoId: 10,
+          cursoId: 1,
+          cursoFechaId: 102,
+          fecha: '2026-03-08',
+          fechaEstado: 'cancelada',
+          registradoEn: '2026-03-08T12:00:00Z',
+        },
+        {
+          id: 3,
+          alumnoId: 11,
+          cursoId: 1,
+          cursoFechaId: 999,
+          fecha: '2026-03-15',
+          fechaEstado: 'programada',
+          registradoEn: '2026-03-15T12:00:00Z',
+        },
+      ],
+      alumnosActivos: 99,
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [AttendancesListPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        {
+          provide: ATTENDANCE_SOURCE,
+          useValue: {
+            listarHub: () => Promise.resolve(hub),
+            listarAlumnos: () => Promise.resolve([]),
+            listarAsistencias: () => Promise.resolve([]),
+            listarAsistenciasPorPar: () => Promise.resolve([]),
+            listarAsistenciasPorAlumno: () => Promise.resolve([]),
+            marcar: () => Promise.resolve([]),
+            anular: () => Promise.resolve(),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const f = TestBed.createComponent(AttendancesListPage);
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const metric = el.querySelector('.card-asis-conteo')?.textContent?.trim() ?? '';
+    // Solo la fecha programada cuenta: N=1, M=1. Cancelada (102) y huérfana (999) fuera.
+    expect(metric).toBe('1 fecha asistible · 1 con presentes');
+    expect(metric).not.toContain('99');
+    expect(el.textContent).not.toMatch(/\balumnosActivos\b/);
   });
 
   it('curso sin fechas asistibles (CUR-005) permanece visible', async () => {
