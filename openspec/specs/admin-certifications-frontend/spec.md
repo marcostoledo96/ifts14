@@ -125,36 +125,64 @@ En desarrollo y tests, el sistema DEBE ofrecer un harness QA explícito y no per
 
 ### Requirement: Previsualización segura y handoff explícito
 
-El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente con estado, alumno, curso, asistencias, documento réplica, auditoría, QR, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada decorativa. `Descargar PDF` y `Regenerar PDF` DEBEN navegar a `/admin/certificaciones/:id/pdf`; `Revocar certificación` DEBE navegar a `/admin/certificaciones/:id/revocar`. El panel de acciones NO DEBE incluir el CTA «Entrega manual» ni «Compartir» (redundante con Copiar link). El panel Acciones DEBE ofrecer `Copiar link` y `Descargar QR`. El panel «Enlace de validación» DEBE ofrecer también `Copiar link` y `Descargar QR`. `Copiar link` DEBE usar la URL canónica de `obtenerEntregaManual().publicValidationUrl` (deshabilitado si revocado o sin URL). `Descargar QR` DEBE obtener el PNG vía `descargarQrPng` sin rotar token. Las autoridades de la réplica DEBEN venir de configuración institucional (`rectorName`/`advisorName` + roles); si la config falla o ambos nombres están vacíos, DEBE mostrar “Configuración institucional pendiente” sin bloquear Copiar/Descargar QR. El QR/token DEBE permanecer permanente. NO DEBE exponer token completo, legajo ni matrícula. DEBE mostrar DNI completo en `documentMasked`/`dniMostrar` (D0).
+El sistema DEBE mostrar en `/admin/certificaciones/:id` un expediente con estado, alumno, curso, asistencias, réplica (firmas reales si hay imagen; SVG solo fallback), auditoría, QR, zona de riesgo, `documentMasked`, `tokenPrefix` y URL truncada en validación. `revocado` DEBE ser visible. `Descargar PDF` DEBE navegar a `/admin/certificaciones/:id/pdf`. `Regenerar PDF` DEBE invocar seam `regenerarPdf` (NO navegar a `/pdf`; NO rotar token/QR). `Revocar` DEBE navegar a `…/:id/revocar`. Acciones: `Copiar link` + `Descargar QR`; NO «Entrega manual» ni «Compartir». Panel validación: mismos CTAs. `Copiar link` DEBE usar canónica de `obtenerEntregaManual().publicValidationUrl` (off si revocado/sin URL). `Descargar QR` vía `descargarQrPng` sin rotar. Soft config/entrega DEBEN permanecer. Autoridades desde config; vacío/fallo → “Configuración institucional pendiente” sin bloquear Copiar/QR. Load hard recuperable: mensaje fijo es-AR (*«No se pudo cargar la certificación.»*) + Reintentar→`cargar()`. Id inválido/not-found distinguible: SIN Reintentar. Errores QR/regen: `mensajeErrorApi` P15-strict o genérico; SIN raw `Error.message`. Post-regen: NO `publicValidationUrl` completa (truncar/omitir); nota permanencia QR OK; clipboard PUEDE usar canónica. NO exigir `errorRecuperable`. NO token completo/legajo/matrícula. DNI completo (D0).
 
 #### Scenario: Expediente de una certificación
 
-- **Given** Bedelía abre un expediente con id válido
-- **When** la pantalla carga
-- **Then** DEBE mostrar datos seguros, URL truncada decorativa y permitir volver al listado.
+- **GIVEN** id válido
+- **WHEN** carga el expediente
+- **THEN** DEBE mostrar datos seguros, firmas reales si hay imagen, URL truncada y volver al listado
+- **AND** si `revocado`, DEBE mostrarlo visible.
 
 #### Scenario: Acciones PDF, revocación, entrega y copy/QR
 
-- **Given** Bedelía visualiza un expediente
-- **When** selecciona PDF, revocación, o inspecciona Copiar link / Descargar QR
-- **Then** las acciones PDF DEBEN abrir la vista imprimible sin rotar QR/token.
-- **And** la revocación DEBE navegar a `/admin/certificaciones/:id/revocar`.
-- **And** el panel Acciones NO DEBE mostrar «Entrega manual» ni «Compartir».
-- **And** Copiar link DEBE usar la URL canónica de entrega-manual cuando el certificado no está revocado.
-- **And** Descargar QR (en Acciones y en Enlace de validación) DEBE obtener el PNG vía `descargarQrPng` sin rotar token.
+- **GIVEN** expediente visible
+- **WHEN** Bedelía usa PDF, Regenerar, revocar, Copiar o Descargar QR
+- **THEN** `Descargar PDF` DEBE ir a `…/:id/pdf` sin rotar token
+- **AND** `Regenerar PDF` DEBE llamar `regenerarPdf` y NO navegar a `/pdf`
+- **AND** revocar DEBE ir a `…/:id/revocar`
+- **AND** NO «Entrega manual» ni «Compartir»; Copiar usa canónica; QR vía `descargarQrPng`.
 
-#### Scenario: Id inexistente, inválido o ausente
+#### Scenario: Post-regen sin URL canónica completa
 
-- **Given** el expediente recibe un id inexistente, inválido o ausente
-- **When** se carga la ruta administrativa
-- **Then** DEBE mostrar un estado seguro sin romper la navegación admin.
+- **GIVEN** regen OK con `publicValidationUrl`
+- **WHEN** se renderiza el resultado
+- **THEN** NO DEBE mostrar la URL completa (truncar u omitir)
+- **AND** PUEDE mostrar éxito + nota de permanencia QR.
+
+#### Scenario: Fallo hard recuperable con Reintentar
+
+- **GIVEN** fallo recuperable al `obtener` detalle
+- **WHEN** se muestra el error
+- **THEN** mensaje controlado es-AR sin raw `Error.message` + Reintentar→`cargar()`
+- **AND** NO DEBE exigir `errorRecuperable`.
+
+#### Scenario: Id inválido o not-found sin Reintentar
+
+- **GIVEN** id inválido, ausente o not-found distinguible
+- **WHEN** carga la ruta
+- **THEN** estado seguro sin romper admin
+- **AND** NO Reintentar.
+
+#### Scenario: Fallo QR o regeneración sin raw
+
+- **GIVEN** falla `descargarQr` o `regenerarPdf`
+- **WHEN** se captura el error
+- **THEN** `mensajeErrorApi` P15-strict o genérico es-AR
+- **AND** SIN raw `Error.message`, SIN Reintentar de load, SIN DNI/token en mensaje.
+
+#### Scenario: Soft config y entrega no bloqueantes
+
+- **GIVEN** fallo soft de config o entrega-manual
+- **WHEN** el detalle hard ya cargó
+- **THEN** el expediente DEBE seguir usable con el patrón soft existente.
 
 #### Scenario: Frontera de datos administrativa
 
-- **Given** el expediente se renderiza en la UI admin
-- **When** se inspecciona la información visible
-- **Then** NO DEBE exponer token completo, legajo ni matrícula.
-- **And** DEBE mostrar DNI completo en campos de documento del expediente (D0).
+- **GIVEN** UI admin del expediente
+- **WHEN** se inspeccionan datos y mensajes
+- **THEN** NO token completo, legajo ni matrícula
+- **AND** DNI completo (D0).
 
 ### Requirement: Paridad visual, folio imprimible y evidencia de verificación
 
