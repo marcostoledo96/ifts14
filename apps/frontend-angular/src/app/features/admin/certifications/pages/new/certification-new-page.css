@@ -146,6 +146,10 @@
   cursor: pointer;
 }
 
+.aviso .btn-retry {
+  display: inline-flex;
+}
+
 /* Selección */
 .selection-grid {
   display: grid;

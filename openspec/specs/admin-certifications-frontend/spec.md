@@ -28,46 +28,76 @@ El sistema DEBE exponer `/admin/certificaciones`, `/admin/certificaciones/:id` y
 - **When** se carga `/admin/certificaciones/:id/pdf`
 - **Then** DEBE mostrarse un estado seguro sin excepciones, red ni ruptura de navegación.
 
-### Requirement: Listado mock-only con datos seguros
+### Requirement: Listado admin de certificaciones
 
-El sistema DEBE mostrar un listado navegable de certificaciones ficticias, filtrable por validez, entrega y curso, y buscable por alumno, `documentMasked`, curso o número ficticio. DEBE usar únicamente mocks locales, incluidos `envio` y `numero`, sin requests de datos o API (`fetch`, XHR, `/api/`, storage o backend), cookies, IndexedDB, claves admin ni datos reales. La navegación `document` local y los assets estáticos necesarios para servir la SPA están permitidos. Debe presentar conteos de total, coincidencias y elementos visibles; tabla semántica en desktop y tarjetas equivalentes en mobile.
+El sistema DEBE mostrar en `/admin/certificaciones` un listado vía `CERTIFICATIONS_SOURCE.listar()` (HTTP o in-memory), sin inventar filas fuera del seam. DEBE filtrar por `vigente`|`revocado`, curso y texto (alumno, curso, `documentMasked`, número). Labels: `vigente` → **Válida**, `revocado` → **Revocado**. DEBE mostrar DNI completo (`documentMasked`). NO DEBE ofrecer «Estado de entrega» ni `borrador`/`vencido`/`pendiente`. DEBE paginar de a 20 con `paginasVisibles` (≤5 botones + elipsis; páginas >5 alcanzables). `mostrarResumen` DEBE ocultarse con `cargando` o `error`. Copy: «coincide»/«coinciden» según singular/plural. Distinguir vacío total vs sin coincidencias (limpiar filtros si aplica). Fallo: mensaje controlado + Reintentar; NO `errorRecuperable` ni raw `Error.message`. NO token completo ni DNI/token en mensajes/logs. CTA nueva y enlaces detalle/PDF DEBEN conservar rutas. Harness QA PUEDE existir solo fuera de prod/staging.
 
-#### Scenario: Listado filtrado por estado
+#### Scenario: Carga vía seam listar
 
-- **Given** existe un conjunto mock de certificaciones
-- **When** Bedelía filtra por `borrador`, `vigente`, `revocado` o `vencido`
-- **Then** DEBE ver solo coincidencias ficticias y un mensaje claro si no hay resultados.
+- **GIVEN** sesión admin activa
+- **WHEN** se abre `/admin/certificaciones`
+- **THEN** DEBE cargar el listado vía `CERTIFICATIONS_SOURCE.listar()`
+- **AND** NO DEBE inventar filas fuera de ese seam.
 
-#### Scenario: Frontera de datos segura
+#### Scenario: Filtro por estado vigente o revocado
 
-- **Given** una certificación aparece en el listado
-- **When** se revisan sus datos visibles
-- **Then** DEBE mostrar `documentMasked` con dígitos completos y datos ficticios.
-- **And** NO DEBE mostrar token completo, matrícula, legajo, UUID ni datos reales de personas.
+- **GIVEN** hay certificaciones vigentes y revocadas
+- **WHEN** Bedelía filtra por `vigente` o `revocado`
+- **THEN** DEBE ver solo coincidencias de ese estado
+- **AND** el badge DEBE mostrar **Válida** o **Revocado** según corresponda
+- **AND** NO DEBE ofrecer `borrador`, `vencido` ni `pendiente`.
 
-#### Scenario: Filtros y búsqueda combinables
+#### Scenario: Filtros y búsqueda combinables sin entrega
 
-- **Given** el listado mock contiene distintas validez, entregas y cursos
-- **When** Bedelía combina filtros y una búsqueda segura
-- **Then** DEBE aplicar la intersección y actualizar los conteos correctamente.
+- **GIVEN** el listado tiene distintos estados y cursos
+- **WHEN** Bedelía combina estado, curso y texto
+- **THEN** DEBE aplicar la intersección y actualizar conteos
+- **AND** NO DEBE existir filtro «Estado de entrega».
 
-#### Scenario: Paginación y cambio de resultados
+#### Scenario: DNI completo y anti-token
 
-- **Given** hay más de veinte coincidencias o la página activa deja de existir
-- **When** Bedelía cambia filtros, búsqueda o página
-- **Then** DEBE mostrar veinte elementos por página y reiniciar o acotar la página a un rango válido.
+- **GIVEN** una certificación visible en tabla o tarjeta
+- **WHEN** se revisan datos visibles y mensajes de error
+- **THEN** DEBE mostrar `documentMasked` con DNI completo
+- **AND** NO DEBE mostrar token completo ni DNI/token en logs o mensajes.
 
-#### Scenario: Navegación conservada desde ambas vistas
+#### Scenario: Paginación con paginasVisibles
 
-- **Given** una certificación visible en tabla o tarjeta
-- **When** Bedelía selecciona su detalle o PDF existente
-- **Then** DEBE navegar a la ruta administrativa vigente sin cambiar el id, QR ni token mock.
+- **GIVEN** hay más de cinco páginas de coincidencias (20 por página)
+- **WHEN** Bedelía navega el pager
+- **THEN** DEBE ver como máximo cinco botones de página más elipsis
+- **AND** DEBE poder alcanzar páginas mayores a 5
+- **AND** al cambiar filtros DEBE reiniciar o acotar la página a un rango válido.
 
-#### Scenario: Estados no exitosos y vacíos
+#### Scenario: Resumen gated y grammar de coincidencias
 
-- **Given** el listado está cargando, falla, no tiene mocks o los filtros no coinciden
-- **When** se renderiza cada condición
-- **Then** DEBE distinguir carga, error, vacío total y sin resultados, con una acción para limpiar filtros cuando corresponda.
+- **GIVEN** el listado está cargando o en error
+- **WHEN** se renderiza la pantalla
+- **THEN** NO DEBE mostrar el resumen de conteo
+- **AND GIVEN** hay resultados sin carga ni error
+- **WHEN** el conteo es 1 o mayor a 1
+- **THEN** DEBE usar «coincide» o «coinciden» según corresponda.
+
+#### Scenario: Vacíos y fallo recuperable de listado
+
+- **GIVEN** vacío total, sin coincidencias de filtros, o fallo al listar
+- **WHEN** se renderiza cada condición
+- **THEN** DEBE distinguir vacío total, sin resultados (con limpiar filtros) y error
+- **AND** el error DEBE ofrecer Reintentar con mensaje controlado
+- **AND** NO DEBE usar `errorRecuperable` ni raw `Error.message`.
+
+#### Scenario: Navegación a detalle y PDF
+
+- **GIVEN** una certificación visible
+- **WHEN** Bedelía elige detalle o PDF
+- **THEN** DEBE navegar a la ruta admin vigente sin rotar QR/token.
+
+#### Scenario: QA de vistas opcional fuera de prod
+
+- **GIVEN** build de producción o staging
+- **WHEN** se renderiza el listado
+- **THEN** NO DEBE mostrar controles QA ni forzar estados falsos
+- **AND** en desarrollo/tests el harness PUEDE forzar carga/error/vacíos.
 
 ### Requirement: Harness y evidencia verificable del listado
 
