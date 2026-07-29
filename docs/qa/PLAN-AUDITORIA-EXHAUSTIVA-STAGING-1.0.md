@@ -267,7 +267,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P7 Cursos editor | `audit/p07-cursos-editor` | hecha | #92 | Mergeado a staging1.0 |
 | P8 Cursos detalle | `audit/p08-cursos-detail` | hecha | #93 | Mergeado a staging1.0 |
 | P9 Alumnos listado | `audit/p09-alumnos-list` | hecha | #94 | Mergeado a staging1.0; archive `2026-07-28-audit-p09-alumnos-list` |
-| P10 Alumnos editor | `audit/p10-alumnos-editor` | apply listo | | SDD `audit-p10-alumnos-editor`; HTTP 409 update omitido (sin evidencia) |
+| P10 Alumnos editor | `audit/p10-alumnos-editor` | en PR | #95 | SDD verify PASS; HTTP 409 update omitido; incluye archive P9 |
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | pendiente | | |
 | P12 Asistencias hub | `audit/p12-asist-hub` | pendiente | | |
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | pendiente | | |
@@ -607,9 +607,9 @@ Siguiente: P10 editor (audit/p10-alumnos-editor). No reabrir listado salvo regre
 
 **Checklist**
 
-- [ ] Validación DNI/email/nombre
-- [ ] Errores duplicado / 409
-- [ ] create vs edit
+- [x] Validación DNI/email/nombre
+- [x] Errores duplicado / 409
+- [x] create vs edit
 
 **Prompt**
 
@@ -617,10 +617,8 @@ Siguiente: P10 editor (audit/p10-alumnos-editor). No reabrir listado salvo regre
 Fase P10 — Editor alumnos (nuevo/editar).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p10-alumnos-editor.
 Cambio SDD Gentle-AI: audit-p10-alumnos-editor (openspec/).
-Auditar student-editor-page.* (no listado/detalle salvo contrato compartido mínimo).
-Checklist: validación DNI/email/nombre; errores duplicado/409 (StudentDuplicateError);
-create vs edit; copy/a11y/prolijidad; DNI completo en UI; sin PII en logs.
-Ciclo: explore→propose→spec→design→tasks→apply→4R+tests→OK→PR→verify→archive.
+Estado: PR #95 → staging1.0; verify PASS; copy sin legajo; Reintentar+loadGen; HTTP omitido.
+Siguiente tras merge: sdd-archive. No tocar detalle (P11).
 Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
