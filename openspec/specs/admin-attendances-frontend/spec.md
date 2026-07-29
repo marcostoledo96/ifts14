@@ -76,6 +76,29 @@ En `/admin/asistencias` el sistema DEBE listar una fila por curso (no curso×fec
 - **Then** DEBE mostrar como máximo 20 filas/cards por página con pager accesible
 - **And** al buscar DEBE volver a la página 1.
 
+### Requirement: Agregación lineal de métricas del hub
+
+En `/admin/asistencias`, al derivar métricas por curso desde el hub, el sistema DEBE agregar en tiempo lineal (sin barridos anidados redundantes sobre fechas). DEBE contar fechas asistibles ≠ `cancelada` y fechas con ≥1 presente solo entre asistibles. NO DEBE usar `alumnosActivos` como total por fila. La semántica de N/M DEBE coincidir con «Listado global solo por curso».
+
+#### Scenario: Agregación en tiempo lineal
+
+- DADO un hub con varios cursos y fechas
+- CUANDO se carga `/admin/asistencias` y se calculan métricas
+- ENTONCES la agregación DEBE completarse en tiempo lineal respecto del tamaño del hub
+- Y NO DEBE realizar barridos anidados redundantes por cada curso sobre todas las fechas
+
+#### Scenario: Cancelada excluida del conteo
+
+- DADO un curso con fechas `cancelada` que tienen presentes registrados
+- CUANDO se ve su fila en el listado
+- ENTONCES esas fechas NO DEBEN sumar a fechas asistibles ni a fechas con presentes
+
+#### Scenario: Sin alumnosActivos como total
+
+- DADO el hub expone `alumnosActivos` por curso
+- CUANDO se renderizan las métricas de la fila
+- ENTONCES NO DEBE usarse `alumnosActivos` como total N ni M
+
 ### Requirement: Página intermedia de fechas del curso
 
 El sistema DEBE exponer `/admin/asistencias/curso/:id` (antes de rutas conflictivas) para elegir fecha asistible. DEBE listar solo fechas ≠ `cancelada` y DEBE mostrar/filtrar `programada`|`realizada`. El CTA DEBE ir a `/admin/cursos/:id/fechas/:fechaId/asistencias` (marcado intacto). Sin fechas asistibles: empty claro y DEBERÍA enlazar a detalle/agregar fecha si aplica. `:id` ausente: error controlado. NO DEBE exigir cambios de backend/`listarHub`.

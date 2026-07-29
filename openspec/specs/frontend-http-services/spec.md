@@ -161,6 +161,20 @@ The system SHALL provide `HttpAttendanceService` implementing `AttendanceService
 - WHEN any `AttendanceService` method is called
 - THEN the service SHALL reject the promise with a descriptive error
 
+### Requirement: listarHub HTTP
+
+`HttpAttendanceService.listarHub` DEBE `GET /admin/hub/asistencias`, mapear DTOs al contrato de `AttendanceService.listarHub` sin cambiar semántica. PUEDE mapear asistencias en una sola pasada.
+(Nota archive P12: en `audit-p12-asist-hub` apply sí editó HTTP — one-pass `toAsistencia`; delta condicional fusionado.)
+
+#### Scenario: listarHub GET y mapeo DTO
+
+- DADO el backend responde el hub consolidado
+- CUANDO se llama `listarHub()`
+- ENTONCES el servicio DEBE `GET /admin/hub/asistencias`
+- Y DEBE devolver el DTO mapeado al contrato vigente (cursos, fechas, asistencias)
+- Y el contrato de respuesta NO DEBE cambiar
+- Y PUEDE evitar barridos de mapeo redundantes sobre el mismo array de asistencias
+
 ### Requirement: HttpCertificationsService implements CertificationsService via HTTP
 
 The system SHALL provide `HttpCertificationsService` implementing `CertificationsService` using Angular `HttpClient`.
