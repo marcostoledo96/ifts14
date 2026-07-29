@@ -169,18 +169,96 @@ describe('AttendanceCourseDatesPage', () => {
     expect(link).toBeTruthy();
   });
 
-  it('curso ausente en el hub muestra error controlado', async () => {
+  it('curso ausente en el hub: título not-found, Volver sin Reintentar', async () => {
     const f = await render('9999');
     const el = f.nativeElement as HTMLElement;
+    const page = f.componentInstance;
     expect(el.querySelector('.estado-error')).toBeTruthy();
-    expect(el.textContent).toMatch(/no encontrad/i);
+    expect(el.querySelector('.estado-title')?.textContent?.trim()).toBe('Curso no encontrado');
+    expect(el.textContent).toMatch(/Curso no encontrado/i);
+    expect(el.textContent).toMatch(/Volver a Asistencias/i);
+    expect(el.textContent).not.toContain('Reintentar');
+    expect(page.errorRecuperable()).toBeFalse();
   });
 
-  it('id inválido muestra error controlado sin tumbar', async () => {
+  it('id inválido: título not-found, Volver sin Reintentar ni tumbar', async () => {
     const f = await render('abc');
     const el = f.nativeElement as HTMLElement;
+    const page = f.componentInstance;
     expect(el.querySelector('.estado-error')).toBeTruthy();
-    expect(el.textContent).toMatch(/no encontrad/i);
+    expect(el.querySelector('.estado-title')?.textContent?.trim()).toBe('Curso no encontrado');
+    expect(el.textContent).toMatch(/Curso no encontrado/i);
+    expect(el.textContent).toMatch(/Volver a Asistencias/i);
+    expect(el.textContent).not.toContain('Reintentar');
+    expect(page.errorRecuperable()).toBeFalse();
+  });
+
+  it('fallo recuperable de listarHub: título carga, Reintentar+Volver; Reintentar re-llama sin PII', async () => {
+    const listarHub = jasmine
+      .createSpy('listarHub')
+      .and.returnValues(
+        Promise.reject(new Error('network')),
+        Promise.resolve({
+          cursos: [{ id: 99, codigo: 'CUR-OK', nombre: 'Curso ok', estado: 'activo' as const }],
+          fechas: [
+            {
+              id: 1,
+              cursoId: 99,
+              fecha: '2026-07-01',
+              descripcion: null,
+              orden: 1,
+              estado: 'programada' as const,
+            },
+          ],
+          asistencias: [],
+          alumnosActivos: 0,
+        }),
+      );
+
+    await TestBed.configureTestingModule({
+      imports: [AttendanceCourseDatesPage],
+      providers: [
+        provideRouter([], withComponentInputBinding()),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        { provide: ATTENDANCE_SOURCE, useValue: { listarHub } },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(AttendanceCourseDatesPage);
+    fixture.componentRef.setInput('id', '99');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const page = fixture.componentInstance;
+    let el = fixture.nativeElement as HTMLElement;
+    let text = el.textContent || '';
+    expect(page.errorRecuperable()).toBeTrue();
+    expect(el.querySelector('.estado-title')?.textContent?.trim()).toBe(
+      'No pudimos cargar las fechas',
+    );
+    expect(text).toContain('Reintentar');
+    expect(text).toMatch(/Volver a Asistencias/i);
+    expect(text).toContain('No se pudieron cargar las fechas. Reintentá.');
+    expect(text.toLowerCase()).not.toMatch(/\bdni\b/);
+    expect(text.toLowerCase()).not.toContain('token');
+    expect(listarHub).toHaveBeenCalledTimes(1);
+
+    const reintentar = Array.from(el.querySelectorAll('button')).find((b) =>
+      (b.textContent || '').includes('Reintentar'),
+    ) as HTMLButtonElement;
+    expect(reintentar).toBeTruthy();
+    reintentar.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    el = fixture.nativeElement as HTMLElement;
+    text = el.textContent || '';
+    expect(listarHub).toHaveBeenCalledTimes(2);
+    expect(page.error()).toBe('');
+    expect(page.errorRecuperable()).toBeFalse();
+    expect(text).toContain('Curso ok');
+    expect(text).not.toMatch(/\bdni\b/i);
+    expect(text.toLowerCase()).not.toContain('token');
   });
 
   it('al cambiar de curso resetea búsqueda y filtro de estado', async () => {
