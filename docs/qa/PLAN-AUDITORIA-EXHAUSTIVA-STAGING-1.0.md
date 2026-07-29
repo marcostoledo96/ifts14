@@ -270,8 +270,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P10 Alumnos editor | `audit/p10-alumnos-editor` | hecha | #95 | Mergeado a staging1.0; archive `2026-07-29-audit-p10-alumnos-editor`; HTTP 409 update omitido |
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | hecha | #96 | Mergeado a staging1.0; archive `2026-07-29-audit-p11-alumnos-detail`; verify PASS WITH WARNINGS |
 | P12 Asistencias hub | `audit/p12-asist-hub` | hecha | #97 | Mergeado a staging1.0 (`dae9026`); archive `2026-07-29-audit-p12-asist-hub`; índice lineal + HTTP one-pass |
-| P13 Asistencias fechas | `audit/p13-asist-fechas` | en PR | #98 | SDD verify PASS WITH WARNINGS; incluye archive P12 |
-| P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | pendiente | | |
+| P13 Asistencias fechas | `audit/p13-asist-fechas` | hecha | #98 | Mergeado a staging1.0 (`dca5690`); archive `2026-07-29-audit-p13-asist-fechas`; verify PASS WITH WARNINGS |
+| P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | en curso | | SDD `audit-p14-asist-marcado` — **apply listo** (verify pendiente: smoke multi-PDF sin 401) |
 | P15 Certificados por fecha | `audit/p15-asist-certs` | pendiente | | |
 | P16 Certificaciones listado | `audit/p16-certs-list` | pendiente | | |
 | P17 Certificación nueva | `audit/p17-certs-nueva` | pendiente | | |
@@ -675,9 +675,9 @@ Siguiente: P13 fechas del curso (audit/p13-asist-fechas). No reabrir hub salvo r
 ## Fase P13 — Asistencias · fechas del curso
 
 **Rama:** `audit/p13-asist-fechas`
-**Cambio SDD:** `openspec/changes/audit-p13-asist-fechas/`
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-p13-asist-fechas/`
 **Ruta:** `/admin/asistencias/curso/:id`
-**Estado:** PR #98 → staging1.0; verify PASS WITH WARNINGS
+**Estado:** hecha — PR #98 mergeado a `staging1.0` (`dca5690`)
 
 **Checklist**
 
@@ -690,12 +690,10 @@ Siguiente: P13 fechas del curso (audit/p13-asist-fechas). No reabrir hub salvo r
 **Prompt**
 
 ```text
-Fase P13 — Fechas por curso (asistencias).
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p13-asist-fechas.
-Cambio SDD Gentle-AI: audit-p13-asist-fechas (openspec/).
-Estado: PR #98 → staging1.0; verify PASS WITH WARNINGS; errorRecuperable + títulos honestos.
-Siguiente tras merge: sdd-archive. No tocar marcado (P14).
-Artefactos SDD en español argentino formal. Sin trailing whitespace.
+Fase P13 — Fechas por curso (asistencias) — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #98 mergeado (dca5690).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p13-asist-fechas/.
+Siguiente: P14 marcado + emisión (audit/p14-asist-marcado). No reabrir intermedia salvo regresión.
 ```
 
 ---
@@ -703,24 +701,30 @@ Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ## Fase P14 — Asistencias · marcado y emisión
 
 **Rama:** `audit/p14-asist-marcado`
+**Cambio SDD:** `openspec/changes/audit-p14-asist-marcado/`
 **Ruta:** `/admin/cursos/:id/fechas/:fechaId/asistencias`
+**Estado apply:** listo — `errorRecuperable`+Reintentar, `mensajeErrorApi` en catch marcar, tests CRITICAL verdes; HTTP marcar / serial emit-regen / token intactos. Pendiente verify: smoke staging multi-PDF sin 401.
 
 **Checklist**
 
-- [ ] Marcar presentes/ausentes; guardar
-- [ ] Emitir / regenerar PDF **en serie** (no 401 por session lock)
-- [ ] Mensajes 400 (fecha futura/programada, sin presentes)
-- [ ] Token no rota al regenerar
-- [ ] Feedback UX claro post-emisión
+- [x] Marcar presentes/ausentes; guardar
+- [x] Emitir / regenerar PDF **en serie** (no 401 por session lock) — bucle intacto + test de orden
+- [x] Mensajes 400 (fecha futura/programada, sin presentes) — tests + `mensajeErrorApi`
+- [x] Token no rota al regenerar — assert `tokenPrefix` + sin tocar backend
+- [ ] Feedback UX claro post-emisión — smoke staging (verify)
 
 **Prompt**
 
 ```text
 Fase P14 — Marcado de asistencias + emisión (CRÍTICA).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p14-asist-marcado.
-Auditar attendance-marking-page + http-attendance relacionados al flujo de esta pantalla.
-Reglas: no rotar token/QR; emisión/regenerar en serie si hace falta evitar 401; mensajes de negocio claros.
-Lentes UI/UX, copy, errores 400/401/409, carga, prolijidad. Tests del área.
+Cambio SDD Gentle-AI: audit-p14-asist-marcado (openspec/).
+Auditar attendance-marking-page.* + http-attendance/http-certifications solo si el flujo de esta pantalla lo exige.
+Reglas hard: token/QR no rota al regenerar; emisión/regenerar en serie (evitar 401 session lock);
+mensajes 400 claros (fecha futura/programada, sin presentes); DNI completo UI; sin PII en logs.
+Checklist: marcar/guardar; emitir/regenerar serie; 400; token permanente; feedback UX post-emisión.
+Ciclo: explore→propose→spec→design→tasks→apply→4R+tests→OK→PR→verify→archive.
+Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
 ---

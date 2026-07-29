@@ -22,6 +22,7 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 - Editor de alumnos (P10): copy sin «legajo»; Reintentar en carga recuperable (+ `loadGeneration`); lote create con resumen sin navegar; 409 tipado sin PII; HTTP intacto (fallback 409 update omitido).
 - Detalle de alumnos (P11): copy sin «legajo» (kicker Ficha); métricas `0` vs «—» (incl. revocadas); Reintentar solo en fallo recuperable (+ `loadGeneration`); HTTP intacto.
 - Hub de asistencias (P12): agregación lineal de métricas N/M en `/admin/asistencias` (sin `.some` anidado; `cancelada` excluida; sin `alumnosActivos` como total); HTTP `listarHub` one-pass.
+- Intermedia de fechas (P13): `/admin/asistencias/curso/:id` con `errorRecuperable`; títulos distintos not-found vs carga; Reintentar solo en fallo recuperable de `listarHub`; HTTP/hub/marcado intactos.
 - Alumnos: listado, alta/edición, detalle/expediente con trayectoria.
 - Asistencias: hub por curso, intermedia de fechas, marcado, emisión/regeneración desde presentes.
 - Certificaciones: listado, nueva, preview/expediente, folio PDF, entrega manual, revocación.
