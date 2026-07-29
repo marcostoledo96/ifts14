@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter, Router } from '@angular/router';
 import {
   CertificationNewPage,
@@ -112,6 +113,9 @@ describe('CertificationNewPage', () => {
     updatedAt: '2026-01-01',
   };
 
+  const RAW_LEAK =
+    'Http failure response for https://api.example/admin/cursos: 500 token_secreto_abc123 DNI 46000001';
+
   let certs: {
     listar: jasmine.Spy;
     emitir: jasmine.Spy;
@@ -130,6 +134,8 @@ describe('CertificationNewPage', () => {
     vigentes?: unknown[];
     emitirImpl?: () => Promise<EmisionResult>;
     alumnos?: Alumno[];
+    catalogosReject?: unknown;
+    parReject?: unknown;
   }) {
     certs = {
       listar: jasmine.createSpy('listar').and.resolveTo(overrides?.vigentes ?? []),
@@ -153,8 +159,15 @@ describe('CertificationNewPage', () => {
         ),
     };
     courses = {
-      listar: jasmine.createSpy('listar').and.resolveTo([cursoActivo, cursoSinRealizadas]),
+      listar: jasmine.createSpy('listar').and.callFake(() =>
+        overrides?.catalogosReject !== undefined
+          ? Promise.reject(overrides.catalogosReject)
+          : Promise.resolve([cursoActivo, cursoSinRealizadas]),
+      ),
       listarFechas: jasmine.createSpy('listarFechas').and.callFake(async (cursoId: number) => {
+        if (overrides?.parReject !== undefined) {
+          return Promise.reject(overrides.parReject);
+        }
         if (cursoId === 1) return [];
         return overrides?.fechas ?? fechasRealizadas;
       }),
@@ -222,6 +235,17 @@ describe('CertificationNewPage', () => {
     expect(text).toContain('nueva certificación');
   });
 
+  it('posiciona rol edge vs Asistencias y no usa «complementario»', async () => {
+    const fixture = await setup();
+    const root = fixture.nativeElement as HTMLElement;
+    const text = root.textContent || '';
+    expect(text).toContain('Emisión puntual');
+    expect(text).toContain('marcar asistencias');
+    expect(text.toLowerCase()).toContain('generar desde ahí');
+    expect(text.toLowerCase()).not.toContain('complementario');
+    expect(root.querySelector('a[href*="asistencias"]')).toBeNull();
+  });
+
   it('lista solo alumnos activos en el combobox', async () => {
     const fixture = await setup();
     const page = fixture.componentInstance;
@@ -267,6 +291,8 @@ describe('CertificationNewPage', () => {
     expect(text).toContain('Sin email');
     expect(text.toLowerCase()).not.toContain('@');
     expect(text.toLowerCase()).not.toContain('folio');
+    expect(text.toLowerCase()).not.toContain('prefijo_demo');
+    expect(text.toLowerCase()).not.toContain('token_secreto');
     expect(root.querySelector('.qr-decor')).toBeTruthy();
     expect(root.querySelector('.cert-band')).toBeTruthy();
   });
@@ -343,6 +369,100 @@ describe('CertificationNewPage', () => {
     expect(root.textContent).not.toContain('Clase 1');
   });
 
+  it('fallo de catálogos: mensaje fijo + Reintentar + flag; sin raw/DNI/token', async () => {
+    const fixture = await setup({ catalogosReject: new Error(RAW_LEAK) });
+    const page = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    const text = root.textContent || '';
+
+    expect(page.errorCatalogosRecuperable()).toBeTrue();
+    expect(text).toContain('No se pudieron cargar los catálogos. Reintentá.');
+    expect(text).not.toContain('token_secreto');
+    expect(text).not.toContain(RAW_LEAK);
+    expect(root.querySelector('.estado-error .btn-retry')).toBeTruthy();
+
+    courses.listar.and.resolveTo([cursoActivo, cursoSinRealizadas]);
+    (root.querySelector('.estado-error .btn-retry') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(page.errorCatalogos()).toBe('');
+    expect(page.errorCatalogosRecuperable()).toBeFalse();
+    expect(root.querySelector('select[aria-label="Seleccionar curso activo"]')).toBeTruthy();
+  });
+
+  it('fallo de par: mensaje fijo + Reintentar → cargarPar; sin raw', async () => {
+    const fixture = await setup({ parReject: new Error(RAW_LEAK) });
+    const page = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    await elegirAlumnoPorId(fixture, 46);
+    selectCurso(root, '4');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const text = root.textContent || '';
+    expect(page.errorParRecuperable()).toBeTrue();
+    expect(text).toContain('No se pudo evaluar la elegibilidad. Reintentá.');
+    expect(text).not.toContain('token_secreto');
+    expect(text).not.toContain(RAW_LEAK);
+    const retry = root.querySelector('[data-testid="error-par"] .btn-retry') as HTMLButtonElement;
+    expect(retry).toBeTruthy();
+
+    courses.listarFechas.and.callFake(async (cursoId: number) => {
+      if (cursoId === 1) return [];
+      return fechasRealizadas;
+    });
+    const callsBefore = courses.listarFechas.calls.count();
+    retry.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(courses.listarFechas.calls.count()).toBeGreaterThan(callsBefore);
+    expect(page.errorPar()).toBe('');
+    expect(page.errorParRecuperable()).toBeFalse();
+  });
+
+  it('emit else: mensajeErrorApi/genérico; sin Reintentar de load ni raw Error.message', async () => {
+    const fixture = await setup({
+      emitirImpl: () =>
+        Promise.reject(
+          new HttpErrorResponse({
+            status: 418,
+            statusText: 'I am a teapot',
+            error: { error: { message: '  Envelope controlado  ' } },
+            url: 'https://api.example/admin/certificados',
+          }),
+        ),
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    await elegirAlumnoPorId(fixture, 46);
+    selectCurso(root, '4');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    (root.querySelector('button.btn-emitir') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const emitBox = root.querySelector('[data-testid="error-emit"]');
+    expect(emitBox?.textContent?.trim()).toBe('Envelope controlado');
+    expect(root.querySelector('[data-testid="error-emit"] .btn-retry')).toBeNull();
+    expect(fixture.componentInstance.errorCatalogosRecuperable()).toBeFalse();
+    expect(fixture.componentInstance.errorParRecuperable()).toBeFalse();
+
+    certs.emitir.and.rejectWith(
+      Object.assign(new Error('raw leak token_secreto DNI 46000001'), { status: 503 }),
+    );
+    (root.querySelector('button.btn-emitir') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const text = root.textContent || '';
+    expect(text).toContain('No se pudo emitir la certificación.');
+    expect(text).not.toContain('token_secreto');
+    expect(text).not.toContain('raw leak');
+    expect(root.querySelector('[data-testid="error-emit"] .btn-retry')).toBeNull();
+  });
+
   it('emite body con issuedAt BA y expiresAt null, deshabilita doble submit y navega', async () => {
     let resolveEmit!: (v: EmisionResult) => void;
     const emitPromise = new Promise<EmisionResult>((r) => {
@@ -412,6 +532,7 @@ describe('CertificationNewPage', () => {
     expect(root.textContent).toContain('Ya existe un certificado vigente');
     expect(fixture.componentInstance.alumnoId()).toBe(46);
     expect(nav).not.toHaveBeenCalled();
+    expect(root.querySelector('[data-testid="error-emit"] .btn-retry')).toBeNull();
   });
 
   it('muestra error 400/500 sin navegar', async () => {
@@ -463,5 +584,18 @@ describe('CertificationNewPage', () => {
     expect(page.cursoId()).toBe(4);
     const root = fixture.nativeElement as HTMLElement;
     expect(root.textContent).toContain('no está disponible o no está activo');
+  });
+
+  it('muestra DNI completo en chip y preview', async () => {
+    const fixture = await setup();
+    const root = fixture.nativeElement as HTMLElement;
+    await elegirAlumnoPorId(fixture, 46);
+    selectCurso(root, '4');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const text = root.textContent || '';
+    expect(text).toContain('46000001');
+    expect(text).not.toMatch(/46\*+\d*|••••|masked/i);
   });
 });
