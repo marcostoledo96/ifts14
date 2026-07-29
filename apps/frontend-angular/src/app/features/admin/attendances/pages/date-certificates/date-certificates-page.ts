@@ -8,6 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { Certificacion } from '../../../certifications/certifications.models';
 import { CERTIFICATIONS_SOURCE } from '../../../certifications/certifications.service';
@@ -47,6 +48,8 @@ export class DateCertificatesPage {
   readonly certificados = signal<readonly Certificacion[]>([]);
   readonly cargando = signal(true);
   readonly error = signal('');
+  /** True solo ante fallo recuperable de carga (no id inválido ni not-found). */
+  readonly errorRecuperable = signal(false);
   readonly mensajeOk = signal('');
   readonly resumenGen = signal<ResumenGeneracionNav | null>(null);
   readonly copiadoId = signal<number | null>(null);
@@ -96,9 +99,13 @@ export class DateCertificatesPage {
     this.detalle.set(null);
     this.certificados.set([]);
     this.error.set('');
+    this.errorRecuperable.set(false);
     this.cargando.set(true);
     if (cid === null) {
-      if (gen === this.loadGen) this.error.set('Curso no encontrado.');
+      if (gen === this.loadGen) {
+        this.error.set('Curso no encontrado.');
+        this.errorRecuperable.set(false);
+      }
       this.cargando.set(false);
       return;
     }
@@ -110,11 +117,38 @@ export class DateCertificatesPage {
       if (gen !== this.loadGen) return;
       this.detalle.set(det);
       this.certificados.set(list);
+      this.errorRecuperable.set(false);
     } catch (e) {
-      if (gen === this.loadGen) this.error.set((e as Error).message);
+      if (gen === this.loadGen) {
+        const status = e instanceof HttpErrorResponse ? e.status : null;
+        const raw = e instanceof Error ? e.message : '';
+        const notFound = status === 404 || /no encontrad/i.test(raw);
+        if (notFound) {
+          this.error.set('Curso no encontrado.');
+          this.errorRecuperable.set(false);
+        } else {
+          this.error.set('No se pudieron cargar los certificados. Reintentá.');
+          this.errorRecuperable.set(true);
+        }
+      }
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
     }
+  }
+
+  onReintentar(): void {
+    if (!this.errorRecuperable()) return;
+    void this.cargar(this.id());
+  }
+
+  /** Envelope API message o fallback es-AR (sin raw Error.message). */
+  private mensajeErrorApi(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const body = err.error as { error?: { message?: string } } | null;
+      const msg = body?.error?.message;
+      if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    }
+    return 'No se pudo completar la acción. Intentá de nuevo.';
   }
 
   etiquetaEstado(estado: Certificacion['estado']): string {
@@ -140,6 +174,7 @@ export class DateCertificatesPage {
   async copiarLink(certId: number): Promise<void> {
     this.accionCertId.set(certId);
     this.error.set('');
+    this.errorRecuperable.set(false);
     try {
       const entrega = await this.certs.obtenerEntregaManual(certId);
       const url = entrega.publicValidationUrl;
@@ -153,7 +188,8 @@ export class DateCertificatesPage {
         if (this.copiadoId() === certId) this.copiadoId.set(null);
       }, 2000);
     } catch (e) {
-      this.error.set((e as Error).message || 'No se pudo copiar el link.');
+      this.error.set(this.mensajeErrorApi(e));
+      this.errorRecuperable.set(false);
     } finally {
       this.accionCertId.set(null);
     }
@@ -162,6 +198,7 @@ export class DateCertificatesPage {
   async descargarQr(cert: Certificacion): Promise<void> {
     this.accionCertId.set(cert.id);
     this.error.set('');
+    this.errorRecuperable.set(false);
     try {
       const blob = await this.certs.descargarQrPng(cert.id);
       const url = URL.createObjectURL(blob);
@@ -173,7 +210,8 @@ export class DateCertificatesPage {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (e) {
-      this.error.set((e as Error).message || 'No se pudo descargar el QR.');
+      this.error.set(this.mensajeErrorApi(e));
+      this.errorRecuperable.set(false);
     } finally {
       this.accionCertId.set(null);
     }
@@ -183,12 +221,19 @@ export class DateCertificatesPage {
     // Mismo folio institucional que /admin/certificaciones/:id/pdf (no TCPDF backend).
     this.accionCertId.set(cert.id);
     this.error.set('');
+    this.errorRecuperable.set(false);
     try {
-      await this.router.navigate(['/admin/certificaciones', cert.id, 'pdf'], {
+      const ok = await this.router.navigate(['/admin/certificaciones', cert.id, 'pdf'], {
         queryParams: { descargar: '1' },
       });
+      if (!ok) {
+        this.error.set('No se pudo abrir el PDF. Intentá de nuevo.');
+        this.errorRecuperable.set(false);
+      }
     } catch (e) {
-      this.error.set((e as Error).message || 'No se pudo abrir el PDF.');
+      this.error.set(this.mensajeErrorApi(e));
+      this.errorRecuperable.set(false);
+    } finally {
       this.accionCertId.set(null);
     }
   }

@@ -23,6 +23,7 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 - Detalle de alumnos (P11): copy sin «legajo» (kicker Ficha); métricas `0` vs «—» (incl. revocadas); Reintentar solo en fallo recuperable (+ `loadGeneration`); HTTP intacto.
 - Hub de asistencias (P12): agregación lineal de métricas N/M en `/admin/asistencias` (sin `.some` anidado; `cancelada` excluida; sin `alumnosActivos` como total); HTTP `listarHub` one-pass.
 - Intermedia de fechas (P13): `/admin/asistencias/curso/:id` con `errorRecuperable`; títulos distintos not-found vs carga; Reintentar solo en fallo recuperable de `listarHub`; HTTP/hub/marcado intactos.
+- Marcado de asistencias + emisión (P14): `errorRecuperable` + Reintentar solo en catch de carga; `mensajeErrorApi` en catch de `marcar`; emit/regen en serie (sin rotar token); tests fecha futura y orden serial; HTTP `marcar`/backend intactos. Smoke staging multi-PDF (verify 4.4) pendiente.
 - Alumnos: listado, alta/edición, detalle/expediente con trayectoria.
 - Asistencias: hub por curso, intermedia de fechas, marcado, emisión/regeneración desde presentes.
 - Certificaciones: listado, nueva, preview/expediente, folio PDF, entrega manual, revocación.
