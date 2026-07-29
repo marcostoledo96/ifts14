@@ -25,6 +25,7 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 - Intermedia de fechas (P13): `/admin/asistencias/curso/:id` con `errorRecuperable`; títulos distintos not-found vs carga; Reintentar solo en fallo recuperable de `listarHub`; HTTP/hub/marcado intactos.
 - Marcado de asistencias + emisión (P14): `errorRecuperable` + Reintentar solo en catch de carga; `mensajeErrorApi` en catch de `marcar`; emit/regen en serie (sin rotar token); tests fecha futura y orden serial; HTTP `marcar`/backend intactos. Smoke staging multi-PDF (verify 4.4) pendiente.
 - Certificados por fecha (P15): `errorRecuperable` + Reintentar solo en catch de carga; `mensajeErrorApi` en acciones Copiar/QR/PDF; enlace Expediente por fila; empty con CTA a marcar; listado por `cursoId`; DNI completo / anti-token; HTTP/backend intactos.
+- Listado de certificaciones (P16): `paginasVisibles` + elipsis; `mostrarResumen` gated; grammar coincide/coinciden; filtros `vigente`|`revocado` + curso + texto; labels Válida/Revocado; DNI completo / anti-token; honesty con mensaje fijo + Reintentar (sin `errorRecuperable`); HTTP/backend intactos.
 - Alumnos: listado, alta/edición, detalle/expediente con trayectoria.
 - Asistencias: hub por curso, intermedia de fechas, marcado, emisión/regeneración desde presentes.
 - Certificaciones: listado, nueva, preview/expediente, folio PDF, entrega manual, revocación.

@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -103,7 +104,9 @@ export class CertificationNewPage implements OnInit {
   readonly cargandoCatalogos = signal(true);
   readonly cargandoPar = signal(false);
   readonly errorCatalogos = signal('');
+  readonly errorCatalogosRecuperable = signal(false);
   readonly errorPar = signal('');
+  readonly errorParRecuperable = signal(false);
   readonly errorEmit = signal('');
   readonly emitiendo = signal(false);
 
@@ -112,6 +115,7 @@ export class CertificationNewPage implements OnInit {
   readonly alumnoOpen = signal(false);
 
   private loadGen = 0;
+  private catalogLoadGen = 0;
 
   /** Patrón decorativo QR (sin datos personales). */
   readonly qrCells = [
@@ -222,22 +226,27 @@ export class CertificationNewPage implements OnInit {
   }
 
   async cargarCatalogos(): Promise<void> {
+    const gen = ++this.catalogLoadGen;
     this.cargandoCatalogos.set(true);
     this.errorCatalogos.set('');
+    this.errorCatalogosRecuperable.set(false);
     try {
       const [cursos, alumnos, cfg] = await Promise.all([
         this.courses.listar({ estado: 'activo' }),
         this.students.listar(),
         this.config.obtener(),
       ]);
+      if (gen !== this.catalogLoadGen) return;
       this.cursos.set(cursos);
       this.alumnos.set(alumnos.filter((a) => a.estado === 'activo'));
       this.configInst.set(cfg);
       this.aplicarQueryPreselect(this.route.snapshot.queryParamMap);
-    } catch (e) {
-      this.errorCatalogos.set((e as Error).message || 'No se pudieron cargar los catálogos.');
+    } catch {
+      if (gen !== this.catalogLoadGen) return;
+      this.errorCatalogos.set('No se pudieron cargar los catálogos. Reintentá.');
+      this.errorCatalogosRecuperable.set(true);
     } finally {
-      this.cargandoCatalogos.set(false);
+      if (gen === this.catalogLoadGen) this.cargandoCatalogos.set(false);
     }
   }
 
@@ -322,6 +331,7 @@ export class CertificationNewPage implements OnInit {
     this.presentes.set([]);
     this.avisoDuplicado.set(false);
     this.errorPar.set('');
+    this.errorParRecuperable.set(false);
     this.errorEmit.set('');
 
     if (alumnoId == null || cursoId == null) {
@@ -342,9 +352,10 @@ export class CertificationNewPage implements OnInit {
       this.fechasRealizadas.set(realizadas);
       this.presentes.set(this.mapPresentes(asistencias, realizadas));
       this.avisoDuplicado.set(vigentes.length > 0);
-    } catch (e) {
+    } catch {
       if (gen === this.loadGen) {
-        this.errorPar.set((e as Error).message || 'No se pudo evaluar la elegibilidad.');
+        this.errorPar.set('No se pudo evaluar la elegibilidad. Reintentá.');
+        this.errorParRecuperable.set(true);
       }
     } finally {
       if (gen === this.loadGen) this.cargandoPar.set(false);
@@ -396,10 +407,20 @@ export class CertificationNewPage implements OnInit {
       } else if (status === 500) {
         this.errorEmit.set('Error del servidor al emitir. Intentá de nuevo.');
       } else {
-        this.errorEmit.set((e as Error).message || 'No se pudo emitir la certificación.');
+        this.errorEmit.set(this.mensajeErrorApi(e));
       }
     } finally {
       this.emitiendo.set(false);
     }
+  }
+
+  /** Envelope API message o genérico es-AR (sin raw Error.message). */
+  private mensajeErrorApi(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const body = err.error as { error?: { message?: string } } | null;
+      const msg = body?.error?.message;
+      if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    }
+    return 'No se pudo emitir la certificación.';
   }
 }
