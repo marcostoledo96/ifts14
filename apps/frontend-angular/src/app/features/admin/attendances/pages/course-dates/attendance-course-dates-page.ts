@@ -54,6 +54,8 @@ export class AttendanceCourseDatesPage {
   readonly estado = signal<EstadoFiltro>('todas');
   readonly cargando = signal(true);
   readonly error = signal('');
+  /** True solo ante fallo de `listarHub` (no id inválido ni curso ausente). */
+  readonly errorRecuperable = signal(false);
   readonly skeletonRows = [0, 1, 2, 3] as const;
 
   readonly estados: readonly EstadoFiltro[] = ['todas', 'programada', 'realizada'];
@@ -112,6 +114,7 @@ export class AttendanceCourseDatesPage {
     const gen = ++this.loadGen;
     this.cargando.set(true);
     this.error.set('');
+    this.errorRecuperable.set(false);
     this.filas.set([]);
     this.cursoNombre.set('');
     this.cursoCodigo.set('');
@@ -124,6 +127,7 @@ export class AttendanceCourseDatesPage {
     if (cid === null) {
       if (gen === this.loadGen) {
         this.error.set('Curso no encontrado.');
+        this.errorRecuperable.set(false);
         this.cargando.set(false);
       }
       return;
@@ -136,6 +140,7 @@ export class AttendanceCourseDatesPage {
       const curso = hub.cursos.find((c) => c.id === cid);
       if (!curso) {
         this.error.set('Curso no encontrado.');
+        this.errorRecuperable.set(false);
         return;
       }
 
@@ -175,6 +180,7 @@ export class AttendanceCourseDatesPage {
     } catch {
       if (gen === this.loadGen) {
         this.error.set('No se pudieron cargar las fechas. Reintentá.');
+        this.errorRecuperable.set(true);
       }
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
@@ -195,6 +201,7 @@ export class AttendanceCourseDatesPage {
   }
 
   onReintentar(): void {
+    if (!this.errorRecuperable()) return;
     void this.cargar();
   }
 
