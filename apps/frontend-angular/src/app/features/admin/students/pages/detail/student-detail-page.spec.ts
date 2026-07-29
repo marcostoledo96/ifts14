@@ -6,6 +6,25 @@ import { STUDENTS_SOURCE } from '../../students.service';
 import { InMemoryStudentsService } from '../../in-memory-students.service';
 import { ATTENDANCE_SOURCE } from '../../../attendances/data/attendance.token';
 import { Asistencia } from '../../../attendances/models/attendance.types';
+import { AlumnoDetalle } from '../../students.models';
+
+function detalleStub(overrides: Partial<AlumnoDetalle> = {}): AlumnoDetalle {
+  return {
+    id: 1,
+    apellido: 'Ficticia',
+    nombre: 'Persona Uno',
+    dniMostrar: '20111222',
+    email: 'persona.uno@example.invalid',
+    estado: 'activo',
+    tieneEmail: true,
+    cursosConAsistencia: 4,
+    certificacionesValidas: 2,
+    certificacionesRevocadas: 0,
+    ingreso: '2021',
+    cursos: [],
+    ...overrides,
+  };
+}
 
 describe('StudentDetailPage', () => {
   let studentsService: InMemoryStudentsService;
@@ -58,16 +77,55 @@ describe('StudentDetailPage', () => {
     expect(textContent).toContain('20111222');
     expect(textContent).toContain('persona.uno@example.invalid');
     expect(textContent).toContain('2021');
-    expect(textContent).toContain('Legajo');
+    expect(textContent).toContain('Ficha');
     expect(textContent).toContain('#1');
 
-    // Sin legajo inventado LEG-* ni tokens.
+    // Copy sin legajo / legajos inventados LEG-* ni tokens.
+    expect(textContent.toLowerCase()).not.toMatch(/legajo/);
     expect(textContent.toLowerCase()).not.toContain('leg-');
 
     expect(textContent).toContain('Curso de introducción a la gestión');
     expect(textContent).toContain('CUR-001');
     expect(textContent).toContain('2/3');
     expect(textContent).toContain('Ver certificación');
+  });
+
+  it('muestra métricas: revocadas 0 literal y sin regresión en válidas/cursos', async () => {
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl('/admin/alumnos/1', StudentDetailPage);
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+
+    const root = harness.fixture.nativeElement as HTMLElement;
+
+    expect(page.formatoMetrica(0)).toBe('0');
+    expect(page.formatoMetrica(null)).toBe('—');
+    const resumen = root.querySelector('.resumen-metodologia') as HTMLElement;
+    expect(resumen).toBeTruthy();
+    const revocadasItem = Array.from(resumen.querySelectorAll('.resumen-item')).find((el) =>
+      (el.textContent || '').includes('CERTIFICACIONES REVOCADAS'),
+    ) as HTMLElement;
+    expect(revocadasItem).toBeTruthy();
+    expect(revocadasItem.querySelector('.num')?.textContent?.trim()).toBe('0');
+    expect(resumen.textContent).toContain('4');
+    expect(resumen.textContent).toContain('2');
+  });
+
+  it('muestra «—» cuando certificacionesRevocadas es null', async () => {
+    spyOn(studentsService, 'obtener').and.resolveTo(
+      detalleStub({ certificacionesRevocadas: null, cursos: [] }),
+    );
+
+    const harness = await RouterTestingHarness.create('/admin/alumnos/1');
+    await harness.detectChanges();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+
+    const root = harness.fixture.nativeElement as HTMLElement;
+    const resumen = root.querySelector('.resumen-metodologia') as HTMLElement;
+    expect(resumen).toBeTruthy();
+    expect(resumen.textContent).toContain('CERTIFICACIONES REVOCADAS');
+    expect(resumen.textContent).toContain('—');
   });
 
   it('enlaza Ver certificación cuando el curso emitido tiene certificacionId', async () => {
@@ -104,24 +162,93 @@ describe('StudentDetailPage', () => {
     expect(emitir.getAttribute('href')).toContain('curso=3');
   });
 
-  it('debe manejar adecuadamente un ID no encontrado', async () => {
-    const harness = await RouterTestingHarness.create('/admin/alumnos/999');
-    await harness.detectChanges();
+  it('debe manejar adecuadamente un ID no encontrado sin Reintentar', async () => {
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl('/admin/alumnos/999', StudentDetailPage);
     await harness.fixture.whenStable();
     await harness.detectChanges();
 
     const rootElement = harness.fixture.nativeElement as HTMLElement;
-    expect(rootElement.textContent).toContain('Alumno no encontrado');
+    const text = rootElement.textContent || '';
+    expect(text).toContain('Alumno no encontrado');
+    expect(text).toContain('Volver a Alumnos');
+    expect(text).not.toContain('Reintentar');
+    expect(page.errorRecuperable()).toBeFalse();
   });
 
-  it('debe manejar adecuadamente un ID inválido', async () => {
-    const harnessInvalido = await RouterTestingHarness.create('/admin/alumnos/abc');
-    await harnessInvalido.detectChanges();
+  it('debe manejar adecuadamente un ID inválido sin Reintentar', async () => {
+    const harnessInvalido = await RouterTestingHarness.create();
+    const page = await harnessInvalido.navigateByUrl('/admin/alumnos/abc', StudentDetailPage);
     await harnessInvalido.fixture.whenStable();
     await harnessInvalido.detectChanges();
 
     const rootElementInvalido = harnessInvalido.fixture.nativeElement as HTMLElement;
-    expect(rootElementInvalido.textContent).toContain('Identificador de alumno inválido');
+    const text = rootElementInvalido.textContent || '';
+    expect(text).toContain('Identificador de alumno inválido');
+    expect(text).toContain('Volver a Alumnos');
+    expect(text).not.toContain('Reintentar');
+    expect(page.errorRecuperable()).toBeFalse();
+  });
+
+  it('id inválido descarta una carga numérica en vuelo y no muestra Reintentar', async () => {
+    let resolveObtener!: (value: AlumnoDetalle | null) => void;
+    spyOn(studentsService, 'obtener').and.returnValue(
+      new Promise<AlumnoDetalle | null>((resolve) => {
+        resolveObtener = resolve;
+      }),
+    );
+
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl('/admin/alumnos/1', StudentDetailPage);
+    expect(studentsService.obtener).toHaveBeenCalledWith(1);
+
+    await harness.navigateByUrl('/admin/alumnos/abc', StudentDetailPage);
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+
+    resolveObtener(detalleStub());
+    await Promise.resolve();
+    harness.detectChanges();
+
+    const text = (harness.fixture.nativeElement as HTMLElement).textContent || '';
+    expect(text).toContain('Identificador de alumno inválido');
+    expect(text).not.toContain('Reintentar');
+    expect(page.errorRecuperable()).toBeFalse();
+    expect(page.alumno()).toBeNull();
+  });
+
+  it('fallo recuperable muestra Reintentar y Volver; Reintentar re-llama obtener sin PII', async () => {
+    const obtener = spyOn(studentsService, 'obtener').and.returnValues(
+      Promise.reject(new Error('network')),
+      Promise.resolve(detalleStub()),
+    );
+
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl('/admin/alumnos/1', StudentDetailPage);
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+
+    let root = harness.fixture.nativeElement as HTMLElement;
+    let text = root.textContent || '';
+    expect(page.errorRecuperable()).toBeTrue();
+    expect(text).toContain('Reintentar');
+    expect(text).toContain('Volver a Alumnos');
+    expect(text).toContain('No pudimos cargar la ficha');
+    expect(text.toLowerCase()).not.toMatch(/legajo/);
+    expect(text).not.toContain('20111222');
+    expect(text.toLowerCase()).not.toContain('token');
+    expect(obtener).toHaveBeenCalledTimes(1);
+
+    page.onReintentar();
+    await harness.fixture.whenStable();
+    await harness.detectChanges();
+
+    root = harness.fixture.nativeElement as HTMLElement;
+    text = root.textContent || '';
+    expect(obtener).toHaveBeenCalledTimes(2);
+    expect(page.error()).toBe('');
+    expect(text).toContain('Persona Uno');
+    expect(text).toContain('20111222');
   });
 
   it('oculta Compartir y habilita Editar datos hacia /editar', async () => {
