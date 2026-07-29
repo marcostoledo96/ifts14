@@ -71,12 +71,12 @@
       </div>
     </div>
 
-    @if (vistaQA() === 'datos' || !qaEnabled) {
+    @if (mostrarResumen()) {
       <div class="results-summary">
         <p aria-live="polite">
           <span class="count-mono">{{ resultadosFiltrados().length }}</span>
           {{ resultadosFiltrados().length === 1 ? 'certificación' : 'certificaciones' }}
-          {{ hayFiltrosActivos() ? 'coinciden con el filtro' : 'en el archivo' }}
+          {{ hayFiltrosActivos() ? (resultadosFiltrados().length === 1 ? 'coincide con el filtro' : 'coinciden con el filtro') : 'en el archivo' }}
         </p>
         @if (hayFiltrosActivos()) {
           <button type="button" class="clear-filters" (click)="onLimpiarFiltros()">
@@ -221,10 +221,11 @@
         </p>
         <nav class="paginacion" aria-label="Paginación">
           <button type="button" aria-label="Página anterior" [disabled]="paginaSegura() === 1" (click)="onPagina(paginaSegura() - 1)">«</button>
-          @for (page of [1, 2, 3, 4, 5]; track page) {
-            @if (page <= totalPaginas()) {
-              <button type="button" [attr.aria-current]="paginaSegura() === page ? 'page' : null" (click)="onPagina(page)">{{ page }}</button>
-            }
+          @for (page of paginasVisibles(); track page) {
+            <button type="button" [attr.aria-current]="paginaSegura() === page ? 'page' : null" (click)="onPagina(page)">{{ page }}</button>
+          }
+          @if (totalPaginas() > 5 && paginaSegura() < totalPaginas() - 2) {
+            <span class="pager-ellipsis" aria-hidden="true">…</span>
           }
           <button type="button" aria-label="Página siguiente" [disabled]="paginaSegura() === totalPaginas()" (click)="onPagina(paginaSegura() + 1)">»</button>
         </nav>
@@ -272,10 +273,11 @@
         </p>
         <nav class="paginacion" aria-label="Paginación móvil">
           <button type="button" aria-label="Página anterior" [disabled]="paginaSegura() === 1" (click)="onPagina(paginaSegura() - 1)">«</button>
-          @for (page of [1, 2, 3, 4, 5]; track page) {
-            @if (page <= totalPaginas()) {
-              <button type="button" [attr.aria-current]="paginaSegura() === page ? 'page' : null" (click)="onPagina(page)">{{ page }}</button>
-            }
+          @for (page of paginasVisibles(); track page) {
+            <button type="button" [attr.aria-current]="paginaSegura() === page ? 'page' : null" (click)="onPagina(page)">{{ page }}</button>
+          }
+          @if (totalPaginas() > 5 && paginaSegura() < totalPaginas() - 2) {
+            <span class="pager-ellipsis" aria-hidden="true">…</span>
           }
           <button type="button" aria-label="Página siguiente" [disabled]="paginaSegura() === totalPaginas()" (click)="onPagina(paginaSegura() + 1)">»</button>
         </nav>

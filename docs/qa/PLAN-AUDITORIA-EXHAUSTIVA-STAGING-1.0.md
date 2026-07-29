@@ -272,8 +272,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P12 Asistencias hub | `audit/p12-asist-hub` | hecha | #97 | Mergeado a staging1.0 (`dae9026`); archive `2026-07-29-audit-p12-asist-hub`; índice lineal + HTTP one-pass |
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | hecha | #98 | Mergeado a staging1.0 (`dca5690`); archive `2026-07-29-audit-p13-asist-fechas`; verify PASS WITH WARNINGS |
 | P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | hecha | #99 | Mergeado a staging1.0 (`7e6ff10`); archive `2026-07-29-audit-p14-asist-marcado`; verify PASS WITH WARNINGS; smoke staging 4.4 pendiente |
-| P15 Certificados por fecha | `audit/p15-asist-certs` | en curso | #100 | SDD `audit-p15-asist-certs` — PR abierto; apply+4R OK; verify en curso |
-| P16 Certificaciones listado | `audit/p16-certs-list` | pendiente | | |
+| P15 Certificados por fecha | `audit/p15-asist-certs` | hecha | #100 | Mergeado a staging1.0 (`101aff6`); archive `2026-07-29-audit-p15-asist-certs`; verify PASS |
+| P16 Certificaciones listado | `audit/p16-certs-list` | en curso | #101 | SDD `audit-p16-certs-list` — PR abierto; apply+4R OK; verify en curso |
 | P17 Certificación nueva | `audit/p17-certs-nueva` | pendiente | | |
 | P18 Expediente preview | `audit/p18-certs-preview` | pendiente | | |
 | P19 Folio PDF | `audit/p19-certs-pdf` | pendiente | | |
@@ -728,27 +728,27 @@ Siguiente: P15 certificados por fecha (audit/p15-asist-certs). No reabrir marcad
 ## Fase P15 — Certificados por fecha
 
 **Rama:** `audit/p15-asist-certs`
-**Cambio SDD:** `openspec/changes/audit-p15-asist-certs/`
-**Ruta:** `/admin/cursos/:id/fechas/:fechaId/asistencias/certificados` (o ruta canónica del page)
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-p15-asist-certs/`
+**Ruta:** `/admin/cursos/:id/fechas/:fechaId/asistencias/certificados`
+**Estado:** hecha — PR #100 mergeado (`101aff6`); verify PASS
 
 **Checklist**
 
-- [x] Apply: honesty carga + Expediente + tests unitarios (pending 4R/verify)
-- [ ] Listado coherente con emitidos
-- [ ] Links a expediente / PDF / entrega
-- [ ] Vacíos
+- [x] Apply: honesty carga + Expediente + tests unitarios
+- [x] Listado coherente con emitidos (filtro `cursoId`; empty+CTA)
+- [x] Links a expediente / PDF / entrega (Expediente + Copiar→QR→PDF inline)
+- [x] Vacíos
+- [x] Errores honestos (Reintentar solo recuperable; `mensajeErrorApi` en acciones)
+- [x] Verify PASS + archive
 
 **Prompt**
 
 ```text
-Fase P15 — Listado certificados por fecha de curso.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p15-asist-certs.
-Cambio SDD Gentle-AI: audit-p15-asist-certs (openspec/).
-Auditar date-certificates-page.* (no marcado P14 ni listado global P16 salvo contrato mínimo).
-Checklist: listado coherente con emitidos; links a expediente/PDF/entrega; vacíos;
-errores honestos (Reintentar solo recuperable; sin raw Error.message); DNI si aparece completo; sin PII en logs.
-Ciclo: explore→propose→spec→design→tasks→apply→4R+tests→OK→PR→verify→archive.
-Artefactos SDD en español argentino formal. Sin trailing whitespace.
+Fase P15 — Certificados por fecha — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #100 mergeado (101aff6).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p15-asist-certs/.
+Verify PASS (1 req / 7 escenarios; ng test date-certificates 10/10).
+Siguiente: P16 listado certificaciones (audit/p16-certs-list). No reabrir certificados-por-fecha salvo regresión.
 ```
 
 ---
