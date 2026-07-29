@@ -268,8 +268,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P8 Cursos detalle | `audit/p08-cursos-detail` | hecha | #93 | Mergeado a staging1.0 |
 | P9 Alumnos listado | `audit/p09-alumnos-list` | hecha | #94 | Mergeado a staging1.0; archive `2026-07-28-audit-p09-alumnos-list` |
 | P10 Alumnos editor | `audit/p10-alumnos-editor` | hecha | #95 | Mergeado a staging1.0; archive `2026-07-29-audit-p10-alumnos-editor`; HTTP 409 update omitido |
-| P11 Alumnos detalle | `audit/p11-alumnos-detail` | en PR | #96 | SDD verify PASS WITH WARNINGS; incluye archive P10 |
-| P12 Asistencias hub | `audit/p12-asist-hub` | pendiente | | |
+| P11 Alumnos detalle | `audit/p11-alumnos-detail` | hecha | #96 | Mergeado a staging1.0; archive `2026-07-29-audit-p11-alumnos-detail`; verify PASS WITH WARNINGS |
+| P12 Asistencias hub | `audit/p12-asist-hub` | en PR | #97 | SDD verify PASS; índice lineal + HTTP one-pass; incluye archive P11 |
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | pendiente | | |
 | P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | pendiente | | |
 | P15 Certificados por fecha | `audit/p15-asist-certs` | pendiente | | |
@@ -625,25 +625,25 @@ Siguiente: P11 detalle (audit/p11-alumnos-detail). No reabrir editor salvo regre
 ## Fase P11 — Alumnos · detalle
 
 **Rama:** `audit/p11-alumnos-detail`
-**Cambio SDD:** `openspec/changes/audit-p11-alumnos-detail/`
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-p11-alumnos-detail/`
 **Ruta:** `/admin/alumnos/:id`
 
 **Checklist**
 
 - [x] Trayectoria cursos + estados cert
 - [x] Links a expediente
-- [x] Métricas válidas/revocadas
-- [x] Id inválido
+- [x] Métricas válidas/revocadas (`0` vs «—»)
+- [x] Id inválido (solo Volver; sin Reintentar)
+- [x] Copy sin legajo (kicker Ficha)
+- [x] Reintentar solo en fallo recuperable
 
 **Prompt**
 
 ```text
-Fase P11 — Detalle alumno (/admin/alumnos/:id).
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p11-alumnos-detail.
-Cambio SDD Gentle-AI: audit-p11-alumnos-detail (openspec/).
-Estado: PR #96 → staging1.0; verify PASS WITH WARNINGS; Ficha sin legajo; métricas —; Reintentar solo recuperable.
-Siguiente tras merge: sdd-archive. No tocar asistencias (P12).
-Artefactos SDD en español argentino formal. Sin trailing whitespace.
+Fase P11 — Detalle alumno (/admin/alumnos/:id) — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #96 mergeado.
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p11-alumnos-detail/.
+Siguiente: P12 hub asistencias (audit/p12-asist-hub). No reabrir detalle salvo regresión.
 ```
 
 ---
@@ -651,20 +651,24 @@ Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ## Fase P12 — Asistencias · hub
 
 **Rama:** `audit/p12-asist-hub`
+**Cambio SDD:** `openspec/changes/audit-p12-asist-hub/`
 **Ruta:** `/admin/asistencias`
 
 **Checklist**
 
-- [ ] Listado cursos con métricas de fechas
-- [ ] Búsqueda, paginación, vacío
-- [ ] Performance del hub (evitar trabajo O(n²) innecesario en cliente si se puede simplificar sin cambiar contrato)
+- [x] Listado cursos con métricas de fechas
+- [x] Búsqueda, paginación, vacío
+- [x] Performance del hub (evitar trabajo O(n²) innecesario en cliente si se puede simplificar sin cambiar contrato)
 
 **Prompt**
 
 ```text
 Fase P12 — Hub asistencias (/admin/asistencias).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p12-asist-hub.
-Auditar attendances-list-page. UI/métricas/copy/errores/carga/prolijidad. No rediseñar marcado.
+Cambio SDD Gentle-AI: audit-p12-asist-hub (openspec/).
+Estado: PR #97 → staging1.0; verify PASS; índice lineal + HTTP one-pass.
+Siguiente tras merge: sdd-archive. No tocar fechas/marcado (P13/P14).
+Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
 ---
