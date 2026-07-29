@@ -273,8 +273,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | hecha | #98 | Mergeado a staging1.0 (`dca5690`); archive `2026-07-29-audit-p13-asist-fechas`; verify PASS WITH WARNINGS |
 | P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | hecha | #99 | Mergeado a staging1.0 (`7e6ff10`); archive `2026-07-29-audit-p14-asist-marcado`; verify PASS WITH WARNINGS; smoke staging 4.4 pendiente |
 | P15 Certificados por fecha | `audit/p15-asist-certs` | hecha | #100 | Mergeado a staging1.0 (`101aff6`); archive `2026-07-29-audit-p15-asist-certs`; verify PASS |
-| P16 Certificaciones listado | `audit/p16-certs-list` | en curso | #101 | SDD `audit-p16-certs-list` — PR abierto; apply+4R OK; verify en curso |
-| P17 Certificación nueva | `audit/p17-certs-nueva` | pendiente | | |
+| P16 Certificaciones listado | `audit/p16-certs-list` | hecha | #101 | Mergeado a staging1.0 (`7450a97`); archive `2026-07-29-audit-p16-certs-list`; verify PASS |
+| P17 Certificación nueva | `audit/p17-certs-nueva` | en curso | | SDD `audit-p17-certs-nueva` — apply+4R OK (honesty+copy); pendiente OK→PR/verify |
 | P18 Expediente preview | `audit/p18-certs-preview` | pendiente | | |
 | P19 Folio PDF | `audit/p19-certs-pdf` | pendiente | | |
 | P20 Entrega manual | `audit/p20-certs-entrega` | pendiente | | |
@@ -757,19 +757,24 @@ Siguiente: P16 listado certificaciones (audit/p16-certs-list). No reabrir certif
 
 **Rama:** `audit/p16-certs-list`
 **Ruta:** `/admin/certificaciones`
+**Estado:** hecha — PR #101 mergeado (`7450a97`); archive `openspec/changes/archive/2026-07-29-audit-p16-certs-list/`
 
 **Checklist**
 
-- [ ] Filtros vigente/revocado + curso + texto
-- [ ] DNI en listado según política
-- [ ] Paginación, vacíos, labels “Válida”/“Revocado”
+- [x] Filtros vigente/revocado + curso + texto
+- [x] DNI en listado según política
+- [x] Paginación (`paginasVisibles`), vacíos, labels “Válida”/“Revocado”
+- [x] `mostrarResumen` gated + grammar coincide/coinciden
+- [x] Verify PASS + archive
 
 **Prompt**
 
 ```text
-Fase P16 — Listado certificaciones.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p16-certs-list.
-Auditar certifications-list-page. Filtros, copy estados, UI, errores, carga, prolijidad.
+Fase P16 — Listado certificaciones — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #101 mergeado (7450a97).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p16-certs-list/.
+Verify PASS (1 req / 9 escenarios; ng test certifications-list 27/27).
+Siguiente: P17 certificación nueva (audit/p17-certs-nueva). No reabrir listado salvo regresión.
 ```
 
 ---
