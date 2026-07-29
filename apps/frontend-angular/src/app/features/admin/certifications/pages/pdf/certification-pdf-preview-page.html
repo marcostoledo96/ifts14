@@ -32,7 +32,14 @@
   }
 
   @if (error()) {
-    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    <div class="estado-linea estado-error" role="alert">
+      <p>{{ error() }}</p>
+      @if (errorRecuperable()) {
+        <button type="button" class="btn-reintentar" (click)="onReintentar()">
+          Reintentar
+        </button>
+      }
+    </div>
     <app-ui-back-link
       class="no-print"
       to="/admin/certificaciones"
