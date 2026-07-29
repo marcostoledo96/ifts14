@@ -97,6 +97,8 @@ export class StudentEditorPage {
 
   private readonly students = inject(STUDENTS_SOURCE);
   private readonly router = inject(Router);
+  /** Descarta respuestas obsoletas de `cargarEdicion` (Reintentar / cambio de :id). */
+  private loadGeneration = 0;
 
   readonly filas = signal<AlumnoFormRow[]>([emptyRow()]);
   readonly errorSubmit = signal('');
@@ -107,6 +109,8 @@ export class StudentEditorPage {
   readonly guardando = signal(false);
   readonly cargando = signal(false);
   readonly errorCarga = signal('');
+  /** True solo ante fallo de red/servicio en `cargarEdicion` (no id inválido ni null). */
+  readonly errorCargaRecuperable = signal(false);
 
   readonly esEdicion = computed(() => this.mode() === 'edit');
   readonly esAltaMultiple = computed(() => this.mode() === 'create');
@@ -123,13 +127,17 @@ export class StudentEditorPage {
         else {
           this.filas.set([emptyRow()]);
           this.resultadoLote.set(null);
+          this.errorCarga.set('');
+          this.errorCargaRecuperable.set(false);
         }
       });
     });
   }
 
   private async cargarEdicion(idRaw: string): Promise<void> {
+    const generation = ++this.loadGeneration;
     this.errorCarga.set('');
+    this.errorCargaRecuperable.set(false);
     this.resultadoLote.set(null);
     if (!/^[1-9]\d*$/.test(idRaw.trim())) {
       this.errorCarga.set('Identificador de alumno inválido.');
@@ -139,6 +147,7 @@ export class StudentEditorPage {
     this.cargando.set(true);
     try {
       const det = await this.students.obtener(id);
+      if (generation !== this.loadGeneration) return;
       if (!det) {
         this.errorCarga.set('Alumno no encontrado.');
         return;
@@ -153,10 +162,17 @@ export class StudentEditorPage {
         },
       ]);
     } catch {
+      if (generation !== this.loadGeneration) return;
       this.errorCarga.set('No se pudo cargar el alumno. Reintentá.');
+      this.errorCargaRecuperable.set(true);
     } finally {
-      this.cargando.set(false);
+      if (generation === this.loadGeneration) this.cargando.set(false);
     }
+  }
+
+  onReintentar(): void {
+    if (!this.errorCargaRecuperable()) return;
+    void this.cargarEdicion(this.id());
   }
 
   agregarFila(): void {

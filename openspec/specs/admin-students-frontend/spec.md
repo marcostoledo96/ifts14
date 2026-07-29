@@ -2,64 +2,61 @@
 
 ## Propósito
 
-Listado y detalle de alumnos mock-only con DNI completo en UI admin (D0 2026-07-20) y email de contacto opcional ficticio.
+Listado y detalle de alumnos vía `STUDENTS_SOURCE` (HTTP si `useRealApi`, si no in-memory) con DNI completo en UI admin (D0 2026-07-20). Contacto por badges sin email literal; copy del listado sin «legajo» inventado.
 
 ## Requirements
 
 ### Requirement: Fuente administrativa con DNI completo
 
-El sistema DEBE proveer un DTO de UI `Alumno` desde una fuente local. DEBE mostrar `dniMostrar` con el DNI completo ficticio (6–10 dígitos) en listados y detalle admin. El DTO PUEDE incluir `email: string | null` con direcciones ficticias `@example.invalid` en seeds. NO DEBE almacenar ni mostrar token, legajo, matrícula ni UUID. El DTO PUEDE incluir `tieneEmail` como booleano derivado de `email` para filtros de contacto.
+El DTO `Alumno` DEBE resolverse vía `STUDENTS_SOURCE` (HTTP si `useRealApi`, si no in-memory). DEBE mostrar `dniMostrar` completo en listado. PUEDE incluir `email`/`tieneEmail`. NO DEBE mostrar token, legajo, matrícula ni UUID.
+(Previously: mock-only y «Sin red».)
 
-#### Scenario: DTO y seed administrativos
+#### Scenario: DTO y presentación administrativa
 
-- GIVEN el seed carga un alumno
-- WHEN se transforma y presenta su DTO de UI
-- THEN DEBE mostrar `dniMostrar` con DNI completo ficticio y, si corresponde, `email` opcional `@example.invalid` y/o `tieneEmail` booleano.
-- AND NO DEBE contener ni mostrar token, legajo, matrícula o UUID.
+- GIVEN la fuente resuelve un alumno
+- WHEN se presenta en el listado
+- THEN DEBE mostrar DNI completo sin token/legajo/matrícula/UUID
 
-#### Scenario: Sin red
+#### Scenario: Fuente según entorno
 
-- GIVEN se usa el listado
-- WHEN se inspecciona
-- THEN NO DEBE emitir requests ni usar storage, cookies o IndexedDB.
+- GIVEN `useRealApi` verdadero o falso
+- WHEN el listado solicita alumnos
+- THEN API real → HTTP; mock → in-memory
 
 ### Requirement: Búsqueda y filtros
 
-El sistema DEBE buscar por nombre y `dniMostrar` completo. NO DEBE buscar ni filtrar por legajo. El filtro de contacto DEBE limitarse a `con-email` o `sin-email`, resuelto con `tieneEmail` (y/o presencia de `email`). El listado DEBE conservar filtros combinables, veinte resultados por página y conteos.
+Búsqueda DEBE ser por nombre y `dniMostrar`. NO DEBE filtrar por legajo. Chips: certificaciones (con/sin) y «Sin email». NO DEBE haber chip «Con email». Filtros null-safe; 20/página.
+(Previously: chips `con-email`/`sin-email` UI; sin set v0 ni null-safety.)
 
 #### Scenario: Búsqueda y filtro de contacto
 
-- GIVEN existen alumnos con y sin email registrado
-- WHEN se busca por nombre o DNI completo y se aplica `con-email` o `sin-email`
-- THEN DEBE devolver solo coincidencias del texto y del criterio de contacto solicitado.
-- AND NO DEBE requerir ni revelar legajo.
+- GIVEN alumnos con y sin email
+- WHEN busca por nombre/DNI y aplica «Sin email»
+- THEN DEBE filtrar sin legajo ni chip «Con email»
 
 #### Scenario: Entrada de búsqueda prohibida
 
-- GIVEN una persona ingresa un legajo como texto de búsqueda
-- WHEN se evalúa la consulta
-- THEN NO DEBE usar ese campo ni obtener coincidencias desde datos no presentes en el DTO.
+- GIVEN texto tipo legajo
+- WHEN se evalúa
+- THEN NO DEBE coincidir por campos ausentes del DTO
 
 #### Scenario: Alta con DNI duplicado
 
-- GIVEN ya existe un alumno con el mismo DNI
-- WHEN se intenta crear otro alumno con ese documento
-- THEN DEBE rechazar el alta con error de conflicto (sin crear un segundo registro).
-- AND DEBE ofrecer un enlace al perfil del alumno existente (`/admin/alumnos/{id}`).
+- GIVEN DNI ya existente
+- WHEN se intenta crear otro
+- THEN DEBE rechazar con conflicto y enlace a `/admin/alumnos/{id}`
 
 #### Scenario: Filtros y paginación
 
-- GIVEN hay más de veinte resultados
+- GIVEN más de veinte resultados
 - WHEN cambian filtros/página
-- THEN DEBE mostrar veinte o menos de una página válida.
-- AND DEBE reiniciar o acotar la página ante cambios.
+- THEN DEBE mostrar ≤20 por página y acotar ante cambios
 
 #### Scenario: Vistas accesibles
 
-- GIVEN la pantalla abre en desktop o mobile
+- GIVEN desktop o mobile
 - WHEN renderiza
-- THEN DEBE usar tabla con encabezados o tarjetas equivalentes.
-- AND DEBE anunciar el resumen de resultados mediante una región accesible.
+- THEN DEBE usar tabla o cards con resumen accesible
 
 ### Requirement: Alta con email opcional
 
@@ -75,20 +72,20 @@ El formulario de alta DEBE aceptar apellido y nombre, DNI completo y email opcio
 
 ### Requirement: Estados, detalle y QA
 
-El sistema DEBE diferenciar carga/error/vacío/sin coincidencias. QA solo DEBE operar en desarrollo/tests e invisible e inmutable en producción/staging. El detalle DEBE implementarse bajo `/admin/alumnos/:id` protegido por sesión mock. La UI DEBE igualar o mejorar v0 en paridad visual, responsive y accesibilidad.
+El listado DEBE distinguir carga/error (Reintentar)/vacío/sin coincidencias. QA solo en desarrollo/tests (`isDevMode`); invisible en prod/staging. Detalle en `/admin/alumnos/:id` con sesión. NO DEBE reabrir email literal ni chip «Con email».
+(Previously: QA genérico; sin Reintentar; sin acotar privacidad de contacto.)
 
 #### Scenario: Estados distinguibles
 
-- GIVEN carga, error, cero registros o sin resultado
-- WHEN se presenta el estado
-- THEN DEBE distinguirlos accesiblemente.
+- GIVEN carga, error, vacío o sin coincidencias
+- WHEN se presenta
+- THEN DEBE distinguirlos; error recuperable DEBE ofrecer Reintentar
 
 #### Scenario: QA y acceso al detalle
 
-- GIVEN desarrollo/tests o producción/staging
-- WHEN se intenta activar QA o navegar al detalle
-- THEN QA DEBE operar solo en desarrollo/tests.
-- AND la navegación a `/admin/alumnos/:id` DEBE resolver el componente de detalle correspondiente si la sesión mock está activa.
+- GIVEN desarrollo/tests o prod/staging
+- WHEN se intenta QA o navegar al detalle
+- THEN QA solo en desarrollo/tests; detalle resuelve con sesión
 
 ### Requirement: Detalle administrativo consistente
 
@@ -114,3 +111,33 @@ El detalle de alumno DEBE mostrar Apellido y Nombre, DNI completo en `dniMostrar
 - GIVEN se navega a `/admin/alumnos/999` o un ID inválido
 - WHEN carga la página
 - THEN DEBE mostrar un estado no encontrado seguro, permitiendo volver al listado, sin romper la shell admin.
+
+### Requirement: Copy del listado sin legajo inventado
+
+Intro y vacío de `/admin/alumnos` DEBEN omitir «legajo»/«legajos» (registro/ficha). NO DEBEN inventar legajo.
+
+#### Scenario: Intro y vacío honestos
+
+- GIVEN listado con o sin alumnos
+- WHEN se lee intro o vacío
+- THEN NO DEBE contener «legajo» ni «legajos»
+
+### Requirement: Contacto por badge sin email literal
+
+Contacto DEBE usar badges «Contacto disponible», «Sin email» o «Sin dato». NO DEBE mostrar email literal ni chip «Con email».
+
+#### Scenario: Badges de contacto
+
+- GIVEN alumnos con/sin email o sin dato
+- WHEN renderiza tabla o cards
+- THEN DEBE verse el badge sin email ni chip «Con email»
+
+### Requirement: Métricas numéricas en listado
+
+Conteos numéricos (incluido 0) DEBEN mostrarse como número; «—» SOLO si null/ausente.
+
+#### Scenario: Cero vs ausente
+
+- GIVEN métrica `0` y null
+- WHEN renderiza métricas
+- THEN DEBE mostrar `0` y «—»
