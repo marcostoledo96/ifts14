@@ -270,7 +270,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P10 Alumnos editor | `audit/p10-alumnos-editor` | hecha | #95 | Mergeado a staging1.0; archive `2026-07-29-audit-p10-alumnos-editor`; HTTP 409 update omitido |
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | hecha | #96 | Mergeado a staging1.0; archive `2026-07-29-audit-p11-alumnos-detail`; verify PASS WITH WARNINGS |
 | P12 Asistencias hub | `audit/p12-asist-hub` | hecha | #97 | Mergeado a staging1.0 (`dae9026`); archive `2026-07-29-audit-p12-asist-hub`; índice lineal + HTTP one-pass |
-| P13 Asistencias fechas | `audit/p13-asist-fechas` | apply listo | | SDD `audit-p13-asist-fechas`; pendiente verify |
+| P13 Asistencias fechas | `audit/p13-asist-fechas` | en PR | #98 | SDD verify PASS WITH WARNINGS; incluye archive P12 |
 | P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | pendiente | | |
 | P15 Certificados por fecha | `audit/p15-asist-certs` | pendiente | | |
 | P16 Certificaciones listado | `audit/p16-certs-list` | pendiente | | |
@@ -677,7 +677,7 @@ Siguiente: P13 fechas del curso (audit/p13-asist-fechas). No reabrir hub salvo r
 **Rama:** `audit/p13-asist-fechas`
 **Cambio SDD:** `openspec/changes/audit-p13-asist-fechas/`
 **Ruta:** `/admin/asistencias/curso/:id`
-**Estado apply:** listo (honesty `errorRecuperable` + tests; pendiente verify)
+**Estado:** PR #98 → staging1.0; verify PASS WITH WARNINGS
 
 **Checklist**
 
@@ -693,10 +693,8 @@ Siguiente: P13 fechas del curso (audit/p13-asist-fechas). No reabrir hub salvo r
 Fase P13 — Fechas por curso (asistencias).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p13-asist-fechas.
 Cambio SDD Gentle-AI: audit-p13-asist-fechas (openspec/).
-Auditar attendance-course-dates-page.* (no hub P12 ni marcado P14 salvo contrato mínimo).
-Checklist: orden cronológico; filtros programada/realizada; links a marcado;
-curso inexistente / id inválido; Reintentar solo recuperable; copy/errores; sin PII en logs.
-Ciclo: explore→propose→spec→design→tasks→apply→4R+tests→OK→PR→verify→archive.
+Estado: PR #98 → staging1.0; verify PASS WITH WARNINGS; errorRecuperable + títulos honestos.
+Siguiente tras merge: sdd-archive. No tocar marcado (P14).
 Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
