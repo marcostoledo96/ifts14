@@ -42,7 +42,18 @@
     </div>
   }
   @if (error()) {
-    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    <div class="estado-linea estado-error" role="alert">
+      <p>{{ error() }}</p>
+      @if (errorRecuperable()) {
+        <button
+          type="button"
+          class="btn-accion btn-accion-compact"
+          (click)="onReintentar()"
+        >
+          Reintentar
+        </button>
+      }
+    </div>
     <app-ui-back-link
       to="/admin/certificaciones"
       label="Volver a Certificaciones"
@@ -198,9 +209,6 @@
                 @if (r.regenerado) {
                   <div class="regeneracion-estado regeneracion-ok" role="status">
                     <p>PDF regenerado correctamente.</p>
-                    @if (r.publicValidationUrl) {
-                      <p class="mono public-url">{{ r.publicValidationUrl }}</p>
-                    }
                     <p class="regeneracion-note">El QR de validación es permanente.</p>
                   </div>
                 } @else {
