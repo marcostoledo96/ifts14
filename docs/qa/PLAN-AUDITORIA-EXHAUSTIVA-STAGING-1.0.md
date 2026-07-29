@@ -274,8 +274,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | hecha | #99 | Mergeado a staging1.0 (`7e6ff10`); archive `2026-07-29-audit-p14-asist-marcado`; verify PASS WITH WARNINGS; smoke staging 4.4 pendiente |
 | P15 Certificados por fecha | `audit/p15-asist-certs` | hecha | #100 | Mergeado a staging1.0 (`101aff6`); archive `2026-07-29-audit-p15-asist-certs`; verify PASS |
 | P16 Certificaciones listado | `audit/p16-certs-list` | hecha | #101 | Mergeado a staging1.0 (`7450a97`); archive `2026-07-29-audit-p16-certs-list`; verify PASS |
-| P17 Certificación nueva | `audit/p17-certs-nueva` | en curso | #102 | SDD `audit-p17-certs-nueva` — PR abierto; apply+4R OK; verify en curso |
-| P18 Expediente preview | `audit/p18-certs-preview` | pendiente | | |
+| P17 Certificación nueva | `audit/p17-certs-nueva` | hecha | #102 | Mergeado a staging1.0 (`c371e2a`); archive `2026-07-29-audit-p17-certs-nueva`; verify PASS |
+| P18 Expediente preview | `audit/p18-certs-preview` | en curso | | Apply: honesty load + Reintentar gated + omit post-regen URL; verify pendiente |
 | P19 Folio PDF | `audit/p19-certs-pdf` | pendiente | | |
 | P20 Entrega manual | `audit/p20-certs-entrega` | pendiente | | |
 | P21 Revocación | `audit/p21-certs-revocar` | pendiente | | |
@@ -783,20 +783,23 @@ Siguiente: P17 certificación nueva (audit/p17-certs-nueva). No reabrir listado 
 
 **Rama:** `audit/p17-certs-nueva`
 **Ruta:** `/admin/certificaciones/nueva`
+**Estado:** hecha — PR #102 mergeado (`c371e2a`); archive `openspec/changes/archive/2026-07-29-audit-p17-certs-nueva/`
 
 **Checklist**
 
-- [ ] Flujo de emisión manual vs atajos desde asistencias
-- [ ] Validaciones y errores
-- [ ] ¿Sigue siendo necesaria la pantalla o hay copy confuso? Documentar hallazgo
+- [x] Flujo de emisión manual vs atajos desde asistencias (copy rol edge; pantalla conservada)
+- [x] Validaciones y errores (honesty loads + `mensajeErrorApi` emit else)
+- [x] ¿Sigue siendo necesaria la pantalla o hay copy confuso? Documentar hallazgo (se mantiene; sin «complementario»)
+- [x] Verify PASS + archive
 
 **Prompt**
 
 ```text
-Fase P17 — Nueva certificación.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p17-certs-nueva.
-Auditar certification-new-page. Claridad del flujo vs emisión desde asistencias, copy, errores, UI.
-Si la pantalla está obsoleta parcialmente, proponer ajuste mínimo (no eliminar sin acuerdo).
+Fase P17 — Nueva certificación — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #102 mergeado (c371e2a).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p17-certs-nueva/.
+Verify PASS (1 req / 7 escenarios; ng test certification-new-page 20/20).
+Siguiente: P18 expediente preview (audit/p18-certs-preview). No reabrir nueva salvo regresión.
 ```
 
 ---
@@ -805,13 +808,16 @@ Si la pantalla está obsoleta parcialmente, proponer ajuste mínimo (no eliminar
 
 **Rama:** `audit/p18-certs-preview`
 **Ruta:** `/admin/certificaciones/:id`
+**Estado:** en curso (apply honesty/Reintentar/omit-URL; verify pendiente)
 
 **Checklist**
 
-- [ ] Datos, firmas preview reales (no SVG placeholder si hay imagen)
-- [ ] Acciones: PDF, entrega, revocar
-- [ ] Estado revocado visible
-- [ ] URL validación truncada en UI; token no completo
+- [x] Datos, firmas preview reales (no SVG placeholder si hay imagen)
+- [x] Acciones: PDF, entrega, revocar
+- [x] Estado revocado visible
+- [x] URL validación truncada en UI; token no completo
+- [x] Honesty load/QR/regen (sin raw `Error.message`); Reintentar solo load hard
+- [x] Post-regen sin `publicValidationUrl` completa
 
 **Prompt**
 

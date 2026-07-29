@@ -16,6 +16,7 @@ Resumen operativo del admin Angular. Detalle visual: `00-angular20-port-v0.md` y
 | `/admin/cursos/:id/fechas/:fechaId/asistencias` | Marcado + emitir/regenerar en serie; Reintentar solo carga recuperable; `mensajeErrorApi` en catch marcar; token/QR no rota; sin tocar HTTP marcar |
 | `/admin/cursos/:id/fechas/:fechaId/asistencias/certificados` | Certificados del curso (filtro `cursoId`); Copiar→QR→PDF; Expediente; Reintentar solo carga recuperable; `mensajeErrorApi` en acciones; empty+CTA marcar |
 | `/admin/certificaciones` | Listado vía seam `listar` (filtros vigente/revocado+curso+texto; `paginasVisibles`; resumen gated; coincide/coinciden; DNI completo; Reintentar sin `errorRecuperable`); alta, expediente, folio PDF, entrega, revocación |
+| `/admin/certificaciones/nueva` | Emisión puntual alumno+curso (antes de `:id`); copy rol edge vs Asistencias (sin «complementario»); Reintentar solo loads (`errorCatalogosRecuperable`/`errorParRecuperable`); emit else `mensajeErrorApi`; DNI completo / anti-token; HTTP intacto |
 | `/admin/configuracion` | Textos institucionales y firmas (Rector/a, Asesor/a) |
 | `/validar/:token` | Validación pública |
 
