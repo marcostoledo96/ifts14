@@ -9,6 +9,9 @@
     <div role="dialog" aria-modal="true" class="dialog-card">
       <div class="dialog-body error-body">
         <p class="error-msg">{{ error() }}</p>
+        @if (errorRecuperable()) {
+          <button type="button" class="btn btn-primary" (click)="onReintentar()">Reintentar</button>
+        }
         <button type="button" class="btn btn-secondary" (click)="volverAlExpediente()">Volver al expediente</button>
       </div>
     </div>
@@ -122,6 +125,11 @@
         <!-- Link público -->
         <section class="section">
           <h2 class="section-title">Link público de validación</h2>
+          @if (entregaError()) {
+            <div class="alert-entrega-error" role="alert">
+              <p class="alert-entrega-msg">{{ entregaError() }}</p>
+            </div>
+          }
           <div class="qr-box">
             <div class="qr-decorativo" aria-hidden="true">
               <div class="qr-grid">
@@ -132,13 +140,13 @@
             </div>
             <div class="qr-info">
               <p class="public-url">
-                {{ validarUrl() }}
+                {{ validarUrl() || '—' }}
               </p>
               <button
                 type="button"
                 class="btn btn-secondary btn-qr-inline"
                 (click)="descargarQr()"
-                [disabled]="qrDescargando()"
+                [disabled]="!validarUrl() || qrDescargando()"
                 aria-label="Descargar código QR de validación permanente"
               >
                 @if (qrDescargando()) {
@@ -161,8 +169,17 @@
               <div class="alert-content">
                 <p class="alert-title">El PDF está desactualizado</p>
                 <p class="alert-desc">El contenido del certificado fue modificado después de la última generación del PDF.</p>
-                <button type="button" class="btn btn-warning" (click)="volverARegenerarPdf()">
-                  Volver a generar PDF
+                <button
+                  type="button"
+                  class="btn btn-warning"
+                  (click)="volverARegenerarPdf()"
+                  [disabled]="regenerando()"
+                >
+                  @if (regenerando()) {
+                    Regenerando…
+                  } @else {
+                    Volver a generar PDF
+                  }
                 </button>
                 @if (regenerarMsg()) {
                   <p class="regenerar-msg" aria-live="polite">{{ regenerarMsg() }}</p>
@@ -212,6 +229,7 @@
             type="button"
             class="btn btn-primary btn-flex"
             (click)="copiarLink()"
+            [disabled]="!validarUrl()"
           >
             @if (copiado()) {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
