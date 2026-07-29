@@ -275,8 +275,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P15 Certificados por fecha | `audit/p15-asist-certs` | hecha | #100 | Mergeado a staging1.0 (`101aff6`); archive `2026-07-29-audit-p15-asist-certs`; verify PASS |
 | P16 Certificaciones listado | `audit/p16-certs-list` | hecha | #101 | Mergeado a staging1.0 (`7450a97`); archive `2026-07-29-audit-p16-certs-list`; verify PASS |
 | P17 Certificación nueva | `audit/p17-certs-nueva` | hecha | #102 | Mergeado a staging1.0 (`c371e2a`); archive `2026-07-29-audit-p17-certs-nueva`; verify PASS |
-| P18 Expediente preview | `audit/p18-certs-preview` | en curso | #103 | SDD `audit-p18-certs-preview` — PR abierto; verify PASS WITH WARNINGS |
-| P19 Folio PDF | `audit/p19-certs-pdf` | pendiente | | |
+| P18 Expediente preview | `audit/p18-certs-preview` | hecha | #103 | Mergeado a staging1.0 (`dc3ac99`); archive `2026-07-29-audit-p18-certs-preview`; verify PASS WITH WARNINGS |
+| P19 Folio PDF | `audit/p19-certs-pdf` | en curso | #104 | SDD `audit-p19-certs-pdf` — PR abierto; verify PASS WITH WARNINGS |
 | P20 Entrega manual | `audit/p20-certs-entrega` | pendiente | | |
 | P21 Revocación | `audit/p21-certs-revocar` | pendiente | | |
 | P22 Validación pública | `audit/p22-validacion` | pendiente | | |
@@ -808,7 +808,7 @@ Siguiente: P18 expediente preview (audit/p18-certs-preview). No reabrir nueva sa
 
 **Rama:** `audit/p18-certs-preview`
 **Ruta:** `/admin/certificaciones/:id`
-**Estado:** en curso (apply honesty/Reintentar/omit-URL; verify pendiente)
+**Estado:** hecha — PR #103 mergeado (`dc3ac99`); archive `openspec/changes/archive/2026-07-29-audit-p18-certs-preview/`
 
 **Checklist**
 
@@ -822,9 +822,11 @@ Siguiente: P18 expediente preview (audit/p18-certs-preview). No reabrir nueva sa
 **Prompt**
 
 ```text
-Fase P18 — Expediente certificación (preview).
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p18-certs-preview.
-Auditar certification-preview-page. Firmas desde config, acciones, copy, D0 (no token completo), UI, errores.
+Fase P18 — Expediente certificación (preview) — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #103 mergeado (dc3ac99).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p18-certs-preview/.
+Verify PASS WITH WARNINGS (8/8 escenarios; ng test certification-preview-page 60/60).
+Siguiente: P19 folio PDF (audit/p19-certs-pdf). No reabrir preview salvo regresión.
 ```
 
 ---
@@ -832,25 +834,28 @@ Auditar certification-preview-page. Firmas desde config, acciones, copy, D0 (no 
 ## Fase P19 — Folio PDF
 
 **Rama:** `audit/p19-certs-pdf`
+**Cambio SDD:** `openspec/changes/audit-p19-certs-pdf/`
 **Ruta:** `/admin/certificaciones/:id/pdf`
+**Estado:** en curso — apply honesty/Reintentar load-only + descarga P15-strict + filename `detalle.numero`; verify pendiente
 
 **Checklist**
 
-- [ ] Folio A4 print 1 página; firmas 3:2
-- [ ] QR apunta a URL canónica completa
-- [ ] Descarga filename semántico
-- [ ] Sin disclaimers/textos no deseados en pie
-- [ ] Revocado marcado
-- [ ] Performance html2canvas aceptable
+- [x] Apply: honesty carga (`errorRecuperable` load-only + Reintentar) + tests unitarios
+- [x] Descarga: `mensajeErrorApi` P15-strict; html2canvas+jsPDF (no seam API); filename prefer `detalle.numero`
+- [ ] Folio A4 print 1 página; firmas 3:2 (smoke verify)
+- [x] QR apunta a URL canónica completa (regresión tests)
+- [x] Sin disclaimers/`certificateText` en pie del folio
+- [x] Revocado marcado (regresión tests)
+- [ ] Performance html2canvas aceptable (verify)
 
 **Prompt**
 
 ```text
-Fase P19 — Folio PDF (CRÍTICA).
+Fase P19 — Folio PDF (CRÍTICA) — EN CURSO (post-apply).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p19-certs-pdf.
-Auditar certification-pdf-preview-page (ts/html/css).
-Print A4 una página, firmas 3:2, QR canónico, copy del folio, descarga, prolijidad, carga de imágenes.
-No rotar token. No reintroducir textos institucionales no deseados en el PDF.
+Cambio SDD: openspec/changes/audit-p19-certs-pdf/.
+Apply: honesty load-only + mensajeErrorApi descarga + filename detalle.numero.
+Siguiente: sdd-verify (ng test pdf + tsc + print/firmas smoke). No rotar token. No HTTP. Leave P18 archive.
 ```
 
 ---
