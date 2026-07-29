@@ -266,8 +266,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P6 Cursos listado | `audit/p06-cursos-list` | hecha | #91 | Mergeado a staging1.0 |
 | P7 Cursos editor | `audit/p07-cursos-editor` | hecha | #92 | Mergeado a staging1.0 |
 | P8 Cursos detalle | `audit/p08-cursos-detail` | hecha | #93 | Mergeado a staging1.0 |
-| P9 Alumnos listado | `audit/p09-alumnos-list` | en PR | #94 | SDD verify PASS WITH WARNINGS; HTTP omitido (mapeo OK) |
-| P10 Alumnos editor | `audit/p10-alumnos-editor` | pendiente | | |
+| P9 Alumnos listado | `audit/p09-alumnos-list` | hecha | #94 | Mergeado a staging1.0; archive `2026-07-28-audit-p09-alumnos-list` |
+| P10 Alumnos editor | `audit/p10-alumnos-editor` | en PR | #95 | SDD verify PASS; HTTP 409 update omitido; incluye archive P9 |
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | pendiente | | |
 | P12 Asistencias hub | `audit/p12-asist-hub` | pendiente | | |
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | pendiente | | |
@@ -577,8 +577,9 @@ Artefactos SDD en español argentino formal.
 ## Fase P9 — Alumnos · listado
 
 **Rama:** `audit/p09-alumnos-list`
-**Cambio SDD:** `openspec/changes/audit-p09-alumnos-list/`
+**Cambio SDD:** `openspec/changes/archive/2026-07-28-audit-p09-alumnos-list/`
 **Ruta:** `/admin/alumnos`
+**Estado:** hecha — PR #94 mergeado a `staging1.0` (`f1a9ec9`); archive local listo.
 
 **Checklist**
 
@@ -590,12 +591,10 @@ Artefactos SDD en español argentino formal.
 **Prompt**
 
 ```text
-Fase P9 — Listado alumnos (/admin/alumnos).
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p09-alumnos-list.
-Cambio SDD Gentle-AI: audit-p09-alumnos-list (openspec/).
-Estado: PR #94 → staging1.0; verify PASS WITH WARNINGS; copy sin legajo; HTTP omitido.
-Siguiente tras merge: sdd-archive. No tocar editor/detalle (P10/P11).
-Artefactos SDD en español argentino formal. Sin trailing whitespace.
+Fase P9 — Listado alumnos (/admin/alumnos) — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #94 mergeado.
+Cambio SDD: openspec/changes/archive/2026-07-28-audit-p09-alumnos-list/.
+Siguiente: P10 editor (audit/p10-alumnos-editor). No reabrir listado salvo regresión.
 ```
 
 ---
@@ -603,20 +602,24 @@ Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ## Fase P10 — Alumnos · editor
 
 **Rama:** `audit/p10-alumnos-editor`
+**Cambio SDD:** `openspec/changes/audit-p10-alumnos-editor/`
 **Rutas:** `/admin/alumnos/nuevo`, `/admin/alumnos/:id/editar`
 
 **Checklist**
 
-- [ ] Validación DNI/email/nombre
-- [ ] Errores duplicado / 409
-- [ ] create vs edit
+- [x] Validación DNI/email/nombre
+- [x] Errores duplicado / 409
+- [x] create vs edit
 
 **Prompt**
 
 ```text
 Fase P10 — Editor alumnos (nuevo/editar).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p10-alumnos-editor.
-Auditar student-editor-page. Formularios, copy, errores negocio, a11y, prolijidad.
+Cambio SDD Gentle-AI: audit-p10-alumnos-editor (openspec/).
+Estado: PR #95 → staging1.0; verify PASS; copy sin legajo; Reintentar+loadGen; HTTP omitido.
+Siguiente tras merge: sdd-archive. No tocar detalle (P11).
+Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
 ---
