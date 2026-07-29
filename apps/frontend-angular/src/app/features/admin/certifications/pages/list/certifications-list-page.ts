@@ -66,6 +66,17 @@ export class CertificationsListPage {
     const page = this.paginaSegura();
     return this.resultadosFiltrados().slice((page - 1) * PAGINA_TAMANO, page * PAGINA_TAMANO);
   });
+  readonly paginasVisibles = computed(() => {
+    const total = this.totalPaginas();
+    const actual = this.paginaSegura();
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
+    if (actual <= 3) return [1, 2, 3, 4, 5];
+    if (actual >= total - 2) return [total - 4, total - 3, total - 2, total - 1, total];
+    return [actual - 2, actual - 1, actual, actual + 1, actual + 2];
+  });
+  readonly mostrarResumen = computed(
+    () => this.vistaQA() === 'datos' && !this.cargando() && !this.error(),
+  );
   readonly vacioTotal = computed(() => this.vistaQA() === 'vacio-total' || (!this.cargando() && !this.error() && !this.hayFiltrosActivos() && this.certificados().length === 0));
   readonly sinCoincidencias = computed(() => !this.cargando() && !this.error() && this.vistaQA() === 'datos' && this.hayFiltrosActivos() && this.resultadosFiltrados().length === 0);
 
@@ -89,8 +100,8 @@ export class CertificationsListPage {
   readonly skeletonRows = [0, 1, 2, 3, 4] as const;
 
   async recargar(): Promise<void> {
-    const generation = ++this.loadGeneration;
     if (this.vistaQA() !== 'datos') return;
+    const generation = ++this.loadGeneration;
     this.cargando.set(true);
     this.error.set('');
     try {
