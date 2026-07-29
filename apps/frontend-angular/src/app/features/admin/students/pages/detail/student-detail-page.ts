@@ -25,6 +25,8 @@ export class StudentDetailPage {
   private asistenciasGeneration = 0;
   readonly cargando = signal(true);
   readonly error = signal('');
+  /** True solo ante fallo de red/servicio en `cargar` (no id inválido ni null). */
+  readonly errorRecuperable = signal(false);
   readonly alumno = signal<AlumnoDetalle | null>(null);
 
   readonly mostrarAsistencias = signal(false);
@@ -37,34 +39,46 @@ export class StudentDetailPage {
     return a ? `${a.nombre} ${a.apellido}` : '';
   });
 
-  /** Revocadas desde API/mock; 0 si aún no hay dato. */
-  readonly certificacionesRevocadas = computed(() => {
-    const n = this.alumno()?.certificacionesRevocadas;
-    return n == null ? 0 : n;
-  });
-
   constructor() {
     this.route.paramMap.subscribe((params) => {
       const idStr = params.get('id');
       if (idStr) {
         if (!/^\d+$/.test(idStr)) {
+          // Invalida cargas en vuelo para que no pisen el error no recuperable.
+          this.loadGeneration++;
           this.cargando.set(false);
+          this.errorRecuperable.set(false);
+          this.alumno.set(null);
           this.error.set('Identificador de alumno inválido.');
         } else {
           const id = parseInt(idStr, 10);
           void this.cargar(id);
         }
       } else {
+        this.loadGeneration++;
         this.cargando.set(false);
+        this.errorRecuperable.set(false);
+        this.alumno.set(null);
         this.error.set('No se especificó un identificador de alumno.');
       }
     });
+  }
+
+  /** Paridad listado: null/ausente → «—»; número (incl. 0) literal. */
+  formatoMetrica(value: number | null | undefined): string {
+    return value == null ? '—' : String(value);
+  }
+
+  /** Estilo destructivo solo si hay revocadas > 0 (null/0 → muted). */
+  tieneRevocadas(alumno: AlumnoDetalle): boolean {
+    return alumno.certificacionesRevocadas != null && alumno.certificacionesRevocadas > 0;
   }
 
   private async cargar(id: number): Promise<void> {
     const generation = ++this.loadGeneration;
     this.cargando.set(true);
     this.error.set('');
+    this.errorRecuperable.set(false);
     this.alumno.set(null);
     this.mostrarAsistencias.set(false);
     this.asistencias.set([]);
@@ -76,12 +90,14 @@ export class StudentDetailPage {
 
       if (!data) {
         this.error.set('Alumno no encontrado.');
+        this.errorRecuperable.set(false);
       } else {
         this.alumno.set(data);
       }
     } catch {
       if (generation !== this.loadGeneration) return;
       this.error.set('Error al cargar la información del alumno. Reintentá.');
+      this.errorRecuperable.set(true);
     } finally {
       if (generation === this.loadGeneration) {
         this.cargando.set(false);
@@ -151,6 +167,7 @@ export class StudentDetailPage {
   }
 
   onReintentar(): void {
+    if (!this.errorRecuperable()) return;
     const idStr = this.route.snapshot.paramMap.get('id');
     if (idStr) {
       const id = parseInt(idStr, 10);
