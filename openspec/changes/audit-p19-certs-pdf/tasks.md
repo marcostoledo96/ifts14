@@ -68,4 +68,4 @@ No — single PR, Low. Threat matrix N/A.
 
 ## Verify (sdd-verify)
 
-- [ ] Focused pdf `ng test` + `tsc`; locks OK; print/firmas smoke → `verify-report.md`.
+- [x] Focused pdf `ng test` + `tsc`; locks OK; print/firmas smoke → `verify-report.md`.
