@@ -265,8 +265,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P5 Config institucional | `audit/p05-config` | hecha | #90 | Mergeado a staging1.0 |
 | P6 Cursos listado | `audit/p06-cursos-list` | hecha | #91 | Mergeado a staging1.0 |
 | P7 Cursos editor | `audit/p07-cursos-editor` | hecha | #92 | Mergeado a staging1.0 |
-| P8 Cursos detalle | `audit/p08-cursos-detail` | en PR | #93 | SDD archive 2026-07-28; 4R OK |
-| P9 Alumnos listado | `audit/p09-alumnos-list` | pendiente | | |
+| P8 Cursos detalle | `audit/p08-cursos-detail` | hecha | #93 | Mergeado a staging1.0 |
+| P9 Alumnos listado | `audit/p09-alumnos-list` | en PR | #94 | SDD verify PASS WITH WARNINGS; HTTP omitido (mapeo OK) |
 | P10 Alumnos editor | `audit/p10-alumnos-editor` | pendiente | | |
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | pendiente | | |
 | P12 Asistencias hub | `audit/p12-asist-hub` | pendiente | | |
@@ -577,22 +577,25 @@ Artefactos SDD en español argentino formal.
 ## Fase P9 — Alumnos · listado
 
 **Rama:** `audit/p09-alumnos-list`
+**Cambio SDD:** `openspec/changes/audit-p09-alumnos-list/`
 **Ruta:** `/admin/alumnos`
 
 **Checklist**
 
-- [ ] DNI completo visible; filtros email/cert
-- [ ] Métricas certificaciones / cursos
-- [ ] Paginación, vacíos, QA toggles solo en dev
-- [ ] Copy “Contacto disponible” / etc.
+- [x] DNI completo visible; filtros email/cert
+- [x] Métricas certificaciones / cursos
+- [x] Paginación, vacíos, QA toggles solo en dev
+- [x] Copy “Contacto disponible” / etc. (sin «legajo»; sin chip «Con email»)
 
 **Prompt**
 
 ```text
 Fase P9 — Listado alumnos (/admin/alumnos).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p09-alumnos-list.
-Auditar students-list-page + mapping HttpStudentsService si métricas fallan.
-DNI completo en UI. Sin PII en logs. Lentes UI/filtros/copy/errores/carga/prolijidad.
+Cambio SDD Gentle-AI: audit-p09-alumnos-list (openspec/).
+Estado: PR #94 → staging1.0; verify PASS WITH WARNINGS; copy sin legajo; HTTP omitido.
+Siguiente tras merge: sdd-archive. No tocar editor/detalle (P10/P11).
+Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
 ---
