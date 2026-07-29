@@ -19,6 +19,7 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 - Cursos: listado, alta/edición, fechas, detalle.
 - Detalle de curso (P8): not-found amigable, Reintentar en fallos recuperables, CTA «Ver fechas del curso» al hub, labels humanas y fechas es-AR.
 - Listado de alumnos (P9): copy sin «legajo»; badges de contacto sin email literal ni chip «Con email»; métricas `0` vs «—»; HTTP intacto (mapeo OK).
+- Editor de alumnos (P10): copy sin «legajo»; Reintentar en carga recuperable (+ `loadGeneration`); lote create con resumen sin navegar; 409 tipado sin PII; HTTP intacto (fallback 409 update omitido).
 - Alumnos: listado, alta/edición, detalle/expediente con trayectoria.
 - Asistencias: por curso, marcado, emisión/regeneración desde presentes.
 - Certificaciones: listado, nueva, preview/expediente, folio PDF, entrega manual, revocación.

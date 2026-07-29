@@ -326,6 +326,23 @@ NO DEBE exigirse cambio de `HttpStudentsService` ni backend por defecto; preferi
 - WHEN se corrige el servicio
 - THEN DEBE mapear 0 como número y null si ausente, sin PII ni editor/detalle
 
+### Requirement: Fallback condicional 409 en actualizar alumno
+
+NO DEBE exigirse cambio de `HttpStudentsService.actualizar` ni backend por defecto; preferir manejo en la página del editor. SOLO SI smoke, staging o test demuestran 409 de update sin `existingStudentId` usable para el enlace, PUEDE agregarse fallback mínimo (p. ej. `findIdByDni`) sin incluir DNI/token en mensajes ni logs.
+(Nota archive P10: en `audit-p10-alumnos-editor` no hubo evidencia de 409 update sin id usable; `http-students.service.*` intactos; HTTP omitido.)
+
+#### Scenario: Sin evidencia — no tocar HTTP
+
+- GIVEN 409 de update con `existingStudentId` en envelope o sin gap observable
+- WHEN cierra P10
+- THEN NO DEBE modificarse `HttpStudentsService.actualizar` ni el backend
+
+#### Scenario: Evidencia de 409 sin id — parche mínimo
+
+- GIVEN 409 de update sin id usable y enlace de conflicto ausente
+- WHEN se corrige el servicio
+- THEN PUEDE resolver id vía fallback mínimo y DEBE mapear a conflicto tipado sin PII
+
 ### Requirement: DI wiring uses environment.useRealApi toggle
 
 `app.routes.ts` SHALL select between HTTP and in-memory implementations using the `environment.useRealApi` flag, matching the existing `VALIDATION_SOURCE` pattern from the M3-06 checkpoint.
