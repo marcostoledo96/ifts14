@@ -277,7 +277,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P17 Certificación nueva | `audit/p17-certs-nueva` | hecha | #102 | Mergeado a staging1.0 (`c371e2a`); archive `2026-07-29-audit-p17-certs-nueva`; verify PASS |
 | P18 Expediente preview | `audit/p18-certs-preview` | hecha | #103 | Mergeado a staging1.0 (`dc3ac99`); archive `2026-07-29-audit-p18-certs-preview`; verify PASS WITH WARNINGS |
 | P19 Folio PDF | `audit/p19-certs-pdf` | hecha | #104 | Mergeado a staging1.0 (`4938024`); archive `2026-07-29-audit-p19-certs-pdf`; verify PASS WITH WARNINGS |
-| P20 Entrega manual | `audit/p20-certs-entrega` | en curso (apply) | | |
+| P20 Entrega manual | `audit/p20-certs-entrega` | en curso | #105 | SDD `audit-p20-certs-entrega` — PR abierto; verify PASS |
 | P21 Revocación | `audit/p21-certs-revocar` | pendiente | | |
 | P22 Validación pública | `audit/p22-validacion` | pendiente | | |
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | pendiente | | |
