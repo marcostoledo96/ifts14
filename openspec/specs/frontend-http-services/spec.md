@@ -309,6 +309,23 @@ The existing in-memory service implementations and `InjectionToken` providers SH
 - THEN each HTTP service SHALL implement the corresponding interface
 - AND the HTTP service SHALL be injectable via the existing `InjectionToken`
 
+### Requirement: Corrección condicional del mapeo de métricas de alumnos
+
+NO DEBE exigirse cambio de `HttpStudentsService` ni backend por defecto; preferir fixes en la página. SOLO SI smoke o code review demuestran mapeo roto (UI «—» con payload 0/N), DEBE corregirse el mapeo mínimo (`toAlumno`/conteos) sin DNI/token en errores.
+(Nota archive P9: en `audit-p09-alumnos-list` no hubo evidencia de mapeo roto; `optionalCount` preserva `0`; HTTP omitido.)
+
+#### Scenario: Sin evidencia — no tocar HTTP
+
+- GIVEN métricas correctas en staging
+- WHEN cierra P9
+- THEN NO DEBE modificarse `HttpStudentsService` ni backend
+
+#### Scenario: Evidencia de mapeo roto — parche mínimo
+
+- GIVEN payload numérico y UI «—» por mapeo
+- WHEN se corrige el servicio
+- THEN DEBE mapear 0 como número y null si ausente, sin PII ni editor/detalle
+
 ### Requirement: DI wiring uses environment.useRealApi toggle
 
 `app.routes.ts` SHALL select between HTTP and in-memory implementations using the `environment.useRealApi` flag, matching the existing `VALIDATION_SOURCE` pattern from the M3-06 checkpoint.
