@@ -269,7 +269,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P9 Alumnos listado | `audit/p09-alumnos-list` | hecha | #94 | Mergeado a staging1.0; archive `2026-07-28-audit-p09-alumnos-list` |
 | P10 Alumnos editor | `audit/p10-alumnos-editor` | hecha | #95 | Mergeado a staging1.0; archive `2026-07-29-audit-p10-alumnos-editor`; HTTP 409 update omitido |
 | P11 Alumnos detalle | `audit/p11-alumnos-detail` | hecha | #96 | Mergeado a staging1.0; archive `2026-07-29-audit-p11-alumnos-detail`; verify PASS WITH WARNINGS |
-| P12 Asistencias hub | `audit/p12-asist-hub` | apply listo | | SDD `audit-p12-asist-hub` — índice lineal + HTTP one-pass; falta verify |
+| P12 Asistencias hub | `audit/p12-asist-hub` | en PR | #97 | SDD verify PASS; índice lineal + HTTP one-pass; incluye archive P11 |
 | P13 Asistencias fechas | `audit/p13-asist-fechas` | pendiente | | |
 | P14 Asistencias marcado+emisión | `audit/p14-asist-marcado` | pendiente | | |
 | P15 Certificados por fecha | `audit/p15-asist-certs` | pendiente | | |
@@ -656,9 +656,9 @@ Siguiente: P12 hub asistencias (audit/p12-asist-hub). No reabrir detalle salvo r
 
 **Checklist**
 
-- [ ] Listado cursos con métricas de fechas
-- [ ] Búsqueda, paginación, vacío
-- [ ] Performance del hub (evitar trabajo O(n²) innecesario en cliente si se puede simplificar sin cambiar contrato)
+- [x] Listado cursos con métricas de fechas
+- [x] Búsqueda, paginación, vacío
+- [x] Performance del hub (evitar trabajo O(n²) innecesario en cliente si se puede simplificar sin cambiar contrato)
 
 **Prompt**
 
@@ -666,11 +666,8 @@ Siguiente: P12 hub asistencias (audit/p12-asist-hub). No reabrir detalle salvo r
 Fase P12 — Hub asistencias (/admin/asistencias).
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p12-asist-hub.
 Cambio SDD Gentle-AI: audit-p12-asist-hub (openspec/).
-Auditar attendances-list-page.* (+ listarHub solo si hay evidencia PERF/métricas).
-Checklist: listado cursos con métricas de fechas; búsqueda/paginación/vacío;
-performance hub (evitar O(n²) client-side sin cambiar contrato); copy/errores/Reintentar;
-DNI solo si aparece (completo); sin PII en logs. No rediseñar marcado (P14).
-Ciclo: explore→propose→spec→design→tasks→apply→4R+tests→OK→PR→verify→archive.
+Estado: PR #97 → staging1.0; verify PASS; índice lineal + HTTP one-pass.
+Siguiente tras merge: sdd-archive. No tocar fechas/marcado (P13/P14).
 Artefactos SDD en español argentino formal. Sin trailing whitespace.
 ```
 
