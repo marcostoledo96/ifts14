@@ -6,6 +6,7 @@ import { CertificacionDetalle } from '../../certifications.models';
 import { FormsModule } from '@angular/forms';
 import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
+import { trapTabKey } from '../../../../../shared/util/trap-tab';
 
 @Component({
   selector: 'app-certification-revoke-page',
@@ -165,31 +166,13 @@ export class CertificationRevokePage {
     void this.router.navigate(this.volverLink());
   }
 
-  // T5: focus trap — Tab/Shift+Tab se mantiene dentro del diálogo
+  // T5 / SHELL-A11Y-03: focus trap vía helper compartido
   @HostListener('keydown.tab', ['$event'])
   @HostListener('keydown.shift.tab', ['$event'])
   onTab(e: Event): void {
-    const ke = e as KeyboardEvent;
     const dialog = this.dialogRef()?.nativeElement;
     if (!dialog) return;
-    const focusable = dialog.querySelectorAll<HTMLElement>(
-      'a[href], button:not(:disabled), textarea, input, [tabindex]:not([tabindex="-1"])',
-    );
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    const active = document.activeElement;
-    if (ke.shiftKey) {
-      if (active === first || !dialog.contains(active)) {
-        ke.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (active === last) {
-        ke.preventDefault();
-        first.focus();
-      }
-    }
+    trapTabKey(e as KeyboardEvent, dialog);
   }
 
   async onRevocar(): Promise<void> {

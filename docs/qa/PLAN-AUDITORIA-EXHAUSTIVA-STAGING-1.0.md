@@ -283,8 +283,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | hecha | #108 | Mergeado a staging1.0 (`e9f6930`); archive `2026-07-29-audit-p23-not-found`; verify PASS |
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | hecha | #109 | Mergeado a staging1.0 (`511ce7b`); archive `2026-07-29-audit-u01-prolijidad-fe`; verify PASS |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | hecha | #110 | Mergeado a staging1.0 (`125f6f8`); archive `2026-07-30-audit-u02-perf-fe`; verify PASS |
-| U3 Copy / redacción global | `audit/u03-copy` | en PR | #111 | verify PASS (5/5); glosario + pass certs; hub DEFER |
-| U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | pendiente | | |
+| U3 Copy / redacción global | `audit/u03-copy` | hecha | #111 | Mergeado a staging1.0 (`b0d23d4`); archive `2026-07-30-audit-u03-copy`; verify PASS |
+| U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | en PR | | verify PASS (13/13); trap drawer/diálogos; contraste DEFER |
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | pendiente | | |
 | U6 Backend contrato + errores | `audit/u06-backend` | pendiente | | |
 | U7 Seguridad + PII | `audit/u07-seguridad` | pendiente | | |
@@ -1057,22 +1057,28 @@ Siguiente: U3 copy (audit/u03-copy) o U9 smokes según prioridad. No reabrir U2 
 
 **Rama:** `audit/u03-copy`
 
-**Estado:** en PR #111 — verify PASS (5/5; focused ng test 125 SUCCESS; tsc 0); hub Activo/Inactivo diferido; archive tras merge.
+**Estado:** hecha — PR #111 mergeado a `staging1.0` (`b0d23d4`); archive `openspec/changes/archive/2026-07-30-audit-u03-copy/`; verify PASS (5/5; SHELL-COPY-01 + CERT-COPY-01; focused ng test 125 SUCCESS; tsc 0).
 
 **Checklist**
 
-- [x] Glosario único: Válida/Revocado, Activo/Inactivo, Programada/Realizada, expediente, entrega manual
-- [x] Pass de strings visibles inconsistentes entre páginas
+- [x] Glosario único: Válida/Revocado, Activo/Inactivo, Programada/Realizada, expediente, entrega manual — `docs/frontend/04-glosario-ui.md` (SHELL-COPY-01)
+- [x] Pass de strings visibles inconsistentes entre páginas — badge **Revocado**; label **Documento**; copy «válidas»/«válida» (CERT-COPY-01)
 - [x] Tono institucional AR
+- [x] Archive + merge a `staging1.0` (`b0d23d4`; archive `2026-07-30-audit-u03-copy`)
+
+**Diferidos (locked):** hub Activo/Inactivo en asistencias; patrones U5 error/vacío; paridad literal admin↔público; folio ceremonial.
 
 **Prompt**
 
 ```text
-Fase U3 — Redacción / copy global.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u03-copy.
-Crear glosario breve en el PR (o en docs/frontend/) y unificar etiquetas/mensajes inconsistentes en UI admin+pública.
-Sin cambios de lógica de negocio. Español argentino formal.
+Fase U3 — Redacción / copy global — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #111 mergeado (b0d23d4).
+Cambio SDD: openspec/changes/archive/2026-07-30-audit-u03-copy/.
+Verify PASS (5/5 escenarios; SHELL-COPY-01 + CERT-COPY-01; focused ng test 125 SUCCESS; tsc 0).
+Siguiente: U4 a11y/responsive (audit/u04-a11y-responsive) o U9 smokes según prioridad. No reabrir U3 salvo regresión.
 ```
+
+**Nota:** glosario UI + pass quirúrgico admin certs; hub DEFER; API `vigente` intacto; D0. Cerrada.
 
 ---
 
@@ -1080,12 +1086,16 @@ Sin cambios de lógica de negocio. Español argentino formal.
 
 **Rama:** `audit/u04-a11y-responsive`
 
+**Estado:** en PR — verify PASS (13/13; focused ng test 70 SUCCESS; tsc 0); contraste/`.sr-only` diferidos; archive tras merge.
+
 **Checklist**
 
-- [ ] Focus visible, labels, contraste básico
-- [ ] Tablas admin en mobile (scroll/stack)
-- [ ] Modales/confirmaciones usables con teclado
-- [ ] Login + validación pública + shell prioritarios si quedó deuda
+- [x] Focus visible, labels, contraste básico
+- [x] Tablas admin en mobile (scroll/stack)
+- [x] Modales/confirmaciones usables con teclado
+- [x] Login + validación pública + shell prioritarios si quedó deuda
+
+**Notas apply (U4):** contraste tokens / hoist `.sr-only` → **DEFER** (U9). Soft focus return. Error-dialog entrega con trap. Revoke backdrop fuera de tab. Helper `trapTabKey`.
 
 **Prompt**
 
