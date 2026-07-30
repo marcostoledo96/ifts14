@@ -286,7 +286,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U3 Copy / redacción global | `audit/u03-copy` | hecha | #111 | Mergeado a staging1.0 (`b0d23d4`); archive `2026-07-30-audit-u03-copy`; verify PASS |
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | hecha | #112 | Mergeado a staging1.0 (`7b7d3db`); archive `2026-07-30-audit-u04-a11y-responsive`; verify PASS; contraste DEFER |
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | hecha | #113 | Mergeado a staging1.0 (`0b9d786`); archive `2026-07-30-audit-u05-estados-error`; verify PASS WITH WARNINGS; SHELL-STATE-01..04 |
-| U6 Backend contrato + errores | `audit/u06-backend` | en curso | | verify PASS; `state()`/`authorize` lastSeen + D-004→503; PR pendiente |
+| U6 Backend contrato + errores | `audit/u06-backend` | en PR | #114 | verify PASS; `state()`/`authorize` lastSeen + D-004→503; archiva U5 |
 | U7 Seguridad + PII | `audit/u07-seguridad` | pendiente | | |
 | U8 Docs + drift specs | `audit/u08-docs` | pendiente | | |
 | U9 QA staging real + smokes | `audit/u09-qa-staging` | pendiente | | |
