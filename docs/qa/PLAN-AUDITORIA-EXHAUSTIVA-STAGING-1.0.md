@@ -276,8 +276,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P16 Certificaciones listado | `audit/p16-certs-list` | hecha | #101 | Mergeado a staging1.0 (`7450a97`); archive `2026-07-29-audit-p16-certs-list`; verify PASS |
 | P17 Certificación nueva | `audit/p17-certs-nueva` | hecha | #102 | Mergeado a staging1.0 (`c371e2a`); archive `2026-07-29-audit-p17-certs-nueva`; verify PASS |
 | P18 Expediente preview | `audit/p18-certs-preview` | hecha | #103 | Mergeado a staging1.0 (`dc3ac99`); archive `2026-07-29-audit-p18-certs-preview`; verify PASS WITH WARNINGS |
-| P19 Folio PDF | `audit/p19-certs-pdf` | en curso | #104 | SDD `audit-p19-certs-pdf` — PR abierto; verify PASS WITH WARNINGS |
-| P20 Entrega manual | `audit/p20-certs-entrega` | pendiente | | |
+| P19 Folio PDF | `audit/p19-certs-pdf` | hecha | #104 | Mergeado a staging1.0 (`4938024`); archive `2026-07-29-audit-p19-certs-pdf`; verify PASS WITH WARNINGS |
+| P20 Entrega manual | `audit/p20-certs-entrega` | en curso | #105 | SDD `audit-p20-certs-entrega` — PR abierto; verify PASS |
 | P21 Revocación | `audit/p21-certs-revocar` | pendiente | | |
 | P22 Validación pública | `audit/p22-validacion` | pendiente | | |
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | pendiente | | |
@@ -834,28 +834,28 @@ Siguiente: P19 folio PDF (audit/p19-certs-pdf). No reabrir preview salvo regresi
 ## Fase P19 — Folio PDF
 
 **Rama:** `audit/p19-certs-pdf`
-**Cambio SDD:** `openspec/changes/audit-p19-certs-pdf/`
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-p19-certs-pdf/`
 **Ruta:** `/admin/certificaciones/:id/pdf`
-**Estado:** en curso — apply honesty/Reintentar load-only + descarga P15-strict + filename `detalle.numero`; verify pendiente
+**Estado:** hecha — PR #104 mergeado (`4938024`); verify PASS WITH WARNINGS; archive cerrado
 
 **Checklist**
 
 - [x] Apply: honesty carga (`errorRecuperable` load-only + Reintentar) + tests unitarios
 - [x] Descarga: `mensajeErrorApi` P15-strict; html2canvas+jsPDF (no seam API); filename prefer `detalle.numero`
-- [ ] Folio A4 print 1 página; firmas 3:2 (smoke verify)
+- [x] Folio A4 print 1 página; firmas 3:2 (smoke verify)
 - [x] QR apunta a URL canónica completa (regresión tests)
 - [x] Sin disclaimers/`certificateText` en pie del folio
 - [x] Revocado marcado (regresión tests)
-- [ ] Performance html2canvas aceptable (verify)
+- [x] Performance html2canvas aceptable (verify; scale:2 intacto)
 
 **Prompt**
 
 ```text
-Fase P19 — Folio PDF (CRÍTICA) — EN CURSO (post-apply).
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p19-certs-pdf.
-Cambio SDD: openspec/changes/audit-p19-certs-pdf/.
-Apply: honesty load-only + mensajeErrorApi descarga + filename detalle.numero.
-Siguiente: sdd-verify (ng test pdf + tsc + print/firmas smoke). No rotar token. No HTTP. Leave P18 archive.
+Fase P19 — Folio PDF (CRÍTICA) — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #104 mergeado (4938024).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p19-certs-pdf/.
+Verify PASS WITH WARNINGS (9/13 escenarios; ng test certification-pdf-preview-page 43/43).
+Siguiente: P20 entrega manual (audit/p20-certs-entrega). No reabrir folio salvo regresión.
 ```
 
 ---
@@ -863,22 +863,26 @@ Siguiente: sdd-verify (ng test pdf + tsc + print/firmas smoke). No rotar token. 
 ## Fase P20 — Entrega manual
 
 **Rama:** `audit/p20-certs-entrega`
+**Cambio SDD:** `openspec/changes/audit-p20-certs-entrega/`
 **Ruta:** `/admin/certificaciones/:id/entrega`
+**Estado:** apply en curso — front-only delivery-page; pendiente verify
 
 **Checklist**
 
-- [ ] Copiar link / descargar PDF o QR
-- [ ] 409 TOKEN_NOT_RECOVERABLE mensaje operable
-- [ ] No rotar token al “reenviar”/regenerar vista
-- [ ] Copy claro para bedelía
+- [x] Apply: `allSettled` (detalle hard / entrega soft) + honesty P15-strict
+- [x] 409 `TOKEN_NOT_RECOVERABLE` soft operable (bedelía copy; Copiar/QR off; sin Reintentar)
+- [x] `errorRecuperable` load-only + Reintentar gated; not-found sin Reintentar
+- [x] Wire `regenerarPdf` + re-fetch; D0 sin rotar token; sin `publicValidationUrl` post-regen
+- [x] PDF folio `?descargar=1` + seam `navigate=false`
+- [ ] Verify: focused `ng test` delivery + `tsc` → `verify-report.md`
 
 **Prompt**
 
 ```text
-Fase P20 — Entrega manual (CRÍTICA).
+Fase P20 — Entrega manual (CRÍTICA) — apply hecho; pendiente sdd-verify.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p20-certs-entrega.
-Auditar certification-delivery-page + contrato entrega-manual si mensajes fallan.
-D0 token permanente. UX copiar/descargar. Errores 409 claros sin filtrar secretos.
+Cambio SDD: openspec/changes/audit-p20-certs-entrega/.
+Locks: leave P19 archive; no HTTP; D0 token permanente.
 ```
 
 ---

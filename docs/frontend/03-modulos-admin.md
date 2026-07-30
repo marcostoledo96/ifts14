@@ -18,6 +18,7 @@ Resumen operativo del admin Angular. Detalle visual: `00-angular20-port-v0.md` y
 | `/admin/certificaciones` | Listado vía seam `listar` (filtros vigente/revocado+curso+texto; `paginasVisibles`; resumen gated; coincide/coinciden; DNI completo; Reintentar sin `errorRecuperable`); alta, expediente, folio PDF, entrega, revocación |
 | `/admin/certificaciones/nueva` | Emisión puntual alumno+curso (antes de `:id`); copy rol edge vs Asistencias (sin «complementario»); Reintentar solo loads (`errorCatalogosRecuperable`/`errorParRecuperable`); emit else `mensajeErrorApi`; DNI completo / anti-token; HTTP intacto |
 | `/admin/certificaciones/:id` | Expediente preview: firmas reales si hay imagen; Descargar PDF→`/pdf`; Regenerar=API (sin rotar token); Reintentar solo load hard; `mensajeErrorApi` en QR/regen; post-regen omite URL canónica completa; DNI completo / anti-token; HTTP intacto |
+| `/admin/certificaciones/:id/pdf` | Folio imprimible: html2canvas+jsPDF (no seam API); filename prefer `detalle.numero`; Reintentar solo load hard; descarga `mensajeErrorApi` P15-strict; print A4 1 pág + firmas 3:2; QR canónico sin rotar; DNI completo / anti-token; HTTP intacto |
 | `/admin/configuracion` | Textos institucionales y firmas (Rector/a, Asesor/a) |
 | `/validar/:token` | Validación pública |
 
