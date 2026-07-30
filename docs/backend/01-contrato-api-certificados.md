@@ -1,5 +1,7 @@
 # Contrato de API — Certificados QR
 
+> **Auth HTTP vigente:** los endpoints administrativos usan sesión PHP + CSRF. `X-Admin-Key` no autoriza HTTP (solo CLI/smokes server-side). Fuente de verdad: [`admin-auth`](../../openspec/specs/admin-auth/spec.md) y [`00-php84-api.md`](00-php84-api.md). Las tablas de este documento que aún listan `X-Admin-Key` son históricas y no prevalecen.
+
 Este contrato define la API PHP bajo `/certificados/api/` para validar certificados por QR o enlace. Tras el ciclo `backend-entrega-manual-certificados`, la API suma endpoints administrativos mínimos para emitir, revocar, descargar PDF y entregar manualmente certificados con `X-Admin-Key`. La entrega manual reemplaza al reenvío por email: Bedelía copia el link público y descarga el PDF por canal externo, conservando el token/QR permanente (no rota token, no envía email, no usa SMTP/PHPMailer). El token recuperable se persiste cifrado con AES-256-GCM y clave externa a Git. El certificado es de curso e incluye fechas asistidas; el DTO público muestra DNI completo por decisión institucional aprobada.
 
 ## Alcance
