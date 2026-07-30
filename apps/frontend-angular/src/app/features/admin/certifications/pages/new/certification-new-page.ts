@@ -401,7 +401,7 @@ export class CertificationNewPage implements OnInit {
     } catch (e) {
       const status = statusOf(e);
       if (status === 409) {
-        this.errorEmit.set('Ya existe un certificado vigente para este alumno y curso.');
+        this.errorEmit.set('Ya existe una certificación válida para este alumno y curso.');
       } else if (status === 400) {
         this.errorEmit.set('No se pudo emitir: los datos no son válidos.');
       } else if (status === 500) {

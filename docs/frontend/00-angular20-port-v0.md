@@ -2,6 +2,8 @@
 
 Este documento es la fuente de verdad para portar a Angular 20 la referencia visual v0 del módulo `/certificados/`.
 
+Etiquetas visibles canónicas (Válida/Revocado, Activo/Inactivo, etc.): `docs/frontend/04-glosario-ui.md`.
+
 ## Estado de referencia
 
 `muestra_pagina/` contiene la referencia visual v0 final y completa generada en Next.js/React, con código fuente exportado y capturas para todos los flujos 4-22. Se usa solo como referencia visual y funcional: no se copian componentes, rutas, hooks ni estilos literalmente. El `muestra_pagina/MANIFIESTO_V0.md` histórico fue retirado al reemplazar la carpeta por el export final; el inventario de referencia se completa contra el listado seguro de la carpeta.
