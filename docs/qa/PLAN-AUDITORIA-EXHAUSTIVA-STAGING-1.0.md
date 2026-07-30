@@ -281,8 +281,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P21 Revocación | `audit/p21-certs-revocar` | hecha | #106 | Mergeado a staging1.0 (`992201d`); archive `2026-07-29-audit-p21-certs-revocar`; verify PASS |
 | P22 Validación pública | `audit/p22-validacion` | hecha | #107 | Mergeado a staging1.0 (`922ae59`); archive `2026-07-29-audit-p22-validacion`; verify PASS |
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | hecha | #108 | Mergeado a staging1.0 (`e9f6930`); archive `2026-07-29-audit-p23-not-found`; verify PASS |
-| U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | en PR | #109 | SDD `audit-u01-prolijidad-fe` — PR abierto; verify PASS (10/10; OnPush 30/30) |
-| U2 Carga / performance FE | `audit/u02-perf-fe` | pendiente | | |
+| U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | hecha | #109 | Mergeado a staging1.0 (`511ce7b`); archive `2026-07-29-audit-u01-prolijidad-fe`; verify PASS |
+| U2 Carga / performance FE | `audit/u02-perf-fe` | en PR | #110 | verify PASS (9/9); merge → archive U2 → U3 |
 | U3 Copy / redacción global | `audit/u03-copy` | pendiente | | |
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | pendiente | | |
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | pendiente | | |
@@ -984,8 +984,8 @@ Hacer **después** de P14–P22 al menos en primer pase, o en paralelo solo si n
 ## Fase U1 — Prolijidad de código frontend
 
 **Rama:** `audit/u01-prolijidad-fe`
-**Cambio SDD:** `openspec/changes/audit-u01-prolijidad-fe/`
-**Estado:** en PR — #109; verify PASS; archive pendiente post-merge
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-u01-prolijidad-fe/`
+**Estado:** hecha — #109 mergeado a staging1.0 (`511ce7b`); verify PASS; archive cerrado
 
 **Alcance transversal FE (sin rediseñar UX):**
 
@@ -1002,19 +1002,21 @@ Hacer **después** de P14–P22 al menos en primer pase, o en paralelo solo si n
 - [x] Extract `paginasVisiblesWindow` + wire 4 listados; HTML/UX sin cambio
 - [x] OnPush preservado (bajas Landing/FolioShell; restantes OnPush 30/30)
 - [x] Verify (`sdd-verify`): SHELL-HYG-01..05 + `tsc` + specs focused → `verify-report.md`
-- [ ] Archive + merge a `staging1.0`
+- [x] Archive + merge a `staging1.0` (`511ce7b`; archive `2026-07-29-audit-u01-prolijidad-fe`)
 
 **Diferidos (locked):** formatters fecha, clipboard, `mensajeErrorApi`, purge `// ponytail:`, copy/UX, U2, honesty P15–P23.
 
 **Prompt**
 
 ```text
-Fase U1 — Prolijidad FE transversal — en PR #109; verify PASS.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u01-prolijidad-fe.
-Cambio SDD: openspec/changes/audit-u01-prolijidad-fe/.
+Fase U1 — Prolijidad FE transversal — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #109 mergeado (511ce7b).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-u01-prolijidad-fe/.
 Verify PASS (10/10 escenarios; OnPush 30/30; focused ng test 231+).
-Siguiente post-merge: archive U1 → U2 performance FE (o U9 smokes según prioridad).
+Siguiente: U2 performance FE (audit/u02-perf-fe) o U9 smokes según prioridad. No reabrir U1 salvo regresión.
 ```
+
+**Nota:** delete Landing/FolioShell + alias `guardar()`; helper `paginasVisiblesWindow` en 4 listados; OnPush 30/30. Cerrada.
 
 ---
 
@@ -1022,13 +1024,19 @@ Siguiente post-merge: archive U1 → U2 performance FE (o U9 smokes según prior
 
 **Rama:** `audit/u02-perf-fe`
 
+**Estado:** en PR #110 — verify PASS (9/9 escenarios; focused ng test 105 SUCCESS; tsc 0); archive U2 tras merge.
+
 **Checklist**
 
-- [ ] Lazy routes OK (ya loadComponent; verificar bundles pesados html2canvas/jspdf)
-- [ ] Hub asistencias: tamaño payload / procesamiento cliente
-- [ ] Listados: ¿traer todo y filtrar en cliente escala? Documentar límite y mitigación
-- [ ] Firmas/logos cacheables
-- [ ] Evitar double-fetch al navegar
+- [x] Lazy routes OK (ya loadComponent; verificar bundles pesados html2canvas/jspdf) — `import()` solo en descarga PDF (CERT-PERF-01)
+- [x] Hub asistencias: coalesce `hubPending` + invalidate en marcar/anular (HTTP-PERF-01); payload slim API diferido
+- [x] Listados: filtro cliente — **cientos OK**; **miles → paginación/API (U6)** — ver `docs/frontend/03-modulos-admin.md`
+- [x] Firmas: cache de sesión `previewFirma`/`obtener` + invalidate (HTTP-PERF-02); `Cache-Control` PHP sin cambio
+- [x] Evitar double-fetch al navegar (hub + config)
+
+**Nota de escala:** listados admin con filtro/paginación client-side soportan cientos de filas; miles requieren paginación servidor (fuera de U2).
+
+**Diferidos (locked):** slim hub API, paginación servidor, `Cache-Control` firmas PHP, dashboard metrics, qrcode worker, CI bundle report.
 
 **Prompt**
 

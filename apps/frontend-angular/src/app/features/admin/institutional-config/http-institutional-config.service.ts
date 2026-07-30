@@ -80,8 +80,22 @@ function fromDto(dto: InstitutionalConfigDto): InstitutionalConfig {
 export class HttpInstitutionalConfigService implements InstitutionalConfigService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.apiBaseUrl}/admin/configuracion-institucional`;
+  /** Coalesce/cache de obtener() hasta mutación (guardar / firmas). */
+  private obtenerPending: Promise<InstitutionalConfig> | null = null;
+  /** Cache de sesión por rol: evita GET blob duplicados de previewFirma. */
+  private firmaPreviewByRole = new Map<SignatureRole, Promise<Blob>>();
 
-  async obtener(): Promise<InstitutionalConfig> {
+  obtener(): Promise<InstitutionalConfig> {
+    if (!this.obtenerPending) {
+      this.obtenerPending = this.fetchObtener().catch((err) => {
+        this.obtenerPending = null;
+        throw err;
+      });
+    }
+    return this.obtenerPending;
+  }
+
+  private async fetchObtener(): Promise<InstitutionalConfig> {
     const envelope = await firstValueFrom(
       this.http.get<ApiEnvelope<InstitutionalConfigDto>>(this.url),
     );
@@ -92,6 +106,7 @@ export class HttpInstitutionalConfigService implements InstitutionalConfigServic
     const envelope = await firstValueFrom(
       this.http.put<ApiEnvelope<InstitutionalConfigDto>>(this.url, payload),
     );
+    this.invalidateSessionCaches();
     return fromDto(envelope.data);
   }
 
@@ -104,6 +119,7 @@ export class HttpInstitutionalConfigService implements InstitutionalConfigServic
         body,
       ),
     );
+    this.invalidateSessionCaches();
     return fromDto(envelope.data);
   }
 
@@ -113,12 +129,27 @@ export class HttpInstitutionalConfigService implements InstitutionalConfigServic
         `${this.url}/firmas/${role}`,
       ),
     );
+    this.invalidateSessionCaches();
     return fromDto(envelope.data);
   }
 
-  async previewFirma(role: SignatureRole): Promise<Blob> {
-    return firstValueFrom(
-      this.http.get(`${this.url}/firmas/${role}`, { responseType: 'blob' }),
-    );
+  previewFirma(role: SignatureRole): Promise<Blob> {
+    let pending = this.firmaPreviewByRole.get(role);
+    if (!pending) {
+      pending = firstValueFrom(
+        this.http.get(`${this.url}/firmas/${role}`, { responseType: 'blob' }),
+      ).catch((err) => {
+        this.firmaPreviewByRole.delete(role);
+        throw err;
+      });
+      this.firmaPreviewByRole.set(role, pending);
+    }
+    return pending;
+  }
+
+  /** Sin seam de logout trivial: invalidación solo por mutaciones. */
+  private invalidateSessionCaches(): void {
+    this.obtenerPending = null;
+    this.firmaPreviewByRole.clear();
   }
 }
