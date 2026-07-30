@@ -285,7 +285,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U2 Carga / performance FE | `audit/u02-perf-fe` | hecha | #110 | Mergeado a staging1.0 (`125f6f8`); archive `2026-07-30-audit-u02-perf-fe`; verify PASS |
 | U3 Copy / redacción global | `audit/u03-copy` | hecha | #111 | Mergeado a staging1.0 (`b0d23d4`); archive `2026-07-30-audit-u03-copy`; verify PASS |
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | hecha | #112 | Mergeado a staging1.0 (`7b7d3db`); archive `2026-07-30-audit-u04-a11y-responsive`; verify PASS; contraste DEFER |
-| U5 Errores / estados vacíos | `audit/u05-estados-error` | en PR | | verify PASS WITH WARNINGS (10/10); SHELL-STATE; archive U4 |
+| U5 Errores / estados vacíos | `audit/u05-estados-error` | en PR | #113 | verify PASS WITH WARNINGS (10/10); SHELL-STATE; archive U4 |
 | U6 Backend contrato + errores | `audit/u06-backend` | pendiente | | |
 | U7 Seguridad + PII | `audit/u07-seguridad` | pendiente | | |
 | U8 Docs + drift specs | `audit/u08-docs` | pendiente | | |
@@ -1116,7 +1116,7 @@ Siguiente: U5 estados error/vacío (audit/u05-estados-error) o U9 smokes según 
 
 **Rama:** `audit/u05-estados-error`
 
-**Estado:** en PR — verify PASS WITH WARNINGS (10/10; focused ng test 103 SUCCESS; tsc 0); EmptyState util diferido; archive tras merge.
+**Estado:** en PR #113 — verify PASS WITH WARNINGS (10/10; focused ng test 103 SUCCESS; tsc 0); EmptyState util diferido; archive tras merge.
 
 **Checklist**
 
