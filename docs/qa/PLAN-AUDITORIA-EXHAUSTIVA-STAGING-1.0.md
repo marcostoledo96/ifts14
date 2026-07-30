@@ -281,7 +281,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P21 Revocación | `audit/p21-certs-revocar` | hecha | #106 | Mergeado a staging1.0 (`992201d`); archive `2026-07-29-audit-p21-certs-revocar`; verify PASS |
 | P22 Validación pública | `audit/p22-validacion` | hecha | #107 | Mergeado a staging1.0 (`922ae59`); archive `2026-07-29-audit-p22-validacion`; verify PASS |
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | hecha | #108 | Mergeado a staging1.0 (`e9f6930`); archive `2026-07-29-audit-p23-not-found`; verify PASS |
-| U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | apply | | Apply en curso; verify pendiente |
+| U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | en PR | #109 | SDD `audit-u01-prolijidad-fe` — PR abierto; verify PASS (10/10; OnPush 30/30) |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | pendiente | | |
 | U3 Copy / redacción global | `audit/u03-copy` | pendiente | | |
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | pendiente | | |
@@ -985,7 +985,7 @@ Hacer **después** de P14–P22 al menos en primer pase, o en paralelo solo si n
 
 **Rama:** `audit/u01-prolijidad-fe`
 **Cambio SDD:** `openspec/changes/audit-u01-prolijidad-fe/`
-**Estado:** apply en curso — verify pendiente (`sdd-verify`)
+**Estado:** en PR — #109; verify PASS; archive pendiente post-merge
 
 **Alcance transversal FE (sin rediseñar UX):**
 
@@ -1000,19 +1000,20 @@ Hacer **después** de P14–P22 al menos en primer pase, o en paralelo solo si n
 - [x] Delete `FolioShell` + specs (sin consumidores)
 - [x] Remove alias muerto `guardar()` en marcado; canónico `guardarYGenerar`
 - [x] Extract `paginasVisiblesWindow` + wire 4 listados; HTML/UX sin cambio
-- [x] OnPush preservado (bajas Landing/FolioShell; restantes OnPush)
-- [ ] Verify (`sdd-verify`): SHELL-HYG-01..05 + `tsc` + specs focused
+- [x] OnPush preservado (bajas Landing/FolioShell; restantes OnPush 30/30)
+- [x] Verify (`sdd-verify`): SHELL-HYG-01..05 + `tsc` + specs focused → `verify-report.md`
 - [ ] Archive + merge a `staging1.0`
 
-**Diferidos (locked):** formatters fecha, clipboard, `mensajeErrorApi`, purge `// ponytail:`, copy/UX, U2, honesty P15–P23, P23 archive.
+**Diferidos (locked):** formatters fecha, clipboard, `mensajeErrorApi`, purge `// ponytail:`, copy/UX, U2, honesty P15–P23.
 
 **Prompt**
 
 ```text
-Fase U1 — Prolijidad FE transversal.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u01-prolijidad-fe desde staging1.0.
-Barrido quirúrgico: dead code, imports, duplicación obvia de helpers, comentarios obsoletos, specs desalineados.
-NO cambiar copy/UI salvo lo necesario por rename interno. Diff chico y revisable. Listar deferidos.
+Fase U1 — Prolijidad FE transversal — en PR #109; verify PASS.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u01-prolijidad-fe.
+Cambio SDD: openspec/changes/audit-u01-prolijidad-fe/.
+Verify PASS (10/10 escenarios; OnPush 30/30; focused ng test 231+).
+Siguiente post-merge: archive U1 → U2 performance FE (o U9 smokes según prioridad).
 ```
 
 ---
