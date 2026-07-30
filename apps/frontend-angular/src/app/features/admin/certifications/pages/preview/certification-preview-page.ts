@@ -371,7 +371,7 @@ export class CertificationPreviewPage {
         );
       } else if (this.detalle()?.estado !== 'vigente') {
         this.entregaError.set(
-          'Copiar link y QR solo están disponibles para certificaciones vigentes.',
+          'Copiar link y QR solo están disponibles para certificaciones válidas.',
         );
       } else {
         this.entregaError.set(
@@ -494,7 +494,7 @@ function estadoToLabel(e: EstadoCertificado): string {
     case 'vigente':
       return 'Válida';
     case 'revocado':
-      return 'Revocada';
+      return 'Revocado';
     default:
       return e;
   }

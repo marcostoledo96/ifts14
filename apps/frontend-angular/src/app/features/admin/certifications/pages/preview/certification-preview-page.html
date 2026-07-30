@@ -103,7 +103,7 @@
               <dd>{{ d.nombreAlumno }}</dd>
             </div>
             <div class="fila-dato">
-              <dt>Documento (mascarado)</dt>
+              <dt>Documento</dt>
               <dd class="mono">{{ d.documentMasked }}</dd>
             </div>
           </dl>
@@ -299,7 +299,7 @@
               </a>
             } @else {
               <p id="revocacion-no-disponible" class="riesgo-texto">
-                Solo las certificaciones vigentes pueden revocarse.
+                Solo las certificaciones válidas pueden revocarse.
               </p>
               @if (puedeReemitir()) {
                 <p class="riesgo-texto">

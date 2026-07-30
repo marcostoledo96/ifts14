@@ -282,8 +282,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P22 Validación pública | `audit/p22-validacion` | hecha | #107 | Mergeado a staging1.0 (`922ae59`); archive `2026-07-29-audit-p22-validacion`; verify PASS |
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | hecha | #108 | Mergeado a staging1.0 (`e9f6930`); archive `2026-07-29-audit-p23-not-found`; verify PASS |
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | hecha | #109 | Mergeado a staging1.0 (`511ce7b`); archive `2026-07-29-audit-u01-prolijidad-fe`; verify PASS |
-| U2 Carga / performance FE | `audit/u02-perf-fe` | en PR | #110 | verify PASS (9/9); merge → archive U2 → U3 |
-| U3 Copy / redacción global | `audit/u03-copy` | pendiente | | |
+| U2 Carga / performance FE | `audit/u02-perf-fe` | hecha | #110 | Mergeado a staging1.0 (`125f6f8`); archive `2026-07-30-audit-u02-perf-fe`; verify PASS |
+| U3 Copy / redacción global | `audit/u03-copy` | en PR | #111 | verify PASS (5/5); glosario + pass certs; hub DEFER |
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | pendiente | | |
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | pendiente | | |
 | U6 Backend contrato + errores | `audit/u06-backend` | pendiente | | |
@@ -1024,7 +1024,7 @@ Siguiente: U2 performance FE (audit/u02-perf-fe) o U9 smokes según prioridad. N
 
 **Rama:** `audit/u02-perf-fe`
 
-**Estado:** en PR #110 — verify PASS (9/9 escenarios; focused ng test 105 SUCCESS; tsc 0); archive U2 tras merge.
+**Estado:** hecha — PR #110 mergeado a `staging1.0` (`125f6f8`); archive `openspec/changes/archive/2026-07-30-audit-u02-perf-fe/`; verify PASS (9/9; HTTP-PERF-01/02 + CERT-PERF-01; focused ng test 105 SUCCESS; tsc 0).
 
 **Checklist**
 
@@ -1033,6 +1033,7 @@ Siguiente: U2 performance FE (audit/u02-perf-fe) o U9 smokes según prioridad. N
 - [x] Listados: filtro cliente — **cientos OK**; **miles → paginación/API (U6)** — ver `docs/frontend/03-modulos-admin.md`
 - [x] Firmas: cache de sesión `previewFirma`/`obtener` + invalidate (HTTP-PERF-02); `Cache-Control` PHP sin cambio
 - [x] Evitar double-fetch al navegar (hub + config)
+- [x] Archive + merge a `staging1.0` (`125f6f8`; archive `2026-07-30-audit-u02-perf-fe`)
 
 **Nota de escala:** listados admin con filtro/paginación client-side soportan cientos de filas; miles requieren paginación servidor (fuera de U2).
 
@@ -1041,12 +1042,14 @@ Siguiente: U2 performance FE (audit/u02-perf-fe) o U9 smokes según prioridad. N
 **Prompt**
 
 ```text
-Fase U2 — Performance / carga.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u02-perf-fe.
-Medir/inspectar: bundles admin, hub asistencias, listados, PDF.
-Proponer e implementar mejoras de bajo riesgo (dedupe fetch, lazy de deps pesadas, menos trabajo sync).
-Si hace falta cambio de API, documentarlo y limitar el fix; no rediseñar el modelo entero.
+Fase U2 — Performance / carga — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #110 mergeado (125f6f8).
+Cambio SDD: openspec/changes/archive/2026-07-30-audit-u02-perf-fe/.
+Verify PASS (9/9 escenarios; HTTP-PERF-01/02 + CERT-PERF-01; focused ng test 105 SUCCESS; tsc 0).
+Siguiente: U3 copy (audit/u03-copy) o U9 smokes según prioridad. No reabrir U2 salvo regresión.
 ```
+
+**Nota:** coalesce `listarHub`; cache sesión firma/`obtener`; PDF deps diferidas al descargar; escala listados documentada. Cerrada.
 
 ---
 
@@ -1054,11 +1057,13 @@ Si hace falta cambio de API, documentarlo y limitar el fix; no rediseñar el mod
 
 **Rama:** `audit/u03-copy`
 
+**Estado:** en PR #111 — verify PASS (5/5; focused ng test 125 SUCCESS; tsc 0); hub Activo/Inactivo diferido; archive tras merge.
+
 **Checklist**
 
-- [ ] Glosario único: Válida/Revocado, Activo/Inactivo, Programada/Realizada, expediente, entrega manual
-- [ ] Pass de strings visibles inconsistentes entre páginas
-- [ ] Tono institucional AR
+- [x] Glosario único: Válida/Revocado, Activo/Inactivo, Programada/Realizada, expediente, entrega manual
+- [x] Pass de strings visibles inconsistentes entre páginas
+- [x] Tono institucional AR
 
 **Prompt**
 
