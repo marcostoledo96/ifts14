@@ -285,8 +285,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U2 Carga / performance FE | `audit/u02-perf-fe` | hecha | #110 | Mergeado a staging1.0 (`125f6f8`); archive `2026-07-30-audit-u02-perf-fe`; verify PASS |
 | U3 Copy / redacción global | `audit/u03-copy` | hecha | #111 | Mergeado a staging1.0 (`b0d23d4`); archive `2026-07-30-audit-u03-copy`; verify PASS |
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | hecha | #112 | Mergeado a staging1.0 (`7b7d3db`); archive `2026-07-30-audit-u04-a11y-responsive`; verify PASS; contraste DEFER |
-| U5 Errores / estados vacíos | `audit/u05-estados-error` | en PR | #113 | verify PASS WITH WARNINGS (10/10); SHELL-STATE; archive U4 |
-| U6 Backend contrato + errores | `audit/u06-backend` | pendiente | | |
+| U5 Errores / estados vacíos | `audit/u05-estados-error` | hecha | #113 | Mergeado a staging1.0 (`0b9d786`); archive `2026-07-30-audit-u05-estados-error`; verify PASS WITH WARNINGS; SHELL-STATE-01..04 |
+| U6 Backend contrato + errores | `audit/u06-backend` | en PR | #114 | verify PASS; `state()`/`authorize` lastSeen + D-004→503; archiva U5 |
 | U7 Seguridad + PII | `audit/u07-seguridad` | pendiente | | |
 | U8 Docs + drift specs | `audit/u08-docs` | pendiente | | |
 | U9 QA staging real + smokes | `audit/u09-qa-staging` | pendiente | | |
@@ -1116,7 +1116,7 @@ Siguiente: U5 estados error/vacío (audit/u05-estados-error) o U9 smokes según 
 
 **Rama:** `audit/u05-estados-error`
 
-**Estado:** en PR #113 — verify PASS WITH WARNINGS (10/10; focused ng test 103 SUCCESS; tsc 0); EmptyState util diferido; archive tras merge.
+**Estado:** hecha — PR #113 mergeado a `staging1.0` (`0b9d786`); archive `openspec/changes/archive/2026-07-30-audit-u05-estados-error/`; verify PASS WITH WARNINGS (10/10; SHELL-STATE-01..04; focused ng test 103 SUCCESS; tsc 0).
 
 **Checklist**
 
@@ -1124,14 +1124,21 @@ Siguiente: U5 estados error/vacío (audit/u05-estados-error) o U9 smokes según 
 - [x] 401 interceptor: redirect limpio (regresión)
 - [x] Empty states con CTA útil
 - [x] QA vista forzada solo en dev
+- [x] Archive + merge a `staging1.0` (`0b9d786`; archive `2026-07-30-audit-u05-estados-error`)
+
+**Notas apply (U5):** EmptyState util / design system nuevo → **DEFER**. QA asistencias sin harness → DEFER. Canónico Reintentar listados = `btn-primary`. course-editor Reintentar gated a carga recuperable. csrf.interceptor.ts sin tocar (regresión).
 
 **Prompt**
 
 ```text
-Fase U5 — Estados loading/empty/error.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u05-estados-error.
-Unificar mensajes/patrones inconsistentes entre listados. Verificar interceptor 401. No inventar design system nuevo: alinear a lo existente.
+Fase U5 — Estados loading/empty/error — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #113 mergeado (0b9d786).
+Cambio SDD: openspec/changes/archive/2026-07-30-audit-u05-estados-error/.
+Verify PASS WITH WARNINGS (10/10 escenarios; SHELL-STATE-01..04; focused ng test 103 SUCCESS; tsc 0).
+Siguiente: U6 backend (audit/u06-backend) o U9 smokes según prioridad. No reabrir U5 salvo regresión.
 ```
+
+**Nota:** listados Reintentar/empty CTA `btn-primary`; course-editor Reintentar load-only; QA solo `isDevMode`; 401 regresión; D0. Cerrada.
 
 ---
 
@@ -1143,12 +1150,12 @@ Unificar mensajes/patrones inconsistentes entre listados. Verificar interceptor 
 
 **Checklist**
 
-- [ ] Envelope `data/meta` consistente
-- [ ] Códigos/mensajes 400/409 alineados a UI
-- [ ] session_write_close / locks en rutas sensibles
-- [ ] **D-009:** TTL idle/absolute reales (`admin_session_idle_seconds` / `absolute`) vs config staging; `lastSeen` se renueva en lecturas auth (`GET /admin/auth/session` y GETs autorizados), no solo en mutaciones
-- [ ] Sin PII en logs
-- [ ] Tests PHP del área tocada
+- [ ] Envelope `data/meta` consistente — **DEFER** (salvo bug claro; no tocado en U6 apply)
+- [ ] Códigos/mensajes 400/409 alineados a UI — **DEFER**
+- [x] session_write_close / locks en rutas sensibles — `state()` toca `lastSeen` + `session_write_close` (paridad `authorize`)
+- [x] **D-009:** TTL idle/absolute reales (`admin_session_idle_seconds` / `absolute`) vs config staging; `lastSeen` se renueva en lecturas auth (`GET /admin/auth/session` y GETs autorizados), no solo en mutaciones — docs 14400/28800; absolute 8 h cookies → U7
+- [ ] Sin PII en logs — **DEFER** spot profundo (login storage→503 genérico sin PII)
+- [x] Tests PHP del área tocada — `AdminSessionAuthTest` + `AdminAuthHttpTest` (+D-004 503≠429)
 
 **Prompt**
 

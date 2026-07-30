@@ -9,6 +9,8 @@ $sessionDir = $tmpDir . '/sessions';
 mkdir($sessionDir, 0700);
 $password = 'password-demo-auth';
 $configPath = $tmpDir . '/config.php';
+$rateDir = $tmpDir . '/rate';
+mkdir($rateDir, 0700);
 $configSource = '<?php return ' . var_export([
     'db_host' => '127.0.0.1',
     'db_name' => 'demo',
@@ -19,7 +21,7 @@ $configSource = '<?php return ' . var_export([
     'admin_password_hash' => password_hash($password, PASSWORD_DEFAULT),
     'admin_session_idle_seconds' => 14400,
     'admin_session_absolute_seconds' => 28800,
-    'rate_limit_storage_path' => $tmpDir . '/rate-limit.json',
+    'rate_limit_storage_path' => $rateDir . '/rate-limit.json',
 ], true) . ';';
 file_put_contents($configPath, $configSource);
 
@@ -59,6 +61,47 @@ try {
         throw new RuntimeException('estado autenticado: body inválido.');
     }
 
+    $sessionFiles = glob($sessionDir . '/sess_*') ?: [];
+    if ($sessionFiles === []) {
+        throw new RuntimeException('No se encontró archivo de sesión tras login.');
+    }
+    $sessionFile = $sessionFiles[0];
+    $sessionContents = file_get_contents($sessionFile);
+    if ($sessionContents === false || preg_match('/lastSeen\|i:(\d+);/', $sessionContents, $lastSeenMatch) !== 1) {
+        throw new RuntimeException('No se pudo leer lastSeen del archivo de sesión.');
+    }
+    $lastSeenBefore = (int) $lastSeenMatch[1];
+    sleep(1);
+    $renewed = request($port, 'GET', '/admin/auth/session', [$cookieHeader]);
+    assertStatus($renewed, 200, 'GET session renueva lastSeen');
+    $renewedBody = json_decode($renewed['body'], true);
+    if (($renewedBody['data']['authenticated'] ?? false) !== true) {
+        throw new RuntimeException('GET session renovado: body no autenticado.');
+    }
+    $renewedContents = file_get_contents($sessionFile);
+    if ($renewedContents === false || preg_match('/lastSeen\|i:(\d+);/', $renewedContents, $renewedMatch) !== 1) {
+        throw new RuntimeException('GET session no persistió lastSeen.');
+    }
+    if ((int) $renewedMatch[1] <= $lastSeenBefore) {
+        throw new RuntimeException('GET session no renovó lastSeen en el storage de sesión.');
+    }
+
+    // D-004: romper storage en disco (el require del config puede cachearse en el server embebido).
+    foreach (glob($rateDir . '/*') ?: [] as $rateFile) {
+        unlink($rateFile);
+    }
+    if (!rmdir($rateDir) || file_put_contents($rateDir, 'blocked') === false) {
+        throw new RuntimeException('No se pudo preparar storage rate-limit inutilizable.');
+    }
+    assertError(
+        request($port, 'POST', '/admin/auth/login', ['Content-Type: application/json'], json_encode(['username' => 'bedelia', 'password' => $password], JSON_THROW_ON_ERROR)),
+        503,
+        'SERVICE_UNAVAILABLE',
+        'storage rate-limit inutilizable (D-004)'
+    );
+    unlink($rateDir);
+    mkdir($rateDir, 0700);
+
     assertError(request($port, 'GET', '/admin/cursos', ['X-Admin-Key: legacy_demo_key_2026']), 401, 'UNAUTHORIZED', 'header HTTP no autoriza');
     assertError(request($port, 'POST', '/admin/auth/logout', [$cookieHeader]), 403, 'CSRF_INVALID', 'logout sin CSRF');
 
@@ -84,7 +127,7 @@ try {
     if (!str_contains($diagnostic, 'ifts14_admin_session_start_failed') || str_contains($diagnostic, 'bedelia') || str_contains($diagnostic, $password) || str_contains($diagnostic, $sessionDir) || ($sessionId !== '' && str_contains($diagnostic, $sessionId))) {
         throw new RuntimeException('La falla de sesión no emitió un diagnóstico operativo sanitizado.');
     }
-    for ($attempt = 0; $attempt < 3; $attempt++) {
+    for ($attempt = 0; $attempt < 4; $attempt++) {
         assertError(request($port, 'POST', '/admin/auth/login', ['Content-Type: application/json'], json_encode(['username' => 'bedelia', 'password' => 'incorrecta'], JSON_THROW_ON_ERROR)), 401, 'UNAUTHORIZED', 'login inválido');
     }
     assertError(request($port, 'POST', '/admin/auth/login', ['Content-Type: application/json'], json_encode(['username' => 'bedelia', 'password' => $password], JSON_THROW_ON_ERROR)), 429, 'RATE_LIMITED', 'login limitado antes de verificar credenciales');
@@ -93,10 +136,19 @@ try {
     proc_close($process);
     putenv($previousConfigPath === false ? 'CERTIFICADOS_CONFIG_PATH' : 'CERTIFICADOS_CONFIG_PATH=' . $previousConfigPath);
     array_map(static fn (string $file): bool => is_file($file) ? unlink($file) : true, glob($tmpDir . '/*') ?: []);
-    if (is_dir($sessionDir)) {
-        rmdir($sessionDir);
+    if (is_dir($rateDir)) {
+        array_map(static fn (string $file): bool => is_file($file) ? unlink($file) : true, glob($rateDir . '/*') ?: []);
+        @rmdir($rateDir);
+    } elseif (is_file($rateDir)) {
+        unlink($rateDir);
     }
-    rmdir($tmpDir);
+    if (is_dir($sessionDir)) {
+        array_map(static fn (string $file): bool => is_file($file) ? unlink($file) : true, glob($sessionDir . '/*') ?: []);
+        @rmdir($sessionDir);
+    } elseif (is_file($sessionDir)) {
+        unlink($sessionDir);
+    }
+    @rmdir($tmpDir);
 }
 
 echo "OK AdminAuthHttpTest\n";
