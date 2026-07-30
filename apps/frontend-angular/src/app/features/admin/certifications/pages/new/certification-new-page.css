@@ -567,6 +567,14 @@
   font-weight: 600;
 }
 
+.decl-cierre {
+  margin: 0.75rem 0 0;
+  max-width: 42rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--color-foreground);
+}
+
 .section-head {
   display: flex;
   flex-wrap: wrap;

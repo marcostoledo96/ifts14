@@ -15,7 +15,7 @@ const CONFIG_SEED = {
   data: {
     institutionName: 'Instituto de Formación Técnica Superior N.° 14',
     certificateText:
-      'Se certifica que la persona mencionada ha aprobado satisfactoriamente el curso detallado, cumpliendo con la asistencia y las evaluaciones requeridas.',
+      'El Instituto de Formación Técnica Superior N.º 14 (IFTS 14) que integra la Dirección de Educación Técnica Superior, Agencia de Habilidades para el Futuro, certifica que:',
     rectorName: '',
     rectorRole: 'Rectora del IFTS N.° 14',
     advisorName: '',
