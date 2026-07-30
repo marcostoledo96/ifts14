@@ -278,7 +278,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P18 Expediente preview | `audit/p18-certs-preview` | hecha | #103 | Mergeado a staging1.0 (`dc3ac99`); archive `2026-07-29-audit-p18-certs-preview`; verify PASS WITH WARNINGS |
 | P19 Folio PDF | `audit/p19-certs-pdf` | hecha | #104 | Mergeado a staging1.0 (`4938024`); archive `2026-07-29-audit-p19-certs-pdf`; verify PASS WITH WARNINGS |
 | P20 Entrega manual | `audit/p20-certs-entrega` | hecha | #105 | Mergeado a staging1.0 (`1cdb9f8`); archive `2026-07-29-audit-p20-certs-entrega`; verify PASS |
-| P21 Revocación | `audit/p21-certs-revocar` | en curso | | Apply honesty front (signal split / MOTIVO_MAX 180); verify pendiente |
+| P21 Revocación | `audit/p21-certs-revocar` | en PR | #106 | SDD `audit-p21-certs-revocar` — PR abierto; verify PASS (9/9; ng test 17/17) |
 | P22 Validación pública | `audit/p22-validacion` | pendiente | | |
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | pendiente | | |
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | pendiente | | |
@@ -891,22 +891,27 @@ Siguiente: P21 revocación (audit/p21-certs-revocar). No reabrir entrega salvo r
 ## Fase P21 — Revocación
 
 **Rama:** `audit/p21-certs-revocar`
+**Cambio SDD:** `openspec/changes/audit-p21-certs-revocar/`
 **Ruta:** `/admin/certificaciones/:id/revocar`
+**Estado:** en PR — #106; verify PASS; archive pendiente post-merge
 
 **Checklist**
 
 - [x] Confirmación explícita
 - [x] Copy de consecuencias
-- [ ] Estado posterior en expediente y validación pública
+- [ ] Estado posterior en expediente y validación pública *(flash `?revocada=1` diferido; P22 valida pública)*
 - [x] Auditoría sin PII completa *(sanitize motivo DNI/TOKEN/EMAIL; honesty sin raw Error.message)*
 - [x] Honesty load/submit (error vs errorAccion; Reintentar gated; MOTIVO_MAX 180)
+- [x] Verify: focused `ng test` revoke + `tsc` → `verify-report.md`
 
 **Prompt**
 
 ```text
-Fase P21 — Revocación.
+Fase P21 — Revocación — en PR #106; verify PASS.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p21-certs-revocar.
-Auditar certification-revoke-page. Confirmación, copy, errores, efecto en UI, prolijidad. D0.
+Cambio SDD: openspec/changes/audit-p21-certs-revocar/.
+Verify PASS (9/9 escenarios; ng test certification-revoke-page 17/17).
+Siguiente post-merge: archive P21 → P22 validación pública. No reabrir revocar salvo regresión.
 ```
 
 ---
