@@ -13,8 +13,6 @@ import {
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import html2canvas from 'html2canvas-pro';
-import { jsPDF } from 'jspdf';
 import { INSTITUTIONAL_BRAND } from '../../../../../shared/brand/institutional-brand';
 import {
   INSTITUTIONAL_CONFIG_SOURCE,
@@ -413,6 +411,12 @@ export class CertificationPdfPreviewPage {
     try {
       await nextFrame();
       await nextFrame();
+
+      // Carga diferida: html2canvas-pro / jspdf solo en el camino de descarga.
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas-pro'),
+        import('jspdf'),
+      ]);
 
       // windowWidth alto fuerza breakpoints desktop del folio (firmas 3 col).
       const canvas = await html2canvas(folio, {

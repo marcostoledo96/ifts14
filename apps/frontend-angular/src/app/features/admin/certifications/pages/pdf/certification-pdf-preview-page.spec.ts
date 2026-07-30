@@ -170,6 +170,13 @@ describe('CertificationPdfPreviewPage', () => {
     expect(feedback?.getAttribute('aria-live')).toBe('polite');
   });
 
+  it('CERT-PERF-01: exportarFolioVisibleComoPdf carga deps vía import() dinámico', () => {
+    const src = CertificationPdfPreviewPage.prototype.exportarFolioVisibleComoPdf.toString();
+    // El bundler reescribe el specifier a chunk-*.js; lo importante es import() + Promise.all.
+    expect(src).toMatch(/import\s*\(/);
+    expect(src).toContain('Promise.all');
+  });
+
   it('REQ-PAR-PDF-001: Descargar PDF exporta el folio visible (no el stub API)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
