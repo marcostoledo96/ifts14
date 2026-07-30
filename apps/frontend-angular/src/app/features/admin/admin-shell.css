@@ -160,6 +160,11 @@ footer {
   outline: none;
 }
 
+/* Capa drawer: overlay + aside (trap Tab). Hijos fixed — sin layout propio. */
+.drawer-layer {
+  position: contents;
+}
+
 .drawer-overlay {
   position: fixed;
   inset: 0;

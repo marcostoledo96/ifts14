@@ -355,4 +355,34 @@ describe('CertificationRevokePage', () => {
     expect(el.textContent).toContain('validación por QR');
     expect(el.querySelector('#confirmo-revocacion')).toBeTruthy();
   }));
+
+  it('SHELL-A11Y-03: backdrop no tabulable; Tab no lo alcanza', fakeAsync(() => {
+    tick();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const backdrop = el.querySelector('.backdrop') as HTMLElement | null;
+    expect(backdrop).not.toBeNull();
+    expect(backdrop?.tagName).toBe('BUTTON');
+    expect(backdrop?.getAttribute('tabindex')).toBe('-1');
+
+    const dialog = el.querySelector('#dialog') as HTMLElement;
+    expect(dialog).not.toBeNull();
+    const focusables = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not(:disabled), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    expect(focusables.length).toBeGreaterThan(1);
+    expect(focusables).not.toContain(backdrop!);
+
+    const last = focusables[focusables.length - 1];
+    last.focus();
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    Object.defineProperty(tab, 'shiftKey', { value: false });
+    spyOn(tab, 'preventDefault').and.callThrough();
+    component.onTab(tab);
+    expect(tab.preventDefault).toHaveBeenCalled();
+    expect(document.activeElement).toBe(focusables[0]);
+    expect(document.activeElement).not.toBe(backdrop);
+  }));
 });

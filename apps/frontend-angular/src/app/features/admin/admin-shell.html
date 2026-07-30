@@ -44,26 +44,29 @@
   </div>
 </div>
 @if (menuAbierto()) {
-  <button
-    type="button"
-    class="drawer-overlay"
-    aria-label="Cerrar menú"
-    (click)="cerrarMenu()"
-  ></button>
-  <aside
-    id="admin-drawer"
-    class="drawer-mobile drawer-open"
-    role="navigation"
-    aria-label="Navegación admin (móvil)"
-  >
-    <app-sidebar-admin
-      [active]="rutaActual()"
-      [navegando]="navegando()"
-      [rutaPendiente]="rutaPendiente()"
-      [mostrarCerrar]="true"
-      [logoutDisabled]="cerrandoSesion()"
-      (cerrarMenu)="cerrarMenu()"
-      (cerrarSesion)="cerrarSesion()"
-    />
-  </aside>
+  <div class="drawer-layer" #drawerLayer>
+    <button
+      type="button"
+      class="drawer-overlay"
+      aria-label="Cerrar menú"
+      (click)="cerrarMenu()"
+    ></button>
+    <aside
+      id="admin-drawer"
+      class="drawer-mobile drawer-open"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Navegación admin (móvil)"
+    >
+      <app-sidebar-admin
+        [active]="rutaActual()"
+        [navegando]="navegando()"
+        [rutaPendiente]="rutaPendiente()"
+        [mostrarCerrar]="true"
+        [logoutDisabled]="cerrandoSesion()"
+        (cerrarMenu)="cerrarMenu()"
+        (cerrarSesion)="cerrarSesion()"
+      />
+    </aside>
+  </div>
 }

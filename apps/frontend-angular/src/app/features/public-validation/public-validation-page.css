@@ -509,6 +509,11 @@ dl {
 .btn-secundario:hover {
   background: var(--color-muted);
 }
+.btn-primario:focus-visible,
+.btn-secundario:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
 
 /* ── PieControl ───────────────────────────────────────── */
 .pie-control {

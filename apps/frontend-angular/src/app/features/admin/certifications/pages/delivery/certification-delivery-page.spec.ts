@@ -441,4 +441,66 @@ describe('CertificationDeliveryPage', () => {
     expect(component.regenerarMsg()).toBe('');
     expect(component.regenerarMsg()).not.toContain('validar/');
   });
+
+  it('REQ-DEL-007: backdrop fuera del tab order; Tab envuelve dentro de #dialog', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const backdrop = el.querySelector('.backdrop') as HTMLElement | null;
+    expect(backdrop).not.toBeNull();
+    expect(backdrop?.getAttribute('tabindex')).toBeNull();
+    expect(backdrop?.getAttribute('aria-hidden')).toBe('true');
+
+    const dialog = el.querySelector('#dialog') as HTMLElement;
+    expect(dialog).not.toBeNull();
+    const focusables = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not(:disabled), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((n) => n.tabIndex >= 0 || n.tagName === 'BUTTON' || n.tagName === 'A');
+    expect(focusables.length).toBeGreaterThan(1);
+
+    const last = focusables[focusables.length - 1];
+    last.focus();
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    Object.defineProperty(tab, 'shiftKey', { value: false });
+    spyOn(tab, 'preventDefault').and.callThrough();
+    component.onTab(tab);
+    expect(tab.preventDefault).toHaveBeenCalled();
+    expect(document.activeElement).toBe(focusables[0]);
+    expect(document.activeElement).not.toBe(backdrop);
+  });
+
+  it('REQ-DEL-007: error-dialog atrapa Tab y Esc navega al expediente', async () => {
+    const svc = TestBed.inject(CERTIFICATIONS_SOURCE);
+    spyOn(svc, 'obtener').and.rejectWith(new Error('RAW_BACKEND_STACK_TRACE_xyz'));
+    await component.cargar();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const dialog = el.querySelector('#dialog') as HTMLElement | null;
+    expect(dialog).not.toBeNull();
+    expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    expect(dialog?.getAttribute('tabindex')).toBe('-1');
+    expect(el.textContent).toContain('Reintentar');
+
+    const focusables = Array.from(
+      dialog!.querySelectorAll<HTMLElement>('button:not(:disabled)'),
+    );
+    expect(focusables.length).toBeGreaterThanOrEqual(2);
+    focusables[focusables.length - 1].focus();
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    Object.defineProperty(tab, 'shiftKey', { value: false });
+    spyOn(tab, 'preventDefault').and.callThrough();
+    component.onTab(tab);
+    expect(tab.preventDefault).toHaveBeenCalled();
+    expect(document.activeElement).toBe(focusables[0]);
+
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    component.volverAlExpediente();
+    expect(navSpy).toHaveBeenCalledWith(['/admin/certificaciones', '1']);
+  });
 });

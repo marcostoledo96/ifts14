@@ -4,9 +4,16 @@
     <div class="spinner" aria-hidden="true"></div>
   </div>
 } @else if (error()) {
-  <div class="fixed-overlay backdrop" (click)="volverAlExpediente()"></div>
+  <div class="fixed-overlay backdrop" (click)="volverAlExpediente()" aria-hidden="true"></div>
   <div class="fixed-overlay error-container">
-    <div role="dialog" aria-modal="true" class="dialog-card">
+    <div
+      id="dialog"
+      #dialog
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      class="dialog-card"
+    >
       <div class="dialog-body error-body">
         <p class="error-msg">{{ error() }}</p>
         @if (errorRecuperable()) {
@@ -17,18 +24,17 @@
     </div>
   </div>
 } @else if (detalle(); as cert) {
-  <!-- Backdrop -->
+  <!-- Backdrop: click/Esc cierran; fuera del tab order (SHELL-A11Y-03 / REQ-DEL-007) -->
   <div
     class="fixed-overlay backdrop backdrop-blur"
     (click)="volverAlExpediente()"
-    aria-label="Cerrar y volver al expediente"
-    tabindex="0"
-    (keydown.enter)="volverAlExpediente()"
+    aria-hidden="true"
   ></div>
 
   <!-- Diálogo Modal -->
   <div class="fixed-overlay dialog-container">
     <div
+      id="dialog"
       role="dialog"
       aria-modal="true"
       aria-labelledby="entrega-titulo"
