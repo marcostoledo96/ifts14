@@ -218,35 +218,35 @@ export class HttpAttendanceService implements AttendanceService {
 
     // Tras el primer DELETE el server puede divergir del hub en sesión:
     // invalidar siempre (éxito o fallo) para no servir presentes fantasma.
+    //
+    // IMPORTANTE (cPanel): DELETE/POST en serie — no Promise.all. Mutaciones
+    // paralelas pelean el lock de sesión PHP; session_start falla → 401 y el
+    // interceptor echa al admin (mismo motivo por el que emitir PDF va en serie).
     try {
-      // 2. DELETE en paralelo; si uno falla, Promise.all rechaza (fail-fast).
-      await Promise.all(
-        existing.map((a) =>
-          firstValueFrom(
-            this.http.delete<ApiEnvelope<unknown>>(
-              `${environment.apiBaseUrl}/admin/asistencias/${a.id}`,
-            ),
+      for (const a of existing) {
+        await firstValueFrom(
+          this.http.delete<ApiEnvelope<unknown>>(
+            `${environment.apiBaseUrl}/admin/asistencias/${a.id}`,
           ),
-        ),
-      );
+        );
+      }
 
-      // 3. POST presentes en paralelo (mismo fail-fast).
       const presentes = marcados.filter((m) => m.presente);
-      return await Promise.all(
-        presentes.map(async (m) => {
-          const envelope = await firstValueFrom(
-            this.http.post<ApiEnvelope<AsistenciaDto>>(
-              `${environment.apiBaseUrl}/admin/asistencias`,
-              {
-                alumnoId: m.alumnoId,
-                cursoId,
-                cursoFechaId: fechaId,
-              },
-            ),
-          );
-          return this.toAsistencia(envelope.data);
-        }),
-      );
+      const creadas: Asistencia[] = [];
+      for (const m of presentes) {
+        const envelope = await firstValueFrom(
+          this.http.post<ApiEnvelope<AsistenciaDto>>(
+            `${environment.apiBaseUrl}/admin/asistencias`,
+            {
+              alumnoId: m.alumnoId,
+              cursoId,
+              cursoFechaId: fechaId,
+            },
+          ),
+        );
+        creadas.push(this.toAsistencia(envelope.data));
+      }
+      return creadas;
     } finally {
       this.invalidateAsistencias(cursoId);
     }

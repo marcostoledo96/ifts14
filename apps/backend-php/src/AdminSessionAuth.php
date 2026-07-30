@@ -56,13 +56,13 @@ final class AdminSessionAuth
     public static function sessionIsActive(array $session, array $config, int $now): bool
     {
         $settings = Config::adminSessionSettings($config);
-        $createdAt = $session['createdAt'] ?? null;
-        $lastSeen = $session['lastSeen'] ?? null;
+        $createdAt = self::sessionTimestamp($session['createdAt'] ?? null);
+        $lastSeen = self::sessionTimestamp($session['lastSeen'] ?? null);
 
         return $settings !== null
             && ($session['authenticated'] ?? false) === true
-            && is_int($createdAt)
-            && is_int($lastSeen)
+            && $createdAt !== null
+            && $lastSeen !== null
             && $createdAt <= $lastSeen
             && $lastSeen <= $now
             && $now - $lastSeen < $settings['idleSeconds']
@@ -207,10 +207,12 @@ final class AdminSessionAuth
             return 401;
         }
 
-        // Fallo de session_start (p. ej. contención de lock bajo PDF paralelos en
-        // hosting compartido) no debe expirar la cookie: eso echa al admin.
+        // Fallo de session_start (contención de lock en cPanel) NO debe verse como
+        // 401: el interceptor FE limpia CSRF y manda a login. Devolver 503.
         if (!self::start($settings)) {
-            return 401;
+            error_log('ifts14_admin_session_start_failed');
+
+            return 503;
         }
 
         if (!self::sessionIsActive($_SESSION, $config, $now)) {
@@ -289,5 +291,18 @@ final class AdminSessionAuth
             'httponly' => $settings['httponly'],
             'samesite' => $settings['samesite'],
         ];
+    }
+
+    /** Timestamps de sesión: int nativo o dígitos string (serializadores PHP). */
+    private static function sessionTimestamp(mixed $value): ?int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_string($value) && $value !== '' && ctype_digit($value)) {
+            return (int) $value;
+        }
+
+        return null;
     }
 }

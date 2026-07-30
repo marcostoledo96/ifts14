@@ -125,7 +125,7 @@ describe('HttpAttendanceService', () => {
     expect(result.every((a) => a.alumnoId === 10)).toBeTrue();
   });
 
-  it('marcar: DELETE y POST en paralelo (all-or-nothing)', async () => {
+  it('marcar: DELETE y POST en serie (evita lock de sesión PHP)', async () => {
     const p = service.marcar(5, 200, [
       { alumnoId: 10, presente: true },
       { alumnoId: 11, presente: false },
@@ -170,35 +170,25 @@ describe('HttpAttendanceService', () => {
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    // 2. DELETE solo las de fecha 200, en paralelo.
-    const deletes = httpMock.match(
-      (r) =>
-        r.method === 'DELETE' &&
-        (r.url === `${environment.apiBaseUrl}/admin/asistencias/50` ||
-          r.url === `${environment.apiBaseUrl}/admin/asistencias/51`),
-    );
-    expect(deletes.length).toBe(2);
-    for (const req of deletes) {
-      req.flush({ data: { voided: true }, meta: { requestId: 'rd' } });
-    }
+    // 2. DELETE de fecha 200, uno a uno (no en paralelo).
+    const del50 = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias/50`);
+    expect(del50.request.method).toBe('DELETE');
+    del50.flush({ data: { voided: true }, meta: { requestId: 'rd1' } });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    // 3. POST presentes en paralelo (10 y 12; 11 es false).
-    const posts = httpMock.match(
-      (r) => r.method === 'POST' && r.url === `${environment.apiBaseUrl}/admin/asistencias`,
-    );
-    expect(posts.length).toBe(2);
-    const bodies = posts
-      .map((r) => r.request.body as { alumnoId: number; cursoId: number; cursoFechaId: number })
-      .sort((a, b) => a.alumnoId - b.alumnoId);
-    expect(bodies).toEqual([
-      { alumnoId: 10, cursoId: 5, cursoFechaId: 200 },
-      { alumnoId: 12, cursoId: 5, cursoFechaId: 200 },
-    ]);
-    posts[0].flush({
+    const del51 = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias/51`);
+    expect(del51.request.method).toBe('DELETE');
+    del51.flush({ data: { voided: true }, meta: { requestId: 'rd2' } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // 3. POST presentes en serie (10 y 12; 11 es false).
+    const post10 = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`);
+    expect(post10.request.method).toBe('POST');
+    expect(post10.request.body).toEqual({ alumnoId: 10, cursoId: 5, cursoFechaId: 200 });
+    post10.flush({
       data: {
         id: 60,
-        alumnoId: (posts[0].request.body as { alumnoId: number }).alumnoId,
+        alumnoId: 10,
         cursoId: 5,
         cursoFechaId: 200,
         fecha: '2026-03-01',
@@ -207,10 +197,15 @@ describe('HttpAttendanceService', () => {
       },
       meta: { requestId: 'rp1' },
     });
-    posts[1].flush({
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const post12 = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`);
+    expect(post12.request.method).toBe('POST');
+    expect(post12.request.body).toEqual({ alumnoId: 12, cursoId: 5, cursoFechaId: 200 });
+    post12.flush({
       data: {
         id: 61,
-        alumnoId: (posts[1].request.body as { alumnoId: number }).alumnoId,
+        alumnoId: 12,
         cursoId: 5,
         cursoFechaId: 200,
         fecha: '2026-03-01',
