@@ -280,7 +280,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P20 Entrega manual | `audit/p20-certs-entrega` | hecha | #105 | Mergeado a staging1.0 (`1cdb9f8`); archive `2026-07-29-audit-p20-certs-entrega`; verify PASS |
 | P21 Revocación | `audit/p21-certs-revocar` | hecha | #106 | Mergeado a staging1.0 (`992201d`); archive `2026-07-29-audit-p21-certs-revocar`; verify PASS |
 | P22 Validación pública | `audit/p22-validacion` | hecha | #107 | Mergeado a staging1.0 (`922ae59`); archive `2026-07-29-audit-p22-validacion`; verify PASS |
-| P23 404 / rutas huérfanas | `audit/p23-not-found` | en curso | | apply: NotFound+CTA login; catch-all intacto; verify pendiente |
+| P23 404 / rutas huérfanas | `audit/p23-not-found` | en PR | #108 | SDD `audit-p23-not-found` — PR abierto; verify PASS (7/7; ng test 113/113) |
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | pendiente | | |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | pendiente | | |
 | U3 Copy / redacción global | `audit/u03-copy` | pendiente | | |
@@ -950,22 +950,27 @@ Siguiente: P23 404/rutas huérfanas (audit/p23-not-found). No reabrir validació
 ## Fase P23 — 404 y rutas huérfanas
 
 **Rama:** `audit/p23-not-found`
+**Cambio SDD:** `openspec/changes/audit-p23-not-found/`
+**Estado:** en PR — #108; verify PASS; archive pendiente post-merge
 
 **Checklist**
 
 - [x] `NotFoundPage` clara (ES-AR; html/css split; title en `**`)
 - [x] `/admin/typo` no cae en validación pública (catch-all prefix intacto; sin AdminNotFound)
 - [x] Links “volver” sensatos (único CTA → `/admin/login`; sin `/validar/…`)
+- [x] Verify: focused `ng test` not-found + routes + `tsc` → `verify-report.md`
 
 **Prompt**
 
 ```text
-Fase P23 — 404 y aislamiento de rutas.
+Fase P23 — 404 y aislamiento de rutas — en PR #108; verify PASS.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p23-not-found.
-Auditar not-found-page y catch-all admin en app.routes.ts. Copy, UI, redirects seguros.
+Cambio SDD: openspec/changes/audit-p23-not-found/.
+Verify PASS (7/7 escenarios; ng test not-found+routes 113/113).
+Siguiente post-merge: archive P23 → Bloque C U1 prolijidad FE (o U9 smokes según prioridad).
 ```
 
-**Nota apply (en curso):** polish NotFound + CTA login + `title` en wildcard; isolation `/admin/typo` preservada. Verify/archive pendientes (sdd-verify).
+**Nota:** polish NotFound + CTA login + `title` en wildcard; isolation `/admin/typo` preservada.
 
 ---
 
