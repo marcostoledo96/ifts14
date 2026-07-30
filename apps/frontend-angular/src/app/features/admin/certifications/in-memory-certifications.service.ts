@@ -370,7 +370,7 @@ export class InMemoryCertificationsService implements CertificationsService {
     const key = this.pairKey(payload.alumnoId, payload.cursoId);
     if (this.vigentesPorPar.has(key)) {
       return Promise.reject(
-        Object.assign(new Error('Ya existe un certificado vigente para este alumno y curso.'), {
+        Object.assign(new Error('Ya existe una certificación válida para este alumno y curso.'), {
           status: 409,
           error: { code: 'CERTIFICATE_ALREADY_EXISTS' },
         }),

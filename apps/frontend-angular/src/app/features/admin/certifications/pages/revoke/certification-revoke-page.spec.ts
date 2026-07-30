@@ -140,7 +140,7 @@ describe('CertificationRevokePage', () => {
       expect(component.puedeRevocar()).toBeFalse();
       expect(fixture.nativeElement.querySelector('#motivo-revocacion')).toBeNull();
       expect(fixture.nativeElement.textContent).toContain(
-        'Solo las certificaciones vigentes pueden revocarse.',
+        'Solo las certificaciones válidas pueden revocarse.',
       );
 
       component.onMotivoChange('Este es un motivo válido con la longitud correcta');

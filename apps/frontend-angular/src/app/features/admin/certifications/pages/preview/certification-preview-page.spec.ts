@@ -141,7 +141,11 @@ describe('CertificationPreviewPage', () => {
     expect(ficha).not.toBeNull();
     const text = ficha?.textContent || '';
     // documentMasked visible con DNI completo ficticio (D0 admin UI).
-    expect(text).toMatch(/\b12345678\b/);
+    // Label «Documento» + dd sin espacio en textContent → no usar \b entre letra y dígito.
+    const docDd = Array.from(ficha?.querySelectorAll('.fila-dato') || []).find((row) =>
+      (row.querySelector('dt')?.textContent || '').trim() === 'Documento',
+    )?.querySelector('dd');
+    expect(docDd?.textContent?.trim()).toBe('12345678');
     // tokenPrefix visible (prefijo_demo_xxx), no token completo.
     expect(text).toMatch(/prefijo_demo_[a-z0-9]{3}/);
   });
@@ -470,6 +474,20 @@ describe('CertificationPreviewPage', () => {
     expect(header?.querySelector('h1')?.textContent).toContain('Alumno Demo Uno');
     expect(header?.querySelector('.subtitle')?.textContent).toContain('Curso de introducción');
     expect(header?.querySelector('.estado-badge')).not.toBeNull();
+  });
+
+  it('CERT-COPY-01: badge Revocado y label Documento (sin mascarado)', async () => {
+    const f = await render('5');
+    const el = f.nativeElement as HTMLElement;
+    const badge = el.querySelector('.expediente-header .estado-badge');
+    expect(badge?.textContent?.trim()).toBe('Revocado');
+    expect(el.textContent).not.toContain('Revocada');
+    const dts = Array.from(el.querySelectorAll('.ficha-expediente dt')).map((d) =>
+      (d.textContent || '').trim(),
+    );
+    expect(dts).toContain('Documento');
+    expect(dts.some((t) => /mascarado/i.test(t))).toBeFalse();
+    expect(el.textContent).not.toMatch(/Documento\s*\(mascarado\)/i);
   });
 
   it('muestra columna de control (ficha, acciones, validación, riesgo)', async () => {
