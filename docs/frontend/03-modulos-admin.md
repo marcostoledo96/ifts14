@@ -23,6 +23,7 @@ Resumen operativo del admin Angular. Detalle visual: `00-angular20-port-v0.md` y
 | `/admin/certificaciones/:id/revocar` | Diálogo revocar: honesty load (`errorRecuperable` + Reintentar gated; not-found sin Reintentar); submit `errorAccion` inline `mensajeErrorApi` P15-strict; `MOTIVO_MAX` 180; confirm/copy/sanitize; flash `?revocada=1` diferido; DNI completo / anti-token; HTTP intacto |
 | `/admin/configuracion` | Textos institucionales y firmas (Rector/a, Asesor/a) |
 | `/validar/:token` | Validación pública: fechas folio `dd/mm/yyyy` es-AR; staging revoked≡404 → SIN REGISTRO (REVOCADO solo con `CERTIFICATE_REVOKED`); Reintentar en técnico + no-encontrada; honesty sin raw/stack; DNI completo / anti-token; mapper/PHP intactos |
+| `/**` (wildcard) | NotFound pública ES-AR + title; CTA único → `/admin/login` (sin `/validar`); honesty sin stack/token/demo; huérfanas `/admin/*` aisladas por catch-all prefix→dashboard+guard (sin AdminNotFound) |
 
 ## Reglas de producto en UI
 
