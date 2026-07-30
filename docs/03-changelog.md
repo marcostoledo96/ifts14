@@ -29,6 +29,7 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 - Nueva certificación (P17): honesty P15-like (`errorCatalogosRecuperable` + `errorParRecuperable`; Reintentar solo loads); emit else vía `mensajeErrorApi` sin Reintentar/raw; copy rol edge vs Asistencias sin «complementario»; ruta/CTAs intactas; HTTP/backend intactos.
 - Expediente preview (P18): honesty load hard + Reintentar gated; `mensajeErrorApi` P15-strict en QR/regen; Regenerar=API (no `/pdf`); Descargar PDF→`/pdf`; post-regen omite `publicValidationUrl` completa; DNI completo / anti-token; HTTP/backend intactos.
 - Folio PDF (P19): honesty load hard + Reintentar gated; descarga `mensajeErrorApi` P15-strict; Descargar=html2canvas+jsPDF (no seam API); filename prefer `detalle.numero`; print A4 + firmas 3:2; QR canónico sin rotar; DNI completo / anti-token; HTTP/backend intactos.
+- Entrega manual (P20): `allSettled` (detalle hard / entrega soft); 409 operable bedelía; `errorRecuperable` load-only; `mensajeErrorApi` P15-strict; `regenerarPdf` wired (sin rotar token; sin URL completa post-regen); PDF folio `?descargar=1`; DNI completo / anti-token; HTTP/backend intactos.
 - Alumnos: listado, alta/edición, detalle/expediente con trayectoria.
 - Asistencias: hub por curso, intermedia de fechas, marcado, emisión/regeneración desde presentes.
 - Certificaciones: listado, nueva, preview/expediente, folio PDF, entrega manual, revocación.
