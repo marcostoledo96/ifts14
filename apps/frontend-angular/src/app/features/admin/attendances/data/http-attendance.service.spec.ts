@@ -226,7 +226,34 @@ describe('HttpAttendanceService', () => {
     httpMock.verify();
   });
 
-  it('marcar rechaza toda la operación si un DELETE falla', async () => {
+  it('marcar rechaza si un POST falla', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+
+    const p = service.marcar(5, 200, [{ alumnoId: 10, presente: true }]);
+
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`).flush({ data: { items: [] }, meta: { requestId: 'rg' } });
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    const reqPost = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`);
+    reqPost.flush('crash', { status: 500, statusText: 'Internal Server Error' });
+
+    await expectAsync(p).toBeRejected();
+
+    // Tras fallo de POST (y cualquier mutación parcial), el hub de sesión no debe reusarse.
+    const after = service.listarHub();
+    const hubReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(hubReq.request.method).toBe('GET');
+    hubReq.flush({ ...hubPayload, meta: { requestId: 'hub-after-post-fail' } });
+    await after;
+  });
+
+  it('marcar rechaza toda la operación si un DELETE falla e invalida hub', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+
     const p = service.marcar(5, 200, [{ alumnoId: 10, presente: true }]);
 
     httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`).flush({
@@ -239,19 +266,12 @@ describe('HttpAttendanceService', () => {
     reqDelete.flush('crash', { status: 500, statusText: 'Internal Server Error' });
 
     await expectAsync(p).toBeRejected();
-    httpMock.verify();
-  });
 
-  it('marcar rechaza si un POST falla', async () => {
-    const p = service.marcar(5, 200, [{ alumnoId: 10, presente: true }]);
-
-    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`).flush({ data: { items: [] }, meta: { requestId: 'rg' } });
-    await new Promise(resolve => setTimeout(resolve, 0));
-
-    const reqPost = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`);
-    reqPost.flush('crash', { status: 500, statusText: 'Internal Server Error' });
-
-    await expectAsync(p).toBeRejected();
+    const after = service.listarHub();
+    const hubReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(hubReq.request.method).toBe('GET');
+    hubReq.flush({ ...hubPayload, meta: { requestId: 'hub-after-delete-fail' } });
+    await after;
   });
 
   it('anular hace DELETE a /admin/asistencias/:id y devuelve void', async () => {
@@ -327,6 +347,97 @@ describe('HttpAttendanceService', () => {
     expect(hub.fechas[0].id).toBe(11);
     expect(hub.asistencias.length).toBe(1);
     expect(hub.alumnosActivos).toBe(3);
+  });
+
+  const hubPayload = {
+    data: {
+      cursos: [{ id: 1, codigo: 'CUR-001', nombre: 'Demo', estado: 'activo' }],
+      fechas: [
+        {
+          id: 11,
+          cursoId: 1,
+          fecha: '2026-03-01',
+          descripcion: null,
+          orden: 1,
+          estado: 'programada',
+        },
+      ],
+      asistencias: [] as const,
+      alumnosActivos: 2,
+    },
+    meta: { requestId: 'hub-coalesce' },
+  };
+
+  it('listarHub paralelo coalescea a un solo GET', async () => {
+    const p1 = service.listarHub();
+    const p2 = service.listarHub();
+    const reqs = httpMock.match(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(reqs.length).toBe(1);
+    expect(reqs[0].request.method).toBe('GET');
+    reqs[0].flush(hubPayload);
+    const [a, b] = await Promise.all([p1, p2]);
+    expect(a).toBe(b);
+    expect(a.alumnosActivos).toBe(2);
+  });
+
+  it('listarHub reusa Promise de sesión hasta mutación', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+    const second = service.listarHub();
+    httpMock.expectNone(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    await expectAsync(second).toBeResolved();
+  });
+
+  it('marcar invalida hubPending y fuerza GET fresco', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+
+    const marcarP = service.marcar(5, 200, [{ alumnoId: 10, presente: true }]);
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`).flush({
+      data: { items: [] },
+      meta: { requestId: 'rg' },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`).flush({
+      data: {
+        id: 60,
+        alumnoId: 10,
+        cursoId: 5,
+        cursoFechaId: 200,
+        fecha: '2026-03-01',
+        fechaEstado: 'realizada',
+        registradoEn: '2026-03-01T10:00:00Z',
+      },
+      meta: { requestId: 'rp' },
+    });
+    await marcarP;
+
+    const after = service.listarHub();
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ ...hubPayload, meta: { requestId: 'hub-after-marcar' } });
+    await after;
+  });
+
+  it('anular invalida hubPending y fuerza GET fresco', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+
+    const anularP = service.anular(77);
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias/77`).flush({
+      data: { id: 77, voided: true },
+      meta: { requestId: 'r1' },
+    });
+    await anularP;
+
+    const after = service.listarHub();
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ ...hubPayload, meta: { requestId: 'hub-after-anular' } });
+    await after;
   });
 
   it('resuelve vía ATTENDANCE_SOURCE token', () => {
