@@ -236,4 +236,51 @@ describe('AdminShell', () => {
     expect(cursosLink).not.toBeNull();
     expect(cursosLink?.textContent).toContain('Cursos');
   });
+
+  it('SHELL-A11Y-02: drawer abierto expone aria-modal y atrapa Tab', async () => {
+    const f = await render();
+    f.componentInstance.abrirMenu();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+
+    const el = f.nativeElement as HTMLElement;
+    const drawer = el.querySelector('#admin-drawer') as HTMLElement | null;
+    expect(drawer?.getAttribute('aria-modal')).toBe('true');
+    expect(drawer?.getAttribute('role')).toBe('dialog');
+    expect(el.querySelector('.drawer-layer')).not.toBeNull();
+
+    const layer = el.querySelector('.drawer-layer') as HTMLElement;
+    const focusables = Array.from(
+      layer.querySelectorAll<HTMLElement>(
+        'a[href], button:not(:disabled), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    expect(focusables.length).toBeGreaterThan(1);
+
+    const last = focusables[focusables.length - 1];
+    last.focus();
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    Object.defineProperty(tab, 'shiftKey', { value: false });
+    document.dispatchEvent(tab);
+    expect(layer.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(focusables[0]);
+  });
+
+  it('SHELL-A11Y-02: Escape cierra drawer, inert se limpia y foco vuelve a .menu-btn', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    f.componentInstance.abrirMenu();
+    f.detectChanges();
+    expect(el.querySelector('.content')?.hasAttribute('inert')).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    f.detectChanges();
+    await f.whenStable();
+
+    expect(f.componentInstance.menuAbierto()).toBe(false);
+    expect(el.querySelector('.drawer-mobile')).toBeNull();
+    expect(el.querySelector('.content')?.hasAttribute('inert')).toBe(false);
+    expect(document.activeElement).toBe(el.querySelector('.menu-btn'));
+  });
 });

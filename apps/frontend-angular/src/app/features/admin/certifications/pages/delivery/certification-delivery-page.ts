@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { trapTabKey } from '../../../../../shared/util/trap-tab';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EntregaManualDto } from '../../certifications.models';
 
@@ -122,6 +123,14 @@ export class CertificationDeliveryPage {
     effect(() => {
       this.id();
       untracked(() => void this.cargar());
+    });
+    // Foco inicial en #dialog (éxito o error) — soft; Esc vuelve al expediente.
+    effect(() => {
+      const hasDialog = !!(this.detalle() || this.error()) && !this.cargando();
+      if (!hasDialog) return;
+      queueMicrotask(() => {
+        this.dialogRef()?.nativeElement?.focus();
+      });
     });
   }
 
@@ -236,31 +245,13 @@ export class CertificationDeliveryPage {
     void this.router.navigate(['/admin/certificaciones', this.id()]);
   }
 
-  // T5: focus trap — Tab/Shift+Tab se mantiene dentro del diálogo
+  // T5 / REQ-DEL-007: focus trap vía helper compartido
   @HostListener('keydown.tab', ['$event'])
   @HostListener('keydown.shift.tab', ['$event'])
   onTab(e: Event): void {
-    const ke = e as KeyboardEvent;
     const dialog = this.dialogRef()?.nativeElement;
     if (!dialog) return;
-    const focusable = dialog.querySelectorAll<HTMLElement>(
-      'a[href], button:not(:disabled), textarea, input, [tabindex]:not([tabindex="-1"])',
-    );
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    const active = document.activeElement;
-    if (ke.shiftKey) {
-      if (active === first || !dialog.contains(active)) {
-        ke.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (active === last) {
-        ke.preventDefault();
-        first.focus();
-      }
-    }
+    trapTabKey(e as KeyboardEvent, dialog);
   }
 
   async copiarLink(): Promise<void> {

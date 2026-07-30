@@ -2,9 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
   HostListener,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import {
   NavigationCancel,
@@ -16,6 +18,7 @@ import {
 } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, tap } from 'rxjs';
+import { trapTabKey } from '../../shared/util/trap-tab';
 import { ADMIN_AUTH } from './admin-auth.service';
 import { SidebarAdmin } from './sidebar-admin';
 
@@ -34,6 +37,7 @@ export class AdminShell {
 
   readonly menuAbierto = signal(false);
   readonly cerrandoSesion = signal(false);
+  readonly drawerLayerRef = viewChild<ElementRef<HTMLElement>>('drawerLayer');
 
   readonly rutaActual = toSignal(
     this.router.events.pipe(
@@ -77,6 +81,15 @@ export class AdminShell {
     if (this.menuAbierto()) {
       this.cerrarMenu();
     }
+  }
+
+  /** SHELL-A11Y-02: Tab/Shift+Tab atrapados en overlay+aside. */
+  @HostListener('document:keydown', ['$event'])
+  onTab(e: KeyboardEvent): void {
+    if (!this.menuAbierto() || e.key !== 'Tab') return;
+    const root = this.drawerLayerRef()?.nativeElement;
+    if (!root) return;
+    trapTabKey(e, root);
   }
 
   abrirMenu(): void {
