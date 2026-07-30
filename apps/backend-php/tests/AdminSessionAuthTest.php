@@ -20,9 +20,35 @@ if ($production['idleSeconds'] !== 14400 || $production['absoluteSeconds'] !== 2
     throw new RuntimeException('Los TTL de sesión deben ser exactamente 14400/28800.');
 }
 
+// D-009: cookieOptions (sesión navegador) no lleva expires; attrs fijos vía settings.
+$cookieOptions = new ReflectionMethod(AdminSessionAuth::class, 'cookieOptions');
+$cookieOptions->setAccessible(true);
+$productionCookie = $cookieOptions->invoke(null, $production);
+if (
+    !is_array($productionCookie)
+    || ($productionCookie['path'] ?? null) !== '/certificados/'
+    || ($productionCookie['secure'] ?? null) !== true
+    || ($productionCookie['httponly'] ?? null) !== true
+    || ($productionCookie['samesite'] ?? null) !== 'Strict'
+    || array_key_exists('expires', $productionCookie)
+) {
+    throw new RuntimeException('cookieOptions de producción debe fijar path/secure/httponly/samesite sin expires.');
+}
+
 $staging = AdminSessionAuth::settings($config, '/certificados_staging');
-if ($staging === null || $staging['name'] !== 'ifts14_cert_stg_admin' || $staging['path'] !== '/certificados_staging/') {
+if ($staging === null || $staging['name'] !== 'ifts14_cert_stg_admin' || $staging['path'] !== '/certificados_staging/' || $staging['lifetime'] !== 0) {
     throw new RuntimeException('La cookie de staging no respeta el contrato.');
+}
+$stagingCookie = $cookieOptions->invoke(null, $staging);
+if (
+    !is_array($stagingCookie)
+    || ($stagingCookie['path'] ?? null) !== '/certificados_staging/'
+    || ($stagingCookie['secure'] ?? null) !== true
+    || ($stagingCookie['httponly'] ?? null) !== true
+    || ($stagingCookie['samesite'] ?? null) !== 'Strict'
+    || array_key_exists('expires', $stagingCookie)
+) {
+    throw new RuntimeException('cookieOptions de staging debe fijar path/secure/httponly/samesite sin expires.');
 }
 
 if (!AdminSessionAuth::credentialsValid($config, 'bedelia', $password) || AdminSessionAuth::credentialsValid($config, 'otra', $password) || AdminSessionAuth::credentialsValid($config, 'bedelia', 'incorrecta')) {
