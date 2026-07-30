@@ -287,7 +287,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | hecha | #112 | Mergeado a staging1.0 (`7b7d3db`); archive `2026-07-30-audit-u04-a11y-responsive`; verify PASS; contraste DEFER |
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | hecha | #113 | Mergeado a staging1.0 (`0b9d786`); archive `2026-07-30-audit-u05-estados-error`; verify PASS WITH WARNINGS; SHELL-STATE-01..04 |
 | U6 Backend contrato + errores | `audit/u06-backend` | hecha | #114 | Mergeado a staging1.0 (`613b305`); archive `2026-07-30-audit-u06-backend`; verify PASS; `state()`/`authorize` lastSeen + D-004→503 |
-| U7 Seguridad + PII | `audit/u07-seguridad` | en curso | | Apply Approach 1: deny htaccess app + D-009 docs + privacy gate; verify pendiente; HTTP 403 live DEFER U9 |
+| U7 Seguridad + PII | `audit/u07-seguridad` | en PR | #115 | verify PASS WITH WARNINGS; deny htaccess + cookie D-009; archiva U6; HTTP 403 live DEFER U9 |
 | U8 Docs + drift specs | `audit/u08-docs` | pendiente | | |
 | U9 QA staging real + smokes | `audit/u09-qa-staging` | pendiente | | |
 | L1 Land staging1.0 → main | PR release | pendiente | | Solo cuando estable |
