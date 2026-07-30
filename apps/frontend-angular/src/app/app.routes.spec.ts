@@ -82,6 +82,12 @@ describe('app.routes', () => {
     expect(typeof cmp).toBe('function');
   });
 
+  it("wildcard tiene title de página no encontrada", () => {
+    const wildcard = routes.find((r) => r.path === '**');
+    expect(wildcard?.title).toBe('Página no encontrada — IFTS 14');
+  });
+
+
   it("ninguna ruta redirige a demo-valido", () => {
     for (const r of routes) {
       expect(r.redirectTo).not.toContain('demo-valido');
