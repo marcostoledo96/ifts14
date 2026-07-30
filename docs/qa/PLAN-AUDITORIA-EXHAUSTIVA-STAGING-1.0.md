@@ -288,9 +288,9 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | hecha | #113 | Mergeado a staging1.0 (`0b9d786`); archive `2026-07-30-audit-u05-estados-error`; verify PASS WITH WARNINGS; SHELL-STATE-01..04 |
 | U6 Backend contrato + errores | `audit/u06-backend` | hecha | #114 | Mergeado a staging1.0 (`613b305`); archive `2026-07-30-audit-u06-backend`; verify PASS; `state()`/`authorize` lastSeen + D-004→503 |
 | U7 Seguridad + PII | `audit/u07-seguridad` | hecha | #115 | Mergeado (`f1fa2f5`); archive `2026-07-30-audit-u07-seguridad`; verify PASS WITH WARNINGS |
-| U8 Docs + drift specs | `audit/u08-docs` | en PR | #116 | verify PASS WITH WARNINGS; changelog/checklist/drift; archiva U7 |
-| U9 QA staging real + smokes | `audit/u09-qa-staging` | pendiente | | |
-| L1 Land staging1.0 → main | PR release | pendiente | | Solo cuando estable |
+| U8 Docs + drift specs | `audit/u08-docs` | hecha | #116 | Mergeado (`45f77e6`); archive `2026-07-30-audit-u08-docs`; verify PASS WITH WARNINGS |
+| U9 QA staging real + smokes | `audit/u09-qa-staging` | en PR | | QA staging + fix 401 asistencias (serie + BE 503); D-009 timed DEFER |
+| L1 Land staging1.0 → main | PR release | pendiente | | Solo con OK explícito de Marcos |
 
 Estados: `pendiente` · `en curso` · `en PR` · `hecha` · `diferida`
 
@@ -1222,28 +1222,32 @@ Drift conocido (sin rewrite masivo de specs/contratos):
 **Prompt**
 
 ```text
-Fase U8 — Documentación — en curso.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u08-docs.
-Actualizar docs canónicas para reflejar flujo Git (main=prod, staging1.0=integración), mapa admin, checklist QA, enlace a este plan en 00-indice-general.md.
-Español argentino formal. Sin dumps ni secretos. Listar drift de specs sin obligatoriedad de cerrarlo todo.
+Fase U8 — Documentación — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #116 mergeado (45f77e6).
+Cambio SDD: openspec/changes/archive/2026-07-30-audit-u08-docs/.
+Verify PASS WITH WARNINGS (6/6 escenarios; hygiene docs; live 403 DEFER U9).
+Siguiente: U9 QA staging (audit/u09-qa-staging). No reabrir U8 salvo regresión documental.
 ```
 
+**Nota:** hygiene docs-only; banner contrato + Nota de drift en este §U8; archive U7 intacto; sin rewrite masivo de specs. Cerrada.
 ---
 
 ## Fase U9 — QA en staging real + smokes
 
-**Rama:** `audit/u09-qa-staging` (o solo checklist sin código)
+**Rama:** `audit/u09-qa-staging`
 
 **Checklist** (basada en `docs/qa/CHECKLIST-TESTING-MANUAL.md`)
 
-- [ ] Health API
-- [ ] Login local + staging
-- [ ] Flujo completo: curso → fecha → asistencia → emitir → PDF → entrega → validar QR
-- [ ] Revocar → validación muestra revocado
-- [ ] Regenerar PDF no cambia token
-- [ ] Idle/sesión 401 limpio
-- [ ] **D-009:** en staging real, sesión **no** debe caer ~30 min de uso/idle corta si la config es 14400/28800; repro con reloj y evidencia sin PII (hora login → hora 401)
-- [ ] Smokes CLI si existen
+- [x] Health API
+- [x] Login staging
+- [x] Flujo completo: curso → fecha → asistencia → emitir → PDF → entrega → validar QR
+- [x] Revocar → admin muestra Revocado (validación pública post-revocar PARTIAL)
+- [x] Regenerar PDF no cambia token (prefijo estable)
+- [x] 401 falso al marcar asistencias (lock sesión) → **FIXED** (`marcar` en serie + BE 503); retest staging OK
+- [ ] Idle/sesión 401 limpio / **D-009** timed ≥30 min — **DEFER** (config 14400/28800 confirmada; sin espera reloj)
+- [ ] Smokes CLI si existen (opcional)
+
+**Nota:** evidencias en `openspec/changes/audit-u09-qa-staging/explore.md` + `verify-report.md`. Cerrar a `hecha` tras merge del PR. L1 no incluido.
 
 **Prompt**
 
