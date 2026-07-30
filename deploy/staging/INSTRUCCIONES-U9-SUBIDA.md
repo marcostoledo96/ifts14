@@ -35,8 +35,8 @@ No tocar `.user.ini` ni el bootstrap externo. Confirmar idle/absolute **14400/28
 
 ## Smoke corto
 
-1. `GET …/api/health` → 200  
-2. `GET …/api/src/Config.php` → **403** (o bloqueo; no código fuente)  
-3. Login + **marcar asistencias** (varios presentes) sin echar a login  
-4. Un flujo emit→PDF→validar  
+1. `GET …/api/health` → 200
+2. `GET …/api/src/Config.php` → **403** (o bloqueo; no código fuente)
+3. Login + **marcar asistencias** (varios presentes) sin echar a login
+4. Un flujo emit→PDF→validar
 5. Checklist: `docs/qa/CHECKLIST-TESTING-MANUAL.md` / PLAN §U9
