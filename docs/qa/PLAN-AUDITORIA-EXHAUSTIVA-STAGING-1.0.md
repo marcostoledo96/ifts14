@@ -286,8 +286,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U3 Copy / redacción global | `audit/u03-copy` | hecha | #111 | Mergeado a staging1.0 (`b0d23d4`); archive `2026-07-30-audit-u03-copy`; verify PASS |
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | hecha | #112 | Mergeado a staging1.0 (`7b7d3db`); archive `2026-07-30-audit-u04-a11y-responsive`; verify PASS; contraste DEFER |
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | hecha | #113 | Mergeado a staging1.0 (`0b9d786`); archive `2026-07-30-audit-u05-estados-error`; verify PASS WITH WARNINGS; SHELL-STATE-01..04 |
-| U6 Backend contrato + errores | `audit/u06-backend` | en PR | #114 | verify PASS; `state()`/`authorize` lastSeen + D-004→503; archiva U5 |
-| U7 Seguridad + PII | `audit/u07-seguridad` | pendiente | | |
+| U6 Backend contrato + errores | `audit/u06-backend` | hecha | #114 | Mergeado a staging1.0 (`613b305`); archive `2026-07-30-audit-u06-backend`; verify PASS; `state()`/`authorize` lastSeen + D-004→503 |
+| U7 Seguridad + PII | `audit/u07-seguridad` | en curso | | Apply Approach 1: deny htaccess app + D-009 docs + privacy gate; verify pendiente; HTTP 403 live DEFER U9 |
 | U8 Docs + drift specs | `audit/u08-docs` | pendiente | | |
 | U9 QA staging real + smokes | `audit/u09-qa-staging` | pendiente | | |
 | L1 Land staging1.0 → main | PR release | pendiente | | Solo cuando estable |
@@ -1144,7 +1144,7 @@ Siguiente: U6 backend (audit/u06-backend) o U9 smokes según prioridad. No reabr
 
 ## Fase U6 — Backend (contrato, errores, prolijidad)
 
-**Rama:** `audit/u06-backend`
+**Rama:** `audit/u06-backend` — **CERRADA** (PR #114 → `staging1.0` `613b305`; archive `2026-07-30-audit-u06-backend`)
 
 **Alcance:** `apps/backend-php/` endpoints admin + público usados por las pantallas.
 
@@ -1160,12 +1160,14 @@ Siguiente: U6 backend (audit/u06-backend) o U9 smokes según prioridad. No reabr
 **Prompt**
 
 ```text
-Fase U6 — Backend PHP auditoría.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u06-backend.
-Auditar endpoints usados por admin y validación pública: contrato, mensajes, auth/CSRF, PII en logs, prolijidad.
-Incluir D-009 (sesión ~30 min en staging QA): verificar TTL config vs código y renovación de lastSeen.
-Fixes de bajo riesgo. No rotar encryption keys. No cambiar semántica de token permanente.
+Fase U6 — Backend (contrato + sesión) — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #114 mergeado (613b305).
+Cambio SDD: openspec/changes/archive/2026-07-30-audit-u06-backend/.
+Verify PASS (5/5 escenarios; lastSeen state/authorize + D-004 503≠429; focused PHP AdminSessionAuthTest + AdminAuthHttpTest).
+Siguiente: U7 seguridad (audit/u07-seguridad) o U9 smokes según prioridad. No reabrir U6 salvo regresión.
 ```
+
+**Nota:** `state()`/`authorize` renuevan `lastSeen` + `session_write_close`; TTL docs/spec 14400/28800; storage rate-limit →503≠429; envelope/400/409 DEFER; D0. Cerrada.
 
 ---
 
@@ -1175,13 +1177,13 @@ Fixes de bajo riesgo. No rotar encryption keys. No cambiar semántica de token p
 
 **Checklist**
 
-- [ ] CSRF en mutaciones
-- [ ] Rate limit login
-- [ ] **D-009:** política de sesión admin documentada y aplicada (idle ≥ jornada operativa esperada; absolute acotado; cookie Secure/HttpOnly/SameSite; sin sorpresa ~30 min si el producto promete 4 h)
-- [ ] Bloqueo path traversal / exposición `src/`
-- [ ] Headers / cookies Secure/HttpOnly según entorno
-- [ ] DNI/token nunca en logs ni en URLs de analytics
-- [ ] `__checks__/no-secrets` / no-real-data verdes
+- [x] CSRF en mutaciones *(regresión `AdminAuthHttpTest` / authorize mutates)*
+- [x] Rate limit login *(regresión `AdminSessionAuthTest` allowLoginAttempt + HTTP 429)*
+- [x] **D-009:** política de sesión admin documentada y aplicada (idle ≥ jornada operativa esperada; absolute acotado; cookie Secure/HttpOnly/SameSite; sin sorpresa ~30 min si el producto promete 4 h) *(docs `00-php84-api.md` lifetime=0 vs absolute 28800; reflection `cookieOptions`; TTL 14400/28800 intactos)*
+- [x] Bloqueo path traversal / exposición `src/` *(`apps/backend-php/.htaccess` deny `src|config` antes de FallbackResource; gate `test-privacy-headers.sh`; HTTP 403 live **DEFER U9**)*
+- [x] Headers / cookies Secure/HttpOnly según entorno *(privacy headers + cookie attrs fijos)*
+- [x] DNI/token nunca en logs ni en URLs de analytics *(regresión `AuthPrivacyTest`; spot profundo staging **DEFER U9**)*
+- [x] `__checks__/no-secrets` / no-real-data verdes *(regresión apply Phase 4)*
 
 **Prompt**
 

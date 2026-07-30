@@ -23,4 +23,20 @@ for htaccess in deploy/htaccess deploy/staging/.htaccess-api deploy/staging/.hta
   fi
 done
 
+# Deny directo a src|config en htaccess de API (antes de FallbackResource / index.php).
+for api_htaccess in apps/backend-php/.htaccess deploy/staging/.htaccess-api deploy/cpanel/certificados_qa_smoke/api/.htaccess; do
+  if [ ! -f "$api_htaccess" ]; then
+    echo "Missing API htaccess $api_htaccess"
+    exit 1
+  fi
+  if ! grep -qE 'RewriteRule \^\(src\|config\)/' "$api_htaccess"; then
+    echo "Missing RewriteRule deny src|config in $api_htaccess"
+    exit 1
+  fi
+  if ! grep -qE 'RewriteRule \^\(src\|config\)/.*\[F' "$api_htaccess"; then
+    echo "Missing [F] flag on src|config deny in $api_htaccess"
+    exit 1
+  fi
+done
+
 echo "OK PrivacyHeadersTest"
