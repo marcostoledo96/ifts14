@@ -284,7 +284,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | hecha | #109 | Mergeado a staging1.0 (`511ce7b`); archive `2026-07-29-audit-u01-prolijidad-fe`; verify PASS |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | hecha | #110 | Mergeado a staging1.0 (`125f6f8`); archive `2026-07-30-audit-u02-perf-fe`; verify PASS |
 | U3 Copy / redacción global | `audit/u03-copy` | hecha | #111 | Mergeado a staging1.0 (`b0d23d4`); archive `2026-07-30-audit-u03-copy`; verify PASS |
-| U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | en PR | | verify PASS (13/13); trap drawer/diálogos; contraste DEFER |
+| U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | en PR | #112 | verify PASS (13/13); trap drawer/diálogos; contraste DEFER |
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | pendiente | | |
 | U6 Backend contrato + errores | `audit/u06-backend` | pendiente | | |
 | U7 Seguridad + PII | `audit/u07-seguridad` | pendiente | | |
@@ -1086,7 +1086,7 @@ Siguiente: U4 a11y/responsive (audit/u04-a11y-responsive) o U9 smokes según pri
 
 **Rama:** `audit/u04-a11y-responsive`
 
-**Estado:** en PR — verify PASS (13/13; focused ng test 70 SUCCESS; tsc 0); contraste/`.sr-only` diferidos; archive tras merge.
+**Estado:** en PR #112 — verify PASS (13/13; focused ng test 70 SUCCESS; tsc 0); contraste/`.sr-only` diferidos; archive tras merge.
 
 **Checklist**
 
