@@ -35,29 +35,29 @@ Angular 20 standalone bajo `apps/frontend-angular/`:
 
 ### Top gaps (con evidencia)
 
-1. **`LandingPage` muerto (ruta + producto)**  
-   - `apps/frontend-angular/src/app/features/landing/landing-page.ts` (+ `.spec.ts`)  
-   - Evidencia: `app.routes.ts` redirige `''` → `/admin/login`; grep de `LandingPage`/`landing-page` solo en el feature y su spec. Specs de rutas ya aserten redirect a login (`app.routes.spec.ts`).  
+1. **`LandingPage` muerto (ruta + producto)**
+   - `apps/frontend-angular/src/app/features/landing/landing-page.ts` (+ `.spec.ts`)
+   - Evidencia: `app.routes.ts` redirige `''` → `/admin/login`; grep de `LandingPage`/`landing-page` solo en el feature y su spec. Specs de rutas ya aserten redirect a login (`app.routes.spec.ts`).
    - Specs asociados testean scaffold histórico, no el contrato actual.
 
-2. **`FolioShell` muerto (shared UI sin consumidores)**  
-   - `apps/frontend-angular/src/app/shared/ui/folio-shell.ts` (+ `.html`/`.css`/`.spec.ts`)  
+2. **`FolioShell` muerto (shared UI sin consumidores)**
+   - `apps/frontend-angular/src/app/shared/ui/folio-shell.ts` (+ `.html`/`.css`/`.spec.ts`)
    - Evidencia: cero usos de `FolioShell` / `app-folio-shell` fuera de sí mismo; folio público vive inline en `public-validation-page.*`.
 
-3. **Alias muerto `AttendanceMarkingPage.guardar()`**  
-   - `…/marking/attendance-marking-page.ts` (~L301–304): `/** Alias de compatibilidad… */ async guardar() { return this.guardarYGenerar(); }`  
+3. **Alias muerto `AttendanceMarkingPage.guardar()`**
+   - `…/marking/attendance-marking-page.ts` (~L301–304): `/** Alias de compatibilidad… */ async guardar() { return this.guardarYGenerar(); }`
    - Evidencia: HTML y specs llaman solo `guardarYGenerar()`; ningún `.guardar()` en specs de marking.
 
-4. **`paginasVisibles` duplicado idéntico×4 (candidato a extract de bajo riesgo)**  
-   - `students-list-page.ts`, `courses-list-page.ts`, `certifications-list-page.ts`, `attendances-list-page.ts`  
+4. **`paginasVisibles` duplicado idéntico×4 (candidato a extract de bajo riesgo)**
+   - `students-list-page.ts`, `courses-list-page.ts`, `certifications-list-page.ts`, `attendances-list-page.ts`
    - Evidencia: mismo cuerpo (ventana ≤5 / elipsis). Extract de función pura `paginasVisiblesWindow(total, actual)` reduce drift sin tocar UX/HTML.
 
-5. **Formatters dd/mm/yyyy duplicados (extract condicional / prefer defer parcial)**  
-   - delivery `formatearFecha`, public `formatearFechaFolio`, new `formatearFechaCorta`, list `formatEmision`  
+5. **Formatters dd/mm/yyyy duplicados (extract condicional / prefer defer parcial)**
+   - delivery `formatearFecha`, public `formatearFechaFolio`, new `formatearFechaCorta`, list `formatEmision`
    - Unificar **incluyendo** public toca P22 archive / honesty dates → **riesgo de scope**. Prefer: (a) defer total, o (b) shared solo admin si hace falta; no reabrir validación pública salvo dead code.
 
-6. **`formatearFechaAsistida` identity stub + spec narrativa**  
-   - `certification-pdf-preview-page.ts` L140–142: `return fecha;` usado en template; spec espera ISO crudo; `no-secrets.spec.ts` inspecciona el body del método.  
+6. **`formatearFechaAsistida` identity stub + spec narrativa**
+   - `certification-pdf-preview-page.ts` L140–142: `return fecha;` usado en template; spec espera ISO crudo; `no-secrets.spec.ts` inspecciona el body del método.
    - No es bug visual; limpiar a binding directo **sin** cambiar a es-AR (eso sería copy/UX → U3 / fuera de U1). O defer.
 
 7. **OnPush** — **sin gap**. Documentar como ya cumplido; no “arreglar” lo sano.
@@ -82,19 +82,19 @@ Angular 20 standalone bajo `apps/frontend-angular/`:
 
 ### Approaches
 
-1. **Surgical dead-code + optional pager helper (recomendada)** — Borrar Landing + FolioShell + alias `guardar()`; opcional extract `paginasVisiblesWindow`; ADDED liviano en `frontend-angular-shell`; defer formatters/clipboard/`mensajeErrorApi`/ponytails/honesty.  
-   - Pros: cierra U1 con evidencia; diff mínimo; cero UX; OnPush ya OK.  
-   - Cons: deja duplicación de fechas/clipboard documentada como defer.  
+1. **Surgical dead-code + optional pager helper (recomendada)** — Borrar Landing + FolioShell + alias `guardar()`; opcional extract `paginasVisiblesWindow`; ADDED liviano en `frontend-angular-shell`; defer formatters/clipboard/`mensajeErrorApi`/ponytails/honesty.
+   - Pros: cierra U1 con evidencia; diff mínimo; cero UX; OnPush ya OK.
+   - Cons: deja duplicación de fechas/clipboard documentada como defer.
    - Effort: **Low**
 
-2. **Mega-extract helpers (fechas + clipboard + pager + errores)** — Shared utils transversales.  
-   - Pros: menos drift futuro.  
-   - Cons: toca P18–P22 surfaces; riesgo >400 líneas; viola “diff chico” y locks de no reabrir honesty.  
+2. **Mega-extract helpers (fechas + clipboard + pager + errores)** — Shared utils transversales.
+   - Pros: menos drift futuro.
+   - Cons: toca P18–P22 surfaces; riesgo >400 líneas; viola “diff chico” y locks de no reabrir honesty.
    - Effort: **High** — **no** para U1
 
-3. **Docs-only / verify sin código** — Solo PLAN + nota.  
-   - Pros: cero riesgo de regresión.  
-   - Cons: deja dead code real (Landing/FolioShell); checklist U1 incompleto.  
+3. **Docs-only / verify sin código** — Solo PLAN + nota.
+   - Pros: cero riesgo de regresión.
+   - Cons: deja dead code real (Landing/FolioShell); checklist U1 incompleto.
    - Effort: Low (**incompleto** vs gaps encontrados)
 
 ### Spec target
