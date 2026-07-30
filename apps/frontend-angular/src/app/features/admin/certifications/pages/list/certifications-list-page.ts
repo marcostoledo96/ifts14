@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, InjectionToken, isDevMode, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
+import { paginasVisiblesWindow } from '../../../../../shared/util/paginas-visibles-window';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import {
   Certificacion,
@@ -66,14 +67,9 @@ export class CertificationsListPage {
     const page = this.paginaSegura();
     return this.resultadosFiltrados().slice((page - 1) * PAGINA_TAMANO, page * PAGINA_TAMANO);
   });
-  readonly paginasVisibles = computed(() => {
-    const total = this.totalPaginas();
-    const actual = this.paginaSegura();
-    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
-    if (actual <= 3) return [1, 2, 3, 4, 5];
-    if (actual >= total - 2) return [total - 4, total - 3, total - 2, total - 1, total];
-    return [actual - 2, actual - 1, actual, actual + 1, actual + 2];
-  });
+  readonly paginasVisibles = computed(() =>
+    paginasVisiblesWindow(this.totalPaginas(), this.paginaSegura()),
+  );
   readonly mostrarResumen = computed(
     () => this.vistaQA() === 'datos' && !this.cargando() && !this.error(),
   );

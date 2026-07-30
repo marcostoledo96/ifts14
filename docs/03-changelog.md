@@ -32,6 +32,7 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 - Entrega manual (P20): `allSettled` (detalle hard / entrega soft); 409 operable bedelía; `errorRecuperable` load-only; `mensajeErrorApi` P15-strict; `regenerarPdf` wired (sin rotar token; sin URL completa post-regen); PDF folio `?descargar=1`; DNI completo / anti-token; HTTP/backend intactos.
 - Revocación (P21): honesty load (`errorRecuperable` + Reintentar gated; not-found sin Reintentar); submit `errorAccion` inline vía `mensajeErrorApi` P15-strict; `MOTIVO_MAX` 180; confirm/copy/sanitize motivo; flash `?revocada=1` diferido; DNI completo / anti-token; HTTP/backend intactos.
 - Validación pública (P22): fechas folio `dd/mm/yyyy` es-AR (`formatearFechaFolio`); staging revoked≡404 documentado (REVOCADO solo con código explícito); Reintentar en técnico + no-encontrada; honesty sin raw/stack; DNI completo / anti-token; mapper/PHP intactos.
+- NotFound / rutas huérfanas (P23): wildcard público → `NotFound` ES-AR + title; CTA único → `/admin/login` (sin `/validar`); catch-all admin prefix intacto (`/admin/typo` aislado); honesty sin stack/token/demo; sin AdminNotFound.
 - Alumnos: listado, alta/edición, detalle/expediente con trayectoria.
 - Asistencias: hub por curso, intermedia de fechas, marcado, emisión/regeneración desde presentes.
 - Certificaciones: listado, nueva, preview/expediente, folio PDF, entrega manual, revocación.

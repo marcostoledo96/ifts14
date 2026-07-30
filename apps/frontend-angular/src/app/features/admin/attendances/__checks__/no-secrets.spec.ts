@@ -37,7 +37,7 @@ function sources(): string[] {
     AttendanceCourseDatesPage.prototype.constructor.toString(),
     AttendanceCourseDatesPage.prototype.cargar.toString(),
     AttendanceMarkingPage.prototype.constructor.toString(),
-    AttendanceMarkingPage.prototype.guardar.toString(),
+    AttendanceMarkingPage.prototype.guardarYGenerar.toString(),
     AttendanceMarkingPage.prototype.descartar.toString(),
   ];
 }
