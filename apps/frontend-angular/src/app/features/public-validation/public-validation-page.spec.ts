@@ -88,8 +88,12 @@ describe('PublicValidationPage', () => {
     expect(text).toContain('Documento verificado');
     expect(text).toContain('Técnico Superior en Sistemas');
     expect(text).toContain('12345678');
-    expect(text).toContain('2025-03-10');
-    expect(text).toContain('2025-03-12');
+    expect(text).toContain('15/03/2025');
+    expect(text).toContain('10/03/2025');
+    expect(text).toContain('12/03/2025');
+    expect(text).not.toContain('2025-03-15');
+    expect(text).not.toContain('2025-03-10');
+    expect(text).not.toContain('2025-03-12');
     expect(text).toContain('Certificado de curso');
     expect(text).toContain('ESTADO DE REGISTRO: VÁLIDO');
     expect(text).not.toContain('demo-valido');

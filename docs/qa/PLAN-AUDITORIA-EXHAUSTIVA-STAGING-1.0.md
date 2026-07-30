@@ -278,8 +278,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P18 Expediente preview | `audit/p18-certs-preview` | hecha | #103 | Mergeado a staging1.0 (`dc3ac99`); archive `2026-07-29-audit-p18-certs-preview`; verify PASS WITH WARNINGS |
 | P19 Folio PDF | `audit/p19-certs-pdf` | hecha | #104 | Mergeado a staging1.0 (`4938024`); archive `2026-07-29-audit-p19-certs-pdf`; verify PASS WITH WARNINGS |
 | P20 Entrega manual | `audit/p20-certs-entrega` | hecha | #105 | Mergeado a staging1.0 (`1cdb9f8`); archive `2026-07-29-audit-p20-certs-entrega`; verify PASS |
-| P21 Revocación | `audit/p21-certs-revocar` | en PR | #106 | SDD `audit-p21-certs-revocar` — PR abierto; verify PASS (9/9; ng test 17/17) |
-| P22 Validación pública | `audit/p22-validacion` | pendiente | | |
+| P21 Revocación | `audit/p21-certs-revocar` | hecha | #106 | Mergeado a staging1.0 (`992201d`); archive `2026-07-29-audit-p21-certs-revocar`; verify PASS |
+| P22 Validación pública | `audit/p22-validacion` | en curso | | fechas es-AR + staging revoked≡404 documentado; verify pendiente |
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | pendiente | | |
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | pendiente | | |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | pendiente | | |
@@ -891,9 +891,9 @@ Siguiente: P21 revocación (audit/p21-certs-revocar). No reabrir entrega salvo r
 ## Fase P21 — Revocación
 
 **Rama:** `audit/p21-certs-revocar`
-**Cambio SDD:** `openspec/changes/audit-p21-certs-revocar/`
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-p21-certs-revocar/`
 **Ruta:** `/admin/certificaciones/:id/revocar`
-**Estado:** en PR — #106; verify PASS; archive pendiente post-merge
+**Estado:** hecha — PR #106 mergeado (`992201d`); verify PASS; archive cerrado
 
 **Checklist**
 
@@ -907,11 +907,11 @@ Siguiente: P21 revocación (audit/p21-certs-revocar). No reabrir entrega salvo r
 **Prompt**
 
 ```text
-Fase P21 — Revocación — en PR #106; verify PASS.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p21-certs-revocar.
-Cambio SDD: openspec/changes/audit-p21-certs-revocar/.
+Fase P21 — Revocación — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #106 mergeado (992201d).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p21-certs-revocar/.
 Verify PASS (9/9 escenarios; ng test certification-revoke-page 17/17).
-Siguiente post-merge: archive P21 → P22 validación pública. No reabrir revocar salvo regresión.
+Siguiente: P22 validación pública (audit/p22-validacion). No reabrir revocar salvo regresión.
 ```
 
 ---
@@ -923,11 +923,14 @@ Siguiente post-merge: archive P21 → P22 validación pública. No reabrir revoc
 
 **Checklist**
 
-- [ ] Válida vs revocada
-- [ ] Sin datos de más; DNI según política pública acordada
-- [ ] Token inválido / no encontrado
-- [ ] Responsive, trust/branding
-- [ ] No filtrar stack traces
+- [x] Válida OK (folio + fechas `dd/mm/yyyy` es-AR)
+- [x] REVOCADO solo con código explícito `CERTIFICATE_REVOKED` (mock); staging revoked→`404 CERTIFICATE_NOT_FOUND` ≡ no-encontrada / SIN REGISTRO (contrato aceptado, no bug de front)
+- [x] Sin datos de más; DNI completo (D0) en válida; sin token en DOM del cuerpo
+- [x] Token inválido / no encontrado → SIN REGISTRO
+- [ ] Responsive, trust/branding *(smoke visual al verify/U9)*
+- [x] No filtrar stack traces / raw `Error.message`; Reintentar en técnico + no-encontrada
+
+**Nota staging (aceptada):** verify PHP colapsa certificado revocado a `404 CERTIFICATE_NOT_FOUND`. El front muestra chrome no-encontrada; no inventa REVOCADO. Unlock PHP `CERTIFICATE_REVOKED` queda fuera de P22 (`RATE_LIMITED` diferido).
 
 **Prompt**
 
@@ -937,6 +940,7 @@ Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p22-validac
 Auditar public-validation-page + API pública consumida.
 Lentes UI/UX, copy, errores token, a11y, carga, prolijidad, seguridad de respuesta.
 Paridad muestra_pagina/ validación.
+Staging revoked≡404 documentado; fechas folio es-AR; honesty preservada.
 ```
 
 ---

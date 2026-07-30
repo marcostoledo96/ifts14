@@ -210,7 +210,7 @@
                   </div>
                   <div>
                     <dt appCampoDato>Fecha de emisión</dt>
-                    <dd appCampoDato variant="mono">{{ v.certificate.course.issuedAt }}</dd>
+                    <dd appCampoDato variant="mono">{{ formatearFechaFolio(v.certificate.course.issuedAt) }}</dd>
                   </div>
                 </dl>
               </section>
@@ -234,7 +234,7 @@
                         @for (fecha of v.certificate.course.attendedDates; track fecha; let i = $index) {
                           <tr>
                             <td>{{ seqLabel(i) }}</td>
-                            <td>{{ fecha }}</td>
+                            <td>{{ formatearFechaFolio(fecha) }}</td>
                             <td>
                               <span class="presente">
                                 <svg
