@@ -1,0 +1,31 @@
+# Plantilla .htaccess — API de producción /certificados/api/
+#
+# Copiar como .htaccess dentro de public_html/certificados/api/
+# SOLO en instalación nueva. Conservar `.user.ini` del servidor (auto_prepend).
+#
+# IMPORTANTE: este hosting NO tiene mod_env. Nunca usar SetEnv aquí.
+# El dominio principal suele estar en PHP 8.1; forzar ea-php84 en esta carpeta.
+# Gate previo: ver INSTRUCCIONES-SUBIDA.md (ping.php debe reportar 8.4.x).
+
+# Forzar ea-php84 (MultiPHP a veces no aplica al CGI de la carpeta).
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php84 .php .php8 .phtml
+</IfModule>
+
+RewriteEngine On
+RewriteBase /certificados/api/
+
+# Bloquear acceso directo a código, configuración y artefactos de dependencias.
+RewriteRule ^(src|config)/ - [F,L]
+RewriteRule ^vendor/ - [F,L]
+RewriteRule ^composer\.(json|lock)$ - [F,L]
+RewriteRule ^\.user\.ini$ - [F,L]
+
+# Fallback a index.php para todas las rutas API no existentes.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.php [L]
+<IfModule mod_headers.c>
+    Header set X-Robots-Tag "noindex, nofollow, noarchive"
+    Header set Referrer-Policy "no-referrer"
+</IfModule>

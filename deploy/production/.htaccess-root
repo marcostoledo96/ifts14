@@ -1,0 +1,23 @@
+# Plantilla .htaccess — raíz SPA de producción /certificados/
+#
+# Copiar como .htaccess dentro de public_html/certificados/.
+# Sirve el frontend Angular con base /certificados/ y deja que la API
+# se sirva desde /certificados/api/ (propio .htaccess-api).
+# No capturar /api/: esa carpeta tiene su .htaccess y su FallbackResource.
+#
+# Sin secretos: la config real de producción se carga vía CERTIFICADOS_CONFIG_PATH
+# en .user.ini (auto_prepend), nunca con SetEnv.
+
+RewriteEngine On
+RewriteBase /certificados/
+
+# No interferir con la API: tiene su propio .htaccess y FallbackResource.
+RewriteRule ^api(/.*)?$ - [L]
+
+# SPA fallback: toda ruta no existente sirve index.html.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.html [L]
+<IfModule mod_headers.c>
+    Header set Referrer-Policy "no-referrer"
+</IfModule>
