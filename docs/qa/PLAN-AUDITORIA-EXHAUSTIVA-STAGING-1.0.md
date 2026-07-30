@@ -277,8 +277,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P17 Certificación nueva | `audit/p17-certs-nueva` | hecha | #102 | Mergeado a staging1.0 (`c371e2a`); archive `2026-07-29-audit-p17-certs-nueva`; verify PASS |
 | P18 Expediente preview | `audit/p18-certs-preview` | hecha | #103 | Mergeado a staging1.0 (`dc3ac99`); archive `2026-07-29-audit-p18-certs-preview`; verify PASS WITH WARNINGS |
 | P19 Folio PDF | `audit/p19-certs-pdf` | hecha | #104 | Mergeado a staging1.0 (`4938024`); archive `2026-07-29-audit-p19-certs-pdf`; verify PASS WITH WARNINGS |
-| P20 Entrega manual | `audit/p20-certs-entrega` | en curso | #105 | SDD `audit-p20-certs-entrega` — PR abierto; verify PASS |
-| P21 Revocación | `audit/p21-certs-revocar` | pendiente | | |
+| P20 Entrega manual | `audit/p20-certs-entrega` | hecha | #105 | Mergeado a staging1.0 (`1cdb9f8`); archive `2026-07-29-audit-p20-certs-entrega`; verify PASS |
+| P21 Revocación | `audit/p21-certs-revocar` | en curso | | Apply honesty front (signal split / MOTIVO_MAX 180); verify pendiente |
 | P22 Validación pública | `audit/p22-validacion` | pendiente | | |
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | pendiente | | |
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | pendiente | | |
@@ -863,9 +863,9 @@ Siguiente: P20 entrega manual (audit/p20-certs-entrega). No reabrir folio salvo 
 ## Fase P20 — Entrega manual
 
 **Rama:** `audit/p20-certs-entrega`
-**Cambio SDD:** `openspec/changes/audit-p20-certs-entrega/`
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-p20-certs-entrega/`
 **Ruta:** `/admin/certificaciones/:id/entrega`
-**Estado:** apply en curso — front-only delivery-page; pendiente verify
+**Estado:** hecha — PR #105 mergeado (`1cdb9f8`); verify PASS; archive cerrado
 
 **Checklist**
 
@@ -874,15 +874,16 @@ Siguiente: P20 entrega manual (audit/p20-certs-entrega). No reabrir folio salvo 
 - [x] `errorRecuperable` load-only + Reintentar gated; not-found sin Reintentar
 - [x] Wire `regenerarPdf` + re-fetch; D0 sin rotar token; sin `publicValidationUrl` post-regen
 - [x] PDF folio `?descargar=1` + seam `navigate=false`
-- [ ] Verify: focused `ng test` delivery + `tsc` → `verify-report.md`
+- [x] Verify: focused `ng test` delivery + `tsc` → `verify-report.md`
 
 **Prompt**
 
 ```text
-Fase P20 — Entrega manual (CRÍTICA) — apply hecho; pendiente sdd-verify.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p20-certs-entrega.
-Cambio SDD: openspec/changes/audit-p20-certs-entrega/.
-Locks: leave P19 archive; no HTTP; D0 token permanente.
+Fase P20 — Entrega manual (CRÍTICA) — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #105 mergeado (1cdb9f8).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p20-certs-entrega/.
+Verify PASS (11/11 escenarios; ng test certification-delivery-page 25/25).
+Siguiente: P21 revocación (audit/p21-certs-revocar). No reabrir entrega salvo regresión.
 ```
 
 ---
@@ -894,10 +895,11 @@ Locks: leave P19 archive; no HTTP; D0 token permanente.
 
 **Checklist**
 
-- [ ] Confirmación explícita
-- [ ] Copy de consecuencias
+- [x] Confirmación explícita
+- [x] Copy de consecuencias
 - [ ] Estado posterior en expediente y validación pública
-- [ ] Auditoría sin PII completa
+- [x] Auditoría sin PII completa *(sanitize motivo DNI/TOKEN/EMAIL; honesty sin raw Error.message)*
+- [x] Honesty load/submit (error vs errorAccion; Reintentar gated; MOTIVO_MAX 180)
 
 **Prompt**
 
