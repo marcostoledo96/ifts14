@@ -1,0 +1,41 @@
+:host {
+  display: block;
+  color: var(--color-foreground);
+}
+
+.not-found {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 1rem);
+  max-width: 36rem;
+  padding: var(--space-4, 1.5rem) 0;
+}
+
+.not-found h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.not-found p {
+  margin: 0;
+  color: var(--color-muted-foreground);
+  line-height: 1.5;
+}
+
+.not-found a {
+  color: var(--color-ink, var(--color-foreground));
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.not-found a:hover {
+  color: var(--color-foreground);
+}
+
+.not-found a:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring, 0 0 0 3px color-mix(in srgb, var(--color-ink) 25%, transparent));
+  border-radius: var(--radius-sm, 0.25rem);
+}

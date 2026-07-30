@@ -279,8 +279,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P19 Folio PDF | `audit/p19-certs-pdf` | hecha | #104 | Mergeado a staging1.0 (`4938024`); archive `2026-07-29-audit-p19-certs-pdf`; verify PASS WITH WARNINGS |
 | P20 Entrega manual | `audit/p20-certs-entrega` | hecha | #105 | Mergeado a staging1.0 (`1cdb9f8`); archive `2026-07-29-audit-p20-certs-entrega`; verify PASS |
 | P21 Revocación | `audit/p21-certs-revocar` | hecha | #106 | Mergeado a staging1.0 (`992201d`); archive `2026-07-29-audit-p21-certs-revocar`; verify PASS |
-| P22 Validación pública | `audit/p22-validacion` | en PR | #107 | SDD `audit-p22-validacion` — PR abierto; verify PASS (8/8; ng test 18/18) |
-| P23 404 / rutas huérfanas | `audit/p23-not-found` | pendiente | | |
+| P22 Validación pública | `audit/p22-validacion` | hecha | #107 | Mergeado a staging1.0 (`922ae59`); archive `2026-07-29-audit-p22-validacion`; verify PASS |
+| P23 404 / rutas huérfanas | `audit/p23-not-found` | en PR | #108 | SDD `audit-p23-not-found` — PR abierto; verify PASS (7/7; ng test 113/113) |
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | pendiente | | |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | pendiente | | |
 | U3 Copy / redacción global | `audit/u03-copy` | pendiente | | |
@@ -919,9 +919,9 @@ Siguiente: P22 validación pública (audit/p22-validacion). No reabrir revocar s
 ## Fase P22 — Validación pública
 
 **Rama:** `audit/p22-validacion`
-**Cambio SDD:** `openspec/changes/audit-p22-validacion/`
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-p22-validacion/`
 **Ruta:** `/validar/:token`
-**Estado:** en PR — #107; verify PASS; archive pendiente post-merge
+**Estado:** hecha — PR #107 mergeado (`922ae59`); verify PASS; archive cerrado
 
 **Checklist**
 
@@ -929,7 +929,7 @@ Siguiente: P22 validación pública (audit/p22-validacion). No reabrir revocar s
 - [x] REVOCADO solo con código explícito `CERTIFICATE_REVOKED` (mock); staging revoked→`404 CERTIFICATE_NOT_FOUND` ≡ no-encontrada / SIN REGISTRO (contrato aceptado, no bug de front)
 - [x] Sin datos de más; DNI completo (D0) en válida; sin token en DOM del cuerpo
 - [x] Token inválido / no encontrado → SIN REGISTRO
-- [ ] Responsive, trust/branding *(smoke visual al verify/U9)*
+- [ ] Responsive, trust/branding *(smoke visual U9)*
 - [x] No filtrar stack traces / raw `Error.message`; Reintentar en técnico + no-encontrada
 - [x] Verify: focused `ng test` public-validation + `tsc` → `verify-report.md`
 
@@ -938,11 +938,11 @@ Siguiente: P22 validación pública (audit/p22-validacion). No reabrir revocar s
 **Prompt**
 
 ```text
-Fase P22 — Validación pública — en PR #107; verify PASS.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p22-validacion.
-Cambio SDD: openspec/changes/audit-p22-validacion/.
+Fase P22 — Validación pública — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #107 mergeado (922ae59).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p22-validacion/.
 Verify PASS (8/8 escenarios; ng test public-validation-page 18/18).
-Siguiente post-merge: archive P22 → P23 404/rutas huérfanas. No reabrir validación salvo regresión.
+Siguiente: P23 404/rutas huérfanas (audit/p23-not-found). No reabrir validación salvo regresión.
 ```
 
 ---
@@ -950,20 +950,27 @@ Siguiente post-merge: archive P22 → P23 404/rutas huérfanas. No reabrir valid
 ## Fase P23 — 404 y rutas huérfanas
 
 **Rama:** `audit/p23-not-found`
+**Cambio SDD:** `openspec/changes/audit-p23-not-found/`
+**Estado:** en PR — #108; verify PASS; archive pendiente post-merge
 
 **Checklist**
 
-- [ ] `NotFoundPage` clara
-- [ ] `/admin/typo` no cae en validación pública
-- [ ] Links “volver” sensatos
+- [x] `NotFoundPage` clara (ES-AR; html/css split; title en `**`)
+- [x] `/admin/typo` no cae en validación pública (catch-all prefix intacto; sin AdminNotFound)
+- [x] Links “volver” sensatos (único CTA → `/admin/login`; sin `/validar/…`)
+- [x] Verify: focused `ng test` not-found + routes + `tsc` → `verify-report.md`
 
 **Prompt**
 
 ```text
-Fase P23 — 404 y aislamiento de rutas.
+Fase P23 — 404 y aislamiento de rutas — en PR #108; verify PASS.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p23-not-found.
-Auditar not-found-page y catch-all admin en app.routes.ts. Copy, UI, redirects seguros.
+Cambio SDD: openspec/changes/audit-p23-not-found/.
+Verify PASS (7/7 escenarios; ng test not-found+routes 113/113).
+Siguiente post-merge: archive P23 → Bloque C U1 prolijidad FE (o U9 smokes según prioridad).
 ```
+
+**Nota:** polish NotFound + CTA login + `title` en wildcard; isolation `/admin/typo` preservada.
 
 ---
 
