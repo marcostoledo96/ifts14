@@ -369,6 +369,12 @@ describe('StudentsListPage', () => {
     expect(el.querySelector('[role="alert"]')).not.toBeNull();
   });
 
+  it('oculta la barra Vista QA cuando el token QA es false', async () => {
+    const f = await render(undefined, false);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.vista-qa')).toBeNull();
+  });
+
   it('renderiza tabla desktop, tarjetas mobile, caption sr-only y pager numerado', async () => {
     const f = await render();
     const root = f.nativeElement as HTMLElement;

@@ -230,6 +230,8 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('[role="alert"] .estado-icon')).not.toBeNull();
     const retry = el.querySelector('[role="alert"] button') as HTMLButtonElement;
     expect(retry.textContent).toContain('Reintentar');
+    expect(retry.classList.contains('btn-primary')).toBeTrue();
+    expect(el.querySelector('app-empty-state')).toBeNull();
     retry.click();
     f.detectChanges();
     await f.whenStable();
@@ -238,8 +240,18 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('[data-state="empty-total"] .estado-title')?.textContent).toContain(
       'Todavía no hay cursos cargados',
     );
-    expect(el.querySelector('[data-state="empty-total"] a[routerLink="/admin/cursos/nuevo"]')?.textContent)
-      .toContain('Crear primer curso');
+    const emptyCta = el.querySelector(
+      '[data-state="empty-total"] a[routerLink="/admin/cursos/nuevo"]',
+    ) as HTMLAnchorElement | null;
+    expect(emptyCta?.textContent).toContain('Crear primer curso');
+    expect(emptyCta?.classList.contains('btn-primary')).toBeTrue();
+    expect(el.querySelector('app-empty-state')).toBeNull();
+  });
+
+  it('oculta la barra Vista QA cuando el token QA es false', async () => {
+    const f = await render(new InMemoryCoursesService(), false);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.vista-qa')).toBeNull();
   });
 
   it('expone Vista QA en desarrollo y fuerza skeleton/vacío/error', async () => {

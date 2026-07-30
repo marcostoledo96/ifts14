@@ -575,6 +575,33 @@ select:disabled {
   color: var(--color-destructive);
 }
 
+.estado-error-panel {
+  margin: var(--space-3) 0;
+}
+
+.estado-error-panel .estado-linea {
+  margin-top: 0;
+}
+
+.estado-error-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.estado-error-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.estado-error-link:hover,
+.estado-error-link:focus-visible {
+  text-decoration-thickness: 2px;
+}
+
 .estado-ok {
   color: var(--color-valid);
 }

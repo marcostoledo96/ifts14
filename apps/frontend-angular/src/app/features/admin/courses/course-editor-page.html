@@ -45,7 +45,17 @@
       </div>
     </header>
     @if (error()) {
-      <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+      <div class="estado-error-panel" role="alert">
+        <p class="estado-linea estado-error">{{ error() }}</p>
+        <div class="estado-error-acciones">
+          @if (errorRecuperable()) {
+            <button type="button" class="btn-primary" (click)="onReintentar()">
+              Reintentar
+            </button>
+          }
+          <a class="estado-error-link" routerLink="/admin/cursos">Volver a Cursos</a>
+        </div>
+      </div>
     }
   }
 
