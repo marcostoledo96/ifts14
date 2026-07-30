@@ -245,6 +245,7 @@ export const routes: Routes = [
   // Llevan a una página no encontrada que no valida nada.
   {
     path: '**',
+    title: 'Página no encontrada — IFTS 14',
     loadComponent: () =>
       import('./features/not-found/not-found-page').then((m) => m.NotFoundPage),
   },
