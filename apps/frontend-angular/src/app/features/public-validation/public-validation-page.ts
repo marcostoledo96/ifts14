@@ -83,6 +83,19 @@ export class PublicValidationPage {
     return String(index + 1).padStart(3, '0');
   }
 
+  /** YYYY-MM-DD → dd/mm/yyyy es-AR; inválido → crudo. Paridad delivery `formatearFecha`. */
+  formatearFechaFolio(iso: string): string {
+    const parts = iso.split('-');
+    if (parts.length !== 3) return iso;
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    if (Number.isNaN(d.getTime())) return iso;
+    return new Intl.DateTimeFormat('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(d);
+  }
+
   private formatConsulta(fecha: Date): string {
     // dd/mm/yyyy · HH:MM ART
     const dd = String(fecha.getDate()).padStart(2, '0');
