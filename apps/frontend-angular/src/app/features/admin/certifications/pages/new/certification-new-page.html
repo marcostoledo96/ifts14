@@ -212,17 +212,23 @@
           } @else if (alumnoSeleccionado() && cursoSeleccionado()) {
             <div class="cert-body">
               <p class="decl-lead">
-                {{ configInst()?.certificateText || 'El IFTS N.° 14 certifica que el/la estudiante' }}
+                El Instituto de Formación Técnica Superior N.º 14 (IFTS 14) que integra
+                la Dirección de Educación Técnica Superior, Agencia de Habilidades para
+                el Futuro, certifica que:
               </p>
               <p class="decl-name">{{ nombreCompleto() }}</p>
               <p class="decl-dni">
-                Documento
+                D.N.I.
                 <span class="mono emph">{{ alumnoSeleccionado()!.dniMostrar }}</span>
               </p>
               <p class="decl-curso">
-                cumplió con la asistencia registrada y auditada en el curso
-                <strong>{{ cursoSeleccionado()!.nombre }}</strong>, correspondiente al ciclo
-                {{ cicloLectivo() }}.
+                Ha aprobado el curso de formación profesional
+                <strong>“{{ cursoSeleccionado()!.nombre }}”</strong>, correspondiente al
+                ciclo {{ cicloLectivo() }}, conforme al registro de asistencia auditado.
+              </p>
+              <p class="decl-cierre">
+                Se extiende el presente certificado a solicitud del/la interesado/a,
+                para constancia de su aprobación.
               </p>
             </div>
 

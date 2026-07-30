@@ -263,9 +263,16 @@
   width: 100%;
   max-width: 64rem;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--color-tech-blue) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-tech-blue) 18%, transparent);
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--color-muted) 60%, var(--color-card));
+  /* Fondo celeste institucional (como el certificado original). */
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--color-circuit) 10%, #f7fbfe) 0%,
+      #eef6fb 42%,
+      color-mix(in srgb, var(--color-tech-blue) 6%, #f5fafc) 100%
+    );
   box-shadow: 0 24px 60px -32px color-mix(in srgb, var(--color-ink) 45%, transparent);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -286,6 +293,7 @@
   height: 6rem;
   pointer-events: none;
   z-index: 0;
+  color: var(--color-circuit);
 }
 
 @media (min-width: 640px) {
@@ -299,6 +307,7 @@
   position: absolute;
   pointer-events: none;
   z-index: 0;
+  color: var(--color-circuit);
 }
 
 .lineas-izq {
@@ -315,19 +324,58 @@
   }
 }
 
-.lineas-der {
-  bottom: 0;
+.deco-esq-der {
+  position: absolute;
   right: 0;
+  bottom: 0;
   width: 10rem;
   height: 10rem;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .deco-esq-der {
+    width: 13rem;
+    height: 13rem;
+  }
+}
+
+.lineas-der {
+  position: absolute;
+  right: -0.25rem;
+  bottom: -1.5rem;
+  width: 7rem;
+  height: 14rem;
   opacity: 0.8;
   transform: scaleX(-1);
+  color: var(--color-circuit);
 }
 
 @media (min-width: 640px) {
   .lineas-der {
-    width: 13rem;
-    height: 13rem;
+    width: 8.5rem;
+    height: 16rem;
+  }
+}
+
+.iconos-sustentables {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 4.25rem;
+  width: 5.5rem;
+  height: 1.75rem;
+  color: var(--color-circuit);
+  opacity: 0.85;
+}
+
+@media (min-width: 640px) {
+  .iconos-sustentables {
+    right: 1.75rem;
+    bottom: 5rem;
+    width: 6.5rem;
+    height: 2rem;
   }
 }
 
@@ -592,8 +640,16 @@
   color: var(--color-foreground);
 }
 
+.cert-lugar {
+  margin-top: var(--space-2);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-foreground);
+}
+
 @media (min-width: 640px) {
-  .cert-cierre {
+  .cert-cierre,
+  .cert-lugar {
     font-size: 1rem;
   }
 }
@@ -858,7 +914,13 @@
    firmas en 3 columnas y distribución vertical (sin vacío inferior).
    Independiente del viewport (@media) de la ventana del browser. */
 .certificado-folio.folio-export-a4 {
-  background: #ffffff !important;
+  background:
+    linear-gradient(
+      165deg,
+      #f4fafc 0%,
+      #eef6fb 45%,
+      #f7fbfe 100%
+    ) !important;
   display: flex !important;
   flex-direction: column !important;
 }
@@ -916,7 +978,8 @@
 
 .certificado-folio.folio-export-a4 .cert-intro,
 .certificado-folio.folio-export-a4 .cert-texto,
-.certificado-folio.folio-export-a4 .cert-cierre {
+.certificado-folio.folio-export-a4 .cert-cierre,
+.certificado-folio.folio-export-a4 .cert-lugar {
   font-size: 0.92rem !important;
   line-height: 1.45 !important;
   max-width: 48rem;
@@ -949,6 +1012,10 @@
 
 .certificado-folio.folio-export-a4 .cert-cierre {
   margin-top: 0.55rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-lugar {
+  margin-top: 0.35rem !important;
 }
 
 .certificado-folio.folio-export-a4 .cert-pie-firmas {
@@ -1076,7 +1143,13 @@
     border-radius: 0 !important;
     box-shadow: none !important;
     margin: 0 !important;
-    background: #ffffff !important;
+    background:
+      linear-gradient(
+        165deg,
+        #f4fafc 0%,
+        #eef6fb 45%,
+        #f7fbfe 100%
+      ) !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     break-inside: avoid !important;
@@ -1143,7 +1216,8 @@
 
   .cert-intro,
   .cert-texto,
-  .cert-cierre {
+  .cert-cierre,
+  .cert-lugar {
     font-size: 0.92rem !important;
     line-height: 1.45 !important;
     max-width: 48rem;
@@ -1160,6 +1234,10 @@
 
   .cert-cierre {
     margin-top: 0.55rem !important;
+  }
+
+  .cert-lugar {
+    margin-top: 0.35rem !important;
   }
 
   .cert-divider {

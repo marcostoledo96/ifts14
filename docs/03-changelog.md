@@ -4,6 +4,8 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 
 ## 2026-07 — Operación en staging
 
+- Folio/PDF institucional: fondo celeste con trama/circuitos; copy alineado al certificado oficial (intro IFTS 14 + «Ha aprobado el curso…» + cierre CABA); PDF TCPDF backend con el mismo criterio.
+- Preparación producción opción A: plantillas `deploy/production/` (`AddHandler` ea-php84, `RewriteBase /certificados/`), checklist/manifiesto/instrucciones (gate PHP → DB/config separadas → smoke); guía `docs/deploy/00-cpanel-certificados.md` actualizada. Sin ZIP ni activación ni land a `main` en este paso.
 - Staging `/certificados_staging/` operativo como entorno de trabajo.
 - Auth admin: sesión PHP, CSRF, idle 4 h / absoluto 8 h, rate limit de login.
 - Estados de certificado reducidos a **vigente | revocado** (migración `015`).

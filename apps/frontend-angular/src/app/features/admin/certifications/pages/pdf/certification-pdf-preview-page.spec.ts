@@ -78,9 +78,9 @@ describe('CertificationPdfPreviewPage', () => {
   it('muestra la fecha de emisión formateada en lenguaje natural', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    const cierre = el.querySelector('.cert-cierre');
+    const lugar = el.querySelector('.cert-lugar');
     // emitidoEn 2026-03-01 → "1 de marzo de 2026".
-    expect(cierre?.textContent).toMatch(/marzo.*2026/i);
+    expect(lugar?.textContent).toMatch(/marzo.*2026/i);
   });
 
   it('muestra la URL canónica de validación (entrega-manual) sin UUID real', async () => {

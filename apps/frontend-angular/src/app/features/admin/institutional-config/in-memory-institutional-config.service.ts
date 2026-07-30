@@ -16,7 +16,7 @@ import {
 const SEED: InstitutionalConfig = {
   institutionName: 'Instituto de Formación Técnica Superior N.° 14',
   certificateText:
-    'Se certifica que la persona mencionada ha aprobado satisfactoriamente el curso detallado, cumpliendo con la asistencia y las evaluaciones requeridas.',
+    'El Instituto de Formación Técnica Superior N.º 14 (IFTS 14) que integra la Dirección de Educación Técnica Superior, Agencia de Habilidades para el Futuro, certifica que:',
   // Nombres vacíos → expediente muestra “config pendiente”; el folio PDF usa fallback tipográfico.
   rectorName: '',
   rectorRole: 'Rector/a — IFTS N.° 14',
