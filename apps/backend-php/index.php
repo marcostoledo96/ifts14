@@ -952,7 +952,7 @@ function requireAdmin(array $config, string $requestId): bool
         );
 
         return true;
-    } catch (UnauthorizedException|CsrfException) {
+    } catch (UnauthorizedException|CsrfException|ServiceUnavailableException) {
         return false;
     }
 }

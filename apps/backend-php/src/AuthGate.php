@@ -14,6 +14,10 @@ final class CsrfException extends RuntimeException
 {
 }
 
+final class ServiceUnavailableException extends RuntimeException
+{
+}
+
 final class AuthGate
 {
     /** @param array<string, mixed> $config @param array<string, mixed> $server */
@@ -35,6 +39,11 @@ final class AuthGate
         if ($status === 403) {
             Response::error(403, 'CSRF_INVALID', 'Solicitud inválida.', $requestId);
             throw new CsrfException('Admin CSRF validation failed.');
+        }
+
+        if ($status === 503) {
+            Response::error(503, 'SERVICE_UNAVAILABLE', 'No se pudo procesar la solicitud.', $requestId);
+            throw new ServiceUnavailableException('Admin session start failed.');
         }
     }
 
