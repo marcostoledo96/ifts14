@@ -16,6 +16,9 @@ $production = AdminSessionAuth::settings($config, '/certificados');
 if ($production === null || $production['name'] !== 'ifts14_cert_admin' || $production['path'] !== '/certificados/' || $production['lifetime'] !== 0 || !$production['secure'] || !$production['httponly'] || $production['samesite'] !== 'Strict') {
     throw new RuntimeException('La cookie de producción no respeta el contrato.');
 }
+if ($production['idleSeconds'] !== 14400 || $production['absoluteSeconds'] !== 28800) {
+    throw new RuntimeException('Los TTL de sesión deben ser exactamente 14400/28800.');
+}
 
 $staging = AdminSessionAuth::settings($config, '/certificados_staging');
 if ($staging === null || $staging['name'] !== 'ifts14_cert_stg_admin' || $staging['path'] !== '/certificados_staging/') {
@@ -63,6 +66,91 @@ if (
     || AdminSessionAuth::sessionIsActive($active, $config, 28900)
 ) {
     throw new RuntimeException('La vigencia de sesión no respeta idle/absolute.');
+}
+
+$tmpDir = sys_get_temp_dir() . '/ifts14-admin-session-auth-' . bin2hex(random_bytes(4));
+mkdir($tmpDir, 0700);
+$sessionDir = $tmpDir . '/sessions';
+mkdir($sessionDir, 0700);
+$rateDir = $tmpDir . '/rate';
+mkdir($rateDir, 0700);
+$previousSavePath = ini_get('session.save_path');
+ini_set('session.save_path', $sessionDir);
+
+try {
+    $now = 1_700_000_000;
+    $csrfLogin = AdminSessionAuth::login($config, '/certificados', 'bedelia', $password, $now);
+    if (!is_string($csrfLogin) || $csrfLogin === '') {
+        throw new RuntimeException('login de prueba no creó sesión.');
+    }
+    $sessionName = 'ifts14_cert_admin';
+    $sessionId = session_id();
+    if ($sessionId === '') {
+        throw new RuntimeException('login de prueba sin session_id.');
+    }
+    $_COOKIE[$sessionName] = $sessionId;
+    session_write_close();
+
+    $later = $now + 90;
+    $state = AdminSessionAuth::state($config, '/certificados', $later);
+    if ($state === null || ($state['lastSeen'] ?? null) !== $later || ($state['csrfToken'] ?? null) !== $csrfLogin) {
+        throw new RuntimeException('state() activo debe renovar lastSeen y devolver la sesión.');
+    }
+
+    // GET autorizado (authorize mutates=false) también renueva lastSeen + write_close (D-009).
+    $authorizedAt = $later + 30;
+    $authStatus = AdminSessionAuth::authorize($config, '/certificados', false, '', $authorizedAt);
+    if ($authStatus !== 200) {
+        throw new RuntimeException('authorize() GET debe devolver 200 con sesión activa.');
+    }
+    // Tras write_close, releer sesión desde storage para assert lastSeen persistido.
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    if (!AdminSessionAuth::start(AdminSessionAuth::settings($config, '/certificados'))) {
+        throw new RuntimeException('No se pudo reabrir sesión tras authorize().');
+    }
+    if (($_SESSION['lastSeen'] ?? null) !== $authorizedAt) {
+        throw new RuntimeException('authorize() GET debe renovar lastSeen en el storage de sesión.');
+    }
+    session_write_close();
+
+    $rateConfig = $config + ['rate_limit_storage_path' => $rateDir . '/marker.json'];
+    $server = ['REMOTE_ADDR' => '203.0.113.10'];
+    if (AdminSessionAuth::allowLoginAttempt($rateConfig, $server) !== true) {
+        throw new RuntimeException('allowLoginAttempt debe permitir el primer intento con storage usable.');
+    }
+    for ($i = 0; $i < 4; $i++) {
+        if (AdminSessionAuth::allowLoginAttempt($rateConfig, $server) !== true) {
+            throw new RuntimeException('allowLoginAttempt debe permitir hasta 5 intentos.');
+        }
+    }
+    if (AdminSessionAuth::allowLoginAttempt($rateConfig, $server) !== false) {
+        throw new RuntimeException('allowLoginAttempt con bucket>=5 debe devolver false (rate-limit).');
+    }
+
+    $blockedMarker = $tmpDir . '/not-a-dir';
+    file_put_contents($blockedMarker, 'x');
+    $brokenConfig = $config + ['rate_limit_storage_path' => $blockedMarker . '/marker.json'];
+    if (AdminSessionAuth::allowLoginAttempt($brokenConfig, $server) !== null) {
+        throw new RuntimeException('allowLoginAttempt con storage inutilizable debe devolver null (D-004).');
+    }
+} finally {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    ini_set('session.save_path', is_string($previousSavePath) ? $previousSavePath : '');
+    unset($_COOKIE['ifts14_cert_admin']);
+    foreach (glob($sessionDir . '/*') ?: [] as $file) {
+        unlink($file);
+    }
+    foreach (glob($rateDir . '/*') ?: [] as $file) {
+        unlink($file);
+    }
+    @rmdir($sessionDir);
+    @rmdir($rateDir);
+    @unlink($tmpDir . '/not-a-dir');
+    @rmdir($tmpDir);
 }
 
 echo "OK AdminSessionAuthTest\n";

@@ -80,13 +80,17 @@ final class AdminSessionAuth
             : '/certificados';
     }
 
-    /** @param array<string, mixed> $config @param array<string, mixed> $server */
-    public static function allowLoginAttempt(array $config, array $server): bool
+    /**
+     * @param array<string, mixed> $config
+     * @param array<string, mixed> $server
+     * @return bool|null true permitido; false rate-limit; null storage no usable
+     */
+    public static function allowLoginAttempt(array $config, array $server): ?bool
     {
         $rateLimitPath = $config['rate_limit_storage_path'] ?? null;
         $directory = is_string($rateLimitPath) ? dirname($rateLimitPath) : '';
         if ($directory === '' || !is_dir($directory) || !is_writable($directory)) {
-            return false;
+            return null;
         }
 
         $origin = $server['REMOTE_ADDR'] ?? '';
@@ -94,16 +98,16 @@ final class AdminSessionAuth
         $path = $directory . '/ifts14-admin-login-' . hash('sha256', $origin) . '.json';
         $handle = @fopen($path, 'c+');
         if ($handle === false) {
-            return false;
+            return null;
         }
         try {
             if (!@flock($handle, LOCK_EX) || ($contents = @stream_get_contents($handle)) === false) {
-                return false;
+                return null;
             }
 
             $bucket = trim($contents) === '' ? ['count' => 0, 'resetAt' => 0] : json_decode($contents, true);
             if (!is_array($bucket) || !is_int($bucket['count'] ?? null) || !is_int($bucket['resetAt'] ?? null)) {
-                return false;
+                return null;
             }
 
             $now = time();
@@ -115,11 +119,17 @@ final class AdminSessionAuth
             }
 
             $encoded = json_encode(['count' => $bucket['count'] + 1, 'resetAt' => $bucket['resetAt']], JSON_UNESCAPED_SLASHES);
-            return $encoded !== false
-                && @rewind($handle)
-                && @ftruncate($handle, 0)
-                && @fwrite($handle, $encoded) === strlen($encoded)
-                && @fflush($handle);
+            if (
+                $encoded === false
+                || !@rewind($handle)
+                || !@ftruncate($handle, 0)
+                || @fwrite($handle, $encoded) !== strlen($encoded)
+                || !@fflush($handle)
+            ) {
+                return null;
+            }
+
+            return true;
         } finally {
             @flock($handle, LOCK_UN);
             fclose($handle);
@@ -182,6 +192,9 @@ final class AdminSessionAuth
             self::destroy($settings);
             return null;
         }
+
+        $_SESSION['lastSeen'] = $now;
+        session_write_close();
 
         return $_SESSION;
     }
