@@ -279,7 +279,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P19 Folio PDF | `audit/p19-certs-pdf` | hecha | #104 | Mergeado a staging1.0 (`4938024`); archive `2026-07-29-audit-p19-certs-pdf`; verify PASS WITH WARNINGS |
 | P20 Entrega manual | `audit/p20-certs-entrega` | hecha | #105 | Mergeado a staging1.0 (`1cdb9f8`); archive `2026-07-29-audit-p20-certs-entrega`; verify PASS |
 | P21 Revocación | `audit/p21-certs-revocar` | hecha | #106 | Mergeado a staging1.0 (`992201d`); archive `2026-07-29-audit-p21-certs-revocar`; verify PASS |
-| P22 Validación pública | `audit/p22-validacion` | en curso | | fechas es-AR + staging revoked≡404 documentado; verify pendiente |
+| P22 Validación pública | `audit/p22-validacion` | en PR | #107 | SDD `audit-p22-validacion` — PR abierto; verify PASS (8/8; ng test 18/18) |
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | pendiente | | |
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | pendiente | | |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | pendiente | | |
@@ -919,7 +919,9 @@ Siguiente: P22 validación pública (audit/p22-validacion). No reabrir revocar s
 ## Fase P22 — Validación pública
 
 **Rama:** `audit/p22-validacion`
+**Cambio SDD:** `openspec/changes/audit-p22-validacion/`
 **Ruta:** `/validar/:token`
+**Estado:** en PR — #107; verify PASS; archive pendiente post-merge
 
 **Checklist**
 
@@ -929,18 +931,18 @@ Siguiente: P22 validación pública (audit/p22-validacion). No reabrir revocar s
 - [x] Token inválido / no encontrado → SIN REGISTRO
 - [ ] Responsive, trust/branding *(smoke visual al verify/U9)*
 - [x] No filtrar stack traces / raw `Error.message`; Reintentar en técnico + no-encontrada
+- [x] Verify: focused `ng test` public-validation + `tsc` → `verify-report.md`
 
 **Nota staging (aceptada):** verify PHP colapsa certificado revocado a `404 CERTIFICATE_NOT_FOUND`. El front muestra chrome no-encontrada; no inventa REVOCADO. Unlock PHP `CERTIFICATE_REVOKED` queda fuera de P22 (`RATE_LIMITED` diferido).
 
 **Prompt**
 
 ```text
-Fase P22 — Validación pública (/validar/:token).
+Fase P22 — Validación pública — en PR #107; verify PASS.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p22-validacion.
-Auditar public-validation-page + API pública consumida.
-Lentes UI/UX, copy, errores token, a11y, carga, prolijidad, seguridad de respuesta.
-Paridad muestra_pagina/ validación.
-Staging revoked≡404 documentado; fechas folio es-AR; honesty preservada.
+Cambio SDD: openspec/changes/audit-p22-validacion/.
+Verify PASS (8/8 escenarios; ng test public-validation-page 18/18).
+Siguiente post-merge: archive P22 → P23 404/rutas huérfanas. No reabrir validación salvo regresión.
 ```
 
 ---
