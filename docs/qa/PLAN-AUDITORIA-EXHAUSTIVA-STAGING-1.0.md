@@ -283,7 +283,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P23 404 / rutas huérfanas | `audit/p23-not-found` | hecha | #108 | Mergeado a staging1.0 (`e9f6930`); archive `2026-07-29-audit-p23-not-found`; verify PASS |
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | hecha | #109 | Mergeado a staging1.0 (`511ce7b`); archive `2026-07-29-audit-u01-prolijidad-fe`; verify PASS |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | hecha | #110 | Mergeado a staging1.0 (`125f6f8`); archive `2026-07-30-audit-u02-perf-fe`; verify PASS |
-| U3 Copy / redacción global | `audit/u03-copy` | en PR | | verify PASS (5/5); glosario + pass certs; hub DEFER |
+| U3 Copy / redacción global | `audit/u03-copy` | en PR | #111 | verify PASS (5/5); glosario + pass certs; hub DEFER |
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | pendiente | | |
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | pendiente | | |
 | U6 Backend contrato + errores | `audit/u06-backend` | pendiente | | |
@@ -1057,7 +1057,7 @@ Siguiente: U3 copy (audit/u03-copy) o U9 smokes según prioridad. No reabrir U2 
 
 **Rama:** `audit/u03-copy`
 
-**Estado:** en PR — verify PASS (5/5; focused ng test 125 SUCCESS; tsc 0); hub Activo/Inactivo diferido; archive tras merge.
+**Estado:** en PR #111 — verify PASS (5/5; focused ng test 125 SUCCESS; tsc 0); hub Activo/Inactivo diferido; archive tras merge.
 
 **Checklist**
 
