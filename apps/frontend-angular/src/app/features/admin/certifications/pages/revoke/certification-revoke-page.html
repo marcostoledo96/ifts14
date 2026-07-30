@@ -47,15 +47,18 @@
 
 @if (detalle(); as d) {
   <div class="revoke-wrapper">
-    <!-- Backdrop — el expediente queda detrás, atenuado -->
-    <a
-      [routerLink]="volverLink()"
-      aria-label="Cerrar y volver al expediente"
+    <!-- Backdrop: click cierra; fuera del tab order (SHELL-A11Y-03) -->
+    <button
+      type="button"
       class="backdrop"
-    ></a>
+      tabindex="-1"
+      aria-label="Cerrar y volver al expediente"
+      (click)="volverAlExpediente()"
+    ></button>
 
     <!-- Diálogo -->
     <div
+      id="dialog"
       #dialog
       role="alertdialog"
       aria-modal="true"
