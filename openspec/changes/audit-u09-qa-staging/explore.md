@@ -1,9 +1,9 @@
 # Explore + evidencia U9 — QA staging real (Playwright)
 
-**Cambio:** `audit-u09-qa-staging`  
-**Rama:** `audit/u09-qa-staging`  
-**Base URL:** `https://staging.example.edu.ar/certificados_staging/`  
-**Fecha pasada:** 2026-07-30  
+**Cambio:** `audit-u09-qa-staging`
+**Rama:** `audit/u09-qa-staging`
+**Base URL:** `https://staging.example.edu.ar/certificados_staging/`
+**Fecha pasada:** 2026-07-30
 **Config idle/absolute (operador):** 14400 / 28800 confirmados en bootstrap staging (sin copiar secretos).
 
 ## Matriz (sin DNI/token completos)
