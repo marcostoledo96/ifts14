@@ -52,7 +52,46 @@ El sistema DEBE ofrecer login, consulta de estado y logout mediante sesión PHP 
 
 ### Requisito: Protección y vigencia de sesión
 
-La cookie DEBE usar `HttpOnly`, `Secure`, `SameSite=Strict` y el path del entorno (`/certificados/` en producción; `/certificados_staging/` en staging). El ID DEBE regenerarse tras login. La sesión DEBE expirar por inactividad de 30 minutos o duración absoluta de 8 horas; configuración faltante o inválida implica falla cerrada.
+La cookie DEBE usar `HttpOnly`, `Secure`, `SameSite=Strict` y el path del entorno (`/certificados/` en producción; `/certificados_staging/` en staging). El ID DEBE regenerarse tras login. La sesión DEBE expirar por inactividad exacta de **14400** segundos (4 h) o duración absoluta exacta de **28800** segundos (8 h); configuración faltante o inválida implica falla cerrada. Tras confirmar sesión activa, `GET /admin/auth/session` y los GETs administrativos autorizados DEBEN renovar `lastSeen` al instante actual y liberar el lock de escritura de sesión tras el touch. Este ciclo NO rediseña atributos de cookie ni la política absoluta de 8 h (U7).
+
+#### Escenario: Idle y absoluto exactos
+
+- DADO configuración de sesión válida (14400 / 28800)
+- CUANDO la inactividad alcanza 14400 s o la edad absoluta 28800 s
+- ENTONCES la sesión DEBE considerarse vencida
+- Y las operaciones administrativas DEBEN responder `401 UNAUTHORIZED`
+
+#### Escenario: Poll de session renueva idle
+
+- DADO una sesión autenticada aún vigente
+- CUANDO el cliente consulta `GET /admin/auth/session`
+- ENTONCES el sistema DEBE actualizar `lastSeen` al instante actual
+- Y DEBE liberar el lock de escritura de sesión tras el touch
+- Y el estado DEBE informar autenticado
+
+#### Escenario: GET autorizado renueva idle
+
+- DADO una sesión autenticada aún vigente
+- CUANDO un GET administrativo autorizado pasa por la autorización de sesión
+- ENTONCES el sistema DEBE actualizar `lastSeen`
+- Y DEBE liberar el lock de escritura de sesión tras el touch
+
+#### Escenario: Configuración temporal inválida
+
+- DADO límites de sesión ausentes o distintos de 14400 / 28800
+- CUANDO se inicia o evalúa la sesión administrativa
+- ENTONCES el sistema DEBE fallar cerrado sin sesión usable
+
+### Requisito: Fallo de almacenamiento en rate-limit de login
+
+Cuando el almacenamiento del rate-limit de login administrativo no pueda escribirse o falle de forma operativa, el sistema DEBE NOT responder `429 RATE_LIMITED` como si el umbral se hubiera excedido. DEBE responder `503` (error de servicio seguro distinto de `RATE_LIMITED`) sin autenticar y sin exponer PII ni detalles de almacenamiento. DEBE NOT fallar abierto el login por este motivo.
+
+#### Escenario: Storage rate-limit no escribible
+
+- DADO storage del rate-limit de login no escribible o con fallo al persistir
+- CUANDO un cliente intenta login administrativo
+- ENTONCES la API DEBE responder `503` con código distinto de `RATE_LIMITED`
+- Y DEBE NOT autenticar ni tratar el caso como umbral excedido
 
 ### Requisito: CSRF para mutaciones autenticadas por cookie
 
