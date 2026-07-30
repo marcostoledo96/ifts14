@@ -410,3 +410,21 @@ La documentación de deploy DEBE registrar `signature_storage_path` como configu
 - CUANDO el operador aplica el plan
 - ENTONCES DEBE poder vaciar el directorio de firmas de prueba
 - Y NO DEBE alterar PDFs de certificados emitidos previamente
+
+### Requisito: Deny de src|config en `.htaccess` de API
+
+El `.htaccess` de la API versionado en el árbol app (y plantillas deploy/smoke alineadas) DEBE denegar acceso directo a `src` y `config` con `RewriteRule` que use flags `[F,L]` **antes** de `FallbackResource` (u otra regla de enrutamiento equivalente a `index.php`). DEBE NOT servir código o configuración bajo esas rutas cuando Apache aplica ese `.htaccess`.
+
+#### Escenario: Deny declarado antes del fallback
+
+- DADO un `.htaccess` de API versionado en el repositorio
+- CUANDO se inspeccionan las reglas de reescritura
+- ENTONCES DEBE existir una `RewriteRule` que deniegue `src|config` con `[F,L]`
+- Y esa regla DEBE aparecer antes de `FallbackResource`
+
+#### Escenario: Acceso directo a src denegado
+
+- DADO API servida por Apache con el `.htaccess` canónico y archivos reales bajo `src/`
+- CUANDO un cliente solicita una URL bajo `src/`
+- ENTONCES la respuesta DEBE ser Forbidden (403)
+- Y DEBE NOT devolver el contenido del archivo fuente

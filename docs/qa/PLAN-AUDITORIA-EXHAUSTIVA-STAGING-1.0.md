@@ -287,8 +287,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | hecha | #112 | Mergeado a staging1.0 (`7b7d3db`); archive `2026-07-30-audit-u04-a11y-responsive`; verify PASS; contraste DEFER |
 | U5 Errores / estados vacíos | `audit/u05-estados-error` | hecha | #113 | Mergeado a staging1.0 (`0b9d786`); archive `2026-07-30-audit-u05-estados-error`; verify PASS WITH WARNINGS; SHELL-STATE-01..04 |
 | U6 Backend contrato + errores | `audit/u06-backend` | hecha | #114 | Mergeado a staging1.0 (`613b305`); archive `2026-07-30-audit-u06-backend`; verify PASS; `state()`/`authorize` lastSeen + D-004→503 |
-| U7 Seguridad + PII | `audit/u07-seguridad` | en PR | #115 | verify PASS WITH WARNINGS; deny htaccess + cookie D-009; archiva U6; HTTP 403 live DEFER U9 |
-| U8 Docs + drift specs | `audit/u08-docs` | pendiente | | |
+| U7 Seguridad + PII | `audit/u07-seguridad` | hecha | #115 | Mergeado (`f1fa2f5`); archive `2026-07-30-audit-u07-seguridad`; verify PASS WITH WARNINGS |
+| U8 Docs + drift specs | `audit/u08-docs` | en PR | #116 | verify PASS WITH WARNINGS; changelog/checklist/drift; archiva U7 |
 | U9 QA staging real + smokes | `audit/u09-qa-staging` | pendiente | | |
 | L1 Land staging1.0 → main | PR release | pendiente | | Solo cuando estable |
 
@@ -1030,7 +1030,7 @@ Siguiente: U2 performance FE (audit/u02-perf-fe) o U9 smokes según prioridad. N
 
 - [x] Lazy routes OK (ya loadComponent; verificar bundles pesados html2canvas/jspdf) — `import()` solo en descarga PDF (CERT-PERF-01)
 - [x] Hub asistencias: coalesce `hubPending` + invalidate en marcar/anular (HTTP-PERF-01); payload slim API diferido
-- [x] Listados: filtro cliente — **cientos OK**; **miles → paginación/API (U6)** — ver `docs/frontend/03-modulos-admin.md`
+- [x] Listados: filtro cliente — **cientos OK**; **miles → paginación/API (diferido)** — ver `docs/frontend/03-modulos-admin.md`
 - [x] Firmas: cache de sesión `previewFirma`/`obtener` + invalidate (HTTP-PERF-02); `Cache-Control` PHP sin cambio
 - [x] Evitar double-fetch al navegar (hub + config)
 - [x] Archive + merge a `staging1.0` (`125f6f8`; archive `2026-07-30-audit-u02-perf-fe`)
@@ -1173,7 +1173,7 @@ Siguiente: U7 seguridad (audit/u07-seguridad) o U9 smokes según prioridad. No r
 
 ## Fase U7 — Seguridad y privacidad
 
-**Rama:** `audit/u07-seguridad`
+**Rama:** `audit/u07-seguridad` — **CERRADA** (PR #115 → `staging1.0` `f1fa2f5`; archive `2026-07-30-audit-u07-seguridad`)
 
 **Checklist**
 
@@ -1188,12 +1188,14 @@ Siguiente: U7 seguridad (audit/u07-seguridad) o U9 smokes según prioridad. No r
 **Prompt**
 
 ```text
-Fase U7 — Seguridad + PII.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u07-seguridad.
-Revisión: CSRF, sesión (D-009 TTL idle/absolute), rate limit, exposición de archivos, PII en logs/respuestas de error, checks no-secrets.
-Corregir hallazgos P0/P1. Documentar P2 diferidos.
+Fase U7 — Seguridad + PII — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #115 mergeado (f1fa2f5).
+Cambio SDD: openspec/changes/archive/2026-07-30-audit-u07-seguridad/.
+Verify PASS WITH WARNINGS (7/8 escenarios; deny htaccess + cookie D-009; HTTP 403 live DEFER U9).
+Siguiente: U8 docs (audit/u08-docs). No reabrir U7 salvo regresión.
 ```
 
+**Nota:** deny `src|config` antes de FallbackResource; cookie lifetime=0 vs absoluto 28800; MUST NOT aflojar TTL U6; D0. Cerrada.
 ---
 
 ## Fase U8 — Documentación y drift
@@ -1202,16 +1204,25 @@ Corregir hallazgos P0/P1. Documentar P2 diferidos.
 
 **Checklist**
 
-- [ ] `docs/06-flujo-git` refleja staging1.0 / main=prod
-- [ ] `03-modulos-admin`, checklist QA, changelog viñeta si hubo cambios visibles acumulados
-- [ ] Specs `openspec/specs/` vs comportamiento real (nota de drift, no reescribir todo)
-- [ ] Índice enlaza este plan
-- [ ] Nada de secretos/dumps
+- [x] `docs/06-flujo-git` refleja staging1.0 / main=prod
+- [x] `03-modulos-admin`, checklist QA, changelog viñeta si hubo cambios visibles acumulados
+- [x] Specs `openspec/specs/` vs comportamiento real (nota de drift, no reescribir todo)
+- [x] Índice enlaza este plan
+- [x] Nada de secretos/dumps
+
+### Nota de drift
+
+Drift conocido (sin rewrite masivo de specs/contratos):
+
+- `docs/backend/01-contrato-api-certificados.md` — tablas admin aún listan `X-Admin-Key` HTTP; prevalece el banner de supersesión + SoT.
+- Spec `deploy-cpanel-certificados` / guías Marcos·Matías — mención histórica D0 «X-Admin-Key temporal».
+- Residual en `docs/backend/00-php84-api.md` vs cuerpo D-009 (cookie `lifetime=0` vs absoluto app-side).
+- **SoT auth/deploy:** `openspec/specs/admin-auth/spec.md`, `docs/backend/00-php84-api.md`, `docs/backend/API.md`.
 
 **Prompt**
 
 ```text
-Fase U8 — Documentación.
+Fase U8 — Documentación — en curso.
 Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u08-docs.
 Actualizar docs canónicas para reflejar flujo Git (main=prod, staging1.0=integración), mapa admin, checklist QA, enlace a este plan en 00-indice-general.md.
 Español argentino formal. Sin dumps ni secretos. Listar drift de specs sin obligatoriedad de cerrarlo todo.
