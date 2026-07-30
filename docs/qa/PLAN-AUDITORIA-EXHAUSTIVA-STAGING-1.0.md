@@ -280,8 +280,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | P20 Entrega manual | `audit/p20-certs-entrega` | hecha | #105 | Mergeado a staging1.0 (`1cdb9f8`); archive `2026-07-29-audit-p20-certs-entrega`; verify PASS |
 | P21 Revocación | `audit/p21-certs-revocar` | hecha | #106 | Mergeado a staging1.0 (`992201d`); archive `2026-07-29-audit-p21-certs-revocar`; verify PASS |
 | P22 Validación pública | `audit/p22-validacion` | hecha | #107 | Mergeado a staging1.0 (`922ae59`); archive `2026-07-29-audit-p22-validacion`; verify PASS |
-| P23 404 / rutas huérfanas | `audit/p23-not-found` | en PR | #108 | SDD `audit-p23-not-found` — PR abierto; verify PASS (7/7; ng test 113/113) |
-| U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | pendiente | | |
+| P23 404 / rutas huérfanas | `audit/p23-not-found` | hecha | #108 | Mergeado a staging1.0 (`e9f6930`); archive `2026-07-29-audit-p23-not-found`; verify PASS |
+| U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | en PR | #109 | SDD `audit-u01-prolijidad-fe` — PR abierto; verify PASS (10/10; OnPush 30/30) |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | pendiente | | |
 | U3 Copy / redacción global | `audit/u03-copy` | pendiente | | |
 | U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | pendiente | | |
@@ -950,8 +950,8 @@ Siguiente: P23 404/rutas huérfanas (audit/p23-not-found). No reabrir validació
 ## Fase P23 — 404 y rutas huérfanas
 
 **Rama:** `audit/p23-not-found`
-**Cambio SDD:** `openspec/changes/audit-p23-not-found/`
-**Estado:** en PR — #108; verify PASS; archive pendiente post-merge
+**Cambio SDD:** `openspec/changes/archive/2026-07-29-audit-p23-not-found/`
+**Estado:** hecha — #108 mergeado a staging1.0 (`e9f6930`); archive cerrado; verify PASS
 
 **Checklist**
 
@@ -959,18 +959,19 @@ Siguiente: P23 404/rutas huérfanas (audit/p23-not-found). No reabrir validació
 - [x] `/admin/typo` no cae en validación pública (catch-all prefix intacto; sin AdminNotFound)
 - [x] Links “volver” sensatos (único CTA → `/admin/login`; sin `/validar/…`)
 - [x] Verify: focused `ng test` not-found + routes + `tsc` → `verify-report.md`
+- [x] Archive: delta → `openspec/specs/frontend-angular-shell/spec.md`; carpeta `2026-07-29-audit-p23-not-found`
 
 **Prompt**
 
 ```text
-Fase P23 — 404 y aislamiento de rutas — en PR #108; verify PASS.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/p23-not-found.
-Cambio SDD: openspec/changes/audit-p23-not-found/.
+Fase P23 — 404 y aislamiento de rutas — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #108 mergeado (e9f6930).
+Cambio SDD: openspec/changes/archive/2026-07-29-audit-p23-not-found/.
 Verify PASS (7/7 escenarios; ng test not-found+routes 113/113).
-Siguiente post-merge: archive P23 → Bloque C U1 prolijidad FE (o U9 smokes según prioridad).
+Siguiente: Bloque C U1 prolijidad FE (audit/u01-prolijidad-fe) o U9 smokes según prioridad. No reabrir NotFound salvo regresión.
 ```
 
-**Nota:** polish NotFound + CTA login + `title` en wildcard; isolation `/admin/typo` preservada.
+**Nota:** polish NotFound + CTA login + `title` en wildcard; isolation `/admin/typo` preservada. Cerrada.
 
 ---
 
@@ -983,6 +984,8 @@ Hacer **después** de P14–P22 al menos en primer pase, o en paralelo solo si n
 ## Fase U1 — Prolijidad de código frontend
 
 **Rama:** `audit/u01-prolijidad-fe`
+**Cambio SDD:** `openspec/changes/audit-u01-prolijidad-fe/`
+**Estado:** en PR — #109; verify PASS; archive pendiente post-merge
 
 **Alcance transversal FE (sin rediseñar UX):**
 
@@ -991,13 +994,26 @@ Hacer **después** de P14–P22 al menos en primer pase, o en paralelo solo si n
 - Specs rotos o que testean mocks irrelevantes
 - Consistencia OnPush / signals
 
+**Checklist**
+
+- [x] Delete `LandingPage` + specs (sin ruta canónica)
+- [x] Delete `FolioShell` + specs (sin consumidores)
+- [x] Remove alias muerto `guardar()` en marcado; canónico `guardarYGenerar`
+- [x] Extract `paginasVisiblesWindow` + wire 4 listados; HTML/UX sin cambio
+- [x] OnPush preservado (bajas Landing/FolioShell; restantes OnPush 30/30)
+- [x] Verify (`sdd-verify`): SHELL-HYG-01..05 + `tsc` + specs focused → `verify-report.md`
+- [ ] Archive + merge a `staging1.0`
+
+**Diferidos (locked):** formatters fecha, clipboard, `mensajeErrorApi`, purge `// ponytail:`, copy/UX, U2, honesty P15–P23.
+
 **Prompt**
 
 ```text
-Fase U1 — Prolijidad FE transversal.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u01-prolijidad-fe desde staging1.0.
-Barrido quirúrgico: dead code, imports, duplicación obvia de helpers, comentarios obsoletos, specs desalineados.
-NO cambiar copy/UI salvo lo necesario por rename interno. Diff chico y revisable. Listar deferidos.
+Fase U1 — Prolijidad FE transversal — en PR #109; verify PASS.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u01-prolijidad-fe.
+Cambio SDD: openspec/changes/audit-u01-prolijidad-fe/.
+Verify PASS (10/10 escenarios; OnPush 30/30; focused ng test 231+).
+Siguiente post-merge: archive U1 → U2 performance FE (o U9 smokes según prioridad).
 ```
 
 ---

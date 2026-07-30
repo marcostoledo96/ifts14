@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
+import { paginasVisiblesWindow } from '../../../../../shared/util/paginas-visibles-window';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
 import { ATTENDANCES_PAGE_SIZE } from '../../models/attendance.types';
 
@@ -61,14 +62,9 @@ export class AttendancesListPage {
     );
   });
   /** Páginas visibles en el pager numerado (máx. 5 botones + elipsis). */
-  readonly paginasVisibles = computed(() => {
-    const total = this.totalPaginas();
-    const actual = this.paginaSegura();
-    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
-    if (actual <= 3) return [1, 2, 3, 4, 5];
-    if (actual >= total - 2) return [total - 4, total - 3, total - 2, total - 1, total];
-    return [actual - 2, actual - 1, actual, actual + 1, actual + 2];
-  });
+  readonly paginasVisibles = computed(() =>
+    paginasVisiblesWindow(this.totalPaginas(), this.paginaSegura()),
+  );
 
   readonly hayFiltrosActivos = computed(() => this.q().trim().length > 0);
 

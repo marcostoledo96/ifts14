@@ -298,11 +298,6 @@ export class AttendanceMarkingPage {
     ]);
   }
 
-  /** Alias de compatibilidad para tests/specs previos. */
-  async guardar(): Promise<void> {
-    return this.guardarYGenerar();
-  }
-
   async guardarYGenerar(): Promise<void> {
     const cid = this.courseId();
     const fid = this.fechaIdNumber();
