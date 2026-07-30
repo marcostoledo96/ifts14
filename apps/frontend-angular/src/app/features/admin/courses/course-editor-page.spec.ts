@@ -295,8 +295,110 @@ describe('CourseEditorPage', () => {
     expect(f.componentInstance.detalle()).toBeNull();
     expect(f.componentInstance.fechas().length).toBe(0);
     expect(f.componentInstance.error()).toContain('Curso no encontrado');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
     expect(f.componentInstance.sinCurso()).toBeTrue();
     expect((f.nativeElement as HTMLElement).querySelector('#curso-codigo')).toBeNull();
+    expect((f.nativeElement as HTMLElement).textContent).not.toContain('Reintentar');
+    expect((f.nativeElement as HTMLElement).textContent).toContain('Volver a Cursos');
+  });
+
+  it('edit con fallo recuperable de obtener muestra Reintentar; Reintentar re-llama obtener', async () => {
+    const obtener = jasmine
+      .createSpy('obtener')
+      .and.returnValues(
+        Promise.reject(new Error('network')),
+        Promise.resolve({
+          id: 1,
+          codigo: 'CUR-001',
+          nombre: 'Curso recuperado',
+          estado: 'activo' as const,
+          createdAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-01T00:00:00Z',
+          cuatrimestre: 'Sin programar',
+          cantidadFechas: 0,
+          fechas: [],
+        } satisfies CursoDetalle),
+      );
+    const fake: CoursesService = {
+      listar: () => Promise.resolve([]),
+      obtener,
+      crear: () => Promise.reject(new Error('noop')),
+      actualizar: () => Promise.reject(new Error('noop')),
+      actualizarEstado: () => Promise.reject(new Error('noop')),
+      listarFechas: () => Promise.resolve([]),
+      guardarFecha: () => Promise.reject(new Error('noop')),
+      reemplazarFechas: () => Promise.resolve([]),
+    };
+    await TestBed.configureTestingModule({
+      imports: [CourseEditorPage],
+      providers: [provideRouter([]), { provide: COURSES_SOURCE, useValue: fake }],
+    }).compileComponents();
+    const f = TestBed.createComponent(CourseEditorPage);
+    f.componentRef.setInput('mode', 'edit');
+    f.componentRef.setInput('id', '1');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const root = f.nativeElement as HTMLElement;
+    expect(f.componentInstance.sinCurso()).toBeTrue();
+    expect(f.componentInstance.errorRecuperable()).toBeTrue();
+    expect(f.componentInstance.error()).toContain('No se pudo cargar el curso');
+    expect(root.textContent).toContain('Reintentar');
+    expect(root.textContent).toContain('Volver a Cursos');
+    expect(root.textContent).not.toContain('Http failure');
+    expect(obtener).toHaveBeenCalledTimes(1);
+
+    f.componentInstance.onReintentar();
+    await f.whenStable();
+    f.detectChanges();
+    expect(obtener).toHaveBeenCalledTimes(2);
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(f.componentInstance.detalle()?.codigo).toBe('CUR-001');
+    expect((f.nativeElement as HTMLElement).querySelector('#curso-codigo')).not.toBeNull();
+  });
+
+  it('edit con Error in-memory not-found no ofrece Reintentar', async () => {
+    const obtener = jasmine
+      .createSpy('obtener')
+      .and.rejectWith(new Error('Curso no encontrado: 99'));
+    const fake: CoursesService = {
+      listar: () => Promise.resolve([]),
+      obtener,
+      crear: () => Promise.reject(new Error('noop')),
+      actualizar: () => Promise.reject(new Error('noop')),
+      actualizarEstado: () => Promise.reject(new Error('noop')),
+      listarFechas: () => Promise.resolve([]),
+      guardarFecha: () => Promise.reject(new Error('noop')),
+      reemplazarFechas: () => Promise.resolve([]),
+    };
+    await TestBed.configureTestingModule({
+      imports: [CourseEditorPage],
+      providers: [provideRouter([]), { provide: COURSES_SOURCE, useValue: fake }],
+    }).compileComponents();
+    const f = TestBed.createComponent(CourseEditorPage);
+    f.componentRef.setInput('mode', 'edit');
+    f.componentRef.setInput('id', '99');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const root = f.nativeElement as HTMLElement;
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(f.componentInstance.error()).toBe('Curso no encontrado.');
+    expect(root.textContent).toContain('Curso no encontrado.');
+    expect(root.textContent).not.toContain('Curso no encontrado: 99');
+    expect(root.textContent).not.toContain('Reintentar');
+    expect(root.textContent).toContain('Volver a Cursos');
+  });
+
+  it('error de submit no activa Reintentar de carga', async () => {
+    const f = await render('edit', 1);
+    f.componentInstance.codigo.set('');
+    f.detectChanges();
+    await f.componentInstance.guardar();
+    f.detectChanges();
+    expect(f.componentInstance.error()).toContain('Código y nombre son obligatorios');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect((f.nativeElement as HTMLElement).textContent).not.toContain('Reintentar');
   });
 
   it('omite fechas canceladas al cargar y al guardar conserva su orden en el payload', async () => {
