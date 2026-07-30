@@ -31,11 +31,8 @@ cd ~/Escritorio/ifts14/apps/frontend-angular
 npm start
 # Abrir: http://localhost:4200/certificados/
 
-# USUARIO
-* bedelia
-
-# PASSWORD
-* password-demo-auth
+# USUARIO / PASSWORD — solo demo local (NUNCA staging/producción)
+* bedelia / password-demo-auth
 
 # Nota: el login admin siempre llama a la API PHP (:8080), aunque useRealApi=false
 # para el resto de datos mock. Sin API arriba, el login falla.
@@ -80,7 +77,7 @@ Navegador + versión: pendiente confirmar
 SO / dispositivo: Linux (local)
 Credenciales usadas: rol bedelía demo (sin claves en el doc)
 Datos de prueba: ficticios / seed local
-Commit / build: rama integration/admin-session-http
+Commit / build: rama staging1.0 (o audit/*)
 ```
 
 ### 0.3 Severidad de hallazgos
@@ -127,7 +124,7 @@ Objetivo: confirmar que el entorno responde antes de invertir tiempo en UI.
 | S-01 | `GET …/api/health` → 200 JSON (`status: ok`) | `[x]` | `status:ok` service certificados-api |
 | S-02 | SPA carga en la base href correcta (`/certificados/` o `/certificados_staging/`) | `[x]` | Local: carga OK en localhost:4200 |
 | S-03 | Sin errores rojos en consola al cargar login | `[x]` | Consola limpia en login |
-| S-04 | Rutas internas de API bloqueadas (ej. `/api/src/…`) → 403/404, no exponen código | `[x]` | `/api/src/` 404; `/api/src/Config.php` NOT_FOUND. `/src/Config.php` 200 vacío (ejecuta PHP local, sin dump) |
+| S-04 | Rutas internas de API bloqueadas (ej. `/api/src/…`) → **403** cuando deny U7 htaccess está desplegado; no exponen código | `[x]` | Con deny U7: `/api/src/…` MUST **403**. Histórico local sin deny: 404/NOT_FOUND posible. Prueba live staging → U9. |
 | S-05 | `favicon` / assets estáticos 200 (sin 404 masivos) | `[x]` | Favicon + brand/*.webp OK tras hardcode de logos |
 | S-06 | Extensión PHP `gd` disponible (QR PNG) — o documentar `CONFIGURATION_ERROR` esperado | `[x]` | `gd=OK` en contenedor ifts14-php84-local |
 

@@ -34,7 +34,7 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 - Validación pública (P22): fechas folio `dd/mm/yyyy` es-AR (`formatearFechaFolio`); staging revoked≡404 documentado (REVOCADO solo con código explícito); Reintentar en técnico + no-encontrada; honesty sin raw/stack; DNI completo / anti-token; mapper/PHP intactos.
 - NotFound / rutas huérfanas (P23): wildcard público → `NotFound` ES-AR + title; CTA único → `/admin/login` (sin `/validar`); catch-all admin prefix intacto (`/admin/typo` aislado); honesty sin stack/token/demo; sin AdminNotFound.
 - Prolijidad FE (U1): sin `LandingPage`/`FolioShell` huérfanos; alias muerto `guardar()` removido (canónico `guardarYGenerar`); helper `paginasVisiblesWindow` en 4 listados; OnPush 30/30.
-- Performance FE (U2): coalesce `listarHub` (`hubPending` HTTP+mock, invalidate en marcar/anular); cache de sesión `previewFirma`/`obtener`; `html2canvas`/`jspdf` solo vía `import()` al descargar PDF; nota de escala listados (cientos OK; miles → U6).
+- Performance FE (U2): coalesce `listarHub` (`hubPending` HTTP+mock, invalidate en marcar/anular); cache de sesión `previewFirma`/`obtener`; `html2canvas`/`jspdf` solo vía `import()` al descargar PDF; nota de escala listados (cientos OK; miles → paginación/API diferida, no U6).
 - Copy FE (U3): glosario UI (`docs/frontend/04-glosario-ui.md`); badge expediente **Revocado**; label **Documento**; copy «válidas»/«válida» alineada a Válida (sin lógica de negocio).
 - A11y/responsive FE (U4): `trapTabKey` compartido; drawer admin con trap + `aria-modal`; diálogos entrega/revocar sin Tab al backdrop; CTAs públicos con `:focus-visible`; contraste diferido.
 - Estados FE (U5): listados Reintentar/empty CTA con `btn-primary`; course-editor con Reintentar en carga recuperable; QA forced views solo `isDevMode`; 401 interceptor verificado por regresión.
@@ -55,6 +55,8 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 - Config institucional y parámetros de sistema.
 - Cifrado de DNI y token recuperable; hashes para búsqueda/validación.
 - Hardening de rutas, rate limiting, readiness scripts.
+- Sesión admin (U6): `lastSeen` se renueva en `session`/`authorize` (lecturas auth); TTL docs idle **14400** / absoluto **28800**; fallo de storage en rate-limit de login → **503** `SERVICE_UNAVAILABLE` (distinto de **429**).
+- Seguridad rutas/cookie (U7): deny Apache `src|config` antes de FallbackResource; cookie de sesión `lifetime=0` (D-009) vs absoluto app-side.
 
 ## Base de datos
 

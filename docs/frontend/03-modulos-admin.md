@@ -41,7 +41,7 @@ Resumen operativo del admin Angular. Detalle visual: `00-angular20-port-v0.md` y
 
 ## Escala de listados (filtro cliente)
 
-Los listados admin (cursos, alumnos, certificaciones, hub de asistencias) traen el conjunto y filtran/paginan en cliente (`paginasVisibles`, page size ~20). **Cientos de filas** son aceptables en staging/operación actual. **Miles** van a exigir paginación/API (p. ej. U6) — no es parte de U2.
+Los listados admin (cursos, alumnos, certificaciones, hub de asistencias) traen el conjunto y filtran/paginan en cliente (`paginasVisibles`, page size ~20). **Cientos de filas** son aceptables en staging/operación actual. **Miles** van a exigir paginación/API en servidor (diferido; no es alcance de U2 ni de U6 sesión/TTL).
 
 ## Referencia visual
 

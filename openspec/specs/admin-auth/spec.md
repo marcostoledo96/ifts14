@@ -52,7 +52,7 @@ El sistema DEBE ofrecer login, consulta de estado y logout mediante sesión PHP 
 
 ### Requisito: Protección y vigencia de sesión
 
-La cookie DEBE usar `HttpOnly`, `Secure`, `SameSite=Strict` y el path del entorno (`/certificados/` en producción; `/certificados_staging/` en staging). El ID DEBE regenerarse tras login. La sesión DEBE expirar por inactividad exacta de **14400** segundos (4 h) o duración absoluta exacta de **28800** segundos (8 h); configuración faltante o inválida implica falla cerrada. Tras confirmar sesión activa, `GET /admin/auth/session` y los GETs administrativos autorizados DEBEN renovar `lastSeen` al instante actual y liberar el lock de escritura de sesión tras el touch. Este ciclo NO rediseña atributos de cookie ni la política absoluta de 8 h (U7).
+La cookie de sesión administrativa DEBE emitir `HttpOnly`, `Secure` y `SameSite=Strict` (atributos fijos, no configurables por overlay). El path DEBE ser el del entorno (`/certificados/` en producción; `/certificados_staging/` en staging). El `lifetime` de cookie DEBE ser `0` (cookie de sesión del navegador: sin `Max-Age`/`Expires` persistente). La vigencia absoluta DEBE aplicarse app-side exactamente a **28800** segundos (8 h) desde el inicio de sesión; la inactividad exacta DEBE ser **14400** segundos (4 h). El sistema DEBE NOT aflojar ni redefinir esos TTL (14400 / 28800) sin evidencia y cambio de spec. El ID DEBE regenerarse tras login. Configuración temporal faltante o distinta de 14400/28800 implica falla cerrada. Tras confirmar sesión activa, `GET /admin/auth/session` y los GETs administrativos autorizados DEBEN renovar `lastSeen` al instante actual y liberar el lock de escritura de sesión tras el touch.
 
 #### Escenario: Idle y absoluto exactos
 
@@ -81,6 +81,20 @@ La cookie DEBE usar `HttpOnly`, `Secure`, `SameSite=Strict` y el path del entorn
 - DADO límites de sesión ausentes o distintos de 14400 / 28800
 - CUANDO se inicia o evalúa la sesión administrativa
 - ENTONCES el sistema DEBE fallar cerrado sin sesión usable
+
+#### Escenario: Atributos fijos de cookie en login
+
+- DADO credenciales externas válidas y configuración completa
+- CUANDO el navegador inicia sesión administrativa
+- ENTONCES `Set-Cookie` DEBE incluir `HttpOnly`, `Secure` y `SameSite=Strict`
+- Y DEBE usar path `/certificados/` (producción) o `/certificados_staging/` (staging)
+
+#### Escenario: Cookie de sesión vs absoluto app-side
+
+- DADO login administrativo exitoso
+- CUANDO se inspecciona la cookie emitida
+- ENTONCES el lifetime de cookie DEBE ser `0` (sesión de navegador; sin `Max-Age` persistente de 8 h)
+- Y la vigencia absoluta app-side DEBE seguir siendo exactamente 28800 s
 
 ### Requisito: Fallo de almacenamiento en rate-limit de login
 
