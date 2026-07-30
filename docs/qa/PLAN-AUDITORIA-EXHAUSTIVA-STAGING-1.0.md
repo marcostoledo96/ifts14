@@ -284,8 +284,8 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U1 Prolijidad código FE | `audit/u01-prolijidad-fe` | hecha | #109 | Mergeado a staging1.0 (`511ce7b`); archive `2026-07-29-audit-u01-prolijidad-fe`; verify PASS |
 | U2 Carga / performance FE | `audit/u02-perf-fe` | hecha | #110 | Mergeado a staging1.0 (`125f6f8`); archive `2026-07-30-audit-u02-perf-fe`; verify PASS |
 | U3 Copy / redacción global | `audit/u03-copy` | hecha | #111 | Mergeado a staging1.0 (`b0d23d4`); archive `2026-07-30-audit-u03-copy`; verify PASS |
-| U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | en PR | #112 | verify PASS (13/13); trap drawer/diálogos; contraste DEFER |
-| U5 Errores / estados vacíos | `audit/u05-estados-error` | pendiente | | |
+| U4 Accesibilidad + responsive | `audit/u04-a11y-responsive` | hecha | #112 | Mergeado a staging1.0 (`7b7d3db`); archive `2026-07-30-audit-u04-a11y-responsive`; verify PASS; contraste DEFER |
+| U5 Errores / estados vacíos | `audit/u05-estados-error` | en PR | #113 | verify PASS WITH WARNINGS (10/10); SHELL-STATE; archive U4 |
 | U6 Backend contrato + errores | `audit/u06-backend` | pendiente | | |
 | U7 Seguridad + PII | `audit/u07-seguridad` | pendiente | | |
 | U8 Docs + drift specs | `audit/u08-docs` | pendiente | | |
@@ -1086,7 +1086,7 @@ Siguiente: U4 a11y/responsive (audit/u04-a11y-responsive) o U9 smokes según pri
 
 **Rama:** `audit/u04-a11y-responsive`
 
-**Estado:** en PR #112 — verify PASS (13/13; focused ng test 70 SUCCESS; tsc 0); contraste/`.sr-only` diferidos; archive tras merge.
+**Estado:** hecha — PR #112 mergeado a `staging1.0` (`7b7d3db`); archive `openspec/changes/archive/2026-07-30-audit-u04-a11y-responsive/`; verify PASS (13/13; SHELL-A11Y-01..04 + PUB-A11Y-01..02 + REQ-DEL-007; focused ng test 70 SUCCESS; tsc 0).
 
 **Checklist**
 
@@ -1094,16 +1094,21 @@ Siguiente: U4 a11y/responsive (audit/u04-a11y-responsive) o U9 smokes según pri
 - [x] Tablas admin en mobile (scroll/stack)
 - [x] Modales/confirmaciones usables con teclado
 - [x] Login + validación pública + shell prioritarios si quedó deuda
+- [x] Archive + merge a `staging1.0` (`7b7d3db`; archive `2026-07-30-audit-u04-a11y-responsive`)
 
 **Notas apply (U4):** contraste tokens / hoist `.sr-only` → **DEFER** (U9). Soft focus return. Error-dialog entrega con trap. Revoke backdrop fuera de tab. Helper `trapTabKey`.
 
 **Prompt**
 
 ```text
-Fase U4 — a11y + responsive transversal.
-Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · rama audit/u04-a11y-responsive.
-Auditar breakpoints y a11y en shell, listados y formularios críticos. Fixes CSS/HTML/atributos; sin rediseño visual grande.
+Fase U4 — a11y + responsive transversal — CERRADA.
+Plan: docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md · PR #112 mergeado (7b7d3db).
+Cambio SDD: openspec/changes/archive/2026-07-30-audit-u04-a11y-responsive/.
+Verify PASS (13/13 escenarios; SHELL-A11Y-01..04 + PUB-A11Y-01..02 + REQ-DEL-007; focused ng test 70 SUCCESS; tsc 0).
+Siguiente: U5 estados error/vacío (audit/u05-estados-error) o U9 smokes según prioridad. No reabrir U4 salvo regresión.
 ```
+
+**Nota:** trap compartido + drawer/diálogos; CTAs públicos `:focus-visible`; contraste/`.sr-only` DEFER (U9); D0. Cerrada.
 
 ---
 
@@ -1111,12 +1116,14 @@ Auditar breakpoints y a11y en shell, listados y formularios críticos. Fixes CSS
 
 **Rama:** `audit/u05-estados-error`
 
+**Estado:** en PR #113 — verify PASS WITH WARNINGS (10/10; focused ng test 103 SUCCESS; tsc 0); EmptyState util diferido; archive tras merge.
+
 **Checklist**
 
-- [ ] Patrones repetidos de error+reintentar
-- [ ] 401 interceptor: redirect limpio (regresión)
-- [ ] Empty states con CTA útil
-- [ ] QA vista forzada solo en dev
+- [x] Patrones repetidos de error+reintentar
+- [x] 401 interceptor: redirect limpio (regresión)
+- [x] Empty states con CTA útil
+- [x] QA vista forzada solo en dev
 
 **Prompt**
 

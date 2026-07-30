@@ -196,16 +196,26 @@ describe('CertificationsListPage', () => {
     f.detectChanges();
     expect(el.querySelector('[role="alert"] svg.estado-icon')).not.toBeNull();
     expect(el.querySelector('[role="alert"] button')?.textContent).toContain('Reintentar');
+    expect(el.querySelector('[role="alert"] button')?.classList.contains('btn-primary')).toBeTrue();
     buttons.find((button) => button.textContent?.includes('Sin registros'))?.click();
     f.detectChanges();
     const empty = el.querySelector('[data-state="empty-total"]');
     expect(empty).not.toBeNull();
     expect(empty?.querySelector('svg[data-icon="inbox"]')).not.toBeNull();
     expect(empty?.textContent).toContain('Emitir primera certificación');
-    expect(
+    const emptyCta =
       empty?.querySelector('a[href="/admin/certificaciones/nueva"], a[routerlink="/admin/certificaciones/nueva"]')
-        ?? Array.from(empty?.querySelectorAll('a') ?? []).find((a) => a.textContent?.includes('Emitir primera')),
-    ).toBeTruthy();
+      ?? Array.from(empty?.querySelectorAll('a') ?? []).find((a) => a.textContent?.includes('Emitir primera'));
+    expect(emptyCta).toBeTruthy();
+    expect(emptyCta?.classList.contains('btn-primary')).toBeTrue();
+    expect(emptyCta?.classList.contains('cta-nueva')).toBeFalse();
+    expect(el.querySelector('app-empty-state')).toBeNull();
+  });
+
+  it('oculta la barra Vista QA cuando el token QA es false', async () => {
+    const f = await render(false);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.vista-qa')).toBeNull();
   });
 
   it('muestra badges de validez con punto y borde para vigente y revocado', async () => {

@@ -26,6 +26,9 @@ import { UiSpinner } from '../../../shared/ui/ui-spinner';
 const CODIGO_MAX = 40;
 const NOMBRE_MAX = 180;
 const ERROR_GENERICO = 'No pudimos guardar el curso. Reintentá.';
+const MSG_NOT_FOUND = 'Curso no encontrado.';
+const MSG_CARGA_RECUPERABLE = 'No se pudo cargar el curso. Reintentá.';
+const MSG_NO_AUTORIZADO = 'No tenés autorización para ver este curso.';
 
 const ESTADO_FECHA_LABEL: Record<EstadoFecha, string> = {
   programada: 'Programada',
@@ -82,6 +85,8 @@ export class CourseEditorPage {
   readonly guardando = signal(false);
   readonly error = signal('');
   readonly ok = signal('');
+  /** True solo ante fallo recuperable de carga inicial en edit (no not-found ni submit). */
+  readonly errorRecuperable = signal(false);
 
   readonly idNumber = computed<number | null>(() => {
     const n = Number(this.id());
@@ -143,6 +148,7 @@ export class CourseEditorPage {
     this.estadoOriginal.set('activo');
     this.ok.set('');
     this.error.set('');
+    this.errorRecuperable.set(false);
     this.guardando.set(false);
     this.cargando.set(true);
     const flash = this.consumeFlashError();
@@ -152,7 +158,8 @@ export class CourseEditorPage {
         const cid = !id || Number.isNaN(n) || n <= 0 ? null : n;
         if (cid === null) {
           if (gen === this.loadGen) {
-            this.error.set(flash || 'Curso no encontrado.');
+            this.error.set(flash || MSG_NOT_FOUND);
+            this.errorRecuperable.set(false);
           }
           return;
         }
@@ -165,11 +172,40 @@ export class CourseEditorPage {
       }
     } catch (e) {
       if (gen === this.loadGen) {
-        this.error.set(flash || this.mensajeErrorApi(e));
+        if (flash) {
+          this.error.set(flash);
+          this.errorRecuperable.set(false);
+        } else {
+          const mapped = this.mapearErrorCarga(e);
+          this.error.set(mapped.message);
+          this.errorRecuperable.set(mapped.recuperable);
+        }
       }
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
     }
+  }
+
+  onReintentar(): void {
+    if (!this.errorRecuperable()) return;
+    void this.recargar(this.mode(), this.id());
+  }
+
+  /**
+   * Not-found: HTTP 404 o mensaje in-memory con prefijo «Curso no encontrado».
+   * 401/403: no recuperable. Resto → recuperable con Reintentar.
+   */
+  private mapearErrorCarga(e: unknown): { message: string; recuperable: boolean } {
+    if (e instanceof HttpErrorResponse) {
+      if (e.status === 404) return { message: MSG_NOT_FOUND, recuperable: false };
+      if (e.status === 401 || e.status === 403) {
+        return { message: MSG_NO_AUTORIZADO, recuperable: false };
+      }
+    }
+    if (e instanceof Error && e.message.startsWith('Curso no encontrado')) {
+      return { message: MSG_NOT_FOUND, recuperable: false };
+    }
+    return { message: MSG_CARGA_RECUPERABLE, recuperable: true };
   }
 
   /** Aplica detalle: visibles en form; canceladas reservadas para el payload. */
@@ -421,7 +457,7 @@ export class CourseEditorPage {
       }
       const cid = this.idNumber();
       if (cid === null) {
-        this.error.set('Curso no encontrado.');
+        this.error.set(MSG_NOT_FOUND);
         return;
       }
       const codigo = this.codigo().trim();

@@ -49,6 +49,7 @@ describe('csrfInterceptor', () => {
   });
 
   it('en 401 de API admin limpia sesión, redirige a login y no propaga error', async () => {
+    const clearSpy = spyOn(auth, 'clearSession').and.callThrough();
     const pending = firstValueFrom(http.get('/certificados_staging/api/admin/cursos'));
     const req = httpMock.expectOne('/certificados_staging/api/admin/cursos');
     req.flush(
@@ -68,11 +69,13 @@ describe('csrfInterceptor', () => {
     );
     await Promise.resolve();
     expect(settled).toBeFalse();
+    expect(clearSpy).toHaveBeenCalled();
     expect(auth.csrfToken()).toBeNull();
     expect(router.navigateByUrl).toHaveBeenCalledWith('/admin/login');
   });
 
   it('en 401 de login propaga el error (sin redirect latch de sesión)', async () => {
+    const clearSpy = spyOn(auth, 'clearSession').and.callThrough();
     const pending = firstValueFrom(
       http.post('/certificados_staging/api/admin/auth/login', {
         username: 'x',
@@ -86,6 +89,7 @@ describe('csrfInterceptor', () => {
     );
 
     await expectAsync(pending).toBeRejected();
+    expect(clearSpy).not.toHaveBeenCalled();
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 });
