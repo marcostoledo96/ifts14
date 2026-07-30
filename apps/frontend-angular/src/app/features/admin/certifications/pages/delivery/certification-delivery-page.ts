@@ -208,7 +208,7 @@ export class CertificationDeliveryPage {
         this.entregaError.set(MSG_409_ENTREGA);
       } else if (this.detalle()?.estado !== 'vigente') {
         this.entregaError.set(
-          'Copiar link y QR solo están disponibles para certificaciones vigentes.',
+          'Copiar link y QR solo están disponibles para certificaciones válidas.',
         );
       } else {
         this.entregaError.set(

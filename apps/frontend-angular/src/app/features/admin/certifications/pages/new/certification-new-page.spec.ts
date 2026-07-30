@@ -529,7 +529,7 @@ describe('CertificationNewPage', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(root.textContent).toContain('Ya existe un certificado vigente');
+    expect(root.textContent).toContain('Ya existe una certificación válida');
     expect(fixture.componentInstance.alumnoId()).toBe(46);
     expect(nav).not.toHaveBeenCalled();
     expect(root.querySelector('[data-testid="error-emit"] .btn-retry')).toBeNull();
