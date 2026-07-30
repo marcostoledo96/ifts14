@@ -129,6 +129,101 @@ describe('HttpInstitutionalConfigService', () => {
     expect(blob.size).toBe(3);
   });
 
+  it('previewFirma reusa cache de sesión sin segundo GET', async () => {
+    const p1 = service.previewFirma('rector');
+    httpMock
+      .expectOne(`${API_URL}/firmas/rector`)
+      .flush(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }));
+    await p1;
+    const p2 = service.previewFirma('rector');
+    httpMock.expectNone(`${API_URL}/firmas/rector`);
+    const blob = await p2;
+    expect(blob.size).toBe(3);
+  });
+
+  it('obtener reusa Promise de sesión sin segundo GET', async () => {
+    const p1 = service.obtener();
+    httpMock.expectOne(API_URL).flush({ data: DTO, meta: { requestId: 'o1' } });
+    await p1;
+    const p2 = service.obtener();
+    httpMock.expectNone(API_URL);
+    await expectAsync(p2).toBeResolved();
+  });
+
+  it('subirFirma invalida previewFirma y obtener', async () => {
+    const previewP = service.previewFirma('rector');
+    httpMock
+      .expectOne(`${API_URL}/firmas/rector`)
+      .flush(new Blob([new Uint8Array([1])], { type: 'image/png' }));
+    await previewP;
+    const obtenerP = service.obtener();
+    httpMock.expectOne(API_URL).flush({ data: DTO, meta: { requestId: 'o1' } });
+    await obtenerP;
+
+    const file = new File([new Uint8Array([1, 2, 3])], 'firma.png', { type: 'image/png' });
+    const up = service.subirFirma('rector', file);
+    httpMock.expectOne(`${API_URL}/firmas/rector`).flush({
+      data: { ...DTO, rectorSignaturePresent: true },
+      meta: { requestId: 'up1' },
+    });
+    await up;
+
+    const previewAgain = service.previewFirma('rector');
+    httpMock
+      .expectOne(`${API_URL}/firmas/rector`)
+      .flush(new Blob([new Uint8Array([9])], { type: 'image/png' }));
+    expect((await previewAgain).size).toBe(1);
+    const obtenerAgain = service.obtener();
+    httpMock.expectOne(API_URL).flush({ data: DTO, meta: { requestId: 'o2' } });
+    expect((await obtenerAgain).institutionName).toBe('IFTS N.° 14');
+  });
+
+  it('quitarFirma invalida caches de sesión', async () => {
+    const previewP = service.previewFirma('asesor');
+    httpMock
+      .expectOne(`${API_URL}/firmas/asesor`)
+      .flush(new Blob([new Uint8Array([1])], { type: 'image/png' }));
+    await previewP;
+
+    const del = service.quitarFirma('asesor');
+    httpMock.expectOne(`${API_URL}/firmas/asesor`).flush({
+      data: { ...DTO, advisorSignaturePresent: false },
+      meta: { requestId: 'del1' },
+    });
+    await del;
+
+    const previewAgain = service.previewFirma('asesor');
+    httpMock
+      .expectOne(`${API_URL}/firmas/asesor`)
+      .flush(new Blob([new Uint8Array([2])], { type: 'image/png' }));
+    expect((await previewAgain).size).toBe(1);
+  });
+
+  it('guardar invalida obtenerPending', async () => {
+    const first = service.obtener();
+    httpMock.expectOne(API_URL).flush({ data: DTO, meta: { requestId: 'o1' } });
+    await first;
+
+    const write: InstitutionalConfigWrite = {
+      institutionName: 'IFTS N.° 14',
+      certificateText: 'texto',
+      rectorName: 'R',
+      rectorRole: 'Director',
+      advisorName: 'A',
+      advisorRole: 'Secretario',
+      parameters: { titulo_certificado: 'Certificado de Aprobación' },
+    };
+    const guardarP = service.guardar(write);
+    const putReq = httpMock.expectOne(API_URL);
+    expect(putReq.request.method).toBe('PUT');
+    putReq.flush({ data: DTO, meta: { requestId: 'g1' } });
+    await guardarP;
+
+    const again = service.obtener();
+    httpMock.expectOne(API_URL).flush({ data: DTO, meta: { requestId: 'o2' } });
+    await again;
+  });
+
   it('obtener normaliza campos null del backend a string vacío (updatedAt queda null)', async () => {
     const p = service.obtener();
     const req = httpMock.expectOne(API_URL);

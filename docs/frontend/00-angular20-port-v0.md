@@ -64,7 +64,7 @@ Los flujos 11-22 ya tienen referencia v0 en `muestra_pagina/`. La ejecución his
 | Espaciado | Aire suficiente entre bloques; evitar tarjetas anidadas sin necesidad. |
 | Estados | Diferenciar válido, revocado, no encontrado y error técnico sin lenguaje ambiguo. |
 
-> **Aplicado en F1-02.** Los tokens concretos (color, tipografía, radio, espaciado, foco, motion) están definidos en `apps/frontend-angular/src/styles.css` y documentados como fuente de verdad en `docs/frontend/02-sistema-visual-v0-f1-02.md`. Primitivos Angular (`BandaEstado`, `CampoDato`, `HeaderInstitucional`, `FolioShell`) disponibles en `apps/frontend-angular/src/app/shared/ui/`. Tailwind queda diferido a F1-04.
+> **Aplicado en F1-02.** Los tokens concretos (color, tipografía, radio, espaciado, foco, motion) están definidos en `apps/frontend-angular/src/styles.css` y documentados como fuente de verdad en `docs/frontend/02-sistema-visual-v0-f1-02.md`. Primitivos Angular vigentes (`BandaEstado`, `CampoDato`, `HeaderInstitucional`) en `apps/frontend-angular/src/app/shared/ui/`. `FolioShell` eliminado en U1 (sin consumidores). Tailwind queda diferido a F1-04.
 
 ## Componentes candidatos
 

@@ -60,6 +60,8 @@ function clone<T>(value: T): T {
 export class AttendanceMockService implements AttendanceService {
   private state: State;
   private readonly courses = inject(COURSES_SOURCE);
+  /** Coalesce de hub: misma Promise hasta marcar/anular (paridad HTTP). */
+  private hubPending: Promise<HubAsistencias> | null = null;
 
   constructor() {
     this.state = this.freshState();
@@ -67,6 +69,7 @@ export class AttendanceMockService implements AttendanceService {
 
   // Tests: __reset() para arrancar con estado limpio entre specs.
   __reset(): void {
+    this.hubPending = null;
     this.state = this.freshState();
   }
 
@@ -110,7 +113,17 @@ export class AttendanceMockService implements AttendanceService {
     return Promise.resolve(clone(list));
   }
 
-  async listarHub(): Promise<HubAsistencias> {
+  listarHub(): Promise<HubAsistencias> {
+    if (!this.hubPending) {
+      this.hubPending = this.buildHub().catch((err) => {
+        this.hubPending = null;
+        throw err;
+      });
+    }
+    return this.hubPending;
+  }
+
+  private async buildHub(): Promise<HubAsistencias> {
     const cursos = await this.courses.listar();
     const fechasNested = await Promise.all(cursos.map((c) => this.courses.listarFechas(c.id)));
     const fechas = fechasNested.flat();
@@ -184,28 +197,33 @@ export class AttendanceMockService implements AttendanceService {
     this.state.asistencias = this.state.asistencias.filter(
       (a) => !(a.cursoId === cursoId && a.cursoFechaId === fechaId),
     );
-    const presentes = marcados.filter((m) => m.presente);
-    const nuevoEstado = await this.applyFechaEstado(
-      cursoId,
-      fechaId,
-      fecha.fecha,
-      presentes.length,
-    );
-    const nuevas: Asistencia[] = [];
-    for (const m of presentes) {
-      const a: Asistencia = {
-        id: this.state.nextAsistenciaId++,
-        alumnoId: m.alumnoId,
+    try {
+      const presentes = marcados.filter((m) => m.presente);
+      const nuevoEstado = await this.applyFechaEstado(
         cursoId,
-        cursoFechaId: fechaId,
-        fecha: fecha.fecha,
-        fechaEstado: nuevoEstado,
-        registradoEn: new Date().toISOString(),
-      };
-      this.state.asistencias.push(a);
-      nuevas.push(a);
+        fechaId,
+        fecha.fecha,
+        presentes.length,
+      );
+      const nuevas: Asistencia[] = [];
+      for (const m of presentes) {
+        const a: Asistencia = {
+          id: this.state.nextAsistenciaId++,
+          alumnoId: m.alumnoId,
+          cursoId,
+          cursoFechaId: fechaId,
+          fecha: fecha.fecha,
+          fechaEstado: nuevoEstado,
+          registradoEn: new Date().toISOString(),
+        };
+        this.state.asistencias.push(a);
+        nuevas.push(a);
+      }
+      return Promise.resolve(clone(nuevas));
+    } finally {
+      // Paridad HTTP: limpiar hub tras mutación local (éxito o fallo).
+      this.hubPending = null;
     }
-    return Promise.resolve(clone(nuevas));
   }
 
   async anular(asistenciaId: number): Promise<void> {
@@ -233,6 +251,7 @@ export class AttendanceMockService implements AttendanceService {
           : a,
       );
     }
+    this.hubPending = null;
     return Promise.resolve();
   }
 

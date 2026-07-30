@@ -18,7 +18,7 @@ Resumen operativo del admin Angular. Detalle visual: `00-angular20-port-v0.md` y
 | `/admin/certificaciones` | Listado vía seam `listar` (filtros vigente/revocado+curso+texto; `paginasVisibles`; resumen gated; coincide/coinciden; DNI completo; Reintentar sin `errorRecuperable`); alta, expediente, folio PDF, entrega, revocación |
 | `/admin/certificaciones/nueva` | Emisión puntual alumno+curso (antes de `:id`); copy rol edge vs Asistencias (sin «complementario»); Reintentar solo loads (`errorCatalogosRecuperable`/`errorParRecuperable`); emit else `mensajeErrorApi`; DNI completo / anti-token; HTTP intacto |
 | `/admin/certificaciones/:id` | Expediente preview: firmas reales si hay imagen; Descargar PDF→`/pdf`; Regenerar=API (sin rotar token); Reintentar solo load hard; `mensajeErrorApi` en QR/regen; post-regen omite URL canónica completa; DNI completo / anti-token; HTTP intacto |
-| `/admin/certificaciones/:id/pdf` | Folio imprimible: html2canvas+jsPDF (no seam API); filename prefer `detalle.numero`; Reintentar solo load hard; descarga `mensajeErrorApi` P15-strict; print A4 1 pág + firmas 3:2; QR canónico sin rotar; DNI completo / anti-token; HTTP intacto |
+| `/admin/certificaciones/:id/pdf` | Folio imprimible: html2canvas+jsPDF vía `import()` solo al descargar (no seam API); filename prefer `detalle.numero`; Reintentar solo load hard; descarga `mensajeErrorApi` P15-strict; print A4 1 pág + firmas 3:2; QR canónico sin rotar; DNI completo / anti-token; HTTP intacto |
 | `/admin/certificaciones/:id/entrega` | Entrega manual: `allSettled` (detalle hard / entrega soft); 409 operable bedelía; Reintentar solo load hard; `regenerarPdf` wired (sin rotar token; sin URL completa post-regen); PDF→folio `?descargar=1`; `mensajeErrorApi` P15-strict; DNI completo / anti-token; HTTP intacto |
 | `/admin/certificaciones/:id/revocar` | Diálogo revocar: honesty load (`errorRecuperable` + Reintentar gated; not-found sin Reintentar); submit `errorAccion` inline `mensajeErrorApi` P15-strict; `MOTIVO_MAX` 180; confirm/copy/sanitize; flash `?revocada=1` diferido; DNI completo / anti-token; HTTP intacto |
 | `/admin/configuracion` | Textos institucionales y firmas (Rector/a, Asesor/a) |
@@ -38,6 +38,10 @@ Resumen operativo del admin Angular. Detalle visual: `00-angular20-port-v0.md` y
 - Servicios HTTP bajo features (`http-*.service.ts`) contra `/api/admin/...`.
 - Envelope `res.data.*`.
 - Mocks in-memory solo para tests o modos explícitos.
+
+## Escala de listados (filtro cliente)
+
+Los listados admin (cursos, alumnos, certificaciones, hub de asistencias) traen el conjunto y filtran/paginan en cliente (`paginasVisibles`, page size ~20). **Cientos de filas** son aceptables en staging/operación actual. **Miles** van a exigir paginación/API (p. ej. U6) — no es parte de U2.
 
 ## Referencia visual
 
