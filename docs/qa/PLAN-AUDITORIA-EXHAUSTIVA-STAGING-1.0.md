@@ -289,7 +289,7 @@ Commit/push/merge solo si yo lo pido explícitamente.
 | U6 Backend contrato + errores | `audit/u06-backend` | hecha | #114 | Mergeado a staging1.0 (`613b305`); archive `2026-07-30-audit-u06-backend`; verify PASS; `state()`/`authorize` lastSeen + D-004→503 |
 | U7 Seguridad + PII | `audit/u07-seguridad` | hecha | #115 | Mergeado (`f1fa2f5`); archive `2026-07-30-audit-u07-seguridad`; verify PASS WITH WARNINGS |
 | U8 Docs + drift specs | `audit/u08-docs` | hecha | #116 | Mergeado (`45f77e6`); archive `2026-07-30-audit-u08-docs`; verify PASS WITH WARNINGS |
-| U9 QA staging real + smokes | `audit/u09-qa-staging` | en PR | | QA staging + fix 401 asistencias (serie + BE 503); D-009 timed DEFER |
+| U9 QA staging real + smokes | `audit/u09-qa-staging` | en PR | #117 | QA staging + fix 401 asistencias (serie + BE 503); D-009 timed DEFER |
 | L1 Land staging1.0 → main | PR release | pendiente | | Solo con OK explícito de Marcos |
 
 Estados: `pendiente` · `en curso` · `en PR` · `hecha` · `diferida`
