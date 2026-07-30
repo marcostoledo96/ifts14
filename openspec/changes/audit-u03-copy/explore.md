@@ -58,7 +58,7 @@
    - Cons: over-engineering para U3; toca más archivos/tests; no pedido.
    - Effort: **Medium**
 
-3. **Solo documentación (glosario sin tocar UI)** — 
+3. **Solo documentación (glosario sin tocar UI)** —
    - Pros: mínimo.
    - Cons: no cierra pass de inconsistencias ni checklist U3.
    - Effort: **Low** (insuficiente)
