@@ -1,5 +1,8 @@
 # Arquitectura general
 
+> **Nota (2026-08):** la carpeta `muestra_pagina/` fue retirada del repositorio (también del historial). Las menciones siguientes se conservan como contexto de diseño; la UI vigente vive en `apps/frontend-angular/`.
+
+
 ## Enfoque
 
 Arquitectura modular simple, pensada para cPanel: pocas capas, responsabilidades claras, sin frameworks backend pesados.

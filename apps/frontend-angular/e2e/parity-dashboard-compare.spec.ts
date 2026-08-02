@@ -1,5 +1,5 @@
 /**
- * Paridad estructural Angular vs muestra_pagina (v0) en /admin/dashboard.
+ * Paridad estructural Angular vs referencia v0 histórica (v0) en /admin/dashboard.
  * Genera fingerprint JSON + screenshots y aserta la estructura v0:
  * acciones (5 tiles), bandeja con iconos/conteos/Revisar, tabla de
  * actividad con columnas Hora/ID/Tipo/Detalle/Autor y resumen operativo.

@@ -2,6 +2,11 @@
 
 Registro consolidado de lo implementado. No reemplaza el historial Git ni `openspec/changes/archive/`; resume el estado útil para onboarding.
 
+## 2026-08 — Créditos de autores y preparación repo público
+
+- Crédito de desarrollo en footers (público, login admin, shell admin) y en docs/README: Marcos Ezequiel Toledo y Matías Ríos, con LinkedIn en la documentación.
+- Retiro de `muestra_pagina/` del árbol (y purge del historial). Docs de hosting saneadas (sin usuario cPanel/DB reales). Recordatorio: credenciales demo locales no van a staging/prod.
+
 ## 2026-07 — Operación en staging
 
 - Folio/PDF institucional: fondo celeste con trama/circuitos; copy alineado al certificado oficial (intro IFTS 14 + «Ha aprobado el curso…» + cierre CABA); PDF TCPDF backend con el mismo criterio.

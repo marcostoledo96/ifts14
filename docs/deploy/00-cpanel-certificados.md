@@ -6,7 +6,7 @@
 
 | Recurso | Valor |
 |---|---|
-| Subdominio | `staging.example.edu.ar` |
+| Subdominio | `<staging-host>` (ej. subdominio QA del instituto) |
 | Document root | `/public_html/certificados_qa/` |
 | Backend | `/certificados_staging/api/` |
 | PHP | 8.4.22 (ea-php84, CGI/FastCGI) |
@@ -26,7 +26,7 @@
 
 ### Lecciones del entorno
 
-1. **SetEnv NO funciona.** `mod_env` no está habilitado → usar `.user.ini` + `auto_prepend_file`.
+1. **SetEnv NO funciona.** `mod_env` no está habilitado → usar `.user.ini` + `auto_prepend_file` con **`putenv('CERTIFICADOS_CONFIG_PATH=...')`** (no alcanza un `define()` PHP: `Config::load()` solo mira `getenv()`).
 2. **No hay Terminal ni SSH.** Todo se prepara local y se sube.
 3. **Composer no instalado.** Generar `vendor/` localmente y subir como ZIP.
 4. **Dominio principal usa PHP 8.1.** No cambiarlo globalmente.

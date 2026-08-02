@@ -13,7 +13,7 @@ El producto solo usa **vigente** (válida) y **revocado**. Los valores `borrador
 
 ## Staging
 
-Preferir ejecutar el contenido de `deploy/staging/LIMPIA-ESTADOS-CERTIFICADO.sql` (equivalente operativo) o esta migración en phpMyAdmin sobre `<cpanel_prefix>_cert_stg`.
+Preferir ejecutar el contenido de `deploy/staging/LIMPIA-ESTADOS-CERTIFICADO.sql` (equivalente operativo) o esta migración en phpMyAdmin sobre la DB de staging (`*_cert_stg`).
 
 ## Verificación
 

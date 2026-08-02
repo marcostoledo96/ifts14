@@ -51,6 +51,14 @@ describe('AdminShell', () => {
     expect(el.querySelectorAll('[role="contentinfo"]').length).toBe(1);
   });
 
+  it('acredita a los autores del proyecto en el footer', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const credits = el.querySelector('.admin-footer-credits');
+    expect(credits?.textContent).toContain('Marcos Ezequiel Toledo');
+    expect(credits?.textContent).toContain('Matías Ríos');
+  });
+
   it('expone <router-outlet> y NO renderiza el dashboard inline', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;

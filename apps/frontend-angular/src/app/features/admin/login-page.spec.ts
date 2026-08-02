@@ -25,14 +25,18 @@ describe('LoginPage', () => {
     expect(el.textContent).not.toContain('Acceso simulado');
   });
 
-  it('tiene role=main, aside institucional, protocolo visual y footer restringido', async () => {
+  it('tiene role=main, aside institucional y footer restringido', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('main[role="main"]')).not.toBeNull();
     expect(el.querySelector('aside[aria-label]')).not.toBeNull();
     expect(el.textContent).toContain('Bedelía Digital');
-    expect(el.textContent).toContain('SHA-256 / SSL');
+    expect(el.textContent).not.toContain('Estado del sistema');
+    expect(el.textContent).not.toContain('Protocolo');
+    expect(el.textContent).not.toContain('SHA-256 / SSL');
     expect(el.textContent).toContain('Acceso restringido');
+    expect(el.textContent).toContain('Marcos Ezequiel Toledo');
+    expect(el.textContent).toContain('Matías Ríos');
     expect(el.querySelector('.aside-texture')).not.toBeNull();
     expect(el.querySelector('.main-texture')).not.toBeNull();
   });

@@ -2,6 +2,15 @@
 
 Empezar por `README.md` y `GUIA.md`. Abrir solo el área del cambio.
 
+## Autores
+
+Proyecto desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
+
+- Marcos Ezequiel Toledo — [LinkedIn](https://www.linkedin.com/in/marcos-ezequiel-toledo/)
+- Matías Ríos — [LinkedIn](https://www.linkedin.com/in/matiasgermanrios/)
+
+Detalle de roles: `README.md` (Autores) y `GUIA.md` §7.
+
 ## Lectura base
 
 | Para | Leer |
@@ -28,7 +37,6 @@ Empezar por `README.md` y `GUIA.md`. Abrir solo el área del cambio.
 | Specs | `openspec/AGENTS.md`, `openspec/specs/README.md` |
 | OpenCode / IA | `docs/opencode/optimizacion-tokens.md`, prompts `docs/opencode/MARCOS_…` y `docs/opencode/MATIAS_…` |
 | Graphify | `docs/arquitectura/graphify/README.md` (solo con `.graphifyignore`) |
-| Referencia visual | `muestra_pagina/` (no compilar) |
 
 ## Organización deploy
 

@@ -1,5 +1,5 @@
 /**
- * Comparación estructural Angular vs muestra_pagina (v0) en /admin/configuracion.
+ * Comparación estructural Angular vs referencia v0 histórica (v0) en /admin/configuracion.
  * Genera fingerprints JSON + screenshots full-page para auditar paridad.
  */
 import { test, expect, Page, chromium, Browser } from '@playwright/test';
@@ -193,7 +193,7 @@ test.describe('parity config Angular vs v0', () => {
     expect(fp.enabledControls.some((c) => c.includes('certificate-text'))).toBeTruthy();
   });
 
-  test('captura v0 muestra_pagina /admin/configuracion', async () => {
+  test('captura v0 referencia v0 histórica /admin/configuracion', async () => {
     fs.mkdirSync(OUT, { recursive: true });
     let browser: Browser | null = null;
     try {

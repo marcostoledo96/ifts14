@@ -1,5 +1,8 @@
 # Frontend Angular 20 — port desde `muestra_pagina/`
 
+> **Nota (2026-08):** la carpeta `muestra_pagina/` fue retirada del repositorio (también del historial). Las menciones siguientes se conservan como contexto de diseño; la UI vigente vive en `apps/frontend-angular/`.
+
+
 Este documento es la fuente de verdad para portar a Angular 20 la referencia visual v0 del módulo `/certificados/`.
 
 Etiquetas visibles canónicas (Válida/Revocado, Activo/Inactivo, etc.): `docs/frontend/04-glosario-ui.md`.

@@ -1,10 +1,9 @@
 # .gitleaks.toml — allowlist acotada para ifts14.
 # No excluir todo apps/backend-php/tests/: secretos reales ahí deben fallar CI.
-# Solo rutas de referencia visual y migraciones SQL versionadas.
+# Solo migraciones SQL versionadas (pueden tener literales ficticios de seed).
 
 [allowlist]
-  description = "Allowlist for sample UI export and SQL migrations"
+  description = "Allowlist for SQL migrations"
   paths = [
-    '''muestra_pagina/''',
     '''database/migrations/''',
   ]

@@ -6,6 +6,10 @@ Orientación para agentes (OpenCode/Gentle-AI/Cursor) en el repo privado `ifts14
 
 Mantener trabajo ordenado, seguro y documentado. Spec-Driven Development y TDD son **recomendables** para cambios no triviales; no bloquean fixes evidentes.
 
+## Autores
+
+Proyecto desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**. LinkedIn y roles: `README.md` / `GUIA.md`.
+
 ## Reglas obligatorias
 
 - No leer todo el repositorio por defecto.
@@ -15,7 +19,7 @@ Mantener trabajo ordenado, seguro y documentado. Spec-Driven Development y TDD s
 - **Token/QR permanente**: actualizar certificado o regenerar PDF **no** rota token/QR. Solo revocación explícita o regeneración excepcional auditada.
 - **DNI completo en UI** (pública y admin). Logs/auditoría/errores/dumps **sin** DNI ni token completos.
 - **Auth admin**: sesión PHP + CSRF. `X-Admin-Key` solo CLI/smokes; no autoriza HTTP.
-- **Paridad visual** con `muestra_pagina/`: intención visual a Angular 20; no portar React/Next literalmente.
+- **Paridad visual**: la UI Angular conserva la intención del diseño institucional; no dependemos de un export React/Next en el árbol.
 - **`.codegraph/`** no se versiona ni se stagea.
 - Git: commit/push/switch/merge solo con aprobación explícita humana cuando apliquen las reglas del equipo; nunca push directo a `main` como atajo. Diff-confirmation antes de stage; pre-push safety en ramas con tracking.
 - No subir secretos ni imprimir credenciales reales.

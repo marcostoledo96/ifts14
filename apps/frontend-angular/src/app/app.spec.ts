@@ -48,6 +48,17 @@ describe('App', () => {
     expect(srcs.some((s) => s.includes('escudo-caba'))).toBeTrue();
   });
 
+  it('en ruta pública el footer acredita a los autores del proyecto', async () => {
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/ruta-publica-inexistente');
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const credits = compiled.querySelector('.site-footer-credits');
+    expect(credits?.textContent).toContain('Marcos Ezequiel Toledo');
+    expect(credits?.textContent).toContain('Matías Ríos');
+  });
+
   it('en ruta pública incluye skip link hacia #contenido', async () => {
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/ruta-publica-inexistente');

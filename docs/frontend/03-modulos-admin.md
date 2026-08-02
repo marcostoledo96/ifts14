@@ -1,5 +1,8 @@
 # Módulos admin — mapa funcional
 
+> **Nota (2026-08):** la carpeta `muestra_pagina/` fue retirada del repositorio (también del historial). Las menciones siguientes se conservan como contexto de diseño; la UI vigente vive en `apps/frontend-angular/`.
+
+
 Resumen operativo del admin Angular. Detalle visual: `00-angular20-port-v0.md` y `02-sistema-visual-v0-f1-02.md`.
 
 ## Rutas típicas

@@ -71,6 +71,10 @@ ifts14_db.sql
 ifts14_dev.sql
 ifts14_db.sql.gz
 ifts14_dev.sql.gz
+*_cert_stg.sql
+*_cert_prod.sql
+*_cert_stg.sql.gz
+*_cert_prod.sql.gz
 
 # Git interno descargado desde servidor
 **/.git/

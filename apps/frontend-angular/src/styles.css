@@ -1,5 +1,5 @@
 /* styles.css — Tokens visuales v0 (F1-02) y base global.
-   Fuente de intención: muestra_pagina/app/globals.css (lectura segura).
+   Fuente de intención: referencia v0 históricaapp/globals.css (lectura segura).
    Sin Tailwind, sin dependencias nuevas. Solo CSS custom properties. */
 
 :root {
@@ -38,7 +38,7 @@
   --tracking-caps-membrete: 0.22em;
   --tracking-section: 0.16em;
 
-  /* Superficies semánticas — alineadas a muestra_pagina/app/globals.css */
+  /* Superficies semánticas — alineadas a referencia v0 históricaapp/globals.css */
   --color-secondary: #eef2f6;
   --color-secondary-foreground: #0b1f33;
   --color-accent: #e6f6f9;

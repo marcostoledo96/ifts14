@@ -1,5 +1,8 @@
 # Sistema visual v0 — F1-02
 
+> **Nota (2026-08):** la carpeta `muestra_pagina/` fue retirada del repositorio (también del historial). Las menciones siguientes se conservan como contexto de diseño; la UI vigente vive en `apps/frontend-angular/`.
+
+
 Fuente de verdad visual para los ciclos F2-F6 del módulo `/certificados/`. Define tokens, primitivos, reglas de accesibilidad y límites del ciclo. Mantiene el contrato D0 (DNI completo público, fechas asistidas, token/QR permanente, sin tokens completos en UI/logs).
 
 ## Tokens

@@ -61,7 +61,7 @@
 
 /* Sticky al viewport: el footer (Configuración / Cerrar sesión) queda
    visible sin scroll de página. Sin esto el aside crece con el main y
-   empuja el pie fuera de la ventana (paridad con muestra_pagina fixed).
+   empuja el pie fuera de la ventana (paridad con referencia v0 histórica fixed).
    Preferir svh: en móvil 100vh incluye chrome del browser y oculta el pie. */
 .sidebar-desktop {
   display: none;

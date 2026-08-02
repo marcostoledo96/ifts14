@@ -28,17 +28,6 @@
       </p>
     </div>
 
-    <dl class="estado-sistema">
-      <div class="estado-row">
-        <dt>Estado del sistema</dt>
-        <dd><span class="dot dot-valid" aria-hidden="true"></span> Activo</dd>
-      </div>
-      <div class="estado-row">
-        <dt>Protocolo</dt>
-        <dd>SHA-256 / SSL</dd>
-      </div>
-    </dl>
-
     <ul class="aside-partners" aria-label="Instituciones asociadas">
       @for (logo of partnerLogos; track logo.id) {
         <li [class.aside-partner--featured]="logo.id === 'ba-aprende'">
@@ -73,6 +62,9 @@
         <p class="footer-kicker">Acceso restringido · Bedelía IFTS N.° 14</p>
         <p class="footer-copy">
           © {{ anioActual }} · Instituto de Formación Técnica Superior N.° 14
+        </p>
+        <p class="footer-credits">
+          Desarrollado por Marcos Ezequiel Toledo y Matías Ríos
         </p>
       </footer>
     </div>

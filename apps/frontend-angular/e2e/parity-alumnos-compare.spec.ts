@@ -1,5 +1,5 @@
 /**
- * Paridad estructural Angular vs muestra_pagina (v0) en /admin/alumnos.
+ * Paridad estructural Angular vs referencia v0 histórica (v0) en /admin/alumnos.
  * Divergencias honestas: sin legajo ni emails en texto (API no los expone);
  * Contacto como badge; Documento enmascarado.
  */

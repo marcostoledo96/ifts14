@@ -54,20 +54,23 @@ Estructura sugerida (ajustar `<user>` al home real de cPanel):
 ```txt
 /home/<user>/ifts14_config/          # 0700
   certificados-production.php        # secretos REALES — nunca Git
-  bootstrap-certificados-prod.php    # define CERTIFICADOS_CONFIG_PATH y require config
+  bootstrap-certificados-prod.php    # putenv CERTIFICADOS_CONFIG_PATH (NO solo define())
 ```
 
-Ejemplo de bootstrap (valores de path reales solo en el servidor):
+Ejemplo de bootstrap (valores de path reales solo en el servidor).
+
+`Config::load()` lee **`getenv('CERTIFICADOS_CONFIG_PATH')`**, no la constante PHP.
+Un `define()` solo deja la API apuntando al path demo inexistente → login **401** silencioso.
 
 ```php
 <?php
 declare(strict_types=1);
 
-define(
-    'CERTIFICADOS_CONFIG_PATH',
-    '/home/<user>/ifts14_config/certificados-production.php'
-);
-require CERTIFICADOS_CONFIG_PATH;
+$path = '/home/<user>/ifts14_config/certificados-production.php';
+
+putenv('CERTIFICADOS_CONFIG_PATH=' . $path);
+$_ENV['CERTIFICADOS_CONFIG_PATH'] = $path;
+$_SERVER['CERTIFICADOS_CONFIG_PATH'] = $path;
 ```
 
 En `public_html/certificados/api/.user.ini` (**crear solo para prod**; no sobrescribir el de staging):
