@@ -161,7 +161,7 @@ try {
         throw new RuntimeException('emisión HTTP: URL de descarga PDF inválida.');
     }
     $pdf = request($port, 'GET', $pdfPath, $authHeaders);
-    assertPdfDownload($pdf, 'descarga PDF HTTP', ['IFTS 14 HTTP', 'Texto institucional HTTP.', 'Rector HTTP', 'Rector', 'Asesora HTTP', 'Asesora Pedagogica']);
+    assertPdfDownload($pdf, 'descarga PDF HTTP', ['Texto institucional HTTP.', 'Rector HTTP', 'Rector', 'Asesora HTTP', 'Asesora Pedagogica', 'D.N.I.']);
 
     $unsafeCertificateCode = "CERT/2026\r\nBAD\\TOKEN";
     $safeCertificateCode = 'CERT_2026__BAD_TOKEN';
