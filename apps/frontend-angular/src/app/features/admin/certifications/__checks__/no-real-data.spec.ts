@@ -213,7 +213,7 @@ describe('no-real-data en seed de certificaciones', () => {
       expect(text).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
       expect(text).not.toMatch(/legajo/i);
       expect(text).not.toMatch(/matr[íi]cula/i);
-      expect(el.querySelector('.cert-doc')?.textContent).toMatch(new RegExp(`Documento\\s+${dni}`));
+      expect(el.querySelector('.cert-doc')?.textContent).toMatch(new RegExp(`D\\.N\\.I\\.\\s+${dni}`));
       expect((el.querySelector('.cert-val-url')?.textContent?.trim().length || 0)).toBeLessThanOrEqual(
         URL_PUBLICA_MAX,
       );
@@ -229,7 +229,7 @@ describe('no-real-data en seed de certificaciones', () => {
   it('DOM del PDF preview muestra documentMasked con DNI completo ficticio', async () => {
     const el = await renderPdfPreview('1');
     const doc = el.querySelector('.cert-doc');
-    expect(doc?.textContent).toMatch(/^\s*Documento\s+12345678/);
+    expect(doc?.textContent).toMatch(/^\s*D\.N\.I\.\s+12345678/);
   });
 
   it('DOM del PDF preview muestra URL truncada (<= URL_PUBLICA_MAX) sin UUID', async () => {

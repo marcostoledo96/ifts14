@@ -99,7 +99,7 @@ if (($result['student']['documentMasked'] ?? '') !== '12345678' || !isset($resul
 
 $certificateId = (int) $result['id'];
 $pdfPath = $pdf->pathForCode((string) $result['certificateCode']);
-assertPdfPersisted($pdfPath, 'PDF institucional con configuración', ['IFTS 14 Demo', 'Texto institucional demo.', 'Rector Demo', 'Rector', 'Asesora Demo', 'Asesora Pedagogica']);
+assertPdfPersisted($pdfPath, 'PDF institucional con configuración', ['Texto institucional demo.', 'Rector Demo', 'Rector', 'Asesora Demo', 'Asesora Pedagogica', 'D.N.I.']);
 
 $snapshotCount = (int) $pdo->query('SELECT COUNT(*) FROM cert_certificado_fechas WHERE certificado_id = ' . $certificateId)->fetchColumn();
 if ($snapshotCount !== 2) {

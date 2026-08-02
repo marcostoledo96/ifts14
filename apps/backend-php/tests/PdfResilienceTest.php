@@ -185,7 +185,7 @@ $generatedSize = filesize($generatedPath);
 if ($generatedPrefix !== '%PDF-' || $generatedSize === false || $generatedSize <= 100) {
     throw new RuntimeException('PDF institucional generado inválido.');
 }
-assertPdfContains($generatedPath, ['IFTS 14 Demo', 'Texto institucional demo.', 'Rector Demo', 'Rector', 'Asesora Demo', 'Asesora Pedagogica'], 'PDF institucional generado');
+assertPdfContains($generatedPath, ['Texto institucional demo.', 'Rector Demo', 'Rector', 'Asesora Demo', 'Asesora Pedagogica', 'D.N.I.'], 'PDF institucional generado');
 
 cleanDir($storageDir);
 

@@ -134,7 +134,7 @@ Operativas generales:
 
 - [docs/frontend/00-angular20-port-v0.md](../frontend/00-angular20-port-v0.md): fuente de verdad del portado: inventario de pantallas v0, división de trabajo frontend, elementos visuales y reglas de portado. Debe consultarse antes de cada ciclo frontend.
 
-- [muestra_pagina/](../../muestra_pagina/): referencia visual v0 final y completa (export Next.js/React con capturas para flujos 4-22). El `MANIFIESTO_V0.md` histórico fue retirado al reemplazar la carpeta por el export final; el inventario se completa contra el listado seguro de la carpeta.
+- Referencia visual histórica (`muestra_pagina/`, retirada del repositorio): el diseño vigente vive en `apps/frontend-angular/`. Consultar `docs/frontend/00-angular20-port-v0.md` para el inventario y reglas de portado.
 
 - [apps/frontend-angular/AGENTS.md](../../apps/frontend-angular/AGENTS.md): reglas del scaffold Angular 20 existente: estructura por features, prioridad de accesibilidad/responsive/rendimiento y conexión futura con la API PHP. Define la base técnica sobre la que trabaja Matías.
 
