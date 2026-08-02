@@ -15,10 +15,10 @@ Permite emitir certificados de curso con fechas asistidas y validarlos públicam
 
 Desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
 
-| Persona | LinkedIn |
-|---|---|
-| Marcos Ezequiel Toledo | [linkedin.com/in/marcos-ezequiel-toledo](https://www.linkedin.com/in/marcos-ezequiel-toledo/) |
-| Matías Ríos | [linkedin.com/in/matiasgermanrios](https://www.linkedin.com/in/matiasgermanrios/) |
+| Persona | Rol | LinkedIn |
+|---|---|---|
+| Marcos Ezequiel Toledo | Backend, datos, deploy, seguridad y frontend Angular (UI/UX, admin, responsive, a11y). | [linkedin.com/in/marcos-ezequiel-toledo](https://www.linkedin.com/in/marcos-ezequiel-toledo/) |
+| Matías Ríos | Desarrollo frontend Angular, documentación, QA y planificación. | [linkedin.com/in/matiasgermanrios](https://www.linkedin.com/in/matiasgermanrios/) |
 
 ## Stack confirmado
 

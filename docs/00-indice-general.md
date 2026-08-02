@@ -6,8 +6,8 @@ Empezar por `README.md` y `GUIA.md`. Abrir solo el área del cambio.
 
 Proyecto desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
 
-- Marcos Ezequiel Toledo — [LinkedIn](https://www.linkedin.com/in/marcos-ezequiel-toledo/)
-- Matías Ríos — [LinkedIn](https://www.linkedin.com/in/matiasgermanrios/)
+- Marcos Ezequiel Toledo — backend, deploy y frontend Angular — [LinkedIn](https://www.linkedin.com/in/marcos-ezequiel-toledo/)
+- Matías Ríos — desarrollo frontend Angular, documentación, QA y planificación — [LinkedIn](https://www.linkedin.com/in/matiasgermanrios/)
 
 Detalle de roles: `README.md` (Autores) y `GUIA.md` §7.
 

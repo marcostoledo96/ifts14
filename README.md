@@ -33,8 +33,8 @@ Proyecto desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
 
 | Persona | Rol | LinkedIn |
 |---|---|---|
-| Marcos Ezequiel Toledo | Backend PHP, MariaDB, integración, deploy cPanel, arquitectura, seguridad y documentación. | [Perfil](https://www.linkedin.com/in/marcos-ezequiel-toledo/) |
-| Matías Ríos | UI/UX Angular 20, sistema visual, panel admin, responsive, accesibilidad y QA visual. | [Perfil](https://www.linkedin.com/in/matiasgermanrios/) |
+| Marcos Ezequiel Toledo | Backend PHP, MariaDB, integración, deploy cPanel, arquitectura, seguridad, documentación, UI/UX Angular 20, sistema visual, panel admin, responsive y accesibilidad. | [Perfil](https://www.linkedin.com/in/marcos-ezequiel-toledo/) |
+| Matías Ríos | Desarrollo frontend Angular, documentación, QA y planificación del port visual. | [Perfil](https://www.linkedin.com/in/matiasgermanrios/) |
 
 ## Decisiones vigentes (D0)
 
