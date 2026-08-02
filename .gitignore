@@ -104,3 +104,6 @@ openspec/changes/f4-02-certificate-pdf-preview/evidence/.pdf-check/
 
 # Artefactos locales de Karma/Chrome (nunca versionar)
 apps/frontend-angular/.tmp/
+
+# Índice local de skills (rutas absolutas de la máquina)
+.atl/skill-registry.md
