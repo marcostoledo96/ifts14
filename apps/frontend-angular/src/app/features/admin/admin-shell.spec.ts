@@ -51,6 +51,14 @@ describe('AdminShell', () => {
     expect(el.querySelectorAll('[role="contentinfo"]').length).toBe(1);
   });
 
+  it('acredita a los autores del proyecto en el footer', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const credits = el.querySelector('.admin-footer-credits');
+    expect(credits?.textContent).toContain('Marcos Ezequiel Toledo');
+    expect(credits?.textContent).toContain('Matías Ríos');
+  });
+
   it('expone <router-outlet> y NO renderiza el dashboard inline', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
@@ -111,9 +119,10 @@ describe('AdminShell', () => {
     f.componentInstance.abrirMenu();
     f.detectChanges();
     const el = f.nativeElement as HTMLElement;
-    const overlay = el.querySelector('.drawer-overlay');
+    const overlay = el.querySelector('button.drawer-overlay');
     const drawer = el.querySelector('.drawer-mobile');
     expect(overlay).not.toBeNull();
+    expect(overlay?.getAttribute('aria-label')).toBe('Cerrar menú');
     expect(drawer).not.toBeNull();
     const logoutBtn = drawer?.querySelector('.logout-btn') as HTMLButtonElement | null;
     expect(logoutBtn).not.toBeNull();
@@ -121,6 +130,54 @@ describe('AdminShell', () => {
     const btn = el.querySelector('.menu-btn') as HTMLButtonElement | null;
     expect(btn?.getAttribute('aria-expanded')).toBe('true');
     expect(btn?.getAttribute('aria-controls')).toBe('admin-drawer');
+  });
+
+  it('Escape cierra el drawer mobile', async () => {
+    const f = await render();
+    f.componentInstance.abrirMenu();
+    f.detectChanges();
+    expect(f.componentInstance.menuAbierto()).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    f.detectChanges();
+    expect(f.componentInstance.menuAbierto()).toBe(false);
+    expect((f.nativeElement as HTMLElement).querySelector('.drawer-mobile')).toBeNull();
+  });
+
+  it('cerrar sesión no se dispara dos veces en paralelo', async () => {
+    const f = await render();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    auth.setAuthenticated(true);
+    const router = TestBed.inject(Router);
+    spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    let resolveLogout!: () => void;
+    const logoutSpy = spyOn(auth, 'logout').and.returnValue(
+      new Promise<void>((resolve) => {
+        resolveLogout = resolve;
+      }),
+    );
+    const first = f.componentInstance.cerrarSesion();
+    f.detectChanges();
+    const desktopLogout = (f.nativeElement as HTMLElement).querySelector(
+      '.sidebar-desktop .logout-btn',
+    ) as HTMLButtonElement | null;
+    expect(desktopLogout?.disabled).toBe(true);
+    expect(desktopLogout?.getAttribute('aria-busy')).toBe('true');
+    const second = f.componentInstance.cerrarSesion();
+    expect(logoutSpy).toHaveBeenCalledTimes(1);
+    resolveLogout();
+    await Promise.all([first, second]);
+    expect(logoutSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('cerrar sesión navega a login aunque logout falle', async () => {
+    const f = await render();
+    const auth = TestBed.inject(ADMIN_AUTH) as FakeAdminAuthService;
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    spyOn(auth, 'logout').and.callFake(() => Promise.reject(new Error('logout fail')));
+    await f.componentInstance.cerrarSesion();
+    expect(navSpy).toHaveBeenCalledWith(['/admin/login']);
+    expect(f.componentInstance.cerrandoSesion()).toBe(false);
   });
 
   it('cerrarMenu remueve el drawer del DOM (no solo lo mueve off-screen)', async () => {
@@ -186,5 +243,52 @@ describe('AdminShell', () => {
     const cursosLink = el.querySelector('.sidebar-desktop a.active') as HTMLAnchorElement | null;
     expect(cursosLink).not.toBeNull();
     expect(cursosLink?.textContent).toContain('Cursos');
+  });
+
+  it('SHELL-A11Y-02: drawer abierto expone aria-modal y atrapa Tab', async () => {
+    const f = await render();
+    f.componentInstance.abrirMenu();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+
+    const el = f.nativeElement as HTMLElement;
+    const drawer = el.querySelector('#admin-drawer') as HTMLElement | null;
+    expect(drawer?.getAttribute('aria-modal')).toBe('true');
+    expect(drawer?.getAttribute('role')).toBe('dialog');
+    expect(el.querySelector('.drawer-layer')).not.toBeNull();
+
+    const layer = el.querySelector('.drawer-layer') as HTMLElement;
+    const focusables = Array.from(
+      layer.querySelectorAll<HTMLElement>(
+        'a[href], button:not(:disabled), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    expect(focusables.length).toBeGreaterThan(1);
+
+    const last = focusables[focusables.length - 1];
+    last.focus();
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    Object.defineProperty(tab, 'shiftKey', { value: false });
+    document.dispatchEvent(tab);
+    expect(layer.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(focusables[0]);
+  });
+
+  it('SHELL-A11Y-02: Escape cierra drawer, inert se limpia y foco vuelve a .menu-btn', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    f.componentInstance.abrirMenu();
+    f.detectChanges();
+    expect(el.querySelector('.content')?.hasAttribute('inert')).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    f.detectChanges();
+    await f.whenStable();
+
+    expect(f.componentInstance.menuAbierto()).toBe(false);
+    expect(el.querySelector('.drawer-mobile')).toBeNull();
+    expect(el.querySelector('.content')?.hasAttribute('inert')).toBe(false);
+    expect(document.activeElement).toBe(el.querySelector('.menu-btn'));
   });
 });

@@ -243,4 +243,34 @@ describe('AttendanceMockService', () => {
     await svc.marcar(1, 11, []);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
+
+  it('listarHub reusa la misma Promise hasta marcar', async () => {
+    const svc = await setup();
+    const p1 = svc.listarHub();
+    const p2 = svc.listarHub();
+    expect(p1).toBe(p2);
+    const hub = await p1;
+    expect(hub.cursos.length).toBeGreaterThan(0);
+    const p3 = svc.listarHub();
+    expect(p3).toBe(p1);
+
+    await svc.marcar(1, 11, [{ alumnoId: 1, presente: true }]);
+    const p4 = svc.listarHub();
+    expect(p4).not.toBe(p1);
+    const after = await p4;
+    expect(after.asistencias.some((a) => a.cursoFechaId === 11 && a.alumnoId === 1)).toBeTrue();
+  });
+
+  it('listarHub invalida Promise tras anular', async () => {
+    const svc = await setup();
+    const before = await svc.listarHub();
+    const asistenciaId = before.asistencias[0]?.id;
+    expect(asistenciaId).toBeDefined();
+    const pCached = svc.listarHub();
+
+    await svc.anular(asistenciaId!);
+    const pFresh = svc.listarHub();
+    expect(pFresh).not.toBe(pCached);
+    await pFresh;
+  });
 });

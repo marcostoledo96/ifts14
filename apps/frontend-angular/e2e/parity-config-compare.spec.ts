@@ -1,5 +1,5 @@
 /**
- * Comparación estructural Angular vs muestra_pagina (v0) en /admin/configuracion.
+ * Comparación estructural Angular vs referencia v0 histórica (v0) en /admin/configuracion.
  * Genera fingerprints JSON + screenshots full-page para auditar paridad.
  */
 import { test, expect, Page, chromium, Browser } from '@playwright/test';
@@ -15,7 +15,7 @@ const CONFIG_SEED = {
   data: {
     institutionName: 'Instituto de Formación Técnica Superior N.° 14',
     certificateText:
-      'Se certifica que la persona mencionada ha aprobado satisfactoriamente el curso detallado, cumpliendo con la asistencia y las evaluaciones requeridas.',
+      'El Instituto de Formación Técnica Superior N.º 14 (IFTS 14) que integra la Dirección de Educación Técnica Superior, Agencia de Habilidades para el Futuro, certifica que:',
     rectorName: '',
     rectorRole: 'Rectora del IFTS N.° 14',
     advisorName: '',
@@ -193,7 +193,7 @@ test.describe('parity config Angular vs v0', () => {
     expect(fp.enabledControls.some((c) => c.includes('certificate-text'))).toBeTruthy();
   });
 
-  test('captura v0 muestra_pagina /admin/configuracion', async () => {
+  test('captura v0 referencia v0 histórica /admin/configuracion', async () => {
     fs.mkdirSync(OUT, { recursive: true });
     let browser: Browser | null = null;
     try {

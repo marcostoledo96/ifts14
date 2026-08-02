@@ -42,7 +42,18 @@
     </div>
   }
   @if (error()) {
-    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    <div class="estado-linea estado-error" role="alert">
+      <p>{{ error() }}</p>
+      @if (errorRecuperable()) {
+        <button
+          type="button"
+          class="btn-accion btn-accion-compact"
+          (click)="onReintentar()"
+        >
+          Reintentar
+        </button>
+      }
+    </div>
     <app-ui-back-link
       to="/admin/certificaciones"
       label="Volver a Certificaciones"
@@ -92,7 +103,7 @@
               <dd>{{ d.nombreAlumno }}</dd>
             </div>
             <div class="fila-dato">
-              <dt>Documento (mascarado)</dt>
+              <dt>Documento</dt>
               <dd class="mono">{{ d.documentMasked }}</dd>
             </div>
           </dl>
@@ -198,9 +209,6 @@
                 @if (r.regenerado) {
                   <div class="regeneracion-estado regeneracion-ok" role="status">
                     <p>PDF regenerado correctamente.</p>
-                    @if (r.publicValidationUrl) {
-                      <p class="mono public-url">{{ r.publicValidationUrl }}</p>
-                    }
                     <p class="regeneracion-note">El QR de validación es permanente.</p>
                   </div>
                 } @else {
@@ -291,7 +299,7 @@
               </a>
             } @else {
               <p id="revocacion-no-disponible" class="riesgo-texto">
-                Solo las certificaciones vigentes pueden revocarse.
+                Solo las certificaciones válidas pueden revocarse.
               </p>
               @if (puedeReemitir()) {
                 <p class="riesgo-texto">
@@ -368,11 +376,21 @@
 
           <div class="doc-declaracion">
             <p class="doc-decl-kicker">Certifica que</p>
+            <p class="doc-intro-oficial">
+              El Instituto de Formación Técnica Superior N.º 14 (IFTS 14) que integra
+              la Dirección de Educación Técnica Superior, Agencia de Habilidades para
+              el Futuro, certifica que:
+            </p>
             <p class="doc-protagonista">{{ d.nombreAlumno }}</p>
-            <p class="doc-doc mono">Documento {{ d.documentMasked }}</p>
+            <p class="doc-doc mono">D.N.I. {{ d.documentMasked }}</p>
             <p class="doc-cuerpo">
-              cumplió con la asistencia registrada y auditada en el curso
-              <strong>{{ d.cursoNombre }}</strong>.
+              Ha aprobado el curso de formación profesional
+              <strong>“{{ d.cursoNombre }}”</strong>, conforme al registro de
+              asistencia auditado.
+            </p>
+            <p class="doc-cierre">
+              Se extiende el presente certificado a solicitud del/la interesado/a,
+              para constancia de su aprobación.
             </p>
           </div>
 

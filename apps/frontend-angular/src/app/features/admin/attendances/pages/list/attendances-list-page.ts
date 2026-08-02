@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
+import { paginasVisiblesWindow } from '../../../../../shared/util/paginas-visibles-window';
 import { ATTENDANCE_SOURCE } from '../../data/attendance.token';
 import { ATTENDANCES_PAGE_SIZE } from '../../models/attendance.types';
 
@@ -61,14 +62,9 @@ export class AttendancesListPage {
     );
   });
   /** Páginas visibles en el pager numerado (máx. 5 botones + elipsis). */
-  readonly paginasVisibles = computed(() => {
-    const total = this.totalPaginas();
-    const actual = this.paginaSegura();
-    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
-    if (actual <= 3) return [1, 2, 3, 4, 5];
-    if (actual >= total - 2) return [total - 4, total - 3, total - 2, total - 1, total];
-    return [actual - 2, actual - 1, actual, actual + 1, actual + 2];
-  });
+  readonly paginasVisibles = computed(() =>
+    paginasVisiblesWindow(this.totalPaginas(), this.paginaSegura()),
+  );
 
   readonly hayFiltrosActivos = computed(() => this.q().trim().length > 0);
 
@@ -98,26 +94,28 @@ export class AttendancesListPage {
       const hub = await this.attendance.listarHub();
       if (gen !== this.loadGen) return;
 
+      // Índices lineales: N = asistibles ≠ cancelada; M = presentes ∩ asistibles del curso.
+      const asistibleById = new Map<number, number>();
       const fechasPorCurso = new Map<number, number>();
-      const fechasConPresentes = new Map<number, Set<number>>();
+      const presentesPorCurso = new Map<number, Set<number>>();
 
       for (const f of hub.fechas) {
         if (f.estado === 'cancelada') continue;
+        asistibleById.set(f.id, f.cursoId);
         fechasPorCurso.set(f.cursoId, (fechasPorCurso.get(f.cursoId) ?? 0) + 1);
       }
       for (const a of hub.asistencias) {
-        const set = fechasConPresentes.get(a.cursoId) ?? new Set<number>();
+        const set = presentesPorCurso.get(a.cursoId) ?? new Set<number>();
         set.add(a.cursoFechaId);
-        fechasConPresentes.set(a.cursoId, set);
+        presentesPorCurso.set(a.cursoId, set);
       }
 
       const filas: FilaCurso[] = hub.cursos.map((c) => {
         const asistibles = fechasPorCurso.get(c.id) ?? 0;
-        const conPresentes = [...(fechasConPresentes.get(c.id) ?? [])].filter((fechaId) =>
-          hub.fechas.some(
-            (f) => f.id === fechaId && f.cursoId === c.id && f.estado !== 'cancelada',
-          ),
-        ).length;
+        let conPresentes = 0;
+        for (const fechaId of presentesPorCurso.get(c.id) ?? []) {
+          if (asistibleById.get(fechaId) === c.id) conPresentes += 1;
+        }
         return {
           id: c.id,
           codigo: c.codigo,

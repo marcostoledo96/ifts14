@@ -744,6 +744,14 @@ button.btn-revocar:disabled {
   color: var(--color-muted-foreground);
 }
 
+.doc-intro-oficial {
+  margin: var(--space-3) auto 0;
+  max-width: 36rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--color-foreground);
+}
+
 .doc-protagonista {
   margin: var(--space-3) 0 0;
   font-size: clamp(1.25rem, 5vw, 1.5rem);
@@ -769,6 +777,14 @@ button.btn-revocar:disabled {
 
 .doc-cuerpo strong {
   font-weight: 600;
+}
+
+.doc-cierre {
+  margin: var(--space-3) auto 0;
+  max-width: 36rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--color-foreground);
 }
 
 .doc-asistencia {

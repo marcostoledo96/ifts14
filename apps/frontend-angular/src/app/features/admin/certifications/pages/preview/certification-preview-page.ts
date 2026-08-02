@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -59,6 +60,8 @@ export class CertificationPreviewPage {
 
   readonly detalle = signal<CertificacionDetalle | null>(null);
   readonly error = signal('');
+  /** Load-only: true solo ante fallo hard recuperable de `obtener` (paridad P15). */
+  readonly errorRecuperable = signal(false);
   readonly cargando = signal(true);
 
   // URL canónica desde entrega-manual (nunca detalle.publicValidationUrl).
@@ -206,13 +209,20 @@ export class CertificationPreviewPage {
     this.revokeFirmaUrl('asesor');
     this.configPendiente.set(false);
     this.error.set('');
+    this.errorRecuperable.set(false);
     this.copiado.set(false);
     this.qrDescargando.set(false);
     this.qrError.set('');
+    this.regenerando.set(false);
+    this.regeneracionResultado.set(null);
+    this.regeneracionError.set('');
     this.revokeQrUrl();
     this.cargando.set(true);
     if (cid === null) {
-      if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
+      if (gen === this.loadGen) {
+        this.error.set('Certificación no encontrada.');
+        this.errorRecuperable.set(false);
+      }
       this.cargando.set(false);
       return;
     }
@@ -226,20 +236,49 @@ export class CertificationPreviewPage {
       if (gen !== this.loadGen) return;
 
       if (detR.status === 'rejected') {
-        this.error.set((detR.reason as Error)?.message || 'Certificación no encontrada.');
+        this.aplicarErrorCarga(detR.reason);
         return;
       }
       this.detalle.set(detR.value);
+      this.errorRecuperable.set(false);
       void this.aplicarConfig(cfgR, gen);
       this.aplicarEntrega(entR);
       const urlQr =
         entR.status === 'fulfilled' ? entR.value.publicValidationUrl?.trim() || null : null;
       void this.cargarQr(cid, gen, urlQr);
     } catch (e) {
-      if (gen === this.loadGen) this.error.set((e as Error).message);
+      if (gen === this.loadGen) this.aplicarErrorCarga(e);
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
     }
+  }
+
+  onReintentar(): void {
+    if (!this.errorRecuperable()) return;
+    void this.cargar();
+  }
+
+  /** Not-found (404 / mensaje) vs hard recuperable — sin raw Error.message en UI. */
+  private aplicarErrorCarga(reason: unknown): void {
+    const status = reason instanceof HttpErrorResponse ? reason.status : null;
+    const raw = reason instanceof Error ? reason.message : '';
+    const notFound = status === 404 || /no encontrad/i.test(raw);
+    if (notFound) {
+      this.error.set('Certificación no encontrada.');
+      this.errorRecuperable.set(false);
+      return;
+    }
+    this.error.set('No se pudo cargar la certificación.');
+    this.errorRecuperable.set(true);
+  }
+
+  /** Envelope API message o fallback es-AR (sin raw Error.message). */
+  private mensajeErrorApi(err: unknown, fallback: string): string {
+    if (err instanceof HttpErrorResponse) {
+      const msg = (err.error as { error?: { message?: string } } | null)?.error?.message;
+      if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    }
+    return fallback;
   }
 
   private async aplicarConfig(
@@ -332,7 +371,7 @@ export class CertificationPreviewPage {
         );
       } else if (this.detalle()?.estado !== 'vigente') {
         this.entregaError.set(
-          'Copiar link y QR solo están disponibles para certificaciones vigentes.',
+          'Copiar link y QR solo están disponibles para certificaciones válidas.',
         );
       } else {
         this.entregaError.set(
@@ -370,11 +409,13 @@ export class CertificationPreviewPage {
 
   async descargarQr(): Promise<void> {
     const cid = this.certId();
+    const gen = this.loadGen;
     if (cid === null || !this.puedeCopiarCompartir() || this.qrDescargando()) return;
     this.qrDescargando.set(true);
     this.qrError.set('');
     try {
       const blob = await this.certs.descargarQrPng(cid);
+      if (gen !== this.loadGen) return;
       const objUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objUrl;
@@ -384,9 +425,10 @@ export class CertificationPreviewPage {
       document.body.removeChild(a);
       URL.revokeObjectURL(objUrl);
     } catch (e) {
-      this.qrError.set((e as Error).message || 'No se pudo descargar el QR.');
+      if (gen !== this.loadGen) return;
+      this.qrError.set(this.mensajeErrorApi(e, 'No se pudo descargar el QR.'));
     } finally {
-      this.qrDescargando.set(false);
+      if (gen === this.loadGen) this.qrDescargando.set(false);
     }
   }
 
@@ -429,17 +471,20 @@ export class CertificationPreviewPage {
 
   async regenerarPdf(): Promise<void> {
     const cid = this.certId();
+    const gen = this.loadGen;
     if (cid === null) return;
     this.regenerando.set(true);
     this.regeneracionResultado.set(null);
     this.regeneracionError.set('');
     try {
       const result = await this.certs.regenerarPdf(cid);
+      if (gen !== this.loadGen) return;
       this.regeneracionResultado.set(result);
     } catch (e) {
-      this.regeneracionError.set((e as Error).message);
+      if (gen !== this.loadGen) return;
+      this.regeneracionError.set(this.mensajeErrorApi(e, 'No se pudo regenerar el PDF.'));
     } finally {
-      this.regenerando.set(false);
+      if (gen === this.loadGen) this.regenerando.set(false);
     }
   }
 }
@@ -449,7 +494,7 @@ function estadoToLabel(e: EstadoCertificado): string {
     case 'vigente':
       return 'Válida';
     case 'revocado':
-      return 'Revocada';
+      return 'Revocado';
     default:
       return e;
   }

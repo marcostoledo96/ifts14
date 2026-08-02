@@ -52,6 +52,24 @@ describe('HttpAdminAuthService', () => {
     expect(service.csrfToken()).toBe('csrf-abc');
   });
 
+  it('login 2xx sin sesión usable rechaza con status 502 y no guarda token', async () => {
+    const creds: AdminAuthCredentials = { username: 'admin', password: 'clave123' };
+    const promise = service.login(creds);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/login`);
+    req.flush(authEnvelope({ authenticated: false }));
+    await expectAsync(promise).toBeRejectedWith(jasmine.objectContaining({ status: 502 }));
+    expect(service.csrfToken()).toBeNull();
+  });
+
+  it('login 2xx authenticated sin csrfToken también rechaza', async () => {
+    const creds: AdminAuthCredentials = { username: 'admin', password: 'clave123' };
+    const promise = service.login(creds);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/login`);
+    req.flush(authEnvelope({ authenticated: true }));
+    await expectAsync(promise).toBeRejectedWith(jasmine.objectContaining({ status: 502 }));
+    expect(service.csrfToken()).toBeNull();
+  });
+
   it('login con 401 lanza error y no guarda token', async () => {
     const creds: AdminAuthCredentials = { username: 'bad', password: 'wrong' };
     const promise = service.login(creds);
@@ -69,6 +87,31 @@ describe('HttpAdminAuthService', () => {
     const result = await promise;
     expect(result).toBe(true);
     expect(service.csrfToken()).toBe('csrf-session');
+  });
+
+  it('session retorna false si authenticated sin csrfToken', async () => {
+    const promise = service.session();
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/auth/session`);
+    req.flush(authEnvelope({ authenticated: true }));
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(service.csrfToken()).toBeNull();
+  });
+
+  it('session sin CSRF usable limpia un token previo en memoria', async () => {
+    const loginPromise = service.login({ username: 'admin', password: 'clave123' });
+    httpMock
+      .expectOne(`${environment.apiBaseUrl}/admin/auth/login`)
+      .flush(authEnvelope({ authenticated: true, csrfToken: 'csrf-prev' }));
+    await loginPromise;
+    expect(service.csrfToken()).toBe('csrf-prev');
+
+    const sessionPromise = service.session();
+    httpMock
+      .expectOne(`${environment.apiBaseUrl}/admin/auth/session`)
+      .flush(authEnvelope({ authenticated: true }));
+    expect(await sessionPromise).toBe(false);
+    expect(service.csrfToken()).toBeNull();
   });
 
   it('session retorna false cuando authenticated=false', async () => {

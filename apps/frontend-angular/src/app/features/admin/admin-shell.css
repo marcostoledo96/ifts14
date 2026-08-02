@@ -61,7 +61,7 @@
 
 /* Sticky al viewport: el footer (Configuración / Cerrar sesión) queda
    visible sin scroll de página. Sin esto el aside crece con el main y
-   empuja el pie fuera de la ventana (paridad con muestra_pagina fixed).
+   empuja el pie fuera de la ventana (paridad con referencia v0 histórica fixed).
    Preferir svh: en móvil 100vh incluye chrome del browser y oculta el pie. */
 .sidebar-desktop {
   display: none;
@@ -160,10 +160,19 @@ footer {
   outline: none;
 }
 
+/* Capa drawer: overlay + aside (trap Tab). Hijos fixed — sin layout propio. */
+.drawer-layer {
+  position: contents;
+}
+
 .drawer-overlay {
   position: fixed;
   inset: 0;
   z-index: 40;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
   background: color-mix(in srgb, var(--color-ink) 60%, transparent);
 }
 

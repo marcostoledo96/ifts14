@@ -161,6 +161,20 @@ The system SHALL provide `HttpAttendanceService` implementing `AttendanceService
 - WHEN any `AttendanceService` method is called
 - THEN the service SHALL reject the promise with a descriptive error
 
+### Requirement: listarHub HTTP
+
+`HttpAttendanceService.listarHub` DEBE `GET /admin/hub/asistencias`, mapear DTOs al contrato de `AttendanceService.listarHub` sin cambiar semántica. PUEDE mapear asistencias en una sola pasada.
+(Nota archive P12: en `audit-p12-asist-hub` apply sí editó HTTP — one-pass `toAsistencia`; delta condicional fusionado.)
+
+#### Scenario: listarHub GET y mapeo DTO
+
+- DADO el backend responde el hub consolidado
+- CUANDO se llama `listarHub()`
+- ENTONCES el servicio DEBE `GET /admin/hub/asistencias`
+- Y DEBE devolver el DTO mapeado al contrato vigente (cursos, fechas, asistencias)
+- Y el contrato de respuesta NO DEBE cambiar
+- Y PUEDE evitar barridos de mapeo redundantes sobre el mismo array de asistencias
+
 ### Requirement: HttpCertificationsService implements CertificationsService via HTTP
 
 The system SHALL provide `HttpCertificationsService` implementing `CertificationsService` using Angular `HttpClient`.
@@ -309,6 +323,40 @@ The existing in-memory service implementations and `InjectionToken` providers SH
 - THEN each HTTP service SHALL implement the corresponding interface
 - AND the HTTP service SHALL be injectable via the existing `InjectionToken`
 
+### Requirement: Corrección condicional del mapeo de métricas de alumnos
+
+NO DEBE exigirse cambio de `HttpStudentsService` ni backend por defecto; preferir fixes en la página. SOLO SI smoke o code review demuestran mapeo roto (UI «—» con payload 0/N), DEBE corregirse el mapeo mínimo (`toAlumno`/conteos) sin DNI/token en errores.
+(Nota archive P9: en `audit-p09-alumnos-list` no hubo evidencia de mapeo roto; `optionalCount` preserva `0`; HTTP omitido.)
+
+#### Scenario: Sin evidencia — no tocar HTTP
+
+- GIVEN métricas correctas en staging
+- WHEN cierra P9
+- THEN NO DEBE modificarse `HttpStudentsService` ni backend
+
+#### Scenario: Evidencia de mapeo roto — parche mínimo
+
+- GIVEN payload numérico y UI «—» por mapeo
+- WHEN se corrige el servicio
+- THEN DEBE mapear 0 como número y null si ausente, sin PII ni editor/detalle
+
+### Requirement: Fallback condicional 409 en actualizar alumno
+
+NO DEBE exigirse cambio de `HttpStudentsService.actualizar` ni backend por defecto; preferir manejo en la página del editor. SOLO SI smoke, staging o test demuestran 409 de update sin `existingStudentId` usable para el enlace, PUEDE agregarse fallback mínimo (p. ej. `findIdByDni`) sin incluir DNI/token en mensajes ni logs.
+(Nota archive P10: en `audit-p10-alumnos-editor` no hubo evidencia de 409 update sin id usable; `http-students.service.*` intactos; HTTP omitido.)
+
+#### Scenario: Sin evidencia — no tocar HTTP
+
+- GIVEN 409 de update con `existingStudentId` en envelope o sin gap observable
+- WHEN cierra P10
+- THEN NO DEBE modificarse `HttpStudentsService.actualizar` ni el backend
+
+#### Scenario: Evidencia de 409 sin id — parche mínimo
+
+- GIVEN 409 de update sin id usable y enlace de conflicto ausente
+- WHEN se corrige el servicio
+- THEN PUEDE resolver id vía fallback mínimo y DEBE mapear a conflicto tipado sin PII
+
 ### Requirement: DI wiring uses environment.useRealApi toggle
 
 `app.routes.ts` SHALL select between HTTP and in-memory implementations using the `environment.useRealApi` flag, matching the existing `VALIDATION_SOURCE` pattern from the M3-06 checkpoint.
@@ -322,6 +370,56 @@ The existing in-memory service implementations and `InjectionToken` providers SH
 - GIVEN `environment.useRealApi` is `false`
 - WHEN the app boots
 - THEN those same five tokens SHALL resolve to their in-memory implementations
+
+### Requirement: HTTP-PERF-01 — Coalesce in-flight de listarHub
+
+`HttpAttendanceService.listarHub` DEBE coalescer llamadas concurrentes/in-flight de modo que como máximo un `GET /admin/hub/asistencias` esté en vuelo. PUEDE aplicar TTL corto de reuso en memoria. Tras `marcar`, `anular` u operaciones equivalentes que muten el hub, DEBE invalidar el coalesce/cache. NO DEBE cambiar semántica HTTP, shape DTO ni `Cache-Control` backend.
+
+#### Scenario: Hub list → fechas sin doble GET in-flight
+
+- **GIVEN** navegación hub → fechas de curso con `listarHub` pendiente o reutilizable
+- **WHEN** ambas pantallas invocan `listarHub()`
+- **THEN** DEBE haber ≤1 `GET /admin/hub/asistencias` in-flight
+- **AND** ambas DEBEN resolver el mismo DTO mapeado al contrato vigente
+
+#### Scenario: Invalidación tras marcar o anular
+
+- **GIVEN** resultado de `listarHub` coalescido o en TTL
+- **WHEN** `marcar` o `anular` (u mutación de hub equivalente) completa con éxito
+- **THEN** DEBE invalidar coalesce/cache de `listarHub`
+- **AND** la siguiente `listarHub()` DEBE emitir un GET fresco
+
+#### Scenario: Semántica HTTP intacta
+
+- **GIVEN** coalesce activo
+- **WHEN** se inspecciona la red de `listarHub`
+- **THEN** método, URL y mapeo DEBEN coincidir con `listarHub HTTP`
+- **AND** NO DEBE alterarse `Cache-Control` ni el contrato de respuesta
+
+### Requirement: HTTP-PERF-02 — Cache de sesión para previewFirma y obtener
+
+`HttpInstitutionalConfigService` DEBE cachear en memoria de sesión `previewFirma(rol)` y DEBE coalescer/cachear `obtener()` sin mutación intermedia. DEBE invalidar firma del rol tras upload/delete; DEBE invalidar `obtener` tras `guardar` exitoso y tras mutaciones de firma que cambien flags. DEBERÍA limpiar caches al logout si el seam es fácil. NO DEBE cambiar URLs, auth, multipart ni `Cache-Control: no-store`.
+
+#### Scenario: Reuso de previewFirma en la sesión
+
+- **GIVEN** `previewFirma(rol)` ya resolvió en la sesión
+- **WHEN** otra pantalla pide el mismo rol sin mutación
+- **THEN** DEBE reusar memoria/Promise in-flight
+- **AND** NO DEBE emitir un segundo `GET .../firmas/{rol}` innecesario
+
+#### Scenario: Invalidación tras mutar firma o guardar
+
+- **GIVEN** cache de `previewFirma` y/o `obtener` poblado
+- **WHEN** upload/delete de firma o `guardar` completa con éxito
+- **THEN** DEBE invalidar entradas afectadas
+- **AND** la siguiente lectura DEBE ir a la red
+
+#### Scenario: Limpieza en logout (si el seam es fácil)
+
+- **GIVEN** caches poblados y clear path accesible
+- **WHEN** Bedelía cierra sesión admin
+- **THEN** DEBERÍA vaciar caches de sesión
+- **AND** NO DEBE filtrar blobs a otra sesión
 
 ## Design Decisions Resolved During Implementation
 

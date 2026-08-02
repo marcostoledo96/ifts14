@@ -518,6 +518,23 @@
   font-weight: 500;
 }
 
+/* Soft 409 / entrega-manual (P20) */
+.alert-entrega-error {
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--color-danger, #dc2626) 35%, transparent);
+  background: color-mix(in srgb, var(--color-danger, #dc2626) 8%, var(--color-card));
+}
+
+.alert-entrega-msg {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-danger, #dc2626);
+  font-weight: 500;
+}
+
 /* Alerta PDF desactualizado (P6-01) */
 .alert-outdated {
   display: flex;

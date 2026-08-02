@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../../certifications/certifications.service';
@@ -342,15 +343,19 @@ describe('AttendanceMarkingPage', () => {
     expect(cancelada?.disabled).toBe(true);
   });
 
-  it('id inválido muestra error sin exponer datos', async () => {
+  it('id inválido muestra error sin Reintentar ni PII', async () => {
     const f = await render(0, 0);
     const el = f.nativeElement as HTMLElement;
     await f.whenStable();
     f.detectChanges();
     expect(el.textContent).toContain('no encontrad');
+    expect(el.textContent).not.toContain('Reintentar');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect((el.textContent || '').toLowerCase()).not.toMatch(/\bdni\b/);
+    expect((el.textContent || '').toLowerCase()).not.toContain('token');
   });
 
-  it('fechaId no existente muestra error controlado sin body en blanco (999)', async () => {
+  it('fechaId no existente muestra error controlado sin Reintentar (999)', async () => {
     const f = await render(1, 999);
     const el = f.nativeElement as HTMLElement;
     await f.whenStable();
@@ -359,6 +364,8 @@ describe('AttendanceMarkingPage', () => {
     const alert = el.querySelector('[role="alert"]');
     expect(alert).not.toBeNull();
     expect(alert?.textContent).toContain('Fecha no encontrada');
+    expect(el.textContent).not.toContain('Reintentar');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
     const hrefs = Array.from(el.querySelectorAll('a')).map((a) => a.getAttribute('href') || '');
     expect(hrefs.some((h) => h.includes('/admin/cursos/1'))).toBe(true);
     expect(alert?.textContent).toContain('Ver detalle del curso');
@@ -604,5 +611,668 @@ describe('AttendanceMarkingPage', () => {
     expect(fixture.componentInstance.ok()).toBe('');
     expect(fixture.componentInstance.baseline().size).toBe(0);
     expect(fixture.componentInstance.guardando()).toBe(false);
+  });
+
+  // --- P14 CRITICAL: Reintentar, fecha futura, serial emit/regen, envelope 400 ---
+
+  it('fallo recuperable de carga: Reintentar re-llama fuentes sin PII', async () => {
+    const obtener = jasmine
+      .createSpy('obtener')
+      .and.returnValues(
+        Promise.reject(new Error('network')),
+        Promise.resolve({
+          id: 3,
+          codigo: 'CUR-003',
+          nombre: 'Curso ok',
+          estado: 'activo' as const,
+          createdAt: '',
+          updatedAt: '',
+          fechas: [
+            {
+              id: 31,
+              cursoId: 3,
+              fecha: '2026-05-04',
+              descripcion: null,
+              orden: 1,
+              estado: 'programada' as const,
+            },
+          ],
+        }),
+      );
+    const listarAlumnos = jasmine
+      .createSpy('listarAlumnos')
+      .and.resolveTo([
+        { id: 1, apellidoNombre: 'A1 B1', dniMostrar: '20111111', estado: 'activo' as const },
+      ]);
+    const listarAsistencias = jasmine.createSpy('listarAsistencias').and.resolveTo([]);
+
+    await TestBed.configureTestingModule({
+      imports: [AttendanceMarkingPage],
+      providers: [
+        provideRouter([]),
+        {
+          provide: COURSES_SOURCE,
+          useValue: {
+            listar: () => Promise.resolve([]),
+            obtener,
+            crear: () => Promise.reject(new Error('noop')),
+            actualizar: () => Promise.reject(new Error('noop')),
+            actualizarEstado: () => Promise.reject(new Error('noop')),
+            listarFechas: () => Promise.resolve([]),
+            guardarFecha: () => Promise.reject(new Error('noop')),
+            reemplazarFechas: () => Promise.reject(new Error('noop')),
+          },
+        },
+        {
+          provide: ATTENDANCE_SOURCE,
+          useValue: {
+            listarAlumnos,
+            listarAsistencias,
+            listarAsistenciasDeCurso: () => Promise.resolve([]),
+            listarAsistenciasPorPar: () => Promise.resolve([]),
+            listarAsistenciasPorAlumno: () => Promise.resolve([]),
+            listarHub: () =>
+              Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
+            marcar: () => Promise.resolve([]),
+            anular: () => Promise.resolve(),
+          },
+        },
+        { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AttendanceMarkingPage);
+    spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    fixture.componentRef.setInput('id', '3');
+    fixture.componentRef.setInput('fechaId', '31');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const page = fixture.componentInstance;
+    let el = fixture.nativeElement as HTMLElement;
+    let text = el.textContent || '';
+    expect(page.errorRecuperable()).toBeTrue();
+    expect(text).toContain('Reintentar');
+    expect(text).toContain('No se pudieron cargar las asistencias');
+    expect(text.toLowerCase()).not.toMatch(/\bdni\b/);
+    expect(text.toLowerCase()).not.toContain('token');
+    expect(obtener).toHaveBeenCalledTimes(1);
+
+    const reintentar = Array.from(el.querySelectorAll('button')).find((b) =>
+      (b.textContent || '').includes('Reintentar'),
+    ) as HTMLButtonElement;
+    expect(reintentar).toBeTruthy();
+    reintentar.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    el = fixture.nativeElement as HTMLElement;
+    text = el.textContent || '';
+    expect(obtener).toHaveBeenCalledTimes(2);
+    expect(listarAlumnos).toHaveBeenCalled();
+    expect(listarAsistencias).toHaveBeenCalled();
+    expect(page.error()).toBe('');
+    expect(page.errorRecuperable()).toBeFalse();
+    expect(text).toContain('Curso ok');
+    expect(text).not.toContain('Reintentar');
+  });
+
+  it('fecha futura AR: guarda OK, no emite/regen, fallidos + copy futura', async () => {
+    const futureFecha = '2099-06-15';
+    const marcar = jasmine.createSpy('marcar').and.callFake(
+      (_cid: number, _fid: number, items: readonly { alumnoId: number; presente: boolean }[]) =>
+        Promise.resolve(
+          items
+            .filter((i) => i.presente)
+            .map((i, idx) => ({
+              id: 9000 + idx,
+              alumnoId: i.alumnoId,
+              cursoId: 90,
+              cursoFechaId: 901,
+              fecha: futureFecha,
+              fechaEstado: 'programada' as const,
+              registradoEn: '',
+            })),
+        ),
+    );
+    const emitir = jasmine.createSpy('emitir').and.resolveTo({ id: 1 });
+    const regenerarPdf = jasmine.createSpy('regenerarPdf').and.resolveTo({ regenerado: true });
+    const listarCerts = jasmine.createSpy('listar').and.resolveTo([]);
+
+    await TestBed.configureTestingModule({
+      imports: [AttendanceMarkingPage],
+      providers: [
+        provideRouter([]),
+        {
+          provide: COURSES_SOURCE,
+          useValue: {
+            listar: () => Promise.resolve([]),
+            obtener: () =>
+              Promise.resolve({
+                id: 90,
+                codigo: 'CUR-090',
+                nombre: 'Curso futuro',
+                estado: 'activo' as const,
+                createdAt: '',
+                updatedAt: '',
+                fechas: [
+                  {
+                    id: 901,
+                    cursoId: 90,
+                    fecha: futureFecha,
+                    descripcion: null,
+                    orden: 1,
+                    estado: 'programada' as const,
+                  },
+                ],
+              }),
+            crear: () => Promise.reject(new Error('noop')),
+            actualizar: () => Promise.reject(new Error('noop')),
+            actualizarEstado: () => Promise.reject(new Error('noop')),
+            listarFechas: () => Promise.resolve([]),
+            guardarFecha: () => Promise.reject(new Error('noop')),
+            reemplazarFechas: () => Promise.reject(new Error('noop')),
+          },
+        },
+        {
+          provide: ATTENDANCE_SOURCE,
+          useValue: {
+            listarAlumnos: () =>
+              Promise.resolve([
+                { id: 1, apellidoNombre: 'A1 B1', dniMostrar: '20111111', estado: 'activo' as const },
+                { id: 2, apellidoNombre: 'A2 B2', dniMostrar: '20222222', estado: 'activo' as const },
+              ]),
+            listarAsistencias: () => Promise.resolve([]),
+            listarAsistenciasDeCurso: () => Promise.resolve([]),
+            listarAsistenciasPorPar: () => Promise.resolve([]),
+            listarAsistenciasPorAlumno: () => Promise.resolve([]),
+            listarHub: () =>
+              Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
+            marcar,
+            anular: () => Promise.resolve(),
+          },
+        },
+        {
+          provide: CERTIFICATIONS_SOURCE,
+          useValue: {
+            listar: listarCerts,
+            emitir,
+            regenerarPdf,
+            obtener: () => Promise.reject(new Error('noop')),
+            obtenerEntregaManual: () => Promise.reject(new Error('noop')),
+            descargarQrPng: () => Promise.reject(new Error('noop')),
+            descargarPdf: () => Promise.reject(new Error('noop')),
+            contar: () => Promise.resolve(0),
+            revocar: () => Promise.reject(new Error('noop')),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AttendanceMarkingPage);
+    const router = TestBed.inject(Router);
+    spyOn(router, 'navigate').and.resolveTo(true);
+    fixture.componentRef.setInput('id', '90');
+    fixture.componentRef.setInput('fechaId', '901');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const btns = toggles(fixture.nativeElement as HTMLElement);
+    btns[0].click();
+    btns[1].click();
+    fixture.detectChanges();
+    const cta = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="cta-guardar-generar"]',
+    ) as HTMLButtonElement;
+    cta.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(marcar).toHaveBeenCalled();
+    expect(emitir).not.toHaveBeenCalled();
+    expect(regenerarPdf).not.toHaveBeenCalled();
+    expect(listarCerts).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.resumenGen()).toEqual(
+      jasmine.objectContaining({ emitidos: 0, actualizados: 0, fallidos: 2 }),
+    );
+    const navState = (router.navigate as jasmine.Spy).calls.mostRecent().args[1]?.state as {
+      mensaje?: string;
+      resumenGen?: { fallidos: number };
+    };
+    expect(navState.resumenGen?.fallidos).toBe(2);
+    expect(navState.mensaje).toMatch(/futura|programada/i);
+    expect(navState.mensaje?.toLowerCase()).not.toMatch(/\bdni\b/);
+    expect(navState.mensaje?.toLowerCase()).not.toContain('token');
+  });
+
+  it('emisión/regeneración en serie: no solapa awaits (≥2 presentes)', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const callOrder: string[] = [];
+
+    const emitir = jasmine.createSpy('emitir').and.callFake(async () => {
+      const n = emitir.calls.count();
+      callOrder.push(`start:emit-${n}`);
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      // Microtarea + macrotarea: si hubiera Promise.all, maxInFlight > 1.
+      await Promise.resolve();
+      await new Promise<void>((r) => setTimeout(r, 10));
+      inFlight -= 1;
+      callOrder.push(`end:emit-${n}`);
+      return { id: n };
+    });
+    const regenerarPdf = jasmine.createSpy('regenerarPdf');
+
+    await TestBed.configureTestingModule({
+      imports: [AttendanceMarkingPage],
+      providers: [
+        provideRouter([]),
+        {
+          provide: COURSES_SOURCE,
+          useValue: {
+            listar: () => Promise.resolve([]),
+            obtener: () =>
+              Promise.resolve({
+                id: 91,
+                codigo: 'CUR-091',
+                nombre: 'Curso serial',
+                estado: 'activo' as const,
+                createdAt: '',
+                updatedAt: '',
+                fechas: [
+                  {
+                    id: 911,
+                    cursoId: 91,
+                    fecha: '2026-01-10',
+                    descripcion: null,
+                    orden: 1,
+                    estado: 'realizada' as const,
+                  },
+                ],
+              }),
+            crear: () => Promise.reject(new Error('noop')),
+            actualizar: () => Promise.reject(new Error('noop')),
+            actualizarEstado: () => Promise.reject(new Error('noop')),
+            listarFechas: () => Promise.resolve([]),
+            guardarFecha: () => Promise.reject(new Error('noop')),
+            reemplazarFechas: () => Promise.reject(new Error('noop')),
+          },
+        },
+        {
+          provide: ATTENDANCE_SOURCE,
+          useValue: {
+            listarAlumnos: () =>
+              Promise.resolve([
+                { id: 1, apellidoNombre: 'A1 B1', dniMostrar: '20111111', estado: 'activo' as const },
+                { id: 2, apellidoNombre: 'A2 B2', dniMostrar: '20222222', estado: 'activo' as const },
+              ]),
+            listarAsistencias: () => Promise.resolve([]),
+            listarAsistenciasDeCurso: () => Promise.resolve([]),
+            listarAsistenciasPorPar: () => Promise.resolve([]),
+            listarAsistenciasPorAlumno: () => Promise.resolve([]),
+            listarHub: () =>
+              Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
+            marcar: (
+              _cid: number,
+              _fid: number,
+              items: readonly { alumnoId: number; presente: boolean }[],
+            ) =>
+              Promise.resolve(
+                items
+                  .filter((i) => i.presente)
+                  .map((i, idx) => ({
+                    id: 9100 + idx,
+                    alumnoId: i.alumnoId,
+                    cursoId: 91,
+                    cursoFechaId: 911,
+                    fecha: '2026-01-10',
+                    fechaEstado: 'realizada' as const,
+                    registradoEn: '',
+                  })),
+              ),
+            anular: () => Promise.resolve(),
+          },
+        },
+        {
+          provide: CERTIFICATIONS_SOURCE,
+          useValue: {
+            listar: () => Promise.resolve([]),
+            emitir,
+            regenerarPdf,
+            obtener: () => Promise.reject(new Error('noop')),
+            obtenerEntregaManual: () => Promise.reject(new Error('noop')),
+            descargarQrPng: () => Promise.reject(new Error('noop')),
+            descargarPdf: () => Promise.reject(new Error('noop')),
+            contar: () => Promise.resolve(0),
+            revocar: () => Promise.reject(new Error('noop')),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AttendanceMarkingPage);
+    spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    fixture.componentRef.setInput('id', '91');
+    fixture.componentRef.setInput('fechaId', '911');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const btns = toggles(fixture.nativeElement as HTMLElement);
+    btns[0].click();
+    btns[1].click();
+    fixture.detectChanges();
+    const cta = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="cta-guardar-generar"]',
+    ) as HTMLButtonElement;
+    cta.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(emitir).toHaveBeenCalledTimes(2);
+    expect(regenerarPdf).not.toHaveBeenCalled();
+    expect(maxInFlight).toBe(1);
+    expect(callOrder).toEqual(['start:emit-1', 'end:emit-1', 'start:emit-2', 'end:emit-2']);
+    expect(fixture.componentInstance.resumenGen()).toEqual(
+      jasmine.objectContaining({ emitidos: 2, fallidos: 0 }),
+    );
+  });
+
+  it('regeneración en serie: no solapa awaits (≥2 vigentes)', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const callOrder: string[] = [];
+
+    const regenerarPdf = jasmine.createSpy('regenerarPdf').and.callFake(async (id: number) => {
+      callOrder.push(`start:regen-${id}`);
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await Promise.resolve();
+      await new Promise<void>((r) => setTimeout(r, 10));
+      inFlight -= 1;
+      callOrder.push(`end:regen-${id}`);
+      return {
+        regenerado: true,
+        publicValidationUrl: `https://example.invalid/v/${id}`,
+        pdfDownloadUrl: `${id}/pdf`,
+        pdfStatus: 'valid' as const,
+      };
+    });
+    const emitir = jasmine.createSpy('emitir');
+
+    await TestBed.configureTestingModule({
+      imports: [AttendanceMarkingPage],
+      providers: [
+        provideRouter([]),
+        {
+          provide: COURSES_SOURCE,
+          useValue: {
+            listar: () => Promise.resolve([]),
+            obtener: () =>
+              Promise.resolve({
+                id: 92,
+                codigo: 'CUR-092',
+                nombre: 'Curso regen serial',
+                estado: 'activo' as const,
+                createdAt: '',
+                updatedAt: '',
+                fechas: [
+                  {
+                    id: 921,
+                    cursoId: 92,
+                    fecha: '2026-01-10',
+                    descripcion: null,
+                    orden: 1,
+                    estado: 'realizada' as const,
+                  },
+                ],
+              }),
+            crear: () => Promise.reject(new Error('noop')),
+            actualizar: () => Promise.reject(new Error('noop')),
+            actualizarEstado: () => Promise.reject(new Error('noop')),
+            listarFechas: () => Promise.resolve([]),
+            guardarFecha: () => Promise.reject(new Error('noop')),
+            reemplazarFechas: () => Promise.reject(new Error('noop')),
+          },
+        },
+        {
+          provide: ATTENDANCE_SOURCE,
+          useValue: {
+            listarAlumnos: () =>
+              Promise.resolve([
+                { id: 1, apellidoNombre: 'A1 B1', dniMostrar: '20111111', estado: 'activo' as const },
+                { id: 2, apellidoNombre: 'A2 B2', dniMostrar: '20222222', estado: 'activo' as const },
+              ]),
+            listarAsistencias: () => Promise.resolve([]),
+            listarAsistenciasDeCurso: () => Promise.resolve([]),
+            listarAsistenciasPorPar: () => Promise.resolve([]),
+            listarAsistenciasPorAlumno: () => Promise.resolve([]),
+            listarHub: () =>
+              Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
+            marcar: (
+              _cid: number,
+              _fid: number,
+              items: readonly { alumnoId: number; presente: boolean }[],
+            ) =>
+              Promise.resolve(
+                items
+                  .filter((i) => i.presente)
+                  .map((i, idx) => ({
+                    id: 9200 + idx,
+                    alumnoId: i.alumnoId,
+                    cursoId: 92,
+                    cursoFechaId: 921,
+                    fecha: '2026-01-10',
+                    fechaEstado: 'realizada' as const,
+                    registradoEn: '',
+                  })),
+              ),
+            anular: () => Promise.resolve(),
+          },
+        },
+        {
+          provide: CERTIFICATIONS_SOURCE,
+          useValue: {
+            listar: () =>
+              Promise.resolve([
+                {
+                  id: 501,
+                  numero: 'C-501',
+                  nombreAlumno: 'A1 B1',
+                  cursoNombre: 'Curso regen serial',
+                  estado: 'vigente' as const,
+                  documentMasked: '20111111',
+                  tokenPrefix: 'prefijo_501',
+                  emitidoEn: '2026-01-01',
+                  venceEn: null,
+                  alumnoId: 1,
+                  cursoId: 92,
+                },
+                {
+                  id: 502,
+                  numero: 'C-502',
+                  nombreAlumno: 'A2 B2',
+                  cursoNombre: 'Curso regen serial',
+                  estado: 'vigente' as const,
+                  documentMasked: '20222222',
+                  tokenPrefix: 'prefijo_502',
+                  emitidoEn: '2026-01-01',
+                  venceEn: null,
+                  alumnoId: 2,
+                  cursoId: 92,
+                },
+              ]),
+            emitir,
+            regenerarPdf,
+            obtener: () => Promise.reject(new Error('noop')),
+            obtenerEntregaManual: () => Promise.reject(new Error('noop')),
+            descargarQrPng: () => Promise.reject(new Error('noop')),
+            descargarPdf: () => Promise.reject(new Error('noop')),
+            contar: () => Promise.resolve(0),
+            revocar: () => Promise.reject(new Error('noop')),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AttendanceMarkingPage);
+    spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    fixture.componentRef.setInput('id', '92');
+    fixture.componentRef.setInput('fechaId', '921');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const btns = toggles(fixture.nativeElement as HTMLElement);
+    btns[0].click();
+    btns[1].click();
+    fixture.detectChanges();
+    const cta = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="cta-guardar-generar"]',
+    ) as HTMLButtonElement;
+    cta.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(emitir).not.toHaveBeenCalled();
+    expect(regenerarPdf).toHaveBeenCalledTimes(2);
+    expect(maxInFlight).toBe(1);
+    expect(callOrder).toEqual(['start:regen-501', 'end:regen-501', 'start:regen-502', 'end:regen-502']);
+    expect(fixture.componentInstance.resumenGen()).toEqual(
+      jasmine.objectContaining({ actualizados: 2, fallidos: 0 }),
+    );
+  });
+
+  it('API not-found en carga: sin Reintentar', async () => {
+    await TestBed.configureTestingModule({
+      imports: [AttendanceMarkingPage],
+      providers: [
+        provideRouter([]),
+        {
+          provide: COURSES_SOURCE,
+          useValue: {
+            listar: () => Promise.resolve([]),
+            obtener: () => Promise.reject(new Error('Curso no encontrado: 999')),
+            crear: () => Promise.reject(new Error('noop')),
+            actualizar: () => Promise.reject(new Error('noop')),
+            actualizarEstado: () => Promise.reject(new Error('noop')),
+            listarFechas: () => Promise.resolve([]),
+            guardarFecha: () => Promise.reject(new Error('noop')),
+            reemplazarFechas: () => Promise.reject(new Error('noop')),
+          },
+        },
+        {
+          provide: ATTENDANCE_SOURCE,
+          useValue: {
+            listarAlumnos: () => Promise.resolve([]),
+            listarAsistencias: () => Promise.resolve([]),
+            listarAsistenciasDeCurso: () => Promise.resolve([]),
+            listarAsistenciasPorPar: () => Promise.resolve([]),
+            listarAsistenciasPorAlumno: () => Promise.resolve([]),
+            listarHub: () =>
+              Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
+            marcar: () => Promise.resolve([]),
+            anular: () => Promise.resolve(),
+          },
+        },
+        {
+          provide: CERTIFICATIONS_SOURCE,
+          useValue: {
+            listar: () => Promise.resolve([]),
+            emitir: () => Promise.reject(new Error('noop')),
+            regenerarPdf: () => Promise.reject(new Error('noop')),
+            obtener: () => Promise.reject(new Error('noop')),
+            obtenerEntregaManual: () => Promise.reject(new Error('noop')),
+            descargarQrPng: () => Promise.reject(new Error('noop')),
+            descargarPdf: () => Promise.reject(new Error('noop')),
+            contar: () => Promise.resolve(0),
+            revocar: () => Promise.reject(new Error('noop')),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(AttendanceMarkingPage);
+    fixture.componentRef.setInput('id', '999');
+    fixture.componentRef.setInput('fechaId', '1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(fixture.componentInstance.errorRecuperable()).toBeFalse();
+    expect(root.textContent).toContain('Curso o fecha no encontrados');
+    expect(root.textContent).not.toContain('Reintentar');
+  });
+
+  it('envelope 400 al marcar: mensaje vía mensajeErrorApi sin PII', async () => {
+    const apiMsg = 'No hay presentes para emitir en esta fecha.';
+    const envelope = new HttpErrorResponse({
+      status: 400,
+      statusText: 'Bad Request',
+      error: { error: { code: 'validation_error', message: apiMsg } },
+      url: '/api/admin/asistencias',
+    });
+
+    await TestBed.configureTestingModule({
+      imports: [AttendanceMarkingPage],
+      providers: [
+        provideRouter([]),
+        { provide: COURSES_SOURCE, useClass: InMemoryCoursesService },
+        {
+          provide: ATTENDANCE_SOURCE,
+          useValue: {
+            listarAlumnos: () =>
+              Promise.resolve([
+                { id: 1, apellidoNombre: 'A1 B1', dniMostrar: '20111111', estado: 'activo' as const },
+              ]),
+            listarAsistencias: () => Promise.resolve([]),
+            listarAsistenciasDeCurso: () => Promise.resolve([]),
+            listarAsistenciasPorPar: () => Promise.resolve([]),
+            listarAsistenciasPorAlumno: () => Promise.resolve([]),
+            listarHub: () =>
+              Promise.resolve({ cursos: [], fechas: [], asistencias: [], alumnosActivos: 0 }),
+            marcar: () => Promise.reject(envelope),
+            anular: () => Promise.resolve(),
+          },
+        },
+        { provide: CERTIFICATIONS_SOURCE, useClass: InMemoryCertificationsService },
+      ],
+    }).compileComponents();
+
+    // Override courses.obtener via real InMemory — use curso 3/31 seed.
+    const fixture = TestBed.createComponent(AttendanceMarkingPage);
+    spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    fixture.componentRef.setInput('id', '3');
+    fixture.componentRef.setInput('fechaId', '31');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const btns = toggles(fixture.nativeElement as HTMLElement);
+    expect(btns.length).toBeGreaterThan(0);
+    btns[0].click();
+    fixture.detectChanges();
+    const cta = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="cta-guardar-generar"]',
+    ) as HTMLButtonElement;
+    cta.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const err = fixture.componentInstance.error();
+    expect(err).toBe(apiMsg);
+    expect(err.toLowerCase()).not.toMatch(/\bdni\b/);
+    expect(err.toLowerCase()).not.toContain('token');
+    expect(err).not.toContain('20111111');
+    expect(fixture.componentInstance.errorRecuperable()).toBeFalse();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Reintentar');
   });
 });

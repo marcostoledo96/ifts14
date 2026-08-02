@@ -49,7 +49,11 @@ final class AdminMasterDataService
 
         $statement = $this->pdo->prepare(
             'SELECT c.id, c.codigo, c.nombre, c.estado, c.created_at, c.updated_at,'
-            . ' (SELECT COUNT(*) FROM cert_curso_fechas f WHERE f.curso_id = c.id) AS cantidad_fechas'
+            . ' (SELECT COUNT(*) FROM cert_curso_fechas f WHERE f.curso_id = c.id) AS cantidad_fechas,'
+            . ' (SELECT COUNT(DISTINCT a.alumno_id) FROM cert_asistencias a'
+            . ' JOIN cert_curso_fechas cf ON cf.id = a.curso_fecha_id'
+            . ' WHERE cf.curso_id = c.id AND a.eliminado_en IS NULL) AS alumnos_presentes,'
+            . ' (SELECT COUNT(*) FROM cert_certificados cert WHERE cert.curso_id = c.id) AS certificaciones'
             . " FROM cert_cursos c {$where} ORDER BY c.id ASC"
         );
         $statement->execute($params);
@@ -62,7 +66,11 @@ final class AdminMasterDataService
     {
         $statement = $this->pdo->prepare(
             'SELECT c.id, c.codigo, c.nombre, c.estado, c.created_at, c.updated_at,'
-            . ' (SELECT COUNT(*) FROM cert_curso_fechas f WHERE f.curso_id = c.id) AS cantidad_fechas'
+            . ' (SELECT COUNT(*) FROM cert_curso_fechas f WHERE f.curso_id = c.id) AS cantidad_fechas,'
+            . ' (SELECT COUNT(DISTINCT a.alumno_id) FROM cert_asistencias a'
+            . ' JOIN cert_curso_fechas cf ON cf.id = a.curso_fecha_id'
+            . ' WHERE cf.curso_id = c.id AND a.eliminado_en IS NULL) AS alumnos_presentes,'
+            . ' (SELECT COUNT(*) FROM cert_certificados cert WHERE cert.curso_id = c.id) AS certificaciones'
             . ' FROM cert_cursos c WHERE c.id = ? LIMIT 1'
         );
         $statement->execute([$this->positiveId($id)]);
@@ -709,6 +717,12 @@ final class AdminMasterDataService
         ];
         if (array_key_exists('cantidad_fechas', $row)) {
             $dto['cantidadFechas'] = (int) $row['cantidad_fechas'];
+        }
+        if (array_key_exists('alumnos_presentes', $row)) {
+            $dto['alumnosPresentes'] = (int) $row['alumnos_presentes'];
+        }
+        if (array_key_exists('certificaciones', $row)) {
+            $dto['certificaciones'] = (int) $row['certificaciones'];
         }
 
         return $dto;

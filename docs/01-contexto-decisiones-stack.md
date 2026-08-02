@@ -11,6 +11,15 @@ El IFTS N.° 14 necesita un módulo de certificaciones QR bajo:
 
 Permite emitir certificados de curso con fechas asistidas y validarlos públicamente por QR o link.
 
+## Autores
+
+Desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
+
+| Persona | LinkedIn |
+|---|---|
+| Marcos Ezequiel Toledo | [linkedin.com/in/marcos-ezequiel-toledo](https://www.linkedin.com/in/marcos-ezequiel-toledo/) |
+| Matías Ríos | [linkedin.com/in/matiasgermanrios](https://www.linkedin.com/in/matiasgermanrios/) |
+
 ## Stack confirmado
 
 ```txt
@@ -32,7 +41,7 @@ Gestión DB: phpMyAdmin / MySQL de cPanel
 | D0-PDF | Folio Angular y TCPDF backend son ambos válidos; el instituto elige el canal de entrega. |
 | D0-COMPOSER | `vendor/` no versionado; se puede subir como artefacto si no hay Composer en hosting. |
 | D0-FIRMAS | Rector/a y Asesor/a Pedagógica desde configuración institucional. |
-| D0-UI | Paridad visual con `muestra_pagina/` (intención, no copia React/Next). |
+| D0-UI | Paridad visual institucional en Angular 20 (sin dependencia de export React/Next en el repo). |
 
 ## Principios de implementación
 

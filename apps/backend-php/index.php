@@ -99,7 +99,12 @@ if ($path === '/admin/auth/login') {
         Response::error(401, 'UNAUTHORIZED', 'No autorizado.', $requestId);
         return;
     }
-    if (!AdminSessionAuth::allowLoginAttempt($config, $_SERVER)) {
+    $loginAllowed = AdminSessionAuth::allowLoginAttempt($config, $_SERVER);
+    if ($loginAllowed === null) {
+        Response::error(503, 'SERVICE_UNAVAILABLE', 'No se pudo procesar la solicitud.', $requestId);
+        return;
+    }
+    if ($loginAllowed === false) {
         Response::error(429, 'RATE_LIMITED', 'No autorizado.', $requestId);
         return;
     }
@@ -947,7 +952,7 @@ function requireAdmin(array $config, string $requestId): bool
         );
 
         return true;
-    } catch (UnauthorizedException|CsrfException) {
+    } catch (UnauthorizedException|CsrfException|ServiceUnavailableException) {
         return false;
     }
 }

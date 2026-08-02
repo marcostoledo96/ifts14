@@ -708,3 +708,13 @@ tbody tr:last-child td { border-bottom: 0; }
 @media (min-width: 64rem) {
   .cards-mobile { display: none; }
 }
+
+.paginacion .pager-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  color: var(--color-muted-foreground);
+  pointer-events: none;
+  user-select: none;
+}

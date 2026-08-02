@@ -24,9 +24,9 @@ interface LoginFormValue {
 })
 export class LoginForm {
   readonly loading = input(false);
-  /** Error del login HTTP (401/429); se muestra en el mismo alert que la validación local. */
+  /** Error del login HTTP (401/429/red); se muestra en el mismo alert que la validación local. */
   readonly serverError = input('');
-  readonly accesoSimulado = output<AdminAuthCredentials>();
+  readonly submitted = output<AdminAuthCredentials>();
 
   readonly usuario = signal('');
   readonly clave = signal('');
@@ -74,9 +74,9 @@ export class LoginForm {
       return;
     }
     this.errorMsg.set('');
-    this.accesoSimulado.emit({ username: value.usuario, password: value.clave });
+    this.submitted.emit({ username: value.usuario.trim(), password: value.clave });
+    // Conservar el usuario para reintentos; limpiar solo la clave.
     this.clave.set('');
-    this.usuario.set('');
   }
 
   onUsuario(event: Event): void {

@@ -51,7 +51,6 @@ Detalle: [`docs/01-contexto-decisiones-stack.md`](docs/01-contexto-decisiones-st
 | `docs/` | Documentación vigente |
 | `openspec/specs/` | Contratos/specs por módulo |
 | `deploy/staging/` | Checklists y plantillas de staging |
-| `muestra_pagina/` | Referencia visual (no ejecutar) |
 | `material_privado_no_versionar/` | Privado local; no versionar |
 
 Índice completo: [`docs/00-indice-general.md`](docs/00-indice-general.md).
@@ -92,15 +91,14 @@ Para fixes chicos: TDD o tests focalizados + PR alcanza.
 - Prompts de rol en `docs/opencode/`.
 - Operaciones Git destructivas o push solo con aprobación explícita humana.
 
-## 7. Roles
+## 7. Autores y roles
 
-### Marcos
+Proyecto desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
 
-Backend, DB, integración, deploy, seguridad, arquitectura, documentación.
-
-### Matías
-
-Frontend Angular, paridad visual con `muestra_pagina/`, admin UX, responsive, accesibilidad, QA visual.
+| Persona | Alcance | LinkedIn |
+|---|---|---|
+| Marcos Ezequiel Toledo | Backend, DB, integración, deploy, seguridad, arquitectura, documentación. | [linkedin.com/in/marcos-ezequiel-toledo](https://www.linkedin.com/in/marcos-ezequiel-toledo/) |
+| Matías Ríos | Frontend Angular, sistema visual del admin, UX, responsive, accesibilidad, QA visual. | [linkedin.com/in/matiasgermanrios](https://www.linkedin.com/in/matiasgermanrios/) |
 
 ## 8. Deploy (resumen)
 
@@ -114,7 +112,7 @@ Guías: [`docs/deploy/`](docs/deploy/) · artefactos: [`deploy/`](deploy/).
 
 ## 9. Referencia visual
 
-`muestra_pagina/` es export v0 (Next/React). Sirve para **mirar** pantallas. No se compila ni se porta literalmente. Credenciales demo del login v0 no van al producto.
+El diseño institucional vive en `apps/frontend-angular/`. La referencia React/Next de diseño ya no forma parte del repositorio.
 
 ## 10. Si algo no está claro
 

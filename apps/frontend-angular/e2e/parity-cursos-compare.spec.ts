@@ -1,5 +1,5 @@
 /**
- * Paridad estructural Angular vs muestra_pagina (v0) en /admin/cursos.
+ * Paridad estructural Angular vs referencia v0 histórica (v0) en /admin/cursos.
  * Aserta encabezado, filtros, tabla, cards mobile, Vista QA y estados.
  * Divergencia honesta: 4 estados de backend (no binario activo/inactivo de v0);
  * métricas alumnos/certif. muestran "—" sin agregación API.

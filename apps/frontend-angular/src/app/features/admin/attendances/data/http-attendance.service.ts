@@ -73,6 +73,10 @@ export class HttpAttendanceService implements AttendanceService {
   private alumnosActivosCache: Promise<readonly AsistenciaAlumno[]> | null = null;
   /** Coalescing por curso: evita GET duplicados en la misma sesión de carga. */
   private asistenciasPorCurso = new Map<number, Promise<readonly Asistencia[]>>();
+  /** Coalesce de hub: un GET /admin/hub/asistencias hasta mutación (marcar/anular). */
+  private hubPending: Promise<HubAsistencias> | null = null;
+  /** Bump on invalidate so in-flight fetchHub no re-siembra asistenciasPorCurso stale. */
+  private hubGen = 0;
 
   async listarAlumnos(cursoId: number): Promise<readonly AsistenciaAlumno[]> {
     // ponytail: backend sin link table curso-alumno; devolvemos todos los activos.
@@ -123,19 +127,35 @@ export class HttpAttendanceService implements AttendanceService {
     return all.filter((a) => a.cursoFechaId === fechaId);
   }
 
-  async listarHub(): Promise<HubAsistencias> {
+  listarHub(): Promise<HubAsistencias> {
+    if (!this.hubPending) {
+      this.hubPending = this.fetchHub().catch((err) => {
+        this.hubPending = null;
+        throw err;
+      });
+    }
+    return this.hubPending;
+  }
+
+  private async fetchHub(): Promise<HubAsistencias> {
+    const gen = this.hubGen;
     const url = `${environment.apiBaseUrl}/admin/hub/asistencias`;
     const envelope = await firstValueFrom(this.http.get<ApiEnvelope<HubResponse>>(url));
     const data = envelope.data;
     const byCurso = new Map<number, Asistencia[]>();
+    const asistencias: Asistencia[] = [];
     for (const a of data.asistencias) {
       const mapped = this.toAsistencia(a);
+      asistencias.push(mapped);
       const list = byCurso.get(mapped.cursoId) ?? [];
       list.push(mapped);
       byCurso.set(mapped.cursoId, list);
     }
-    for (const [cursoId, list] of byCurso) {
-      this.asistenciasPorCurso.set(cursoId, Promise.resolve(list));
+    // Solo siembra caches de curso si no hubo invalidate mientras volaba el GET.
+    if (gen === this.hubGen) {
+      for (const [cursoId, list] of byCurso) {
+        this.asistenciasPorCurso.set(cursoId, Promise.resolve(list));
+      }
     }
     return {
       cursos: data.cursos.map((c) => ({
@@ -152,12 +172,14 @@ export class HttpAttendanceService implements AttendanceService {
         orden: f.orden,
         estado: f.estado as EstadoFecha,
       })),
-      asistencias: data.asistencias.map((a) => this.toAsistencia(a)),
+      asistencias,
       alumnosActivos: data.alumnosActivos,
     };
   }
 
   private invalidateAsistencias(cursoId?: number): void {
+    this.hubGen++;
+    this.hubPending = null;
     if (cursoId === undefined) {
       this.asistenciasPorCurso.clear();
       return;
@@ -194,21 +216,24 @@ export class HttpAttendanceService implements AttendanceService {
     // 1. GET asistencias existentes de la fecha (filtro client-side por fechaId).
     const existing = await this.listarAsistencias(cursoId, fechaId);
 
-    // 2. DELETE en paralelo; si uno falla, Promise.all rechaza (fail-fast).
-    await Promise.all(
-      existing.map((a) =>
-        firstValueFrom(
+    // Tras el primer DELETE el server puede divergir del hub en sesión:
+    // invalidar siempre (éxito o fallo) para no servir presentes fantasma.
+    //
+    // IMPORTANTE (cPanel): DELETE/POST en serie — no Promise.all. Mutaciones
+    // paralelas pelean el lock de sesión PHP; session_start falla → 401 y el
+    // interceptor echa al admin (mismo motivo por el que emitir PDF va en serie).
+    try {
+      for (const a of existing) {
+        await firstValueFrom(
           this.http.delete<ApiEnvelope<unknown>>(
             `${environment.apiBaseUrl}/admin/asistencias/${a.id}`,
           ),
-        ),
-      ),
-    );
+        );
+      }
 
-    // 3. POST presentes en paralelo (mismo fail-fast).
-    const presentes = marcados.filter((m) => m.presente);
-    const creadas = await Promise.all(
-      presentes.map(async (m) => {
+      const presentes = marcados.filter((m) => m.presente);
+      const creadas: Asistencia[] = [];
+      for (const m of presentes) {
         const envelope = await firstValueFrom(
           this.http.post<ApiEnvelope<AsistenciaDto>>(
             `${environment.apiBaseUrl}/admin/asistencias`,
@@ -219,12 +244,12 @@ export class HttpAttendanceService implements AttendanceService {
             },
           ),
         );
-        return this.toAsistencia(envelope.data);
-      }),
-    );
-
-    this.invalidateAsistencias(cursoId);
-    return creadas;
+        creadas.push(this.toAsistencia(envelope.data));
+      }
+      return creadas;
+    } finally {
+      this.invalidateAsistencias(cursoId);
+    }
   }
 
   async anular(asistenciaId: number): Promise<void> {

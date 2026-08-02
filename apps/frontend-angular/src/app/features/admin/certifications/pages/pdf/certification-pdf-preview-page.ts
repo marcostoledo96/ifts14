@@ -11,9 +11,8 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import html2canvas from 'html2canvas-pro';
-import { jsPDF } from 'jspdf';
 import { INSTITUTIONAL_BRAND } from '../../../../../shared/brand/institutional-brand';
 import {
   INSTITUTIONAL_CONFIG_SOURCE,
@@ -74,6 +73,8 @@ export class CertificationPdfPreviewPage {
   readonly rectorFirmaUrl = signal<string | null>(null);
   readonly advisorFirmaUrl = signal<string | null>(null);
   readonly error = signal('');
+  /** Solo fallo hard recuperable de `obtener` (load). Descarga/QR soft no lo setean. */
+  readonly errorRecuperable = signal(false);
   readonly cargando = signal(true);
   readonly printFeedback = signal('');
   readonly descargando = signal(false);
@@ -103,6 +104,8 @@ export class CertificationPdfPreviewPage {
   });
 
   readonly numeroExpediente = computed(() => {
+    const d = this.detalle();
+    if (d?.numero?.trim()) return d.numero.trim();
     const id = this.certId();
     if (id === null) return '';
     return `IFTS14-CERT-${String(id).padStart(4, '0')}`;
@@ -170,17 +173,22 @@ export class CertificationPdfPreviewPage {
     this.detalle.set(null);
     this.autoridades.set(null);
     this.error.set('');
+    this.errorRecuperable.set(false);
     this.cargando.set(true);
     this.printFeedback.set('');
     this.downloadFeedback.set('');
     this.qrError.set('');
     this.validacionUrl.set('');
     this.autoDownloadStarted = false;
+    this.descargando.set(false);
     this.revokeQrUrl();
     this.revokeFirmaUrl('rector');
     this.revokeFirmaUrl('asesor');
     if (cid === null) {
-      if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
+      if (gen === this.loadGen) {
+        this.error.set('Certificación no encontrada.');
+        this.errorRecuperable.set(false);
+      }
       this.cargando.set(false);
       return;
     }
@@ -191,15 +199,44 @@ export class CertificationPdfPreviewPage {
       ]);
       if (gen !== this.loadGen) return;
       this.detalle.set(det);
+      this.errorRecuperable.set(false);
       await this.aplicarConfig(cfg, gen);
       // URL + QR desde entrega-manual (detalle no trae URL pública canónica).
       void this.cargarValidacion(cid, gen, '');
       void this.maybeAutoDownload(gen);
     } catch (e) {
-      if (gen === this.loadGen) this.error.set((e as Error).message);
+      if (gen === this.loadGen) this.aplicarErrorCarga(e);
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
     }
+  }
+
+  onReintentar(): void {
+    if (!this.errorRecuperable()) return;
+    void this.load();
+  }
+
+  /** Not-found (404 / mensaje) vs hard recuperable — sin raw Error.message en UI. */
+  private aplicarErrorCarga(reason: unknown): void {
+    const status = reason instanceof HttpErrorResponse ? reason.status : null;
+    const raw = reason instanceof Error ? reason.message : '';
+    const notFound = status === 404 || /no encontrad/i.test(raw);
+    if (notFound) {
+      this.error.set('Certificación no encontrada.');
+      this.errorRecuperable.set(false);
+      return;
+    }
+    this.error.set('No se pudo cargar la certificación.');
+    this.errorRecuperable.set(true);
+  }
+
+  /** Envelope API message o fallback es-AR (sin raw Error.message). */
+  private mensajeErrorApi(err: unknown, fallback: string): string {
+    if (err instanceof HttpErrorResponse) {
+      const msg = (err.error as { error?: { message?: string } } | null)?.error?.message;
+      if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    }
+    return fallback;
   }
 
   private async aplicarConfig(
@@ -352,7 +389,7 @@ export class CertificationPdfPreviewPage {
       if (this.downloadTimer) clearTimeout(this.downloadTimer);
       this.downloadTimer = setTimeout(() => this.downloadFeedback.set(''), 3000);
     } catch (e) {
-      this.downloadFeedback.set((e as Error).message || 'No se pudo generar el PDF.');
+      this.downloadFeedback.set(this.mensajeErrorApi(e, 'No se pudo generar el PDF.'));
     } finally {
       this.descargando.set(false);
     }
@@ -374,6 +411,12 @@ export class CertificationPdfPreviewPage {
     try {
       await nextFrame();
       await nextFrame();
+
+      // Carga diferida: html2canvas-pro / jspdf solo en el camino de descarga.
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas-pro'),
+        import('jspdf'),
+      ]);
 
       // windowWidth alto fuerza breakpoints desktop del folio (firmas 3 col).
       const canvas = await html2canvas(folio, {

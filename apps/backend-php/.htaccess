@@ -1,3 +1,9 @@
+Options -Indexes
+
+RewriteEngine On
+RewriteRule ^(src|config)/ - [F,L]
+RewriteRule ^vendor/ - [F,L]
+RewriteRule ^composer\.(json|lock)$ - [F,L]
 FallbackResource /certificados/api/index.php
 
 <IfModule mod_headers.c>

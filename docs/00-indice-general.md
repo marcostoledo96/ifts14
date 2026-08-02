@@ -2,6 +2,15 @@
 
 Empezar por `README.md` y `GUIA.md`. Abrir solo el área del cambio.
 
+## Autores
+
+Proyecto desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
+
+- Marcos Ezequiel Toledo — [LinkedIn](https://www.linkedin.com/in/marcos-ezequiel-toledo/)
+- Matías Ríos — [LinkedIn](https://www.linkedin.com/in/matiasgermanrios/)
+
+Detalle de roles: `README.md` (Autores) y `GUIA.md` §7.
+
 ## Lectura base
 
 | Para | Leer |
@@ -20,15 +29,14 @@ Empezar por `README.md` y `GUIA.md`. Abrir solo el área del cambio.
 
 | Área | Documentos canónicos |
 |---|---|
-| Frontend | `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/frontend/02-sistema-visual-v0-f1-02.md`, `docs/frontend/03-modulos-admin.md` |
+| Frontend | `apps/frontend-angular/AGENTS.md`, `docs/frontend/00-angular20-port-v0.md`, `docs/frontend/02-sistema-visual-v0-f1-02.md`, `docs/frontend/03-modulos-admin.md`, `docs/frontend/04-glosario-ui.md` |
 | Backend | `apps/backend-php/AGENTS.md`, `docs/backend/00-php84-api.md`, `docs/backend/API.md`, `docs/backend/01-contrato-api-certificados.md` |
 | Base de datos | `database/AGENTS.md`, `docs/database/00-mariadb.md`, `docs/database/01-modelo-datos-certificados.md`, `database/README.md` |
-| Deploy | `docs/deploy/00-cpanel-certificados.md`, `docs/deploy/01-staging-cpanel-certificados.md`, `deploy/README.md`, `deploy/staging/CHECKLIST.md` |
-| QA | `docs/qa/CHECKLIST-TESTING-MANUAL.md` |
+| Deploy | `docs/deploy/00-cpanel-certificados.md`, `docs/deploy/01-staging-cpanel-certificados.md`, `deploy/README.md`, `deploy/staging/CHECKLIST.md`, `deploy/production/INSTRUCCIONES-SUBIDA.md`, `deploy/production/CHECKLIST.md` |
+| QA | `docs/qa/CHECKLIST-TESTING-MANUAL.md`, `docs/qa/PLAN-AUDITORIA-EXHAUSTIVA-STAGING-1.0.md` |
 | Specs | `openspec/AGENTS.md`, `openspec/specs/README.md` |
 | OpenCode / IA | `docs/opencode/optimizacion-tokens.md`, prompts `docs/opencode/MARCOS_…` y `docs/opencode/MATIAS_…` |
 | Graphify | `docs/arquitectura/graphify/README.md` (solo con `.graphifyignore`) |
-| Referencia visual | `muestra_pagina/` (no compilar) |
 
 ## Organización deploy
 

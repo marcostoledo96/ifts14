@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, ElementRef, viewChild, HostListener } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink, Router } from '@angular/router';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle } from '../../certifications.models';
 import { FormsModule } from '@angular/forms';
 import { UiBackLink } from '../../../../../shared/ui/ui-back-link';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
+import { trapTabKey } from '../../../../../shared/util/trap-tab';
 
 @Component({
   selector: 'app-certification-revoke-page',
@@ -20,7 +22,12 @@ export class CertificationRevokePage {
   private readonly router = inject(Router);
 
   readonly detalle = signal<CertificacionDetalle | null>(null);
+  /** Load overlay only — never submit failures. */
   readonly error = signal('');
+  /** Load-only: gates Reintentar. Submit must never set this. */
+  readonly errorRecuperable = signal(false);
+  /** Submit failure — inline in dialog (not load overlay). */
+  readonly errorAccion = signal('');
   readonly cargando = signal(true);
 
   readonly motivo = signal('');
@@ -32,7 +39,7 @@ export class CertificationRevokePage {
   readonly motivoRef = viewChild<ElementRef<HTMLTextAreaElement>>('motivoInput');
 
   readonly MOTIVO_MIN = 12;
-  readonly MOTIVO_MAX = 400;
+  readonly MOTIVO_MAX = 180;
 
   readonly certId = computed<number | null>(() => {
     const raw = this.id().trim();
@@ -98,24 +105,59 @@ export class CertificationRevokePage {
     const cid = this.certId();
     this.detalle.set(null);
     this.error.set('');
+    this.errorAccion.set('');
+    this.errorRecuperable.set(false);
     this.cargando.set(true);
     this.motivo.set('');
     this.confirmado.set(false);
     this.intentado.set(false);
+    this.enviando.set(false);
     if (cid === null) {
-      if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
-      this.cargando.set(false);
+      if (gen === this.loadGen) {
+        this.error.set('Certificación no encontrada.');
+        this.errorRecuperable.set(false);
+        this.cargando.set(false);
+      }
       return;
     }
     try {
       const det = await this.certs.obtener(cid);
       if (gen !== this.loadGen) return;
       this.detalle.set(det);
+      this.errorRecuperable.set(false);
     } catch (e) {
-      if (gen === this.loadGen) this.error.set((e as Error).message);
+      if (gen === this.loadGen) this.aplicarErrorCarga(e);
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
     }
+  }
+
+  onReintentar(): void {
+    if (!this.errorRecuperable()) return;
+    void this.cargar();
+  }
+
+  /** Not-found (404 / mensaje) vs hard recuperable — sin raw Error.message en UI. */
+  private aplicarErrorCarga(reason: unknown): void {
+    const status = reason instanceof HttpErrorResponse ? reason.status : null;
+    const raw = reason instanceof Error ? reason.message : '';
+    const notFound = status === 404 || /no encontrad/i.test(raw);
+    if (notFound) {
+      this.error.set('Certificación no encontrada.');
+      this.errorRecuperable.set(false);
+      return;
+    }
+    this.error.set('No se pudo cargar la certificación.');
+    this.errorRecuperable.set(true);
+  }
+
+  /** Envelope API message o fallback es-AR (sin raw Error.message). */
+  private mensajeErrorApi(err: unknown, fallback: string): string {
+    if (err instanceof HttpErrorResponse) {
+      const msg = (err.error as { error?: { message?: string } } | null)?.error?.message;
+      if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    }
+    return fallback;
   }
 
   // Cierre al presionar Escape (paridad v0)
@@ -124,38 +166,21 @@ export class CertificationRevokePage {
     void this.router.navigate(this.volverLink());
   }
 
-  // T5: focus trap — Tab/Shift+Tab se mantiene dentro del diálogo
+  // T5 / SHELL-A11Y-03: focus trap vía helper compartido
   @HostListener('keydown.tab', ['$event'])
   @HostListener('keydown.shift.tab', ['$event'])
   onTab(e: Event): void {
-    const ke = e as KeyboardEvent;
     const dialog = this.dialogRef()?.nativeElement;
     if (!dialog) return;
-    const focusable = dialog.querySelectorAll<HTMLElement>(
-      'a[href], button:not(:disabled), textarea, input, [tabindex]:not([tabindex="-1"])',
-    );
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    const active = document.activeElement;
-    if (ke.shiftKey) {
-      if (active === first || !dialog.contains(active)) {
-        ke.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (active === last) {
-        ke.preventDefault();
-        first.focus();
-      }
-    }
+    trapTabKey(e as KeyboardEvent, dialog);
   }
 
   async onRevocar(): Promise<void> {
     if (!this.esRevocable()) return;
 
     this.intentado.set(true);
-    
+    this.errorAccion.set('');
+
     if (!this.motivoValido()) {
       const ref = this.motivoRef();
       if (ref?.nativeElement) {
@@ -167,6 +192,7 @@ export class CertificationRevokePage {
 
     const cid = this.certId();
     if (cid === null) return;
+    const gen = this.loadGen;
 
     this.enviando.set(true);
     try {
@@ -176,11 +202,15 @@ export class CertificationRevokePage {
         .replace(/\b[\w.-]+@[\w.-]+\.\w+\b/g, '[EMAIL]');
 
       await this.certs.revocar(cid, sanitizedMotivo);
+      if (gen !== this.loadGen || this.certId() !== cid) return;
       await this.router.navigate(this.volverLink(), { queryParams: { revocada: 1 }});
     } catch (e) {
-      this.error.set((e as Error).message);
+      if (gen !== this.loadGen || this.certId() !== cid) return;
+      this.errorAccion.set(
+        this.mensajeErrorApi(e, 'No se pudo revocar la certificación.'),
+      );
     } finally {
-      this.enviando.set(false);
+      if (gen === this.loadGen) this.enviando.set(false);
     }
   }
 

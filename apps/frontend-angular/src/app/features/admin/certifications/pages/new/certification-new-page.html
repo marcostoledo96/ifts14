@@ -9,7 +9,8 @@
     <p class="kicker">Emisión documental</p>
     <h1 id="cert-new-title" class="title">Nueva certificación</h1>
     <p class="subtitle">
-      Seleccioná alumno y curso para revisar el certificado complementario antes de emitirlo.
+      Emisión puntual de un certificado para un alumno y un curso.
+      El flujo habitual es marcar asistencias en una fecha y generar desde ahí.
       La emisión es directa: no hay borrador ni aprobación posterior.
     </p>
   </div>
@@ -39,7 +40,9 @@
   } @else if (errorCatalogos()) {
     <div class="estado-error" role="alert">
       <p>{{ errorCatalogos() }}</p>
-      <button type="button" class="btn-retry" (click)="cargarCatalogos()">Reintentar</button>
+      @if (errorCatalogosRecuperable()) {
+        <button type="button" class="btn-retry" (click)="cargarCatalogos()">Reintentar</button>
+      }
     </div>
   } @else {
     <!-- Selección -->
@@ -146,7 +149,7 @@
       <div class="preview-col">
         <div class="preview-meta">
           <p class="filtro-label">Vista previa del certificado</p>
-          <p class="preview-hint">El PDF complementario final se genera al emitir.</p>
+          <p class="preview-hint">El PDF final se genera al emitir.</p>
         </div>
 
         <article
@@ -171,7 +174,7 @@
                 </svg>
               </div>
               <div>
-                <p class="band-kicker">CERTIFICADO COMPLEMENTARIO</p>
+                <p class="band-kicker">CERTIFICADO</p>
                 <h2 class="band-title">
                   {{ configInst()?.institutionName || 'Instituto de Formación Técnica Superior N.° 14' }}
                 </h2>
@@ -209,17 +212,23 @@
           } @else if (alumnoSeleccionado() && cursoSeleccionado()) {
             <div class="cert-body">
               <p class="decl-lead">
-                {{ configInst()?.certificateText || 'El IFTS N.° 14 certifica que el/la estudiante' }}
+                El Instituto de Formación Técnica Superior N.º 14 (IFTS 14) que integra
+                la Dirección de Educación Técnica Superior, Agencia de Habilidades para
+                el Futuro, certifica que:
               </p>
               <p class="decl-name">{{ nombreCompleto() }}</p>
               <p class="decl-dni">
-                Documento
+                D.N.I.
                 <span class="mono emph">{{ alumnoSeleccionado()!.dniMostrar }}</span>
               </p>
               <p class="decl-curso">
-                cumplió con la asistencia registrada y auditada en el curso
-                <strong>{{ cursoSeleccionado()!.nombre }}</strong>, correspondiente al ciclo
-                {{ cicloLectivo() }}.
+                Ha aprobado el curso de formación profesional
+                <strong>“{{ cursoSeleccionado()!.nombre }}”</strong>, correspondiente al
+                ciclo {{ cicloLectivo() }}, conforme al registro de asistencia auditado.
+              </p>
+              <p class="decl-cierre">
+                Se extiende el presente certificado a solicitud del/la interesado/a,
+                para constancia de su aprobación.
               </p>
             </div>
 
@@ -385,14 +394,19 @@
         @if (muestraAvisos()) {
           <div class="avisos-stack">
             @if (errorEmit()) {
-              <div class="aviso aviso-error" role="alert">{{ errorEmit() }}</div>
+              <div class="aviso aviso-error" role="alert" data-testid="error-emit">{{ errorEmit() }}</div>
             }
             @if (errorPar()) {
-              <div class="aviso aviso-error" role="alert">{{ errorPar() }}</div>
+              <div class="aviso aviso-error" role="alert" data-testid="error-par">
+                <p>{{ errorPar() }}</p>
+                @if (errorParRecuperable()) {
+                  <button type="button" class="btn-retry" (click)="cargarPar()">Reintentar</button>
+                }
+              </div>
             }
             @if (avisoDuplicado()) {
               <div class="aviso aviso-error" role="status">
-                <p class="aviso-title">Puede existir una certificación vigente</p>
+                <p class="aviso-title">Puede existir una certificación válida</p>
                 <p class="aviso-body">
                   La emisión definitiva la confirma el servidor. Si hay duplicado, recibirás un error 409.
                 </p>
@@ -443,7 +457,7 @@
           </button>
           <a routerLink="/admin/certificaciones" class="btn-cancelar">Cancelar</a>
           <p class="cta-note">
-            Después de emitir se generan el QR permanente y el PDF complementario.
+            Después de emitir se generan el QR permanente y el PDF.
             La entrega es manual: copiar el link de validación y/o descargar el PDF.
           </p>
         </section>

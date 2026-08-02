@@ -31,6 +31,11 @@
   <div class="fixed-overlay error-overlay" aria-live="assertive">
     <div class="error-panel" role="alert">
       <p class="estado-linea estado-error">{{ error() }}</p>
+      @if (errorRecuperable()) {
+        <button type="button" class="btn-reintentar" (click)="onReintentar()">
+          Reintentar
+        </button>
+      }
       <app-ui-back-link
         [to]="volverLink()"
         label="Volver al expediente"
@@ -42,15 +47,18 @@
 
 @if (detalle(); as d) {
   <div class="revoke-wrapper">
-    <!-- Backdrop — el expediente queda detrás, atenuado -->
-    <a
-      [routerLink]="volverLink()"
-      aria-label="Cerrar y volver al expediente"
+    <!-- Backdrop: click cierra; fuera del tab order (SHELL-A11Y-03) -->
+    <button
+      type="button"
       class="backdrop"
-    ></a>
+      tabindex="-1"
+      aria-label="Cerrar y volver al expediente"
+      (click)="volverAlExpediente()"
+    ></button>
 
     <!-- Diálogo -->
     <div
+      id="dialog"
       #dialog
       role="alertdialog"
       aria-modal="true"
@@ -124,7 +132,7 @@
 
         @if (!esRevocable()) {
           <p class="warning-banner" role="status">
-            Solo las certificaciones vigentes pueden revocarse. Volvé al expediente para consultar su estado.
+            Solo las certificaciones válidas pueden revocarse. Volvé al expediente para consultar su estado.
           </p>
         } @else {
         <!-- Motivo obligatorio -->
@@ -198,6 +206,13 @@
             La acción quedará registrada en auditoría con tu usuario, la fecha y hora, y el motivo ingresado.
           </p>
         </section>
+
+        @if (errorAccion()) {
+          <p class="msg-error msg-error-accion" role="alert" data-testid="error-accion">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            {{ errorAccion() }}
+          </p>
+        }
         }
       </div>
 

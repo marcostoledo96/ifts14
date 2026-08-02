@@ -97,7 +97,30 @@ try {
     }
     assertError(postJson($port, '/admin/cursos', $adminKey, ['codigo' => 'CUR-MD-01', 'nombre' => 'Duplicado']), 409, 'CONFLICT', 'curso duplicado');
     assertStatus(request($port, 'GET', '/admin/cursos/' . $courseId, $authHeaders), 200, 'detalle curso');
-    assertStatus(request($port, 'GET', '/admin/cursos', $authHeaders), 200, 'listar cursos');
+    $courseList = request($port, 'GET', '/admin/cursos', $authHeaders);
+    assertStatus($courseList, 200, 'listar cursos');
+    $courseListBody = assertJson($courseList, 'listar cursos');
+    $listedCourse = null;
+    foreach (($courseListBody['data']['items'] ?? []) as $item) {
+        if ((int) ($item['id'] ?? 0) === $courseId) {
+            $listedCourse = $item;
+            break;
+        }
+    }
+    if ($listedCourse === null
+        || ($listedCourse['alumnosPresentes'] ?? null) !== 0
+        || ($listedCourse['certificaciones'] ?? null) !== 0
+        || !array_key_exists('cantidadFechas', $listedCourse)
+    ) {
+        throw new RuntimeException('Listado curso debe incluir alumnosPresentes, certificaciones y cantidadFechas.');
+    }
+    $courseDetail = request($port, 'GET', '/admin/cursos/' . $courseId, $authHeaders);
+    $courseDetailBody = assertJson($courseDetail, 'detalle curso métricas');
+    if (($courseDetailBody['data']['alumnosPresentes'] ?? null) !== 0
+        || ($courseDetailBody['data']['certificaciones'] ?? null) !== 0
+    ) {
+        throw new RuntimeException('Detalle curso debe incluir métricas en 0.');
+    }
     assertError(patchJson($port, '/admin/cursos/' . $courseId . '/estado', $adminKey, ['estado' => 'invalido']), 400, 'VALIDATION_ERROR', 'estado curso inválido');
     assertStatus(patchJson($port, '/admin/cursos/' . $courseId . '/estado', $adminKey, ['estado' => 'activo']), 200, 'estado curso');
     assertError(patchJson($port, '/admin/cursos/' . $courseId, $adminKey, []), 400, 'VALIDATION_ERROR', 'curso PATCH vacío');

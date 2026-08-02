@@ -76,93 +76,210 @@ En `/admin/asistencias` el sistema DEBE listar una fila por curso (no curso×fec
 - **Then** DEBE mostrar como máximo 20 filas/cards por página con pager accesible
 - **And** al buscar DEBE volver a la página 1.
 
+### Requirement: Agregación lineal de métricas del hub
+
+En `/admin/asistencias`, al derivar métricas por curso desde el hub, el sistema DEBE agregar en tiempo lineal (sin barridos anidados redundantes sobre fechas). DEBE contar fechas asistibles ≠ `cancelada` y fechas con ≥1 presente solo entre asistibles. NO DEBE usar `alumnosActivos` como total por fila. La semántica de N/M DEBE coincidir con «Listado global solo por curso».
+
+#### Scenario: Agregación en tiempo lineal
+
+- DADO un hub con varios cursos y fechas
+- CUANDO se carga `/admin/asistencias` y se calculan métricas
+- ENTONCES la agregación DEBE completarse en tiempo lineal respecto del tamaño del hub
+- Y NO DEBE realizar barridos anidados redundantes por cada curso sobre todas las fechas
+
+#### Scenario: Cancelada excluida del conteo
+
+- DADO un curso con fechas `cancelada` que tienen presentes registrados
+- CUANDO se ve su fila en el listado
+- ENTONCES esas fechas NO DEBEN sumar a fechas asistibles ni a fechas con presentes
+
+#### Scenario: Sin alumnosActivos como total
+
+- DADO el hub expone `alumnosActivos` por curso
+- CUANDO se renderizan las métricas de la fila
+- ENTONCES NO DEBE usarse `alumnosActivos` como total N ni M
+
 ### Requirement: Página intermedia de fechas del curso
 
-El sistema DEBE exponer `/admin/asistencias/curso/:id` (antes de rutas conflictivas) para elegir fecha asistible. DEBE listar solo fechas ≠ `cancelada` y DEBE mostrar/filtrar `programada`|`realizada`. El CTA DEBE ir a `/admin/cursos/:id/fechas/:fechaId/asistencias` (marcado intacto). Sin fechas asistibles: empty claro y DEBERÍA enlazar a detalle/agregar fecha si aplica. `:id` ausente: error controlado. NO DEBE exigir cambios de backend/`listarHub`.
+El sistema DEBE exponer `/admin/asistencias/curso/:id` (antes de rutas conflictivas) para elegir fecha asistible. DEBE listar solo fechas ≠ `cancelada` y DEBE mostrar/filtrar `programada`|`realizada`. El CTA DEBE ir a `/admin/cursos/:id/fechas/:fechaId/asistencias` (marcado intacto). Sin fechas asistibles: empty claro y DEBERÍA enlazar a detalle/agregar fecha si aplica. `:id` inválido o curso ausente del hub: error controlado con título/mensaje de no encontrado y solo «Volver a Asistencias» (sin Reintentar). Fallo recuperable de `listarHub`: título/mensaje de carga fallida y DEBE ofrecer Reintentar más Volver. Mensajes/títulos NO DEBEN incluir DNI ni token. NO DEBE exigir cambios de backend/`listarHub`.
 
 #### Scenario: Fechas asistibles
 
-- **Given** curso con `programada`, `realizada` y `cancelada`
-- **When** se abre la intermedia
-- **Then** DEBEN listarse solo no canceladas y DEBE distinguirse/filtrarse estado.
+- **GIVEN** curso con `programada`, `realizada` y `cancelada`
+- **WHEN** se abre la intermedia
+- **THEN** DEBEN listarse solo no canceladas y DEBE distinguirse/filtrarse estado.
 
 #### Scenario: CTA al marcado
 
-- **Given** fecha asistible en la intermedia
-- **When** se activa el CTA
-- **Then** DEBE navegar a `/admin/cursos/:id/fechas/:fechaId/asistencias`.
+- **GIVEN** fecha asistible en la intermedia
+- **WHEN** se activa el CTA
+- **THEN** DEBE navegar a `/admin/cursos/:id/fechas/:fechaId/asistencias`.
 
 #### Scenario: Empty sin fechas
 
-- **Given** curso sin fechas no canceladas
-- **When** se abre la intermedia
-- **Then** empty claro; DEBERÍA ofrecer enlace a detalle/agregar fecha si aplica.
+- **GIVEN** curso sin fechas no canceladas
+- **WHEN** se abre la intermedia
+- **THEN** empty claro; DEBERÍA ofrecer enlace a detalle/agregar fecha si aplica.
 
-#### Scenario: Curso inexistente
+#### Scenario: Curso inexistente o id inválido sin Reintentar
 
-- **Given** `:id` ausente en el hub
-- **When** se abre la intermedia
-- **Then** error controlado sin tumbar el panel.
+- **GIVEN** `:id` ausente en el hub o id no numérico/ inválido
+- **WHEN** se abre la intermedia
+- **THEN** DEBE mostrar error controlado con título de curso no encontrado
+- **AND** DEBE ofrecer Volver a Asistencias sin Reintentar
+- **AND** NO DEBE tumbar el panel ni incluir DNI/token.
+
+#### Scenario: Fallo recuperable con Reintentar
+
+- **GIVEN** id numérico válido y fallo recuperable de `listarHub`
+- **WHEN** se presenta el error
+- **THEN** DEBE mostrar título de carga fallida, Reintentar y Volver a Asistencias sin DNI/token
+- **AND WHEN** el operador elige Reintentar
+- **THEN** DEBE volver a solicitar el hub.
 
 #### Scenario: Orden de ruta
 
-- **Given** rutas admin de asistencias
-- **When** se resuelve `/admin/asistencias/curso/:id`
-- **Then** DEBE activarse la intermedia (no otra ruta).
+- **GIVEN** rutas admin de asistencias
+- **WHEN** se resuelve `/admin/asistencias/curso/:id`
+- **THEN** DEBE activarse la intermedia (no otra ruta).
 
 ### Requirement: Hub de fecha — asistencias
 
-El sistema DEBE presentar en `/admin/cursos/:id/fechas/:fechaId/asistencias` la lista de alumnos con toggles presente/ausente y `dniMostrar` completo ficticio. En el lateral DEBE haber un CTA «Ver certificados del curso» hacia `/admin/cursos/:id/fechas/:fechaId/asistencias/certificados`, sin listar certificados en el aside. El botón primario DEBE ser «Guardar y generar certificados».
+El sistema DEBE presentar en `/admin/cursos/:id/fechas/:fechaId/asistencias` la lista de alumnos con toggles presente/ausente y `dniMostrar` completo ficticio. En el lateral DEBE haber un CTA «Ver certificados del curso» hacia `/admin/cursos/:id/fechas/:fechaId/asistencias/certificados`, sin listar certificados en el aside. El botón primario DEBE ser «Guardar y generar certificados». Fallo recuperable de carga: DEBE ofrecer Reintentar. Id/fecha inválidos o not-found: error controlado SIN Reintentar. Fallo de `marcar` con envelope HTTP: DEBE usar `mensajeErrorApi` (incl. 400). Mensajes NO DEBEN incluir DNI ni token. NO DEBE exigir cambios a `HttpAttendanceService.marcar` ni backend.
 
 #### Scenario: Marcado de presentes
 
-- **Given** se abre una fecha válida
-- **When** se alternan toggles de estudiantes y se guarda
-- **Then** el estado DEBE actualizarse vía `ATTENDANCE_SOURCE`.
-- **And** descartar DEBE restaurar el último estado cargado/guardado.
+- **GIVEN** se abre una fecha válida
+- **WHEN** se alternan toggles y se guarda
+- **THEN** el estado DEBE actualizarse vía `ATTENDANCE_SOURCE`
+- **AND** descartar DEBE restaurar el último estado cargado/guardado.
 
 #### Scenario: CTA a certificados del curso
 
-- **Given** se está en el hub de fecha
-- **When** se observa el aside
-- **Then** DEBE mostrarse el botón/enlace a la página de certificados
-- **And** NO DEBE listar filas de certificados en el lateral.
+- **GIVEN** se está en el hub de fecha
+- **WHEN** se observa el aside
+- **THEN** DEBE mostrarse el enlace a certificados
+- **AND** NO DEBE listar filas de certificados en el lateral.
 
 #### Scenario: Búsqueda por nombre o documento
 
-- **Given** hay alumnos en el roster de una fecha
-- **When** se busca por apellido, nombre o DNI completo ficticio
-- **Then** DEBE filtrar coincidencias visibles sin enmascarar el documento.
+- **GIVEN** hay alumnos en el roster
+- **WHEN** se busca por apellido, nombre o DNI completo ficticio
+- **THEN** DEBE filtrar coincidencias sin enmascarar el documento.
+
+#### Scenario: Fallo recuperable de carga con Reintentar
+
+- **GIVEN** id/fecha válidos y fallo recuperable de carga
+- **WHEN** se presenta el error
+- **THEN** DEBE ofrecer Reintentar sin DNI/token
+- **AND WHEN** se elige Reintentar
+- **THEN** DEBE volver a cargar curso, alumnos y asistencias.
+
+#### Scenario: Id o fecha inválidos sin Reintentar
+
+- **GIVEN** `:id`/`:fechaId` inválidos o not-found
+- **WHEN** se abre el hub
+- **THEN** DEBE mostrar error controlado SIN Reintentar ni DNI/token.
+
+#### Scenario: Envelope 400 al marcar
+
+- **GIVEN** fallo de `marcar` con envelope HTTP 400
+- **WHEN** se captura el error
+- **THEN** DEBE mostrar el mensaje vía `mensajeErrorApi` sin DNI/token.
 
 ### Requirement: Página de certificados del curso (por fecha)
 
-El sistema DEBE exponer `/admin/cursos/:id/fechas/:fechaId/asistencias/certificados` con el listado filtrado por `cursoId`, botón «Volver a asistencias», y por fila las acciones en este orden: Copiar link, Descargar QR (`descargarQrPng`), Descargar PDF. NO DEBE mostrar token completo.
+El sistema DEBE exponer `/admin/cursos/:id/fechas/:fechaId/asistencias/certificados` con listado filtrado por `cursoId` (NO por `fechaId`), botón «Volver a asistencias», empty con CTA a marcar asistencias, y consumo del `state` de navegación post-marcado (mensaje/resumen) sin alterar su contrato. Por fila DEBE ofrecer, en este orden: Copiar link, Descargar QR (`descargarQrPng`), Descargar PDF; y además un enlace «Expediente» a `/admin/certificaciones/:id`. Entrega = Copiar link + QR inline (SIN navegar a `/entrega`). Fallo recuperable de carga: DEBE usar `errorRecuperable` y ofrecer Reintentar con mensaje controlado. Id de curso inválido o not-found: error controlado SIN Reintentar. Fallo de acciones (Copiar, QR, PDF): DEBE usar `mensajeErrorApi` o mensaje genérico de acción, SIN Reintentar de página y SIN pegar raw `Error.message`. Si se muestra DNI, DEBE ser completo. NO DEBE mostrar token completo ni incluir DNI/token en mensajes/logs. NO DEBE exigir cambios HTTP/backend ni rotación de token/QR.
 
 #### Scenario: Entrega desde página dedicada
 
-- **Given** hay certificados del curso
-- **When** Bedelía abre la página de certificados de la fecha
-- **Then** DEBE ver la lista completa con link, QR y PDF
-- **And** Descargar QR DEBE obtener la imagen PNG del QR de validación oficial.
+- **GIVEN** hay certificados del curso
+- **WHEN** Bedelía abre la página de certificados de la fecha
+- **THEN** DEBE ver la lista completa filtrada por `cursoId`
+- **AND** por fila DEBE ver Copiar link, Descargar QR y Descargar PDF en ese orden
+- **AND** Descargar QR DEBE obtener la imagen PNG del QR de validación oficial.
+
+#### Scenario: Link Expediente por fila
+
+- **GIVEN** hay al menos un certificado en la lista
+- **WHEN** se observa la fila
+- **THEN** DEBE haber un enlace «Expediente» a `/admin/certificaciones/:id` de esa certificación
+- **AND** NO DEBE sustituir las acciones Copiar/QR/PDF.
+
+#### Scenario: Vacío con CTA a asistencias
+
+- **GIVEN** el curso no tiene certificados
+- **WHEN** se abre la página
+- **THEN** DEBE mostrar empty controlado con CTA hacia marcar asistencias
+- **AND** NO DEBE listar filas ni acciones de entrega.
+
+#### Scenario: Fallo recuperable de carga con Reintentar
+
+- **GIVEN** `:id` válido y fallo recuperable al cargar curso/certificados
+- **WHEN** se presenta el error
+- **THEN** DEBE ofrecer Reintentar con mensaje controlado sin DNI/token ni raw `Error.message`
+- **AND WHEN** se elige Reintentar
+- **THEN** DEBE volver a cargar curso y listado por `cursoId`.
+
+#### Scenario: Id inválido o not-found sin Reintentar
+
+- **GIVEN** `:id` inválido o curso not-found
+- **WHEN** se abre la página
+- **THEN** DEBE mostrar error controlado SIN Reintentar ni DNI/token.
+
+#### Scenario: Error de acción sin Reintentar
+
+- **GIVEN** falla Copiar link, Descargar QR o Descargar PDF
+- **WHEN** se captura el error
+- **THEN** DEBE mostrar mensaje vía `mensajeErrorApi` o genérico de acción
+- **AND** NO DEBE ofrecer Reintentar de página ni pegar raw `Error.message`
+- **AND** el mensaje NO DEBE incluir DNI ni token.
+
+#### Scenario: DNI completo y anti-token
+
+- **GIVEN** la fila muestra documento del alumno
+- **WHEN** se renderiza la lista
+- **THEN** el DNI DEBE verse completo (ficticio D0)
+- **AND** NO DEBE aparecer el token completo en la UI.
 
 ### Requirement: Guardar y generar certificados
 
-El sistema DEBE, al confirmar «Guardar y generar certificados»: persistir asistencias; para cada alumno presente en esa fecha, emitir certificado alumno+curso si no hay vigente, o `regenerarPdf` si ya hay vigente (sin rotar token/QR); redirigir a la página de certificados del curso con resumen (emitidos, actualizados, fallidos). Errores parciales NO DEBEN tumbar todo el flujo. Logs y mensajes NO DEBEN incluir DNI ni token completos.
+El sistema DEBE, al confirmar «Guardar y generar certificados»: persistir asistencias; para cada presente, emitir si no hay vigente o `regenerarPdf` si hay vigente, **en serie (un await tras otro; NO en paralelo)**; SIN rotar token/QR; redirigir con resumen (emitidos, actualizados, fallidos). Si `fechaClase > hoy` (AR): persistir, NO emitir/regenerar, contar presentes como `fallidos` con mensaje de fecha futura/programada. Sin presentes: CTA deshabilitado o mensaje 400 claro. `regenerado: false` DEBE seguir contando como actualizado. Errores parciales NO DEBEN tumbar el lote. Logs/mensajes sin DNI/token. Token/QR permanente es invariante documentado (vía `pdf-regeneration` / `admin-certificate-emission`; NO rotar ni cambiar esos specs).
 
 #### Scenario: Emisión, regeneración y redirección
 
-- **Given** hay presentes marcados en la fecha
-- **When** se pulsa «Guardar y generar certificados»
-- **Then** DEBEN persistirse las asistencias.
-- **And** cada presente sin certificado vigente DEBE emitir uno nuevo.
-- **And** cada presente con vigente DEBE regenerar PDF sin rotar token.
-- **And** DEBE navegar a `…/asistencias/certificados`.
+- **GIVEN** presentes en fecha ≤ hoy AR
+- **WHEN** se pulsa «Guardar y generar certificados»
+- **THEN** DEBEN persistirse las asistencias
+- **AND** sin vigente DEBE emitir; con vigente DEBE regenerar PDF sin rotar token
+- **AND** DEBE navegar a `…/asistencias/certificados`.
+
+#### Scenario: Emisión y regeneración en serie
+
+- **GIVEN** ≥2 presentes a emitir o regenerar
+- **WHEN** se ejecuta guardar y generar
+- **THEN** cada `emitir`/`regenerarPdf` DEBE completarse antes del siguiente
+- **AND** NO DEBEN lanzarse en paralelo (`Promise.all`).
+
+#### Scenario: Fecha futura o programada
+
+- **GIVEN** `fechaClase > hoy` AR y ≥1 presente
+- **WHEN** se pulsa «Guardar y generar certificados»
+- **THEN** las asistencias DEBEN persistirse
+- **AND** NO DEBE llamar `emitir` ni `regenerarPdf`
+- **AND** `fallidos` DEBE incluir presentes con mensaje de fecha futura/programada sin DNI/token.
 
 #### Scenario: Sin presentes ni cambios
 
-- **Given** no hay cambios pendientes ni presentes
-- **When** se observa el botón primario
-- **Then** DEBE estar deshabilitado.
+- **GIVEN** no hay cambios pendientes ni presentes
+- **WHEN** se observa el botón primario
+- **THEN** DEBE estar deshabilitado.
+
+#### Scenario: Token permanente al regenerar
+
+- **GIVEN** un presente con certificado vigente
+- **WHEN** se regenera el PDF
+- **THEN** el token/QR NO DEBE rotar (`tokenPrefix` estable).
 
 ### Requirement: Carga vigente en reutilización de ruta
 

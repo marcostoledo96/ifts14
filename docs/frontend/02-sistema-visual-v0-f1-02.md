@@ -1,5 +1,8 @@
 # Sistema visual v0 — F1-02
 
+> **Nota (2026-08):** la carpeta `muestra_pagina/` fue retirada del repositorio (también del historial). Las menciones siguientes se conservan como contexto de diseño; la UI vigente vive en `apps/frontend-angular/`.
+
+
 Fuente de verdad visual para los ciclos F2-F6 del módulo `/certificados/`. Define tokens, primitivos, reglas de accesibilidad y límites del ciclo. Mantiene el contrato D0 (DNI completo público, fechas asistidas, token/QR permanente, sin tokens completos en UI/logs).
 
 ## Tokens
@@ -43,7 +46,7 @@ Definidos en `apps/frontend-angular/src/styles.css` bajo `:root`. Mapeo semánti
 | `--focus-ring` | `0 0 0 2px var(--color-ring)` |
 | `--motion-fast` | `120ms` |
 | `--layout-page-max` | `56rem` (ancho máximo de `main` y `HeaderInstitucional`) |
-| `--layout-folio-max` | `42rem` (ancho máximo de `FolioShell` y `public-validation-page`) |
+| `--layout-folio-max` | `42rem` (ancho máximo de `public-validation-page`; históricamente también `FolioShell`, eliminado en U1) |
 
 `@media (prefers-reduced-motion: reduce)` anula animaciones y transiciones. El `skip-link` de `app.css` se preserva intacto.
 
@@ -56,7 +59,7 @@ Standalone, standalone CSS, sin dependencias nuevas. Todos consumen tokens por c
 | `BandaEstado` | `app-banda-estado` | Banda de estado: `valid`, `revoked`, `not-verifiable`, `error`, `loading`. | `role="status"` para no críticos; `role="alert"` solo para error técnico; `aria-live="polite"`, `aria-atomic="true"`. Dueño único de la región live: no anidar `aria-live` en wrappers externos. |
 | `CampoDato` | `[appCampoDato]` (directiva) | Aplica clases `.campo-*` sobre `<dt>`/`<dd>` nativos. Variantes: `default`, `mono`, `highlight`. | Mantiene `dl/dt/dd` válidos: sin wrappers custom dentro del `<dl>` (W2). Estilos compartidos en `styles.css`. |
 | `HeaderInstitucional` | `app-header-institucional` | Membrete con monograma 4-cuadrados, título IFTS 14, badge "Sistema en línea", filete doble. | `role="banner"` único a nivel raíz. SVG decorativo con `aria-hidden="true"`. |
-| `FolioShell` | `app-folio-shell` | Shell compositivo de folio con slots `folio-status`, `folio-body`, `folio-aside`, `folio-footer`. | Sin `role="banner"`, `main` ni `contentinfo` internos (evita duplicar landmarks). |
+| ~~`FolioShell`~~ | ~~`app-folio-shell`~~ | **Eliminado en U1** (sin consumidores). Validación pública no depende de este shell. Restaurar solo con consumidor real (SHELL-HYG-02). | — |
 
 ### Contratos de inputs
 
@@ -74,19 +77,15 @@ variant = input<VarianteCampo>('default'); // 'default' | 'mono' | 'highlight'
 subtitle = input('Validación oficial de certificados');
 showOnlineBadge = input(true);
 
-// app-folio-shell
-title = input.required<string>();
-kicker = input('ACTA DE VALIDACIÓN ACADÉMICA');
-description = input<string>('');
-certificateCode = input<string>('');
+// app-folio-shell — eliminado en U1 (sin API vigente)
 ```
 
 ## Reglas de uso
 
 - Toda pantalla pública DEBE usar `BandaEstado` para comunicar estado de verificación (válido / no verificable / error técnico / carga). `BandaEstado` es el único dueño de la región live (`aria-live`/`aria-atomic`): los wrappers externos no deben replicar estas atributos para evitar regiones live anidadas.
 - Los pares etiqueta/valor dentro de un `<dl>` DEBEN usar `<dt>`/`<dd>` nativos con la directiva `appCampoDato` (sin wrappers custom) para mantener `dl/dt/dd` válidos (W2).
-- `HeaderInstitucional` se usa una sola vez por página raíz (no dentro de `FolioShell`).
-- `FolioShell` no duplica landmarks; se compone dentro de `<main>` existente.
+- `HeaderInstitucional` se usa una sola vez por página raíz.
+- No reintroducir `FolioShell` sin ≥1 consumidor de producto (SHELL-HYG-02).
 - SVG decorativo siempre con `aria-hidden="true"`.
 - Foco visible global vía `:focus-visible` + `--focus-ring`.
 

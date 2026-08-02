@@ -56,13 +56,13 @@ final class AdminSessionAuth
     public static function sessionIsActive(array $session, array $config, int $now): bool
     {
         $settings = Config::adminSessionSettings($config);
-        $createdAt = $session['createdAt'] ?? null;
-        $lastSeen = $session['lastSeen'] ?? null;
+        $createdAt = self::sessionTimestamp($session['createdAt'] ?? null);
+        $lastSeen = self::sessionTimestamp($session['lastSeen'] ?? null);
 
         return $settings !== null
             && ($session['authenticated'] ?? false) === true
-            && is_int($createdAt)
-            && is_int($lastSeen)
+            && $createdAt !== null
+            && $lastSeen !== null
             && $createdAt <= $lastSeen
             && $lastSeen <= $now
             && $now - $lastSeen < $settings['idleSeconds']
@@ -80,13 +80,17 @@ final class AdminSessionAuth
             : '/certificados';
     }
 
-    /** @param array<string, mixed> $config @param array<string, mixed> $server */
-    public static function allowLoginAttempt(array $config, array $server): bool
+    /**
+     * @param array<string, mixed> $config
+     * @param array<string, mixed> $server
+     * @return bool|null true permitido; false rate-limit; null storage no usable
+     */
+    public static function allowLoginAttempt(array $config, array $server): ?bool
     {
         $rateLimitPath = $config['rate_limit_storage_path'] ?? null;
         $directory = is_string($rateLimitPath) ? dirname($rateLimitPath) : '';
         if ($directory === '' || !is_dir($directory) || !is_writable($directory)) {
-            return false;
+            return null;
         }
 
         $origin = $server['REMOTE_ADDR'] ?? '';
@@ -94,16 +98,16 @@ final class AdminSessionAuth
         $path = $directory . '/ifts14-admin-login-' . hash('sha256', $origin) . '.json';
         $handle = @fopen($path, 'c+');
         if ($handle === false) {
-            return false;
+            return null;
         }
         try {
             if (!@flock($handle, LOCK_EX) || ($contents = @stream_get_contents($handle)) === false) {
-                return false;
+                return null;
             }
 
             $bucket = trim($contents) === '' ? ['count' => 0, 'resetAt' => 0] : json_decode($contents, true);
             if (!is_array($bucket) || !is_int($bucket['count'] ?? null) || !is_int($bucket['resetAt'] ?? null)) {
-                return false;
+                return null;
             }
 
             $now = time();
@@ -115,11 +119,17 @@ final class AdminSessionAuth
             }
 
             $encoded = json_encode(['count' => $bucket['count'] + 1, 'resetAt' => $bucket['resetAt']], JSON_UNESCAPED_SLASHES);
-            return $encoded !== false
-                && @rewind($handle)
-                && @ftruncate($handle, 0)
-                && @fwrite($handle, $encoded) === strlen($encoded)
-                && @fflush($handle);
+            if (
+                $encoded === false
+                || !@rewind($handle)
+                || !@ftruncate($handle, 0)
+                || @fwrite($handle, $encoded) !== strlen($encoded)
+                || !@fflush($handle)
+            ) {
+                return null;
+            }
+
+            return true;
         } finally {
             @flock($handle, LOCK_UN);
             fclose($handle);
@@ -174,10 +184,17 @@ final class AdminSessionAuth
             return null;
         }
 
-        if (!self::start($settings) || !self::sessionIsActive($_SESSION, $config, $now)) {
+        if (!self::start($settings)) {
+            return null;
+        }
+
+        if (!self::sessionIsActive($_SESSION, $config, $now)) {
             self::destroy($settings);
             return null;
         }
+
+        $_SESSION['lastSeen'] = $now;
+        session_write_close();
 
         return $_SESSION;
     }
@@ -186,10 +203,20 @@ final class AdminSessionAuth
     public static function authorize(array $config, string $basePath, bool $mutates, string $csrf, int $now): int
     {
         $settings = self::settings($config, $basePath);
-        if ($settings === null || !isset($_COOKIE[$settings['name']]) || !self::start($settings) || !self::sessionIsActive($_SESSION, $config, $now)) {
-            if ($settings !== null) {
-                self::destroy($settings);
-            }
+        if ($settings === null || !isset($_COOKIE[$settings['name']])) {
+            return 401;
+        }
+
+        // Fallo de session_start (contención de lock en cPanel) NO debe verse como
+        // 401: el interceptor FE limpia CSRF y manda a login. Devolver 503.
+        if (!self::start($settings)) {
+            error_log('ifts14_admin_session_start_failed');
+
+            return 503;
+        }
+
+        if (!self::sessionIsActive($_SESSION, $config, $now)) {
+            self::destroy($settings);
             return 401;
         }
 
@@ -198,6 +225,8 @@ final class AdminSessionAuth
         }
 
         $_SESSION['lastSeen'] = $now;
+        // Liberar lock de sesión antes del trabajo pesado (PDF, lotes de mutaciones).
+        session_write_close();
 
         return 200;
     }
@@ -262,5 +291,18 @@ final class AdminSessionAuth
             'httponly' => $settings['httponly'],
             'samesite' => $settings['samesite'],
         ];
+    }
+
+    /** Timestamps de sesión: int nativo o dígitos string (serializadores PHP). */
+    private static function sessionTimestamp(mixed $value): ?int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_string($value) && $value !== '' && ctype_digit($value)) {
+            return (int) $value;
+        }
+
+        return null;
     }
 }

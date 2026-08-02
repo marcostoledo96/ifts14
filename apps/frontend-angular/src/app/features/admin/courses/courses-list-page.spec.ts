@@ -70,20 +70,24 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('[aria-live="polite"]')?.textContent).toContain('cursos');
   });
 
-  it('expone chips de estado con dots y no usa select de estado', async () => {
+  it('expone chips Activos/Inactivos y no usa select ni borrador/cerrado/archivado', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     expect(el.querySelector('select')).toBeNull();
     expect(el.querySelector('input[type="search"]')).not.toBeNull();
-    for (const estado of ['borrador', 'activo', 'cerrado', 'archivado']) {
+    for (const estado of ['activo', 'inactivo']) {
       const chip = el.querySelector(`button[data-estado="${estado}"]`) as HTMLButtonElement | null;
       expect(chip).not.toBeNull();
       expect(chip?.querySelector('.chip-dot')).not.toBeNull();
     }
+    expect(el.querySelector('button[data-estado="borrador"]')).toBeNull();
+    expect(el.querySelector('button[data-estado="cerrado"]')).toBeNull();
+    expect(el.querySelector('button[data-estado="archivado"]')).toBeNull();
     expect(el.textContent).toContain('Activos');
-    expect(el.textContent).toContain('Cerrados');
-    expect(el.textContent).toContain('Archivados');
-    expect(el.textContent).toContain('Borrador');
+    expect(el.textContent).toContain('Inactivos');
+    expect(el.textContent).not.toContain('Cerrados');
+    expect(el.textContent).not.toContain('Archivados');
+    expect(el.textContent).not.toContain('Borrador');
   });
 
   it('limpia filtros y mantiene acciones de detalle y edición accesibles', async () => {
@@ -107,7 +111,7 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('a[aria-label^="Editar"]')).not.toBeNull();
   });
 
-  it('renderiza items del seed (6 cursos) con badge, acento, iconos y placeholders', async () => {
+  it('renderiza items del seed (6 cursos) con badge, acento, iconos y métricas', async () => {
     const f = await render();
     const el = f.nativeElement as HTMLElement;
     const cards = el.querySelectorAll('.card-curso');
@@ -118,10 +122,13 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('.action-icon svg')).not.toBeNull();
     expect(el.querySelector('.metrics .metric-icon')).not.toBeNull();
     expect(el.textContent).toContain('Activo');
+    expect(el.textContent).toContain('Inactivo');
     expect(el.textContent).toContain('fechas');
-    const presentes = el.querySelectorAll('td span[title="Dato disponible con integración real"]');
-    expect(presentes.length).toBeGreaterThan(0);
-    expect(presentes[0].textContent).toContain('—');
+    // Seed in-memory ya expone números; no placeholders de integración.
+    expect(el.textContent).not.toContain('Dato disponible con integración real');
+    const metricas = el.querySelectorAll('td .metrica-valor');
+    expect(metricas.length).toBeGreaterThan(0);
+    expect(metricas[1].textContent?.trim()).not.toBe('—');
   });
 
   it('enlaces de detalle apuntan a /admin/cursos/:id', async () => {
@@ -143,6 +150,22 @@ describe('CoursesListPage', () => {
     expect(chip.getAttribute('aria-pressed')).toBe('true');
     const cards = el.querySelectorAll('.card-curso');
     expect(cards.length).toBe(3);
+  });
+
+  it('filtrar por Inactivos agrupa cerrado/borrador/archivado', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+    const chip = el.querySelector('button[data-estado="inactivo"]') as HTMLButtonElement;
+    chip.click();
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelectorAll('.card-curso').length).toBe(3);
+    expect(el.textContent).toContain('Inactivo');
+    expect(el.textContent).not.toContain('Borrador');
+    expect(el.textContent).not.toContain('Cerrado');
+    expect(el.textContent).not.toContain('Archivado');
   });
 
   it('segundo click en el mismo chip limpia el filtro de estado', async () => {
@@ -203,10 +226,12 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('[role="alert"] .estado-title')?.textContent).toContain(
       'No pudimos cargar los cursos',
     );
-    expect(el.querySelector('[role="alert"]')?.textContent).toContain('No se pudo cargar');
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('No pudimos cargar');
     expect(el.querySelector('[role="alert"] .estado-icon')).not.toBeNull();
     const retry = el.querySelector('[role="alert"] button') as HTMLButtonElement;
     expect(retry.textContent).toContain('Reintentar');
+    expect(retry.classList.contains('btn-primary')).toBeTrue();
+    expect(el.querySelector('app-empty-state')).toBeNull();
     retry.click();
     f.detectChanges();
     await f.whenStable();
@@ -215,8 +240,18 @@ describe('CoursesListPage', () => {
     expect(el.querySelector('[data-state="empty-total"] .estado-title')?.textContent).toContain(
       'Todavía no hay cursos cargados',
     );
-    expect(el.querySelector('[data-state="empty-total"] a[routerLink="/admin/cursos/nuevo"]')?.textContent)
-      .toContain('Crear primer curso');
+    const emptyCta = el.querySelector(
+      '[data-state="empty-total"] a[routerLink="/admin/cursos/nuevo"]',
+    ) as HTMLAnchorElement | null;
+    expect(emptyCta?.textContent).toContain('Crear primer curso');
+    expect(emptyCta?.classList.contains('btn-primary')).toBeTrue();
+    expect(el.querySelector('app-empty-state')).toBeNull();
+  });
+
+  it('oculta la barra Vista QA cuando el token QA es false', async () => {
+    const f = await render(new InMemoryCoursesService(), false);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.vista-qa')).toBeNull();
   });
 
   it('expone Vista QA en desarrollo y fuerza skeleton/vacío/error', async () => {
@@ -249,7 +284,7 @@ describe('CoursesListPage', () => {
     expect((f.nativeElement as HTMLElement).querySelector('.vista-qa')).toBeNull();
   });
 
-  it('conserva el último filtro cuando dos cargas terminan en orden inverso', async () => {
+  it('conserva el último resultado cuando dos cargas terminan en orden inverso', async () => {
     let resolveFirst!: (value: readonly Curso[]) => void;
     let resolveSecond!: (value: readonly Curso[]) => void;
     const source = jasmine.createSpyObj<CoursesService>('CoursesService', ['listar']);
@@ -264,10 +299,8 @@ describe('CoursesListPage', () => {
     }).compileComponents();
     const f = TestBed.createComponent(CoursesListPage);
     f.detectChanges();
-
-    const input = f.nativeElement.querySelector('input[type="search"]') as HTMLInputElement;
-    input.value = 'segunda';
-    input.dispatchEvent(new Event('input'));
+    // Carga del constructor (gen1) + reintento forzado (gen2).
+    void f.componentInstance.recargar();
     expect(source.listar).toHaveBeenCalledTimes(2);
 
     resolveSecond([{ id: 2, nombre: 'Resultado actual' }] as unknown as readonly Curso[]);
@@ -284,6 +317,98 @@ describe('CoursesListPage', () => {
     expect(f.componentInstance.cargando()).toBeFalse();
   });
 
+  it('filtra en cliente sin re-fetch al buscar', async () => {
+    const source = jasmine.createSpyObj<CoursesService>('CoursesService', ['listar']);
+    source.listar.and.returnValue(
+      Promise.resolve([
+        { ...cursoStub(1), nombre: 'Curso Alpha', codigo: 'A1' },
+        { ...cursoStub(2), nombre: 'Curso Beta', codigo: 'B2' },
+      ]),
+    );
+    const f = await render(source);
+    expect(source.listar).toHaveBeenCalledTimes(1);
+    f.componentInstance.onSearch({ target: { value: 'Beta' } } as unknown as Event);
+    f.detectChanges();
+    expect(source.listar).toHaveBeenCalledTimes(1);
+    expect(f.componentInstance.resultadosFiltrados().length).toBe(1);
+    expect(f.componentInstance.resultadosFiltrados()[0]?.nombre).toBe('Curso Beta');
+  });
+
+  it('filtra por fechas en cliente sin re-fetch y toggle limpia', async () => {
+    const source = jasmine.createSpyObj<CoursesService>('CoursesService', ['listar']);
+    source.listar.and.returnValue(
+      Promise.resolve([
+        { ...cursoStub(1), cantidadFechas: 2 },
+        { ...cursoStub(2), cantidadFechas: 0 },
+      ]),
+    );
+    const f = await render(source);
+    const el = f.nativeElement as HTMLElement;
+    expect(source.listar).toHaveBeenCalledTimes(1);
+
+    const con = el.querySelector('button[data-fechas="con"]') as HTMLButtonElement;
+    con.click();
+    f.detectChanges();
+    expect(source.listar).toHaveBeenCalledTimes(1);
+    expect(con.getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelectorAll('.card-curso').length).toBe(1);
+    expect(el.textContent).toContain('CUR-001');
+
+    const sin = el.querySelector('button[data-fechas="sin"]') as HTMLButtonElement;
+    sin.click();
+    f.detectChanges();
+    expect(source.listar).toHaveBeenCalledTimes(1);
+    expect(sin.getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelectorAll('.card-curso').length).toBe(1);
+    expect(el.textContent).toContain('CUR-002');
+
+    sin.click();
+    f.detectChanges();
+    expect(sin.getAttribute('aria-pressed')).toBe('false');
+    expect(el.querySelectorAll('.card-curso').length).toBe(2);
+  });
+
+  it('chip estado y limpiar no re-fetchan el listado', async () => {
+    const source = jasmine.createSpyObj<CoursesService>('CoursesService', ['listar']);
+    source.listar.and.returnValue(
+      Promise.resolve([
+        { ...cursoStub(1), estado: 'activo' },
+        { ...cursoStub(2), estado: 'cerrado' },
+      ]),
+    );
+    const f = await render(source);
+    const el = f.nativeElement as HTMLElement;
+    expect(source.listar).toHaveBeenCalledTimes(1);
+
+    (el.querySelector('button[data-estado="activo"]') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(source.listar).toHaveBeenCalledTimes(1);
+    expect(el.querySelectorAll('.card-curso').length).toBe(1);
+
+    (el.querySelector('button.clear-filters') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(source.listar).toHaveBeenCalledTimes(1);
+    expect(el.querySelectorAll('.card-curso').length).toBe(2);
+  });
+
+  it('etiquetaCodigo oculta Sin programar y muestra cuatrimestre real', async () => {
+    const source = jasmine.createSpyObj<CoursesService>('CoursesService', ['listar']);
+    source.listar.and.returnValue(
+      Promise.resolve([
+        { ...cursoStub(1), codigo: 'A1', cuatrimestre: 'Sin programar' },
+        { ...cursoStub(2), codigo: 'B2', cuatrimestre: '1C 2026' },
+      ]),
+    );
+    const f = await render(source);
+    const page = f.componentInstance;
+    expect(page.etiquetaCodigo(page.cursos()[0]!)).toBe('A1');
+    expect(page.etiquetaCodigo(page.cursos()[1]!)).toBe('B2 · 1C 2026');
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('A1');
+    expect(el.textContent).not.toContain('Sin programar');
+    expect(el.textContent).toContain('B2 · 1C 2026');
+  });
+
   it('no llama fetch', async () => {
     const fetchSpy = spyOn(window, 'fetch').and.callThrough();
     await render();
@@ -293,11 +418,7 @@ describe('CoursesListPage', () => {
   it('pagina de a 20 y resetea página al filtrar', async () => {
     const muchos = Array.from({ length: COURSES_PAGE_SIZE + 5 }, (_, i) => cursoStub(i + 1));
     const source = jasmine.createSpyObj<CoursesService>('CoursesService', ['listar']);
-    source.listar.and.callFake((filtros) => {
-      const q = filtros?.q?.trim().toLowerCase() ?? '';
-      if (!q) return Promise.resolve(muchos);
-      return Promise.resolve(muchos.filter((c) => c.nombre.toLowerCase().includes(q)));
-    });
+    source.listar.and.returnValue(Promise.resolve(muchos));
 
     const f = await render(source);
     const page = f.componentInstance;
@@ -309,8 +430,8 @@ describe('CoursesListPage', () => {
     expect(page.itemsVisibles()).toEqual(muchos.slice(COURSES_PAGE_SIZE));
 
     page.onSearch({ target: { value: 'Curso 3' } } as unknown as Event);
-    await f.whenStable();
     f.detectChanges();
+    expect(source.listar).toHaveBeenCalledTimes(1);
     expect(page.paginaSegura()).toBe(1);
     expect(page.itemsVisibles().length).toBe(1);
 

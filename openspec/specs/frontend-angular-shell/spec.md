@@ -47,3 +47,313 @@ El shell NO DEBE leer `material_privado_no_versionar/`, copiar React/Next desde 
 - **Dado** la referencia visual disponible o futura
 - **Cuando** se construye la base Angular
 - **Entonces** se DEBE portar intención funcional propia de Angular, no código React/Next.
+
+### Requirement: Wildcard público a NotFound clara
+
+El shell Angular DEBE enrutar rutas públicas desconocidas (`**`) a una página `NotFound` con copy fijo en español argentino formal que indique que la dirección no existe. DEBE NOT redirigir el wildcard público a validación (`/validar/…`), demo ni admin. El título de documento de la ruta PUEDE fijarse cuando sea trivial.
+
+#### Scenario: URL pública desconocida muestra NotFound
+
+- **GIVEN** una URL bajo el módulo que no coincide con rutas públicas ni admin conocidas
+- **WHEN** el router resuelve la navegación
+- **THEN** DEBE renderizar `NotFound` con mensaje ES-AR claro de página inexistente
+- **AND** DEBE NOT cargar la pantalla de validación pública
+
+#### Scenario: Wildcard no valida ni usa demo
+
+- **GIVEN** una ruta huérfana pública (p. ej. `/certificados/ruta-inexistente`)
+- **WHEN** se muestra `NotFound`
+- **THEN** DEBE NOT invocar verify/API con el path como token
+- **AND** DEBE NOT mencionar `demo-valido` ni «Certificado verificable»
+
+### Requirement: CTA único hacia acceso administrativo
+
+`NotFound` DEBE ofrecer exactamente un enlace «volver» accionable hacia `/admin/login` (etiqueta ES-AR sensata, p. ej. «Ir al acceso administrativo»). DEBE NOT ofrecer enlace a `/validar/…` ni inventar destinos de validación pública.
+
+#### Scenario: CTA a login admin
+
+- **GIVEN** la página `NotFound` renderizada
+- **WHEN** el usuario activa el CTA de volver
+- **THEN** DEBE navegar a `/admin/login`
+
+#### Scenario: Sin CTA a validar
+
+- **GIVEN** la página `NotFound` renderizada
+- **WHEN** se inspecciona el DOM de la página
+- **THEN** DEBE NOT existir enlace hacia `/validar/` ni rutas de validación pública
+
+### Requirement: Aislamiento de huérfanas admin
+
+Rutas bajo el prefijo `admin` que no coincidan con children conocidos DEBEN resolverse por el catch-all admin (`pathMatch: 'prefix'` → `/admin/dashboard`, luego guard) y DEBEN NOT caer en `NotFound` pública ni en validación pública. Este ciclo DEBE NOT introducir `AdminNotFound` ni 404 admin dedicado.
+
+#### Scenario: Typo admin sin sesión
+
+- **GIVEN** sesión admin ausente y URL `/admin/typo` (u otra huérfana bajo `admin`)
+- **WHEN** el router resuelve
+- **THEN** DEBE aislar vía catch-all admin y terminar en flujo de login admin
+- **AND** DEBE NOT renderizar `NotFound` pública ni `PublicValidationPage`
+
+#### Scenario: Typo admin con sesión
+
+- **GIVEN** sesión admin válida y URL `/admin/typo`
+- **WHEN** el router resuelve
+- **THEN** DEBE terminar en el dashboard admin (o equivalente del catch-all)
+- **AND** DEBE NOT mostrar validación pública ni wildcard público
+
+### Requirement: Honesty de NotFound sin filtración
+
+`NotFound` DEBE usar únicamente copy fijo controlado. DEBE NOT mostrar stack traces, `Error.message` crudo, tokens, DNI, rutas internas, `/api/` ni contenido demo. D0 (no rotar token/QR) permanece fuera de este ciclo.
+
+#### Scenario: Copy fijo sin stack ni secretos
+
+- **GIVEN** navegación a `NotFound` (incluso tras error de navegación simulado)
+- **WHEN** se renderiza la página
+- **THEN** DEBE mostrar solo mensajes fijos ES-AR
+- **AND** DEBE NOT incluir stack, token completo, DNI ni texto demo
+
+### Requirement: SHELL-HYG-01 — Sin scaffolds de página huérfanos
+
+El frontend Angular DEBE NOT versionar scaffolds de página sin ruta canónica (`loadComponent` / router). Páginas sin consumidor de routing DEBEN eliminarse con sus specs. DEBE NOT reintroducir `LandingPage` sin ruta canónica.
+
+#### Scenario: Features sin página sin ruta
+
+- **GIVEN** el árbol de features del frontend
+- **WHEN** se auditan `@Component` de página de producto
+- **THEN** cada página DEBE tener ruta canónica vía `loadComponent` (o redirect que la cargue)
+- **AND** DEBE NOT existir `LandingPage` sin entrada en el router
+
+#### Scenario: Raíz no carga landing huérfana
+
+- **GIVEN** la ruta pública `''` del shell
+- **WHEN** el router resuelve la raíz
+- **THEN** DEBE redirigir a `/admin/login`
+- **AND** DEBE NOT cargar un scaffold de landing sin ruta
+
+### Requirement: SHELL-HYG-02 — Sin UI compartida sin consumidores
+
+El frontend DEBE NOT versionar UI compartida (`shared/ui`) sin ≥1 consumidor de producto (template/import runtime). Shared huérfanos (p. ej. `FolioShell`) DEBEN eliminarse con sus specs. Restaurar desde git es aceptable si vuelve un consumidor real.
+
+#### Scenario: Shared UI con consumidor
+
+- **GIVEN** un componente bajo UI compartida
+- **WHEN** se buscan consumidores fuera de su propio árbol
+- **THEN** DEBE existir ≥1 consumidor de producto
+- **AND** DEBE NOT permanecer un `FolioShell` sin usos
+
+#### Scenario: Folio público sin shell huérfano
+
+- **GIVEN** la validación pública de folio
+- **WHEN** se renderiza la UI de folio
+- **THEN** DEBE funcionar sin el shared eliminado
+- **AND** DEBE NOT reintroducir el shell solo por reuso hipotético
+
+### Requirement: SHELL-HYG-03 — Sin alias muertos de acciones primarias
+
+Las páginas DEBEN NOT exponer alias de compatibilidad sin callers (templates/specs/módulos). Si UI y tests usan solo el canónico, el alias muerto DEBE eliminarse. En marcado de asistencia el canónico DEBE ser `guardarYGenerar`; un `guardar()` sin callers DEBE NOT permanecer.
+
+#### Scenario: Marking usa solo el canónico
+
+- **GIVEN** la página de marcado de asistencia
+- **WHEN** se inspeccionan template y specs
+- **THEN** el guardado DEBE invocar `guardarYGenerar`
+- **AND** DEBE NOT existir alias `guardar()` sin callers
+
+#### Scenario: Quitar alias no cambia UX
+
+- **GIVEN** un usuario en marcado de asistencia
+- **WHEN** ejecuta la acción primaria guardar/generar
+- **THEN** el comportamiento DEBE coincidir con `guardarYGenerar` previo
+- **AND** DEBE NOT cambiar copy ni UX
+
+### Requirement: SHELL-HYG-04 — OnPush en todos los @Component de app
+
+Todo `@Component` bajo `apps/frontend-angular/src/app` DEBE declarar `ChangeDetectionStrategy.OnPush`. Este ciclo DEBE preservar el invariante (post-cleanup: 30/30) y DEBE NOT introducir componentes sin OnPush.
+
+#### Scenario: Inventario OnPush completo
+
+- **GIVEN** todos los `@Component` bajo `src/app`
+- **WHEN** se audita `changeDetection`
+- **THEN** cada uno DEBE usar `OnPush`
+- **AND** el conteo DEBE ser completo salvo altas/bajas que también cumplan OnPush (baseline post-U1: 30/30 tras baja Landing/FolioShell)
+
+#### Scenario: Cleanup no rompe OnPush
+
+- **GIVEN** eliminación de scaffolds huérfanos y del alias muerto
+- **WHEN** se re-audita change detection
+- **THEN** los componentes restantes DEBEN seguir en OnPush
+- **AND** DEBE NOT agregarse un componente sin OnPush en este ciclo
+
+### Requirement: SHELL-HYG-05 — Helper opcional de ventana de paginación
+
+El frontend PUEDE extraer `paginasVisibles` idéntico de listados admin a un helper puro (p. ej. `paginasVisiblesWindow(total, actual)`). Si se extrae: los 4 listados (estudiantes, cursos, certificaciones, asistencias) DEBEN usarlo; HTML/UX DEBE permanecer equivalente; el helper DEBE ser puro. Si el diff es ajustado, el extract PUEDE diferirse sin bloquear SHELL-HYG-01..04.
+
+#### Scenario: Extract mantiene UX de listados
+
+- **GIVEN** los 4 listados admin con ventana ≤5 / elipsis
+- **WHEN** se introduce el helper (si el ciclo lo incluye)
+- **THEN** cada listado DEBE delegar al helper
+- **AND** las páginas visibles DEBEN ser idénticas a las previas
+
+#### Scenario: Diff ajustado permite defer
+
+- **GIVEN** presupuesto de revisión ajustado
+- **WHEN** se omite el extract en este ciclo
+- **THEN** SHELL-HYG-01..04 DEBEN cumplirse igual
+- **AND** `paginasVisibles` PUEDE quedar diferido explícitamente
+
+### Requirement: SHELL-COPY-01 — Glosario UI y consistencia de copy visible
+
+El frontend DEBE mantener `docs/frontend/04-glosario-ui.md` como glosario breve de etiquetas visibles (español argentino formal). Labels/badges/mensajes de producto hacia el usuario DEBEN seguir ese glosario para los términos canónicos: certificación **Válida** / **Revocado**; curso listado **Activo** / **Inactivo**; fecha **Programada** / **Realizada**; pantalla detalle cert **Expediente**; operación Copiar/QR/PDF **Entrega manual**. El glosario DEBE notar que el chrome público **VÁLIDO** / **REVOCADO** ≠ badge admin **Válida** / **Revocado** (misma semántica, superficie distinta). API/DTO/filtros PUEDEN conservar `vigente`/`revocado`. Copy operativo en diálogos de revocación PUEDE usar «vigente» al nombrar el estado de dominio. DEBE NOT forzar paridad literal admin↔público ni rediseñar el folio ceremonial. Hub Activo/Inactivo en asistencias queda **fuera** de este ciclo (DEFER). Este ciclo DEBE NOT cambiar lógica de negocio, contratos HTTP ni patrones U5 de error/vacío.
+
+#### Scenario: Glosario versionado con asimetría público/admin
+
+- **GIVEN** el árbol `docs/frontend/`
+- **WHEN** se consulta el glosario UI
+- **THEN** DEBE existir `04-glosario-ui.md` con los términos canónicos de U3
+- **AND** DEBE notar VÁLIDO/REVOCADO público ≠ Válida/Revocado admin
+
+#### Scenario: Copy visible sigue el glosario sin tocar API
+
+- **GIVEN** labels/badges/mensajes de producto en UI admin/pública
+- **WHEN** se audita copy de estado de certificación hacia el usuario
+- **THEN** DEBE usar **Válida** / **Revocado** (y «válidas» donde el copy nombre el estado)
+- **AND** API/DTO PUEDEN seguir `vigente`/`revocado`; DEBE NOT rotar token/QR ni alterar D0
+
+### Requirement: SHELL-A11Y-01 — Foco visible preservado
+
+El frontend DEBE conservar `:focus-visible` usable en shell/U4. DEBE NOT rediseñar paleta. Contraste/token SOLO si smoke falla; si no DEFER (U9). Hoist `.sr-only` DEFER.
+
+#### Scenario: Foco teclado visible
+
+- **GIVEN** control interactivo shell/U4
+- **WHEN** se enfoca con teclado
+- **THEN** DEBE mostrarse anillo `:focus-visible` usable
+
+### Requirement: SHELL-A11Y-02 — Drawer mobile con trap y aria-modal
+
+Drawer abierto DEBE atrapar Tab en drawer+overlay, exponer `aria-modal="true"`, preservar Esc/`inert` en `.content`, y foco inicial al patrón vigente.
+
+#### Scenario: Tab no escapa del drawer
+
+- **GIVEN** drawer mobile abierto
+- **WHEN** Tab / Shift+Tab
+- **THEN** foco DEBE permanecer en drawer+overlay con `aria-modal="true"`
+
+#### Scenario: Esc e inert intactos
+
+- **GIVEN** drawer abierto con `.content` inert
+- **WHEN** Escape
+- **THEN** drawer DEBE cerrarse y `inert`/foco DEBEN seguir el patrón vigente
+
+### Requirement: SHELL-A11Y-03 — Patrón de trap en diálogos admin
+
+Diálogos U4 (entrega, revocación, error-dialog) DEBEN atrapar Tab c/backdrop (NO focusable fuera). Esc DEBE cerrar si operable. Retorno DEBERÍA ser soft (SPA OK); DEBE NOT restore duro si cambia ruta. `window.confirm` fuera.
+
+#### Scenario: Tab no cae en backdrop suelto
+
+- **GIVEN** diálogo entrega o revocación abierto
+- **WHEN** Tab
+- **THEN** foco DEBE permanecer en dialog+backdrop atrapados
+
+#### Scenario: Error-dialog atrapa foco
+
+- **GIVEN** error-dialog de entrega abierto
+- **WHEN** navegación teclado
+- **THEN** DEBE atrapar Tab; Esc DEBE cerrar si operable
+
+#### Scenario: Retorno de foco soft
+
+- **GIVEN** cierre que navega de ruta
+- **WHEN** cambia la vista SPA
+- **THEN** retorno soft vía nueva ruta ES suficiente (no hard-fail)
+
+### Requirement: SHELL-A11Y-04 — Listados críticos sin rotura mobile
+
+Listados críticos spot-check U4 DEBEN ser usables en angosto (tabla↔cards o scroll-x). DEBE NOT unificar breakpoints ni rediseñar cards. U5 fuera.
+
+#### Scenario: Spot mobile sin overflow bloqueante
+
+- **GIVEN** listado crítico en viewport angosto
+- **WHEN** se inspecciona layout
+- **THEN** DEBE ser usable sin unificar breakpoints
+
+### Requirement: SHELL-STATE-01 — Listados: loading / error / empty / no-results
+
+Los listados admin críticos (cursos, alumnos, certificaciones, asistencias) DEBEN exponer el patrón P9–P23: skeleton de carga; panel de error recuperable con **Reintentar** en clase canónica `btn-primary` (mayoría vigente; cursos abandona `btn-secondary`); empty-total con CTA útil existente (`btn-primary` + `routerLink` de alta/navegación; DEBE NOT inventar componente EmptyState; empty de certs DEBE alinearse a ese patrón y no depender solo de `cta-nueva` como variante exclusiva); filtro vacío / no-results con acción «Limpiar…». Mensajes DEBEN ser honesty fijos (sin raw HTTP/URL/DNI/token). Dashboard/config solo smoke de paridad salvo regresión.
+
+#### Scenario: Error recuperable con Reintentar primary
+
+- **GIVEN** un listado crítico con fallo recuperable de carga
+- **WHEN** se muestra el panel de error
+- **THEN** DEBE ofrecer **Reintentar** con clase `btn-primary`
+- **AND** DEBE NOT mostrar raw HTTP ni PII
+
+#### Scenario: Empty-total con CTA útil
+
+- **GIVEN** listado crítico sin filas (empty-total)
+- **WHEN** se renderiza el estado vacío
+- **THEN** DEBE mostrar CTA navegable al patrón existente (`btn-primary` + destino útil)
+- **AND** DEBE NOT introducir un componente EmptyState nuevo
+
+#### Scenario: No-results limpia filtros
+
+- **GIVEN** listado con filtros que dejan cero resultados
+- **WHEN** se muestra no-results
+- **THEN** DEBE ofrecer acción de limpiar filtros/búsqueda
+
+### Requirement: SHELL-STATE-02 — Reintentar gated a carga recuperable
+
+En detalle/editores admin (incl. `course-editor`), **Reintentar** DEBE aparecer solo ante fallo recuperable de carga inicial. Not-found, id inválido y errores de acción/submit DEBEN NOT ofrecer Reintentar de load. `course-editor` DEBE paridad con detalle: carga recuperable con Reintentar; not-found sin retry.
+
+#### Scenario: Course-editor carga recuperable
+
+- **GIVEN** `course-editor` en modo edición con fallo recuperable de `obtener`
+- **WHEN** se muestra el error de carga
+- **THEN** DEBE ofrecer **Reintentar** que reintente la carga
+- **AND** DEBE NOT mostrar raw técnico
+
+#### Scenario: Not-found sin Reintentar
+
+- **GIVEN** id inválido o recurso ausente en editor/detalle
+- **WHEN** se muestra not-found
+- **THEN** DEBE NOT ofrecer Reintentar de load
+
+#### Scenario: Acción fallida sin retry de load
+
+- **GIVEN** fallo de submit/acción (no carga inicial)
+- **WHEN** se muestra el error
+- **THEN** DEBE NOT activar Reintentar de carga inicial
+
+### Requirement: SHELL-STATE-03 — QA forced views solo no-prod
+
+Las barras/vistas QA forzadas de listados DEBEN estar disponibles solo cuando `isDevMode` es verdadero. Con token QA/`isDevMode` en falso (staging/prod) DEBEN NOT renderizarse. DEBE NOT romper harness local `ng serve`. Asistencias sin harness QA permanece aceptable (DEFER paridad).
+
+#### Scenario: QA oculto fuera de dev
+
+- **GIVEN** build o inyección con `isDevMode`/token QA en falso
+- **WHEN** se carga un listado con harness QA
+- **THEN** la barra/controles de vista forzada DEBEN NOT ser visibles
+
+#### Scenario: QA usable en dev
+
+- **GIVEN** `isDevMode` verdadero y token QA habilitado
+- **WHEN** se fuerza vista cargando/error/vacío
+- **THEN** DEBE poder inspeccionar esos estados sin afectar prod
+
+### Requirement: SHELL-STATE-04 — 401 limpio a login (regresión)
+
+Ante HTTP 401 en requests admin (excepto login), el interceptor DEBE `clearSession` y navegar a `/admin/login` sin propagar error a la página (NEVER + latch). DEBE NOT mostrar panel error+Reintentar espurio. Login 401 DEBE conservar mensaje de credenciales. Este ciclo DEBE NOT cambiar el interceptor salvo bug demostrado; el escenario es de regresión.
+
+#### Scenario: 401 no-login redirige sin panel
+
+- **GIVEN** sesión admin y request (≠ login) que responde 401
+- **WHEN** el interceptor procesa el error
+- **THEN** DEBE limpiar sesión y navegar a `/admin/login`
+- **AND** la página DEBE NOT mostrar panel error+Reintentar por ese 401
+
+#### Scenario: Login 401 no redirige en loop
+
+- **GIVEN** POST de login que responde 401
+- **WHEN** el interceptor evalúa la respuesta
+- **THEN** DEBE NOT aplicar el redirect de sesión de admin
+- **AND** la UI de login DEBE poder mostrar error de credenciales

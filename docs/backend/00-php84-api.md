@@ -62,7 +62,9 @@ Ese contrato define endpoints, DTOs, sobre de errores, validación de token QR, 
 
 ## Autenticación administrativa por sesión (P5-01)
 
-Los endpoints administrativos usan sesión PHP nativa: `POST /admin/auth/login`, `GET /admin/auth/session` y `POST /admin/auth/logout`. La cookie es `HttpOnly`, `Secure`, `SameSite=Strict`, host-only y usa `/certificados/` en producción o `/certificados_staging/` en staging. Login regenera el ID; la sesión vence por 30 minutos de inactividad o 8 horas absolutas. Las mutaciones requieren `X-CSRF-Token` antes de acceder a servicios o base.
+Los endpoints administrativos usan sesión PHP nativa: `POST /admin/auth/login`, `GET /admin/auth/session` y `POST /admin/auth/logout`. La cookie es `HttpOnly`, `Secure`, `SameSite=Strict`, host-only y usa `/certificados/` en producción o `/certificados_staging/` en staging. Login regenera el ID; la sesión vence por **4 horas** de inactividad (`14400` s) o **8 horas** absolutas (`28800` s). `GET /admin/auth/session` y los GETs administrativos autorizados renuevan `lastSeen`. Las mutaciones requieren `X-CSRF-Token` antes de acceder a servicios o base.
+
+**D-009 (profundidad cookie):** el `lifetime` de cookie es `0` (cookie de sesión del navegador: sin `Max-Age`/`Expires` persistente). El tope absoluto de **28800** s se aplica solo app-side (`createdAt` + `sessionIsActive`), no como duración de cookie. Atributos fijos: `Secure`, `HttpOnly`, `SameSite=Strict`; el path sigue el entorno. El `.htaccess` de la API deniega acceso directo a `src/` y `config/` antes del fallback — ver `docs/deploy/00-cpanel-certificados.md` §API htaccess.
 
 La configuración externa requiere `admin_username`, `admin_password_hash` creado con `PASSWORD_DEFAULT` y ambos TTL exactos. No se versionan ni exponen valores. `X-Admin-Key` no autoriza HTTP; la compatibilidad CLI queda deshabilitada por defecto, requiere expiración futura y debe retirarse antes de activar login de navegador en producción.
 

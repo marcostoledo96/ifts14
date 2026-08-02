@@ -141,7 +141,11 @@ describe('CertificationPreviewPage', () => {
     expect(ficha).not.toBeNull();
     const text = ficha?.textContent || '';
     // documentMasked visible con DNI completo ficticio (D0 admin UI).
-    expect(text).toMatch(/\b12345678\b/);
+    // Label «Documento» + dd sin espacio en textContent → no usar \b entre letra y dígito.
+    const docDd = Array.from(ficha?.querySelectorAll('.fila-dato') || []).find((row) =>
+      (row.querySelector('dt')?.textContent || '').trim() === 'Documento',
+    )?.querySelector('dd');
+    expect(docDd?.textContent?.trim()).toBe('12345678');
     // tokenPrefix visible (prefijo_demo_xxx), no token completo.
     expect(text).toMatch(/prefijo_demo_[a-z0-9]{3}/);
   });
@@ -472,6 +476,20 @@ describe('CertificationPreviewPage', () => {
     expect(header?.querySelector('.estado-badge')).not.toBeNull();
   });
 
+  it('CERT-COPY-01: badge Revocado y label Documento (sin mascarado)', async () => {
+    const f = await render('5');
+    const el = f.nativeElement as HTMLElement;
+    const badge = el.querySelector('.expediente-header .estado-badge');
+    expect(badge?.textContent?.trim()).toBe('Revocado');
+    expect(el.textContent).not.toContain('Revocada');
+    const dts = Array.from(el.querySelectorAll('.ficha-expediente dt')).map((d) =>
+      (d.textContent || '').trim(),
+    );
+    expect(dts).toContain('Documento');
+    expect(dts.some((t) => /mascarado/i.test(t))).toBeFalse();
+    expect(el.textContent).not.toMatch(/Documento\s*\(mascarado\)/i);
+  });
+
   it('muestra columna de control (ficha, acciones, validación, riesgo)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
@@ -639,18 +657,24 @@ describe('CertificationPreviewPage', () => {
     const f = await render('abc');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('no encontrada');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(el.textContent).not.toContain('Reintentar');
   });
 
   it('id hex "0x1" no se coerce a 1: muestra "no encontrada"', async () => {
     const f = await render('0x1');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('no encontrada');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(el.textContent).not.toContain('Reintentar');
   });
 
   it('id notación científica "1e0" no se coerce a 1: muestra "no encontrada"', async () => {
     const f = await render('1e0');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('no encontrada');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(el.textContent).not.toContain('Reintentar');
   });
 
   it('id con espacios " 1 " se normaliza y carga la certificación', async () => {
@@ -663,6 +687,8 @@ describe('CertificationPreviewPage', () => {
     const f = await render('999');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('no encontrada');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(el.textContent).not.toContain('Reintentar');
   });
 
   it('estado no encontrado no renderiza secciones del expediente', async () => {
@@ -915,7 +941,7 @@ describe('CertificationPreviewPage', () => {
     expect(info?.textContent).toContain('El PDF ya está actualizado');
   });
 
-  it('P6-02: regeneración con error muestra mensaje descriptivo', async () => {
+  it('P6-02: regeneración con error muestra mensaje genérico sin raw', async () => {
     const fakeCerts: CertificationsService = {
       listar: () => Promise.resolve([]),
       contar: () => Promise.resolve(0),
@@ -925,7 +951,7 @@ describe('CertificationPreviewPage', () => {
       obtener: (id) => Promise.resolve(detalleFixture({ id })),
       descargarQrPng: () => Promise.resolve(new Blob()),
       descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
-      regenerarPdf: () => Promise.reject(new Error('Error de servidor')),
+      regenerarPdf: () => Promise.reject(new Error('Error de servidor LEAK_RAW_REGEN')),
     };
 
     const fixture = await render('1', { certs: fakeCerts });
@@ -940,7 +966,10 @@ describe('CertificationPreviewPage', () => {
 
     const error = el.querySelector('.regeneracion-error');
     expect(error).not.toBeNull();
-    expect(error?.textContent).toContain('Error de servidor');
+    expect(error?.textContent).toContain('No se pudo regenerar el PDF.');
+    expect(error?.textContent).not.toContain('LEAK_RAW_REGEN');
+    expect(el.textContent).not.toContain('Reintentar');
+    expect(fixture.componentInstance.errorRecuperable()).toBeFalse();
   });
 
   it('P6-02: botón "Regenerar PDF" muestra estado loading mientras regenera', async () => {
@@ -978,5 +1007,123 @@ describe('CertificationPreviewPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
+  });
+
+  // --- P18 honesty / anti-leak ---
+
+  it('P18: fallo hard de obtener muestra mensaje fijo + Reintentar sin raw', async () => {
+    const LEAK = 'LEAK_RAW_LOAD_network_detail';
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id)),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
+      obtener: () => Promise.reject(new Error(LEAK)),
+    };
+
+    const fixture = await render('1', { certs: fakeCerts });
+    const el = fixture.nativeElement as HTMLElement;
+    expect(fixture.componentInstance.error()).toBe('No se pudo cargar la certificación.');
+    expect(fixture.componentInstance.errorRecuperable()).toBeTrue();
+    expect(el.textContent).toContain('No se pudo cargar la certificación.');
+    expect(el.textContent).toContain('Reintentar');
+    expect(el.textContent).not.toContain(LEAK);
+  });
+
+  it('P18: Reintentar en load hard vuelve a llamar obtener', async () => {
+    const detalleOk = detalleFixture({ id: 1 });
+    const obtener = jasmine
+      .createSpy('obtener')
+      .and.returnValues(Promise.reject(new Error('LEAK_RETRY')), Promise.resolve(detalleOk));
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id)),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
+      obtener,
+    };
+
+    const fixture = await render('1', { certs: fakeCerts });
+    expect(obtener).toHaveBeenCalledTimes(1);
+    const el = fixture.nativeElement as HTMLElement;
+    const btn = Array.from(el.querySelectorAll('button')).find((b) =>
+      (b.textContent || '').includes('Reintentar'),
+    );
+    expect(btn).toBeTruthy();
+    (btn as HTMLElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(obtener).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.error()).toBe('');
+    expect(fixture.componentInstance.errorRecuperable()).toBeFalse();
+    expect(fixture.componentInstance.detalle()?.id).toBe(1);
+  });
+
+  it('P18: fallo QR muestra genérico sin raw ni Reintentar de load', async () => {
+    const LEAK = 'LEAK_RAW_QR_blob_fail';
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id)),
+      obtener: (id) => Promise.resolve(detalleFixture({ id })),
+      descargarQrPng: () => Promise.reject(new Error(LEAK)),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
+    };
+
+    const fixture = await render('1', { certs: fakeCerts });
+    await fixture.componentInstance.descargarQr();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(fixture.componentInstance.qrError()).toBe('No se pudo descargar el QR.');
+    expect(el.textContent).toContain('No se pudo descargar el QR.');
+    expect(el.textContent).not.toContain(LEAK);
+    expect(fixture.componentInstance.errorRecuperable()).toBeFalse();
+    expect(el.querySelector('.estado-error')?.textContent || '').not.toContain('Reintentar');
+  });
+
+  it('P18: post-regen omite publicValidationUrl canónica completa', async () => {
+    const FULL =
+      'https://ifts14.edu.ar/certificados/validar/prefijo_demo_a1b-completo-post-regen';
+    const fakeCerts: CertificationsService = {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: (id) => Promise.resolve(entregaFixture(id)),
+      obtener: (id) => Promise.resolve(detalleFixture({ id })),
+      descargarQrPng: () => Promise.resolve(new Blob()),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
+      regenerarPdf: () =>
+        Promise.resolve({ regenerado: true, publicValidationUrl: FULL }),
+    };
+
+    const fixture = await render('1', { certs: fakeCerts });
+    const el = fixture.nativeElement as HTMLElement;
+    const regenerarBtn = Array.from(
+      el.querySelectorAll('.acciones-panel button') || [],
+    ).find((b) => b.textContent?.includes('Regenerar PDF'));
+    (regenerarBtn as HTMLElement | undefined)?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const ok = el.querySelector('.regeneracion-ok');
+    expect(ok).not.toBeNull();
+    expect(ok?.textContent).toContain('regenerado');
+    expect(ok?.textContent).toContain('permanente');
+    expect(ok?.textContent).not.toContain(FULL);
+    expect(el.querySelector('.regeneracion-ok .public-url')).toBeNull();
   });
 });

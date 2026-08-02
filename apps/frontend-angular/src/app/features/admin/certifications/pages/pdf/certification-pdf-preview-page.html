@@ -32,7 +32,14 @@
   }
 
   @if (error()) {
-    <p class="estado-linea estado-error" role="alert">{{ error() }}</p>
+    <div class="estado-linea estado-error" role="alert">
+      <p>{{ error() }}</p>
+      @if (errorRecuperable()) {
+        <button type="button" class="btn-reintentar" (click)="onReintentar()">
+          Reintentar
+        </button>
+      }
+    </div>
     <app-ui-back-link
       class="no-print"
       to="/admin/certificaciones"
@@ -105,10 +112,87 @@
         </span>
       }
 
-      <!-- Decoraciones de marca (no informativas) -->
-      <svg class="trama-puntos" viewBox="0 0 100 78" aria-hidden="true"></svg>
-      <svg class="lineas-circuito lineas-izq" viewBox="0 0 120 240" aria-hidden="true"></svg>
-      <svg class="lineas-circuito lineas-der" viewBox="0 0 120 240" aria-hidden="true"></svg>
+      <!-- Decoraciones de marca (identidad visual institucional; no informativas) -->
+      <svg class="trama-puntos" viewBox="0 0 100 78" fill="currentColor" aria-hidden="true">
+        <circle cx="4" cy="4" r="3" opacity="1" />
+        <circle cx="15" cy="4" r="3" opacity="0.92" />
+        <circle cx="26" cy="4" r="3" opacity="0.84" />
+        <circle cx="37" cy="4" r="3" opacity="0.76" />
+        <circle cx="48" cy="4" r="3" opacity="0.68" />
+        <circle cx="59" cy="4" r="3" opacity="0.6" />
+        <circle cx="70" cy="4" r="3" opacity="0.5" />
+        <circle cx="81" cy="4" r="3" opacity="0.38" />
+        <circle cx="4" cy="15" r="3" opacity="0.92" />
+        <circle cx="15" cy="15" r="3" opacity="0.84" />
+        <circle cx="26" cy="15" r="3" opacity="0.76" />
+        <circle cx="37" cy="15" r="3" opacity="0.68" />
+        <circle cx="48" cy="15" r="3" opacity="0.58" />
+        <circle cx="59" cy="15" r="3" opacity="0.48" />
+        <circle cx="70" cy="15" r="3" opacity="0.36" />
+        <circle cx="4" cy="26" r="3" opacity="0.84" />
+        <circle cx="15" cy="26" r="3" opacity="0.76" />
+        <circle cx="26" cy="26" r="3" opacity="0.66" />
+        <circle cx="37" cy="26" r="3" opacity="0.56" />
+        <circle cx="48" cy="26" r="3" opacity="0.44" />
+        <circle cx="59" cy="26" r="3" opacity="0.32" />
+        <circle cx="4" cy="37" r="3" opacity="0.74" />
+        <circle cx="15" cy="37" r="3" opacity="0.64" />
+        <circle cx="26" cy="37" r="3" opacity="0.52" />
+        <circle cx="37" cy="37" r="3" opacity="0.4" />
+        <circle cx="48" cy="37" r="3" opacity="0.28" />
+        <circle cx="4" cy="48" r="3" opacity="0.62" />
+        <circle cx="15" cy="48" r="3" opacity="0.5" />
+        <circle cx="26" cy="48" r="3" opacity="0.38" />
+        <circle cx="37" cy="48" r="3" opacity="0.24" />
+        <circle cx="4" cy="59" r="3" opacity="0.48" />
+        <circle cx="15" cy="59" r="3" opacity="0.34" />
+        <circle cx="26" cy="59" r="3" opacity="0.2" />
+        <circle cx="4" cy="70" r="3" opacity="0.32" />
+        <circle cx="15" cy="70" r="3" opacity="0.18" />
+      </svg>
+      <svg class="lineas-circuito lineas-izq" viewBox="0 0 120 240" fill="none" aria-hidden="true">
+        <g stroke="currentColor" stroke-width="1.4" opacity="0.55">
+          <path d="M8 0 V40 l14 14 V120 l-10 10 V190 l16 16 V240" />
+          <path d="M40 10 V70 l18 18 V150" />
+          <path d="M8 40 H30 M22 54 H64 M2 130 H34 M28 206 H72 M58 88 H96" />
+        </g>
+        <g fill="currentColor" opacity="0.8">
+          <circle cx="8" cy="0" r="2.4" />
+          <circle cx="22" cy="54" r="2.4" />
+          <circle cx="12" cy="130" r="2.4" />
+          <circle cx="58" cy="88" r="2.4" />
+          <circle cx="40" cy="10" r="2.4" />
+          <circle cx="58" cy="150" r="2.4" />
+          <circle cx="72" cy="206" r="2.4" />
+          <circle cx="96" cy="88" r="2.4" />
+        </g>
+      </svg>
+      <div class="deco-esq-der" aria-hidden="true">
+        <svg class="lineas-circuito lineas-der" viewBox="0 0 120 240" fill="none">
+          <g stroke="currentColor" stroke-width="1.4" opacity="0.55">
+            <path d="M8 0 V40 l14 14 V120 l-10 10 V190 l16 16 V240" />
+            <path d="M40 10 V70 l18 18 V150" />
+            <path d="M8 40 H30 M22 54 H64 M2 130 H34 M28 206 H72 M58 88 H96" />
+          </g>
+          <g fill="currentColor" opacity="0.8">
+            <circle cx="8" cy="0" r="2.4" />
+            <circle cx="22" cy="54" r="2.4" />
+            <circle cx="12" cy="130" r="2.4" />
+            <circle cx="58" cy="88" r="2.4" />
+            <circle cx="40" cy="10" r="2.4" />
+            <circle cx="58" cy="150" r="2.4" />
+            <circle cx="72" cy="206" r="2.4" />
+            <circle cx="96" cy="88" r="2.4" />
+          </g>
+        </svg>
+        <svg class="iconos-sustentables" viewBox="0 0 88 28" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 20c4-8 10-12 16-12 0 6-4 12-10 14-2-4-4-6-6-2z" />
+          <path d="M40 22 V10 M34 16 h12" />
+          <circle cx="40" cy="8" r="3.5" />
+          <path d="M62 22c2-6 6-10 12-12-1 5-4 9-8 11" />
+          <path d="M68 10c4 1 8 4 10 8" />
+        </svg>
+      </div>
 
       <div class="folio-contenido">
         <!-- Encabezado: logos institucionales fijos -->
@@ -157,27 +241,21 @@
           <h2 class="cert-titulo">CERTIFICADO</h2>
         </div>
 
-        <!-- Cuerpo -->
+        <!-- Cuerpo (copy alineado al certificado institucional original) -->
         <div class="cert-cuerpo">
           <p class="cert-intro">
-            @if (autoridades(); as aut) {
-              {{ aut.institutionName || 'El Instituto de Formación Técnica Superior N.° 14' }}
-              (IFTS 14), que integra la Dirección de Educación Técnica Superior —
-              Agencia de Habilidades para el Futuro, certifica que:
-            } @else {
-              El Instituto de Formación Técnica Superior N.° 14 (IFTS 14), que
-              integra la Dirección de Educación Técnica Superior — Agencia de
-              Habilidades para el Futuro, certifica que:
-            }
+            El Instituto de Formación Técnica Superior N.º 14 (IFTS 14) que integra
+            la Dirección de Educación Técnica Superior, Agencia de Habilidades para
+            el Futuro, certifica que:
           </p>
 
           <p class="cert-protagonista">{{ d.nombreAlumno }}</p>
           <div class="cert-divider" aria-hidden="true"></div>
-          <p class="cert-doc mono">Documento {{ d.documentMasked }}</p>
+          <p class="cert-doc mono">D.N.I. {{ d.documentMasked }}</p>
 
           <p class="cert-texto">
-            ha aprobado el curso de formación profesional
-            <strong class="cert-curso-nombre">{{ d.cursoNombre }}</strong>,
+            Ha aprobado el curso de formación profesional
+            <strong class="cert-curso-nombre">“{{ d.cursoNombre }}”</strong>,
             conforme al registro de asistencia auditado.
           </p>
           @if (d.attendedDates.length) {
@@ -196,6 +274,8 @@
           <p class="cert-cierre">
             Se extiende el presente certificado a solicitud del/la
             interesado/a, para constancia de su aprobación.
+          </p>
+          <p class="cert-lugar">
             @if (emisionLarga()) {
               Ciudad Autónoma de Buenos Aires, {{ emisionLarga() }}.
             } @else {
@@ -280,7 +360,7 @@
           </div>
         </div>
 
-        <!-- Pie: marca ciudad + nota de configuración -->
+        <!-- Pie: marca ciudad (sin notas internas de configuración) -->
         <div class="cert-footer-pie">
           <div class="marca-ciudad" title="Buenos Aires Ciudad (logo oficial)">
             <span class="marca-ciudad-ba" aria-hidden="true">BA</span>
@@ -290,13 +370,6 @@
               Ciudad
             </span>
           </div>
-          <p class="cert-config-note">
-            @if (autoridades()) {
-              🔒 Datos institucionales desde Configuración
-            } @else {
-              🔒 Datos institucionales desde Configuración (pendiente)
-            }
-          </p>
         </div>
       </div>
     </article>

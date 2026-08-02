@@ -1,12 +1,12 @@
 # Deploy cPanel — /certificados/
 
-> **Estado:** staging deploy funcional y en uso diario. Producción `/certificados/` del módulo aún no activada.
+> **Estado:** staging operativo y en uso diario. **Producción** (`https://ifts14.com.ar/certificados/`) en **preparación opción A** (path bajo el dominio principal + PHP 8.4 por carpeta). Plantillas y checklist: [`deploy/production/`](../../deploy/production/). **No activada** hasta gate PHP + smoke verdes. Sin ZIP ni land a `main` sin OK explícito del operador.
 
 ## Entorno real de staging (P8-01)
 
 | Recurso | Valor |
 |---|---|
-| Subdominio | `staging.example.edu.ar` |
+| Subdominio | `<staging-host>` (ej. subdominio QA del instituto) |
 | Document root | `/public_html/certificados_qa/` |
 | Backend | `/certificados_staging/api/` |
 | PHP | 8.4.22 (ea-php84, CGI/FastCGI) |
@@ -26,7 +26,7 @@
 
 ### Lecciones del entorno
 
-1. **SetEnv NO funciona.** `mod_env` no está habilitado → usar `.user.ini` + `auto_prepend_file`.
+1. **SetEnv NO funciona.** `mod_env` no está habilitado → usar `.user.ini` + `auto_prepend_file` con **`putenv('CERTIFICADOS_CONFIG_PATH=...')`** (no alcanza un `define()` PHP: `Config::load()` solo mira `getenv()`).
 2. **No hay Terminal ni SSH.** Todo se prepara local y se sube.
 3. **Composer no instalado.** Generar `vendor/` localmente y subir como ZIP.
 4. **Dominio principal usa PHP 8.1.** No cambiarlo globalmente.
@@ -36,15 +36,55 @@
 8. **TTL admin son fijos (14400/28800).** No son configurables sin cambiar constantes en `Config.php`.
 9. **Nunca compartir:** contraseñas, hashes, tokens, DNI, rutas privadas, IPs, credenciales DB.
 
+## Producción — opción A (path `/certificados/`)
+
+Decisión cerrada para la primera activación del módulo en el dominio principal:
+
+| Pieza | Valor |
+|---|---|
+| URL | `https://ifts14.com.ar/certificados/` |
+| Document root efectivo | `public_html/certificados/` (sin subdominio si el gate PHP pasa) |
+| FE | `baseHref=/certificados/`, `apiBaseUrl=/certificados/api` (build `production`) |
+| Cookie admin | `Path=/certificados/`, nombre `ifts14_cert_admin` |
+| PHP | Forzar **ea-php84** en `certificados/api/.htaccess` (`AddHandler`), sin cambiar el PHP 8.1 global del dominio |
+| DB / config | **Separadas** de staging; claves de cifrado **nuevas** |
+| Plantillas | [`deploy/production/`](../../deploy/production/) (espejo de staging) |
+| Runbook operador | [`deploy/production/INSTRUCCIONES-SUBIDA.md`](../../deploy/production/INSTRUCCIONES-SUBIDA.md) |
+| Checklist | [`deploy/production/CHECKLIST.md`](../../deploy/production/CHECKLIST.md) |
+
+### Gate PHP (bloqueante)
+
+Antes del paquete completo:
+
+1. Crear `public_html/certificados/api/` y subir un `ping.php` que imprima `PHP_VERSION`.
+2. Aplicar `.htaccess-api` de producción (`AddHandler application/x-httpd-ea-php84`).
+3. Abrir `https://ifts14.com.ar/certificados/api/ping.php`.
+4. **PASS** = `8.4.x` → seguir opción A. **FAIL** = sigue 8.1 u otra → **parar**; ver [Apéndice: contingencia opción C](#contingencia-opcion-c).
+5. Borrar `ping.php`.
+
+### DB y config (no mezclar con staging)
+
+- DB nueva (ej. prefijo cPanel + `cert_prod`); usuario dedicado; migraciones `001`→`015` sobre esquema vacío de negocio.
+- Config externa bajo `~/ifts14_config/` + bootstrap; `.user.ini` con `auto_prepend_file` en `certificados/api/` (**nunca** `SetEnv`).
+- `public_base_url=https://ifts14.com.ar/certificados`; TTL admin **14400** / **28800** exactos.
+- No reutilizar `token_encryption_key` / `dni_cipher_key` de staging.
+
+### Qué no hacer en esta preparación
+
+- No apuntar prod a la DB de staging.
+- No generar ZIP hasta pedido explícito del operador.
+- No land L1 (`staging1.0`→`main`) sin OK explícito.
+- No mezclar deploy opción A y opción C en la misma ventana.
+
 ## Objetivo
 
-Preparar el deploy manual futuro del módulo de certificaciones en cPanel, bajo:
+Documentar el deploy manual del módulo en cPanel bajo:
 
 ```txt
 https://ifts14.com.ar/certificados/
 ```
 
-Este ciclo SDD **no ejecuta la subida**, no toca `public_html`, no crea `.env`, no instala dependencias y no modifica configuraciones reales del servidor. La guía deja el procedimiento revisable para una ventana operativa posterior.
+Esta guía **no ejecuta la subida**, no toca `public_html`, no crea `.env` con secretos, no instala dependencias en el servidor y no modifica configuraciones reales. El procedimiento operativo revisable está en `deploy/production/`.
 
 ### Gates D0 confirmados
 
@@ -218,7 +258,9 @@ Tomar la clave del ejemplo versionable `apps/backend-php/config/certificados-con
 
 ## .htaccess
 
-Los fragmentos siguientes son **orientativos y revisables**. Validar primero en una carpeta aislada o en una ventana controlada. La regla principal: el fallback SPA de `/certificados/` no debe capturar `/certificados/api/`.
+**Plantillas canónicas de producción:** [`deploy/production/.htaccess-root`](../../deploy/production/.htaccess-root) y [`deploy/production/.htaccess-api`](../../deploy/production/.htaccess-api) (incluye `AddHandler` ea-php84). Copiar esas plantillas en la ventana de activación.
+
+Los fragmentos siguientes son **orientativos y revisables** (histórico de la guía). Validar primero en una carpeta aislada o en una ventana controlada. La regla principal: el fallback SPA de `/certificados/` no debe capturar `/certificados/api/`.
 
 ### Separación `base href` vs `apiBaseUrl` (checkpoint M3-06)
 
@@ -448,3 +490,23 @@ Existe un paquete de humo local en `deploy/cpanel/certificados_qa_smoke/` para v
 - **Observado**: existe una carpeta con `.git/` interno dentro del material descargado; permanece bajo `material_privado_no_versionar/`.
 - **Observado**: `browser.zip` y `api.zip` no fueron descomprimidos por seguridad.
 - **Hipótesis**: el sitio actual combina frontend compilado y API PHP en una misma raíz pública compatible con cPanel/Apache.
+
+<a id="contingencia-opcion-c"></a>
+
+## Apéndice: contingencia opción C
+
+Solo si el **gate PHP** de opción A falla (sigue 8.1 u otra versión bajo `/certificados/api/` pese a `AddHandler`).
+
+**No implementar en el mismo deploy que A.** Requiere ciclo de código aparte:
+
+| Cambio | Valor esperado |
+|---|---|
+| Subdominio | p. ej. `certificados.ifts14.com.ar` |
+| Document root | `public_html/certificados` (raíz del vhost) |
+| `baseHref` FE | `/` |
+| `apiBaseUrl` | `/api` |
+| Cookie admin | `Path=/` (nombre de cookie según path de producción root) |
+| `normalizePath` / `.htaccess` | `RewriteBase /` (y `/api/`) |
+| Build FE | configuración nueva alineada a raíz |
+
+Hasta que se abra ese ciclo: documentar el fallo del gate, conservar staging intacto y no forzar path A con PHP incorrecto.

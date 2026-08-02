@@ -125,7 +125,7 @@ describe('HttpAttendanceService', () => {
     expect(result.every((a) => a.alumnoId === 10)).toBeTrue();
   });
 
-  it('marcar: DELETE y POST en paralelo (all-or-nothing)', async () => {
+  it('marcar: DELETE y POST en serie (evita lock de sesión PHP)', async () => {
     const p = service.marcar(5, 200, [
       { alumnoId: 10, presente: true },
       { alumnoId: 11, presente: false },
@@ -170,35 +170,25 @@ describe('HttpAttendanceService', () => {
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    // 2. DELETE solo las de fecha 200, en paralelo.
-    const deletes = httpMock.match(
-      (r) =>
-        r.method === 'DELETE' &&
-        (r.url === `${environment.apiBaseUrl}/admin/asistencias/50` ||
-          r.url === `${environment.apiBaseUrl}/admin/asistencias/51`),
-    );
-    expect(deletes.length).toBe(2);
-    for (const req of deletes) {
-      req.flush({ data: { voided: true }, meta: { requestId: 'rd' } });
-    }
+    // 2. DELETE de fecha 200, uno a uno (no en paralelo).
+    const del50 = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias/50`);
+    expect(del50.request.method).toBe('DELETE');
+    del50.flush({ data: { voided: true }, meta: { requestId: 'rd1' } });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    // 3. POST presentes en paralelo (10 y 12; 11 es false).
-    const posts = httpMock.match(
-      (r) => r.method === 'POST' && r.url === `${environment.apiBaseUrl}/admin/asistencias`,
-    );
-    expect(posts.length).toBe(2);
-    const bodies = posts
-      .map((r) => r.request.body as { alumnoId: number; cursoId: number; cursoFechaId: number })
-      .sort((a, b) => a.alumnoId - b.alumnoId);
-    expect(bodies).toEqual([
-      { alumnoId: 10, cursoId: 5, cursoFechaId: 200 },
-      { alumnoId: 12, cursoId: 5, cursoFechaId: 200 },
-    ]);
-    posts[0].flush({
+    const del51 = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias/51`);
+    expect(del51.request.method).toBe('DELETE');
+    del51.flush({ data: { voided: true }, meta: { requestId: 'rd2' } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // 3. POST presentes en serie (10 y 12; 11 es false).
+    const post10 = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`);
+    expect(post10.request.method).toBe('POST');
+    expect(post10.request.body).toEqual({ alumnoId: 10, cursoId: 5, cursoFechaId: 200 });
+    post10.flush({
       data: {
         id: 60,
-        alumnoId: (posts[0].request.body as { alumnoId: number }).alumnoId,
+        alumnoId: 10,
         cursoId: 5,
         cursoFechaId: 200,
         fecha: '2026-03-01',
@@ -207,10 +197,15 @@ describe('HttpAttendanceService', () => {
       },
       meta: { requestId: 'rp1' },
     });
-    posts[1].flush({
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const post12 = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`);
+    expect(post12.request.method).toBe('POST');
+    expect(post12.request.body).toEqual({ alumnoId: 12, cursoId: 5, cursoFechaId: 200 });
+    post12.flush({
       data: {
         id: 61,
-        alumnoId: (posts[1].request.body as { alumnoId: number }).alumnoId,
+        alumnoId: 12,
         cursoId: 5,
         cursoFechaId: 200,
         fecha: '2026-03-01',
@@ -226,7 +221,34 @@ describe('HttpAttendanceService', () => {
     httpMock.verify();
   });
 
-  it('marcar rechaza toda la operación si un DELETE falla', async () => {
+  it('marcar rechaza si un POST falla', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+
+    const p = service.marcar(5, 200, [{ alumnoId: 10, presente: true }]);
+
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`).flush({ data: { items: [] }, meta: { requestId: 'rg' } });
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    const reqPost = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`);
+    reqPost.flush('crash', { status: 500, statusText: 'Internal Server Error' });
+
+    await expectAsync(p).toBeRejected();
+
+    // Tras fallo de POST (y cualquier mutación parcial), el hub de sesión no debe reusarse.
+    const after = service.listarHub();
+    const hubReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(hubReq.request.method).toBe('GET');
+    hubReq.flush({ ...hubPayload, meta: { requestId: 'hub-after-post-fail' } });
+    await after;
+  });
+
+  it('marcar rechaza toda la operación si un DELETE falla e invalida hub', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+
     const p = service.marcar(5, 200, [{ alumnoId: 10, presente: true }]);
 
     httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`).flush({
@@ -239,19 +261,12 @@ describe('HttpAttendanceService', () => {
     reqDelete.flush('crash', { status: 500, statusText: 'Internal Server Error' });
 
     await expectAsync(p).toBeRejected();
-    httpMock.verify();
-  });
 
-  it('marcar rechaza si un POST falla', async () => {
-    const p = service.marcar(5, 200, [{ alumnoId: 10, presente: true }]);
-
-    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`).flush({ data: { items: [] }, meta: { requestId: 'rg' } });
-    await new Promise(resolve => setTimeout(resolve, 0));
-
-    const reqPost = httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`);
-    reqPost.flush('crash', { status: 500, statusText: 'Internal Server Error' });
-
-    await expectAsync(p).toBeRejected();
+    const after = service.listarHub();
+    const hubReq = httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(hubReq.request.method).toBe('GET');
+    hubReq.flush({ ...hubPayload, meta: { requestId: 'hub-after-delete-fail' } });
+    await after;
   });
 
   it('anular hace DELETE a /admin/asistencias/:id y devuelve void', async () => {
@@ -327,6 +342,97 @@ describe('HttpAttendanceService', () => {
     expect(hub.fechas[0].id).toBe(11);
     expect(hub.asistencias.length).toBe(1);
     expect(hub.alumnosActivos).toBe(3);
+  });
+
+  const hubPayload = {
+    data: {
+      cursos: [{ id: 1, codigo: 'CUR-001', nombre: 'Demo', estado: 'activo' }],
+      fechas: [
+        {
+          id: 11,
+          cursoId: 1,
+          fecha: '2026-03-01',
+          descripcion: null,
+          orden: 1,
+          estado: 'programada',
+        },
+      ],
+      asistencias: [] as const,
+      alumnosActivos: 2,
+    },
+    meta: { requestId: 'hub-coalesce' },
+  };
+
+  it('listarHub paralelo coalescea a un solo GET', async () => {
+    const p1 = service.listarHub();
+    const p2 = service.listarHub();
+    const reqs = httpMock.match(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(reqs.length).toBe(1);
+    expect(reqs[0].request.method).toBe('GET');
+    reqs[0].flush(hubPayload);
+    const [a, b] = await Promise.all([p1, p2]);
+    expect(a).toBe(b);
+    expect(a.alumnosActivos).toBe(2);
+  });
+
+  it('listarHub reusa Promise de sesión hasta mutación', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+    const second = service.listarHub();
+    httpMock.expectNone(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    await expectAsync(second).toBeResolved();
+  });
+
+  it('marcar invalida hubPending y fuerza GET fresco', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+
+    const marcarP = service.marcar(5, 200, [{ alumnoId: 10, presente: true }]);
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias?cursoId=5`).flush({
+      data: { items: [] },
+      meta: { requestId: 'rg' },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias`).flush({
+      data: {
+        id: 60,
+        alumnoId: 10,
+        cursoId: 5,
+        cursoFechaId: 200,
+        fecha: '2026-03-01',
+        fechaEstado: 'realizada',
+        registradoEn: '2026-03-01T10:00:00Z',
+      },
+      meta: { requestId: 'rp' },
+    });
+    await marcarP;
+
+    const after = service.listarHub();
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ ...hubPayload, meta: { requestId: 'hub-after-marcar' } });
+    await after;
+  });
+
+  it('anular invalida hubPending y fuerza GET fresco', async () => {
+    const first = service.listarHub();
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`).flush(hubPayload);
+    await first;
+
+    const anularP = service.anular(77);
+    httpMock.expectOne(`${environment.apiBaseUrl}/admin/asistencias/77`).flush({
+      data: { id: 77, voided: true },
+      meta: { requestId: 'r1' },
+    });
+    await anularP;
+
+    const after = service.listarHub();
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/admin/hub/asistencias`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ ...hubPayload, meta: { requestId: 'hub-after-anular' } });
+    await after;
   });
 
   it('resuelve vía ATTENDANCE_SOURCE token', () => {

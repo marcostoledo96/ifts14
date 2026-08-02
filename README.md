@@ -2,6 +2,8 @@
 
 Módulo de certificaciones de curso con validación pública por QR/link, integrado en la web del IFTS N.° 14.
 
+**Autores:** [Marcos Ezequiel Toledo](https://www.linkedin.com/in/marcos-ezequiel-toledo/) · [Matías Ríos](https://www.linkedin.com/in/matiasgermanrios/)
+
 ```txt
 Staging (entorno de trabajo):  /certificados_staging/
 Producción (aún no activada):  /certificados/
@@ -24,6 +26,15 @@ Hosting:  cPanel
 | Producción (`/certificados/`) | Aún no activada ni validada para este módulo. |
 
 El producto admin cubre: login con sesión, cursos, alumnos, fechas, asistencias, emisión, expediente, PDF/QR, entrega manual, revocación y configuración institucional (firmas). La validación pública muestra el certificado vigente o revocado.
+
+## Autores
+
+Proyecto desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
+
+| Persona | Rol | LinkedIn |
+|---|---|---|
+| Marcos Ezequiel Toledo | Backend PHP, MariaDB, integración, deploy cPanel, arquitectura, seguridad y documentación. | [Perfil](https://www.linkedin.com/in/marcos-ezequiel-toledo/) |
+| Matías Ríos | UI/UX Angular 20, sistema visual, panel admin, responsive, accesibilidad y QA visual. | [Perfil](https://www.linkedin.com/in/matiasgermanrios/) |
 
 ## Decisiones vigentes (D0)
 
@@ -48,13 +59,6 @@ El producto admin cubre: login con sesión, cursos, alumnos, fechas, asistencias
 
 Para agentes IA: [`AGENTS.md`](AGENTS.md) y prompts en [`docs/opencode/`](docs/opencode/).
 
-## Responsables
-
-| Rol | Alcance |
-|---|---|
-| Marcos | Backend PHP, MariaDB, integración, deploy cPanel, arquitectura, seguridad, documentación. |
-| Matías | UI/UX Angular 20, port visual desde `muestra_pagina/`, admin, responsive, a11y, QA visual. |
-
 ## Carpetas principales
 
 | Carpeta | Uso |
@@ -65,13 +69,14 @@ Para agentes IA: [`AGENTS.md`](AGENTS.md) y prompts en [`docs/opencode/`](docs/o
 | `docs/` | Documentación humana y de agentes. |
 | `openspec/` | Specs por módulo (recomendadas para cambios no triviales). |
 | `deploy/` | Artefactos y checklists de deploy (sin secretos). |
-| `muestra_pagina/` | Referencia visual v0. No compilar ni portar React/Next literalmente. |
 | `scripts/` | Scripts auxiliares seguros. |
 | `material_privado_no_versionar/` | Material del servidor. **Nunca** versionar. |
 
 ## Seguridad
 
 No subir al repositorio: dumps SQL reales, backups, ZIPs del servidor, logs, credenciales, `.env`, configs reales de conexión, ni `.codegraph/`.
+
+Antes de clonar/usar en público: la config real vive **fuera de Git** (`CERTIFICADOS_CONFIG_PATH`). Las credenciales `bedelia` / `password-demo-auth` de docs y tests son **solo locales**; no deben reutilizarse en staging ni producción.
 
 ## Lectura mínima por área
 

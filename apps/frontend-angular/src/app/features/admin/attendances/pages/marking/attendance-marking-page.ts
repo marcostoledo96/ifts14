@@ -47,6 +47,8 @@ export class AttendanceMarkingPage {
   readonly cargando = signal(true);
   readonly guardando = signal(false);
   readonly error = signal('');
+  /** True solo ante fallo recuperable de carga (no id/fecha inválidos ni not-found). */
+  readonly errorRecuperable = signal(false);
   readonly ok = signal('');
   readonly resumenGen = signal<ResumenGeneracion | null>(null);
 
@@ -155,11 +157,15 @@ export class AttendanceMarkingPage {
     this.q.set('');
     this.ok.set('');
     this.error.set('');
+    this.errorRecuperable.set(false);
     this.resumenGen.set(null);
     this.cargando.set(true);
     this.guardando.set(false);
     if (cid === null || fid === null) {
-      if (gen === this.loadGen) this.error.set('Curso o fecha no encontrados.');
+      if (gen === this.loadGen) {
+        this.error.set('Curso o fecha no encontrados.');
+        this.errorRecuperable.set(false);
+      }
       this.cargando.set(false);
       return;
     }
@@ -175,11 +181,28 @@ export class AttendanceMarkingPage {
       const presentes = new Set(asistencias.map((a) => a.alumnoId));
       this.baseline.set(presentes);
       this.seleccion.set(new Set(presentes));
+      this.errorRecuperable.set(false);
     } catch (e) {
-      if (gen === this.loadGen) this.error.set((e as Error).message);
+      if (gen === this.loadGen) {
+        const status = e instanceof HttpErrorResponse ? e.status : null;
+        const raw = e instanceof Error ? e.message : '';
+        const notFound = status === 404 || /no encontrad/i.test(raw);
+        if (notFound) {
+          this.error.set('Curso o fecha no encontrados.');
+          this.errorRecuperable.set(false);
+        } else {
+          this.error.set('No se pudieron cargar las asistencias. Reintentá.');
+          this.errorRecuperable.set(true);
+        }
+      }
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
     }
+  }
+
+  onReintentar(): void {
+    if (!this.errorRecuperable()) return;
+    void this.cargar(this.id(), this.fechaId());
   }
 
   private parseId(s: string): number | null {
@@ -275,11 +298,6 @@ export class AttendanceMarkingPage {
     ]);
   }
 
-  /** Alias de compatibilidad para tests/specs previos. */
-  async guardar(): Promise<void> {
-    return this.guardarYGenerar();
-  }
-
   async guardarYGenerar(): Promise<void> {
     const cid = this.courseId();
     const fid = this.fechaIdNumber();
@@ -319,7 +337,8 @@ export class AttendanceMarkingPage {
         motivoFallo =
           'La fecha de clase es futura: queda programada y no se pueden emitir certificados hasta el día de la clase (o anterior).';
       } else {
-        // Un listado por curso (no N listados por alumno) + emitir/regenerar en paralelo.
+        // Un listado por curso; emitir/regenerar en serie para no saturar la
+        // sesión PHP (lock) en cPanel al generar varios PDF a la vez.
         const vigentesCurso = await this.certs.listar({
           cursoId: cid,
           estado: 'vigente',
@@ -331,33 +350,26 @@ export class AttendanceMarkingPage {
           if (c.alumnoId != null) vigentePorAlumno.set(c.alumnoId, c);
         }
 
-        const resultados = await Promise.allSettled(
-          presentesIds.map(async (alumnoId) => {
+        for (const alumnoId of presentesIds) {
+          if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
+          try {
             const vigente = vigentePorAlumno.get(alumnoId);
             if (vigente) {
               await this.certs.regenerarPdf(vigente.id);
-              return 'actualizado' as const;
+              actualizados++;
+            } else {
+              await this.certs.emitir({
+                alumnoId,
+                cursoId: cid,
+                issuedAt,
+                expiresAt: null,
+              });
+              emitidos++;
             }
-            await this.certs.emitir({
-              alumnoId,
-              cursoId: cid,
-              issuedAt,
-              expiresAt: null,
-            });
-            return 'emitido' as const;
-          }),
-        );
-
-        if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
-
-        for (const r of resultados) {
-          if (r.status === 'rejected') {
+          } catch (err) {
             fallidos++;
-            motivoFallo ??= this.mensajeErrorApi(r.reason);
-            continue;
+            motivoFallo ??= this.mensajeErrorApi(err);
           }
-          if (r.value === 'emitido') emitidos++;
-          else actualizados++;
         }
       }
       const resumen: ResumenGeneracion = { emitidos, actualizados, fallidos };
@@ -382,7 +394,7 @@ export class AttendanceMarkingPage {
       );
     } catch (e) {
       if (this.courseId() !== saveCid || this.fechaIdNumber() !== saveFid) return;
-      this.error.set((e as Error).message);
+      this.error.set(this.mensajeErrorApi(e));
     } finally {
       if (this.courseId() === saveCid && this.fechaIdNumber() === saveFid) {
         this.guardando.set(false);

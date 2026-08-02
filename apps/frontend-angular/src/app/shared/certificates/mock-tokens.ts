@@ -249,9 +249,10 @@ function fetchAdminSeedToken(
         error: errorEnvelope('CERTIFICATE_NOT_FOUND', 'no encontrado', 'req-admin-e3f'),
       };
     case mockPublicValidationToken('prefijo_demo_g4h'):
+      // Seed admin: ex-vencido materializado como revocado (solo vigente|revocado).
       return {
         ok: false,
-        error: errorEnvelope('CERTIFICATE_EXPIRED', 'expirado', 'req-admin-g4h'),
+        error: errorEnvelope('CERTIFICATE_REVOKED', 'revocado', 'req-admin-g4h'),
       };
     case mockPublicValidationToken('prefijo_demo_i5j'):
       return {

@@ -78,9 +78,9 @@ describe('CertificationPdfPreviewPage', () => {
   it('muestra la fecha de emisión formateada en lenguaje natural', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
-    const cierre = el.querySelector('.cert-cierre');
+    const lugar = el.querySelector('.cert-lugar');
     // emitidoEn 2026-03-01 → "1 de marzo de 2026".
-    expect(cierre?.textContent).toMatch(/marzo.*2026/i);
+    expect(lugar?.textContent).toMatch(/marzo.*2026/i);
   });
 
   it('muestra la URL canónica de validación (entrega-manual) sin UUID real', async () => {
@@ -170,6 +170,13 @@ describe('CertificationPdfPreviewPage', () => {
     expect(feedback?.getAttribute('aria-live')).toBe('polite');
   });
 
+  it('CERT-PERF-01: exportarFolioVisibleComoPdf carga deps vía import() dinámico', () => {
+    const src = CertificationPdfPreviewPage.prototype.exportarFolioVisibleComoPdf.toString();
+    // El bundler reescribe el specifier a chunk-*.js; lo importante es import() + Promise.all.
+    expect(src).toMatch(/import\s*\(/);
+    expect(src).toContain('Promise.all');
+  });
+
   it('REQ-PAR-PDF-001: Descargar PDF exporta el folio visible (no el stub API)', async () => {
     const f = await render('1');
     const el = f.nativeElement as HTMLElement;
@@ -212,16 +219,20 @@ describe('CertificationPdfPreviewPage', () => {
 
   // --- Ids robustos ---
 
-  it('id "abc" muestra "Certificación no encontrada" sin excepción', async () => {
+  it('id "abc" muestra "Certificación no encontrada" sin Reintentar', async () => {
     const f = await render('abc');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('no encontrada');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(el.textContent).not.toContain('Reintentar');
   });
 
   it('id "0" muestra "no encontrada" (no es positivo)', async () => {
     const f = await render('0');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('no encontrada');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(el.textContent).not.toContain('Reintentar');
   });
 
   it('id hex "0x1" no se coerce a 1: muestra "no encontrada"', async () => {
@@ -236,10 +247,13 @@ describe('CertificationPdfPreviewPage', () => {
     expect(el.textContent).toContain('no encontrada');
   });
 
-  it('id inexistente "999" muestra "Certificación no encontrada"', async () => {
+  it('id inexistente "999" muestra "Certificación no encontrada" sin Reintentar', async () => {
     const f = await render('999');
     const el = f.nativeElement as HTMLElement;
     expect(el.textContent).toContain('no encontrada');
+    expect(f.componentInstance.error()).toBe('Certificación no encontrada.');
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(el.textContent).not.toContain('Reintentar');
   });
 
   it('id vacío muestra "no encontrada"', async () => {
@@ -469,6 +483,7 @@ describe('CertificationPdfPreviewPage', () => {
     // Resolver cert 2 PRIMERO.
     pending.get(2)!.resolve({
       id: 2,
+      numero: 'IFTS14-CERT-0002',
       nombreAlumno: 'Alumno Demo Dos',
       cursoNombre: 'Curso de herramientas administrativas',
       estado: 'vigente',
@@ -488,6 +503,7 @@ describe('CertificationPdfPreviewPage', () => {
     // Resolver cert 1 TARDE (carga stale). loadGen debe descartarla.
     pending.get(1)!.resolve({
       id: 1,
+      numero: 'IFTS14-CERT-0001',
       nombreAlumno: 'Alumno Demo Uno',
       cursoNombre: 'Curso de introducción a la gestión',
       estado: 'vigente',
@@ -511,5 +527,142 @@ describe('CertificationPdfPreviewPage', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.cert-protagonista')?.textContent).toContain('Alumno Demo Dos');
     expect(el.textContent).not.toContain('Alumno Demo Uno');
+  });
+
+  // --- P19 honesty / anti-leak ---
+
+  function fakeCertsBase(
+    overrides: Partial<CertificationsService>,
+  ): CertificationsService {
+    return {
+      listar: () => Promise.resolve([]),
+      contar: () => Promise.resolve(0),
+      revocar: () => Promise.resolve(),
+      emitir: () => Promise.reject(new Error('N/A')),
+      obtenerEntregaManual: () =>
+        Promise.resolve({
+          certificadoId: 1,
+          publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b',
+          pdfDownloadUrl: '1/pdf',
+          tokenPrefix: 'prefijo_demo_a1b',
+          pdfAvailable: true,
+          pdfStatus: 'valid',
+        } as EntregaManualDto),
+      descargarQrPng: () => Promise.resolve(new Blob(['png'], { type: 'image/png' })),
+      descargarPdf: () => Promise.resolve(new Blob(['%PDF'], { type: 'application/pdf' })),
+      regenerarPdf: () => Promise.resolve({ regenerado: false }),
+      obtener: () => Promise.reject(new Error('override-me')),
+      ...overrides,
+    };
+  }
+
+  async function renderWithCerts(id: string, certs: CertificationsService) {
+    resetMockAdminPublicStatus();
+    await TestBed.configureTestingModule({
+      imports: [CertificationPdfPreviewPage],
+      providers: [
+        provideRouter([]),
+        { provide: CERTIFICATIONS_SOURCE, useValue: certs },
+        {
+          provide: INSTITUTIONAL_CONFIG_SOURCE,
+          useClass: InMemoryInstitutionalConfigService,
+        },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(CertificationPdfPreviewPage);
+    fixture.componentRef.setInput('id', id);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 30));
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('P19: fallo hard de obtener muestra mensaje fijo + Reintentar sin raw', async () => {
+    const LEAK = 'LEAK_RAW_LOAD_network_detail';
+    const fixture = await renderWithCerts(
+      '1',
+      fakeCertsBase({ obtener: () => Promise.reject(new Error(LEAK)) }),
+    );
+    const el = fixture.nativeElement as HTMLElement;
+    expect(fixture.componentInstance.error()).toBe('No se pudo cargar la certificación.');
+    expect(fixture.componentInstance.errorRecuperable()).toBeTrue();
+    expect(el.textContent).toContain('No se pudo cargar la certificación.');
+    expect(el.textContent).toContain('Reintentar');
+    expect(el.textContent).not.toContain(LEAK);
+  });
+
+  it('P19: Reintentar en load hard vuelve a llamar load/obtener', async () => {
+    const detalleOk: CertificacionDetalle = {
+      id: 1,
+      numero: 'IFTS14-CERT-0001',
+      nombreAlumno: 'Alumno Demo Uno',
+      cursoNombre: 'Curso de introducción a la gestión',
+      estado: 'vigente',
+      documentMasked: '12345678',
+      tokenPrefix: 'prefijo_demo_a1b',
+      emitidoEn: '2026-03-01',
+      venceEn: '2027-03-01',
+      publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
+      attendedDates: ['2026-03-02'],
+      auditEvents: [{ at: '2026-03-01', accion: 'emision', detalle: 'Emisión mock.' }],
+    };
+    const obtener = jasmine
+      .createSpy('obtener')
+      .and.returnValues(Promise.reject(new Error('LEAK_RETRY')), Promise.resolve(detalleOk));
+    const fixture = await renderWithCerts('1', fakeCertsBase({ obtener }));
+    expect(obtener).toHaveBeenCalledTimes(1);
+    const el = fixture.nativeElement as HTMLElement;
+    const btn = Array.from(el.querySelectorAll('button')).find((b) =>
+      (b.textContent || '').includes('Reintentar'),
+    );
+    expect(btn).toBeTruthy();
+    (btn as HTMLElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(obtener).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.error()).toBe('');
+    expect(fixture.componentInstance.errorRecuperable()).toBeFalse();
+    expect(fixture.componentInstance.detalle()?.id).toBe(1);
+  });
+
+  it('P19: fallo de descarga muestra genérico sin raw ni Reintentar', async () => {
+    const f = await render('1');
+    const LEAK = 'LEAK_RAW_HTML2CANVAS_fail';
+    spyOn(f.componentInstance, 'exportarFolioVisibleComoPdf').and.rejectWith(new Error(LEAK));
+    await f.componentInstance.descargarPdf();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(f.componentInstance.downloadFeedback()).toBe('No se pudo generar el PDF.');
+    expect(f.componentInstance.downloadFeedback()).not.toContain(LEAK);
+    expect(f.componentInstance.errorRecuperable()).toBeFalse();
+    expect(el.querySelector('.estado-error')?.textContent || '').not.toContain('Reintentar');
+    expect(el.textContent).not.toContain(LEAK);
+  });
+
+  it('P19: filename prefer detalle.numero (cert-{numero-safe}.pdf)', async () => {
+    const detalleOk: CertificacionDetalle = {
+      id: 1,
+      numero: 'CERT-CUSTOM 2026/01',
+      nombreAlumno: 'Alumno Demo Uno',
+      cursoNombre: 'Curso de introducción a la gestión',
+      estado: 'vigente',
+      documentMasked: '12345678',
+      tokenPrefix: 'prefijo_demo_a1b',
+      emitidoEn: '2026-03-01',
+      venceEn: '2027-03-01',
+      publicValidationUrl: 'https://ifrm/validar/prefijo_demo_a1b…',
+      attendedDates: ['2026-03-02'],
+      auditEvents: [{ at: '2026-03-01', accion: 'emision', detalle: 'Emisión mock.' }],
+    };
+    const fixture = await renderWithCerts(
+      '1',
+      fakeCertsBase({ obtener: () => Promise.resolve(detalleOk) }),
+    );
+    expect(fixture.componentInstance.numeroExpediente()).toBe('CERT-CUSTOM 2026/01');
+    expect(fixture.componentInstance.pdfFilename()).toBe('cert-CERT-CUSTOM-2026-01.pdf');
   });
 });

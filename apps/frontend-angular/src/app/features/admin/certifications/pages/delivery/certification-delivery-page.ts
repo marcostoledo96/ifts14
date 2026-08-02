@@ -1,9 +1,27 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, HostListener, ElementRef, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
+  HostListener,
+  ElementRef,
+  viewChild,
+} from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { trapTabKey } from '../../../../../shared/util/trap-tab';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import { CertificacionDetalle, EntregaManualDto } from '../../certifications.models';
 
-// P6-01 + Ciclo 13: Entrega manual funcional.
+/** Copy bedelía operable para 409 / TOKEN_NOT_RECOVERABLE (sin jargon de claves). */
+const MSG_409_ENTREGA =
+  'No se pudo recuperar el enlace de validación de este certificado. El QR no se regenera solo; contactá a sistemas.';
+
+// P6-01 + Ciclo 13 + P20: Entrega manual funcional.
 // Consume GET /admin/certificados/{id}/entrega-manual → EntregaManualDto.
 // QR vía CertificationsService.descargarQrPng (HttpClient / mock). Clipboard con fallback.
 @Component({
@@ -24,6 +42,10 @@ export class CertificationDeliveryPage {
   // ponytail: entrega guarda el DTO canónico del backend (URL real, pdfStatus).
   readonly entrega = signal<EntregaManualDto | null>(null);
   readonly error = signal('');
+  /** Soft error de entrega-manual (409 operable); no tumba la ficha. */
+  readonly entregaError = signal('');
+  /** Solo hard de carga de detalle — nunca QR/PDF/regen/409. */
+  readonly errorRecuperable = signal(false);
   readonly cargando = signal(true);
 
   readonly copiado = signal(false);
@@ -32,6 +54,7 @@ export class CertificationDeliveryPage {
   readonly qrDescargando = signal(false);
   readonly qrError = signal('');
   readonly regenerarMsg = signal('');
+  readonly regenerando = signal(false);
 
   // T5: ref al diálogo para focus trap
   readonly dialogRef = viewChild<ElementRef<HTMLDivElement>>('dialog');
@@ -101,6 +124,14 @@ export class CertificationDeliveryPage {
       this.id();
       untracked(() => void this.cargar());
     });
+    // Foco inicial en #dialog (éxito o error) — soft; Esc vuelve al expediente.
+    effect(() => {
+      const hasDialog = !!(this.detalle() || this.error()) && !this.cargando();
+      if (!hasDialog) return;
+      queueMicrotask(() => {
+        this.dialogRef()?.nativeElement?.focus();
+      });
+    });
   }
 
   async cargar(): Promise<void> {
@@ -109,27 +140,103 @@ export class CertificationDeliveryPage {
     this.detalle.set(null);
     this.entrega.set(null);
     this.error.set('');
+    this.entregaError.set('');
     this.qrError.set('');
+    this.regenerarMsg.set('');
+    this.errorRecuperable.set(false);
+    this.regenerando.set(false);
     this.cargando.set(true);
     if (cid === null) {
-      if (gen === this.loadGen) this.error.set('Certificación no encontrada.');
+      if (gen === this.loadGen) {
+        this.error.set('Certificación no encontrada.');
+        this.errorRecuperable.set(false);
+      }
       this.cargando.set(false);
       return;
     }
     try {
-      // Carga detalle y entrega manual en paralelo.
-      const [det, ent] = await Promise.all([
+      // Detalle hard; entrega soft (P20 allSettled).
+      const [detR, entR] = await Promise.allSettled([
         this.certs.obtener(cid),
         this.certs.obtenerEntregaManual(cid),
       ]);
       if (gen !== this.loadGen) return;
-      this.detalle.set(det);
-      this.entrega.set(ent);
+
+      if (detR.status === 'rejected') {
+        this.aplicarErrorCarga(detR.reason);
+        return;
+      }
+      this.detalle.set(detR.value);
+      this.errorRecuperable.set(false);
+      this.aplicarEntrega(entR);
     } catch (e) {
-      if (gen === this.loadGen) this.error.set((e as Error).message);
+      if (gen === this.loadGen) this.aplicarErrorCarga(e);
     } finally {
       if (gen === this.loadGen) this.cargando.set(false);
     }
+  }
+
+  onReintentar(): void {
+    if (!this.errorRecuperable()) return;
+    void this.cargar();
+  }
+
+  /** Not-found (404 / mensaje) vs hard recuperable — sin raw Error.message en UI. */
+  private aplicarErrorCarga(reason: unknown): void {
+    const status = reason instanceof HttpErrorResponse ? reason.status : null;
+    const raw = reason instanceof Error ? reason.message : '';
+    const notFound = status === 404 || /no encontrad/i.test(raw);
+    if (notFound) {
+      this.error.set('Certificación no encontrada.');
+      this.errorRecuperable.set(false);
+      return;
+    }
+    this.error.set('No se pudo cargar la certificación.');
+    this.errorRecuperable.set(true);
+  }
+
+  /** Envelope API message o fallback es-AR (sin raw Error.message). P15-strict. */
+  private mensajeErrorApi(err: unknown, fallback: string): string {
+    if (err instanceof HttpErrorResponse) {
+      const msg = (err.error as { error?: { message?: string } } | null)?.error?.message;
+      if (typeof msg === 'string' && msg.trim()) return msg.trim();
+    }
+    return fallback;
+  }
+
+  private aplicarEntrega(entR: PromiseSettledResult<EntregaManualDto>): void {
+    if (entR.status === 'rejected') {
+      this.entrega.set(null);
+      const reason = entR.reason as {
+        status?: number;
+        error?: { code?: string; error?: { code?: string } };
+        message?: string;
+      };
+      const code = reason?.error?.error?.code ?? reason?.error?.code ?? '';
+      if (code === 'TOKEN_NOT_RECOVERABLE' || reason?.status === 409) {
+        this.entregaError.set(MSG_409_ENTREGA);
+      } else if (this.detalle()?.estado !== 'vigente') {
+        this.entregaError.set(
+          'Copiar link y QR solo están disponibles para certificaciones válidas.',
+        );
+      } else {
+        this.entregaError.set(
+          'No se pudo obtener el enlace de validación. Verificá que el certificado tenga token activo y que public_base_url esté configurada.',
+        );
+      }
+      return;
+    }
+    const ent = entR.value;
+    const url = (ent.publicValidationUrl ?? '').trim();
+    if (!url) {
+      this.entrega.set(null);
+      this.entregaError.set(
+        'El servidor no devolvió URL de validación. Configurá public_base_url (ej. https://staging.example.edu.ar/certificados_staging).',
+      );
+      return;
+    }
+    this.entrega.set(ent);
+    this.entregaError.set('');
   }
 
   // Cierre al presionar Escape
@@ -138,31 +245,13 @@ export class CertificationDeliveryPage {
     void this.router.navigate(['/admin/certificaciones', this.id()]);
   }
 
-  // T5: focus trap — Tab/Shift+Tab se mantiene dentro del diálogo
+  // T5 / REQ-DEL-007: focus trap vía helper compartido
   @HostListener('keydown.tab', ['$event'])
   @HostListener('keydown.shift.tab', ['$event'])
   onTab(e: Event): void {
-    const ke = e as KeyboardEvent;
     const dialog = this.dialogRef()?.nativeElement;
     if (!dialog) return;
-    const focusable = dialog.querySelectorAll<HTMLElement>(
-      'a[href], button:not(:disabled), textarea, input, [tabindex]:not([tabindex="-1"])',
-    );
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    const active = document.activeElement;
-    if (ke.shiftKey) {
-      if (active === first || !dialog.contains(active)) {
-        ke.preventDefault();
-        last.focus();
-      }
-    } else {
-      if (active === last) {
-        ke.preventDefault();
-        first.focus();
-      }
-    }
+    trapTabKey(e as KeyboardEvent, dialog);
   }
 
   async copiarLink(): Promise<void> {
@@ -203,7 +292,7 @@ export class CertificationDeliveryPage {
 
   async descargarQr(): Promise<void> {
     const cid = this.certId();
-    if (cid === null) return;
+    if (cid === null || !this.validarUrl()) return;
     this.qrDescargando.set(true);
     this.qrError.set('');
     try {
@@ -217,36 +306,67 @@ export class CertificationDeliveryPage {
       document.body.removeChild(a);
       URL.revokeObjectURL(objUrl);
     } catch (e) {
-      this.qrError.set((e as Error).message || 'No se pudo descargar el QR.');
+      this.qrError.set(this.mensajeErrorApi(e, 'No se pudo descargar el QR.'));
     } finally {
       this.qrDescargando.set(false);
     }
   }
 
-  async descargarPdf(): Promise<void> {
+  /**
+   * Handoff al folio institucional `…/pdf?descargar=1` (no Blob TCPDF).
+   * `navigate: false` — solo serializa URL (seam de test; no muta location).
+   */
+  async descargarPdf(options: { navigate?: boolean } = {}): Promise<string | null> {
     const cid = this.certId();
-    if (cid === null || this.descargando()) return;
+    if (cid === null || this.descargando()) return null;
     this.descargando.set(true);
     this.qrError.set('');
     try {
-      // Mismo folio institucional que la vista /pdf (no TCPDF backend).
-      await this.router.navigate(['/admin/certificaciones', cid, 'pdf'], {
-        queryParams: { descargar: '1' },
-      });
+      const commands = ['/admin/certificaciones', cid, 'pdf'] as const;
+      const queryParams = { descargar: '1' };
+      const tree = this.router.createUrlTree([...commands], { queryParams });
+      const url = this.router.serializeUrl(tree);
+      if (options.navigate !== false) {
+        await this.router.navigate([...commands], { queryParams });
+      }
       this.descargado.set(true);
+      return url;
     } catch (e) {
-      this.qrError.set((e as Error).message || 'No se pudo descargar el PDF.');
+      this.qrError.set(this.mensajeErrorApi(e, 'No se pudo descargar el PDF.'));
       this.descargado.set(false);
+      return null;
     } finally {
       this.descargando.set(false);
     }
   }
 
-  // MVP: no hay endpoint POST /regenerar; mostrar mensaje informativo.
-  volverARegenerarPdf(): void {
-    this.regenerarMsg.set(
-      'La regeneración de PDF requiere acción del backend. Contactar al administrador.',
-    );
+  /** Wire regenerarPdf + re-fetch entrega. D0: no rota token; no muestra publicValidationUrl. */
+  async volverARegenerarPdf(): Promise<void> {
+    const cid = this.certId();
+    const gen = this.loadGen;
+    if (cid === null || this.regenerando()) return;
+    this.regenerando.set(true);
+    this.regenerarMsg.set('');
+    this.qrError.set('');
+    try {
+      await this.certs.regenerarPdf(cid);
+      if (gen !== this.loadGen || this.certId() !== cid) return;
+      this.regenerarMsg.set('El PDF se regeneró correctamente.');
+      try {
+        const ent = await this.certs.obtenerEntregaManual(cid);
+        if (gen !== this.loadGen || this.certId() !== cid) return;
+        // D0: omitir result.publicValidationUrl; soft-path vía aplicarEntrega.
+        this.aplicarEntrega({ status: 'fulfilled', value: ent });
+      } catch (e) {
+        if (gen !== this.loadGen || this.certId() !== cid) return;
+        this.aplicarEntrega({ status: 'rejected', reason: e });
+      }
+    } catch (e) {
+      if (gen !== this.loadGen || this.certId() !== cid) return;
+      this.regenerarMsg.set(this.mensajeErrorApi(e, 'No se pudo regenerar el PDF.'));
+    } finally {
+      if (gen === this.loadGen) this.regenerando.set(false);
+    }
   }
 
   formatearFecha(iso: string): string {

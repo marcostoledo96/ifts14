@@ -16,6 +16,7 @@
       [active]="rutaActual()"
       [navegando]="navegando()"
       [rutaPendiente]="rutaPendiente()"
+      [logoutDisabled]="cerrandoSesion()"
       (cerrarSesion)="cerrarSesion()"
     />
   </aside>
@@ -25,7 +26,7 @@
         type="button"
         class="menu-btn"
         aria-label="Abrir navegación admin"
-        aria-expanded="{{ menuAbierto() }}"
+        [attr.aria-expanded]="menuAbierto()"
         [attr.aria-controls]="menuAbierto() ? 'admin-drawer' : null"
         (click)="abrirMenu()"
       >
@@ -39,24 +40,34 @@
     </main>
     <footer role="contentinfo">
       <p>Instituto de Formación Técnica Superior N.º 14 — Panel administrativo</p>
+      <p class="admin-footer-credits">Desarrollado por Marcos Ezequiel Toledo y Matías Ríos</p>
     </footer>
   </div>
 </div>
 @if (menuAbierto()) {
-  <div class="drawer-overlay" (click)="cerrarMenu()" aria-hidden="true"></div>
-  <aside
-    id="admin-drawer"
-    class="drawer-mobile drawer-open"
-    role="navigation"
-    aria-label="Navegación admin (móvil)"
-  >
-    <app-sidebar-admin
-      [active]="rutaActual()"
-      [navegando]="navegando()"
-      [rutaPendiente]="rutaPendiente()"
-      [mostrarCerrar]="true"
-      (cerrarMenu)="cerrarMenu()"
-      (cerrarSesion)="cerrarSesion()"
-    />
-  </aside>
+  <div class="drawer-layer" #drawerLayer>
+    <button
+      type="button"
+      class="drawer-overlay"
+      aria-label="Cerrar menú"
+      (click)="cerrarMenu()"
+    ></button>
+    <aside
+      id="admin-drawer"
+      class="drawer-mobile drawer-open"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Navegación admin (móvil)"
+    >
+      <app-sidebar-admin
+        [active]="rutaActual()"
+        [navegando]="navegando()"
+        [rutaPendiente]="rutaPendiente()"
+        [mostrarCerrar]="true"
+        [logoutDisabled]="cerrandoSesion()"
+        (cerrarMenu)="cerrarMenu()"
+        (cerrarSesion)="cerrarSesion()"
+      />
+    </aside>
+  </div>
 }

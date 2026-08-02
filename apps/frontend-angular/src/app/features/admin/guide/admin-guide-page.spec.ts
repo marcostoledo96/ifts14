@@ -46,4 +46,28 @@ describe('AdminGuidePage', () => {
       '/admin/configuracion',
     ]);
   });
+
+  it('describe el flujo real de emisión y estados de certificado', async () => {
+    const f = await render();
+    const el = f.nativeElement as HTMLElement;
+
+    const intro = el.querySelector('.intro-text')?.textContent ?? '';
+    expect(intro).toContain('marcar y generar certificados');
+    expect(intro).toContain('entrega y expediente');
+
+    const asist = el.querySelector('[data-testid="guia-seccion-asistencias"]')?.textContent ?? '';
+    expect(asist).toContain('Guardar y generar certificados');
+    expect(asist).toContain('camino principal de emisión');
+    expect(asist).toContain('Ver certificados del curso');
+
+    const certs = el.querySelector('[data-testid="guia-seccion-certificaciones"]')?.textContent ?? '';
+    expect(certs).toContain('Válida o Revocado');
+    expect(certs).toContain('no hay estado «vencido»');
+    expect(certs).not.toContain('vigente, vencido, revocado');
+    expect(certs).toContain('Nueva certificación');
+    expect(certs).toContain('alternativa');
+    expect(certs).toContain('regenerar PDF');
+
+    expect(el.querySelector('.lede')?.textContent).toMatch(/desde el panel/i);
+  });
 });

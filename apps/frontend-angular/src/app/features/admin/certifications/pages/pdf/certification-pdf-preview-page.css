@@ -218,6 +218,30 @@
   font-weight: 500;
 }
 
+.estado-error p {
+  margin: 0;
+}
+
+.btn-reintentar {
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn-reintentar:hover {
+  background: var(--color-muted);
+}
+
+.btn-reintentar:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .volver a {
   color: var(--color-tech-blue);
   text-decoration: none;
@@ -239,9 +263,16 @@
   width: 100%;
   max-width: 64rem;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--color-tech-blue) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-tech-blue) 18%, transparent);
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--color-muted) 60%, var(--color-card));
+  /* Fondo celeste institucional (como el certificado original). */
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--color-circuit) 10%, #f7fbfe) 0%,
+      #eef6fb 42%,
+      color-mix(in srgb, var(--color-tech-blue) 6%, #f5fafc) 100%
+    );
   box-shadow: 0 24px 60px -32px color-mix(in srgb, var(--color-ink) 45%, transparent);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -262,6 +293,7 @@
   height: 6rem;
   pointer-events: none;
   z-index: 0;
+  color: var(--color-circuit);
 }
 
 @media (min-width: 640px) {
@@ -275,6 +307,7 @@
   position: absolute;
   pointer-events: none;
   z-index: 0;
+  color: var(--color-circuit);
 }
 
 .lineas-izq {
@@ -291,19 +324,58 @@
   }
 }
 
-.lineas-der {
-  bottom: 0;
+.deco-esq-der {
+  position: absolute;
   right: 0;
+  bottom: 0;
   width: 10rem;
   height: 10rem;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .deco-esq-der {
+    width: 13rem;
+    height: 13rem;
+  }
+}
+
+.lineas-der {
+  position: absolute;
+  right: -0.25rem;
+  bottom: -1.5rem;
+  width: 7rem;
+  height: 14rem;
   opacity: 0.8;
   transform: scaleX(-1);
+  color: var(--color-circuit);
 }
 
 @media (min-width: 640px) {
   .lineas-der {
-    width: 13rem;
-    height: 13rem;
+    width: 8.5rem;
+    height: 16rem;
+  }
+}
+
+.iconos-sustentables {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 4.25rem;
+  width: 5.5rem;
+  height: 1.75rem;
+  color: var(--color-circuit);
+  opacity: 0.85;
+}
+
+@media (min-width: 640px) {
+  .iconos-sustentables {
+    right: 1.75rem;
+    bottom: 5rem;
+    width: 6.5rem;
+    height: 2rem;
   }
 }
 
@@ -568,8 +640,16 @@
   color: var(--color-foreground);
 }
 
+.cert-lugar {
+  margin-top: var(--space-2);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-foreground);
+}
+
 @media (min-width: 640px) {
-  .cert-cierre {
+  .cert-cierre,
+  .cert-lugar {
     font-size: 1rem;
   }
 }
@@ -783,19 +863,11 @@
 /* ---------- Pie del folio ---------- */
 .cert-footer-pie {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: var(--space-3);
+  justify-content: flex-start;
   border-top: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent);
   padding-top: var(--space-5);
-}
-
-@media (min-width: 640px) {
-  .cert-footer-pie {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
 }
 
 .marca-ciudad {
@@ -826,18 +898,6 @@
   color: var(--color-ink);
 }
 
-.cert-config-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 0.625rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--color-muted-foreground);
-}
-
 /* ---------- Nota QR fuera del documento ---------- */
 .cert-nota-qr {
   display: flex;
@@ -854,7 +914,13 @@
    firmas en 3 columnas y distribución vertical (sin vacío inferior).
    Independiente del viewport (@media) de la ventana del browser. */
 .certificado-folio.folio-export-a4 {
-  background: #ffffff !important;
+  background:
+    linear-gradient(
+      165deg,
+      #f4fafc 0%,
+      #eef6fb 45%,
+      #f7fbfe 100%
+    ) !important;
   display: flex !important;
   flex-direction: column !important;
 }
@@ -912,7 +978,8 @@
 
 .certificado-folio.folio-export-a4 .cert-intro,
 .certificado-folio.folio-export-a4 .cert-texto,
-.certificado-folio.folio-export-a4 .cert-cierre {
+.certificado-folio.folio-export-a4 .cert-cierre,
+.certificado-folio.folio-export-a4 .cert-lugar {
   font-size: 0.92rem !important;
   line-height: 1.45 !important;
   max-width: 48rem;
@@ -945,6 +1012,10 @@
 
 .certificado-folio.folio-export-a4 .cert-cierre {
   margin-top: 0.55rem !important;
+}
+
+.certificado-folio.folio-export-a4 .cert-lugar {
+  margin-top: 0.35rem !important;
 }
 
 .certificado-folio.folio-export-a4 .cert-pie-firmas {
@@ -1017,7 +1088,7 @@
 .certificado-folio.folio-export-a4 .cert-footer-pie {
   display: flex !important;
   align-items: flex-end !important;
-  justify-content: space-between !important;
+  justify-content: flex-start !important;
   flex-shrink: 0;
   margin-top: 0.4rem;
   padding-top: 0.35rem !important;
@@ -1057,139 +1128,209 @@
     max-width: none !important;
   }
 
-  /* Sin height:100vh ni overflow:hidden: el contenido fluye naturalmente.
-     Si excede A4, print-app-check falla (no se recorta). Fix R4-001. */
+  /* Misma caja A4 landscape que la descarga html2canvas (folio-export-a4).
+     Evita que firmas 3:2 + pie empujen a una 2.ª página en el diálogo Imprimir. */
   .certificado-folio {
-    max-width: none !important;
-    width: 100% !important;
-    overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    min-height: 210mm !important;
+    overflow: hidden !important;
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     margin: 0 !important;
+    background:
+      linear-gradient(
+        165deg,
+        #f4fafc 0%,
+        #eef6fb 45%,
+        #f7fbfe 100%
+      ) !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
-  /* Compactar padding/gaps para que el folio entre en una sola A4.
-     A4 landscape ~ 297mm × 210mm; con margin: 0 el folio dispone de
-     ~210mm de alto. Padding vertical mínimo + gap reducido + escala
-     leve del contenido para evitar overflow sin recortar (fix R4-001). */
   .folio-contenido {
-    gap: var(--space-2) !important;
-    padding: var(--space-4) var(--space-5) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    gap: 0 !important;
+    padding: 10mm 14mm 9mm !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   .folio-header {
-    gap: var(--space-2) !important;
-    padding: var(--space-2) var(--space-3) 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1.25rem !important;
+    padding: 0 !important;
+    width: 100%;
+    flex-shrink: 0;
   }
 
-  /* Tipografía compacta en impresión para preservar paridad visual
-      dentro del A4 landscape sin overflow. */
+  .folio-logo img {
+    max-height: 2.85rem !important;
+  }
+
+  .cert-titulo-wrap {
+    flex-shrink: 0;
+    margin: 0.35rem 0 0.15rem;
+  }
+
   .cert-titulo {
-    font-size: clamp(1.75rem, 3.5vw, 2.5rem) !important;
-    letter-spacing: 0.06em !important;
+    font-size: 2.65rem !important;
+    letter-spacing: 0.1em !important;
+    line-height: 1.05 !important;
+  }
+
+  .cert-cuerpo {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 1 auto !important;
+    max-width: 56rem !important;
+    width: 100%;
+    margin: 0 auto !important;
+    gap: 0.2rem;
+    min-height: 0;
   }
 
   .cert-protagonista {
-    font-size: 1.5rem !important;
-    margin-top: var(--space-1) !important;
+    font-size: 2.35rem !important;
+    margin-top: 0.65rem !important;
+    margin-bottom: 0 !important;
   }
 
   .cert-intro,
   .cert-texto,
-  .cert-cierre {
-    font-size: 0.75rem !important;
-    line-height: 1.4 !important;
+  .cert-cierre,
+  .cert-lugar {
+    font-size: 0.92rem !important;
+    line-height: 1.45 !important;
+    max-width: 48rem;
   }
 
   .cert-doc {
-    font-size: 0.625rem !important;
+    font-size: 0.8rem !important;
+    margin-top: 0.35rem !important;
   }
 
   .cert-texto {
-    margin-top: var(--space-2) !important;
+    margin-top: 0.7rem !important;
   }
 
   .cert-cierre {
-    margin-top: var(--space-1) !important;
+    margin-top: 0.55rem !important;
+  }
+
+  .cert-lugar {
+    margin-top: 0.35rem !important;
   }
 
   .cert-divider {
-    margin-top: var(--space-1) !important;
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.15rem !important;
   }
 
-  /* Firmas y validación: grid compacto, sin break. */
+  .cert-fechas-asistidas {
+    margin-top: 0.45rem !important;
+    font-size: 0.78rem !important;
+  }
+
   .cert-pie-firmas {
-    gap: var(--space-2) !important;
+    display: grid !important;
+    grid-template-columns: 1fr minmax(14rem, 19rem) 1fr !important;
+    align-items: end !important;
+    gap: 1.5rem !important;
+    width: 100%;
+    flex-shrink: 0;
+    margin-top: 0.35rem;
   }
 
   .cert-firma-sello {
-    height: 1.5rem !important;
+    height: auto !important;
+    min-height: 6rem !important;
+  }
+
+  .cert-firma-img {
+    width: 9rem !important;
+    height: 6rem !important;
+    max-height: 6rem !important;
+    max-width: 9rem !important;
+    object-fit: cover !important;
+    object-position: center !important;
   }
 
   .cert-firma-nombre {
-    font-size: 0.75rem !important;
+    font-size: 0.85rem !important;
   }
 
   .cert-firma-cargo {
-    font-size: 0.5rem !important;
+    font-size: 0.58rem !important;
   }
 
   .qr-real,
   .qr-placeholder,
   .qr-fallback {
-    width: 3rem !important;
-    height: 3rem !important;
+    width: 4.5rem !important;
+    height: 4.5rem !important;
   }
 
   .cert-validacion {
-    padding: var(--space-1) !important;
+    order: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    padding: 0.65rem 0.75rem !important;
   }
 
   .cert-val-datos {
-    margin-top: var(--space-1) !important;
-    padding-top: var(--space-1) !important;
-    gap: var(--space-1) !important;
+    margin-top: 0.45rem !important;
+    padding-top: 0.4rem !important;
+    gap: 0.4rem !important;
   }
 
-  .cert-val-kicker,
+  .cert-val-kicker {
+    font-size: 0.62rem !important;
+  }
+
   .cert-val-desc,
   .cert-val-url {
-    font-size: 0.5rem !important;
+    font-size: 0.62rem !important;
+    line-height: 1.35 !important;
   }
 
   .cert-val-datos dt,
   .cert-val-datos dd {
-    font-size: 0.5rem !important;
+    font-size: 0.58rem !important;
   }
 
   .cert-footer-pie {
-    padding-top: var(--space-2) !important;
-    gap: var(--space-1) !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: flex-start !important;
+    flex-shrink: 0;
+    margin-top: 0.4rem;
+    padding-top: 0.35rem !important;
+    gap: 0.75rem !important;
   }
 
-  /* Bandas de estado compactas. */
   .cert-estado-banda {
-    padding: var(--space-1) var(--space-2) !important;
-    font-size: 0.75rem !important;
-  }
-
-  .cert-fechas-asistidas {
-    margin-top: var(--space-1) !important;
-    font-size: 0.625rem !important;
-  }
-
-  /* Encabezado compacto (padding ya definido arriba en @media print). */
-  .folio-logo img {
-    max-height: 2.25rem !important;
-  }
-
-  /* Evitar cortes: el folio completo es una unidad atómica. */
-  .certificado-folio,
-  .folio-contenido {
-    break-inside: avoid;
+    padding: 0.4rem 0.65rem !important;
+    font-size: 0.8rem !important;
+    flex-shrink: 0;
   }
 
   /* Conservar colores de fondo. */

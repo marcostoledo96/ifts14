@@ -13,6 +13,12 @@ import {
 describe('MockValidationSource — tokens admin seed', () => {
   const source = new MockValidationSource();
 
+  beforeEach(() => {
+    // Evitar contaminación si InMemoryCertificationsService registró el puente en otra suite.
+    resetMockAdminPublicStatus();
+    clearMockAdminLiveEstadoResolver();
+  });
+
   afterEach(() => {
     resetMockAdminPublicStatus();
     clearMockAdminLiveEstadoResolver();
@@ -38,11 +44,11 @@ describe('MockValidationSource — tokens admin seed', () => {
     expect(result.error?.error.code).toBe('CERTIFICATE_REVOKED');
   });
 
-  it('prefijo_demo_g4h-completo → expirado', async () => {
+  it('prefijo_demo_g4h-completo → revocado (ex-vencido del seed admin)', async () => {
     const result = await source.fetch(mockPublicValidationToken('prefijo_demo_g4h'));
     expect(result.ok).toBeFalse();
     if (result.ok) return;
-    expect(result.error?.error.code).toBe('CERTIFICATE_EXPIRED');
+    expect(result.error?.error.code).toBe('CERTIFICATE_REVOKED');
   });
 
   it('prefijo_demo_e3f-completo (borrador) → no encontrado', async () => {

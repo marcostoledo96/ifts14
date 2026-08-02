@@ -79,6 +79,20 @@ describe('StudentsListPage', () => {
     // Honesto: sin legajo inventado (API no lo expone).
     expect(root.textContent).not.toContain('LEG-');
     expect(root.querySelector('th')?.textContent).not.toContain('Legajo');
+    expect(root.querySelector('.intro')?.textContent?.toLowerCase()).not.toMatch(/legajos?/);
+  });
+
+  it('intro y vacío total omiten legajo/legajos', async () => {
+    const f = await render(stubSource({ listar: () => Promise.resolve([]) }));
+    await f.whenStable();
+    f.detectChanges();
+    const root = f.nativeElement as HTMLElement;
+    const intro = root.querySelector('.intro')?.textContent ?? '';
+    const vacio = root.querySelector('[data-state="empty-total"]')?.textContent ?? '';
+    expect(intro.toLowerCase()).not.toMatch(/legajos?/);
+    expect(vacio.toLowerCase()).not.toMatch(/legajos?/);
+    expect(intro).toContain('Registro de estudiantes');
+    expect(vacio).toContain('su ficha');
   });
 
   it('busca por nombre, apellido o documento; filtra chips v0 y pagina de a veinte', async () => {
@@ -120,6 +134,83 @@ describe('StudentsListPage', () => {
     ).map((n) => n.textContent?.replace(/\s+/g, ' ').trim());
     expect(chips).toEqual(['Con certificaciones', 'Sin certificaciones', 'Sin email']);
     expect(chips.join(' ')).not.toContain('Contacto disponible');
+    expect(chips.join(' ')).not.toContain('Con email');
+  });
+
+  it('badges de contacto sin email literal; métricas 0 visibles y null como guión', async () => {
+    const mixed: Alumno[] = [
+      {
+        ...alumnos[0],
+        id: 1,
+        email: 'persona.visible@example.invalid',
+        tieneEmail: true,
+        cursosConAsistencia: 0,
+        certificacionesValidas: 0,
+        certificacionesRevocadas: 0,
+      },
+      {
+        ...alumnos[1],
+        id: 2,
+        email: null,
+        tieneEmail: false,
+        cursosConAsistencia: null,
+        certificacionesValidas: null,
+        certificacionesRevocadas: null,
+      },
+      {
+        ...alumnos[2],
+        id: 3,
+        email: null,
+        tieneEmail: null,
+        cursosConAsistencia: 2,
+        certificacionesValidas: 1,
+        certificacionesRevocadas: 0,
+      },
+    ];
+    const f = await render(stubSource({ listar: () => Promise.resolve(mixed) }));
+    const page = f.componentInstance;
+    const root = f.nativeElement as HTMLElement;
+    expect(page.formatoMetrica(0)).toBe('0');
+    expect(page.formatoMetrica(null)).toBe('—');
+    expect(page.etiquetaContacto(mixed[0])).toBe('Contacto disponible');
+    expect(page.etiquetaContacto(mixed[1])).toBe('Sin email');
+    expect(page.etiquetaContacto(mixed[2])).toBe('Sin dato');
+    f.detectChanges();
+    const badges = [...root.querySelectorAll('table .contacto-badge')].map((el) =>
+      el.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(badges).toEqual(['Contacto disponible', 'Sin email', 'Sin dato']);
+    expect(root.textContent).not.toContain('persona.visible@example.invalid');
+    expect(root.textContent).not.toContain('Con email');
+
+    const rows = [...root.querySelectorAll('tbody tr')];
+    expect(rows).toHaveSize(3);
+    const cellText = (row: Element, index: number) =>
+      row.querySelectorAll('td')[index]?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+    // Columnas: Alumno, Documento, Contacto, Cursos, Cert. válidas, Acciones
+    expect(cellText(rows[0], 1)).toBe(mixed[0].dniMostrar);
+    expect(cellText(rows[0], 3)).toBe('0');
+    expect(cellText(rows[0], 4)).toBe('0');
+    expect(cellText(rows[1], 1)).toBe(mixed[1].dniMostrar);
+    expect(cellText(rows[1], 3)).toBe('—');
+    expect(cellText(rows[1], 4)).toBe('—');
+    expect(cellText(rows[2], 1)).toBe(mixed[2].dniMostrar);
+  });
+
+  it('filtra Con/Sin certificaciones tratando 0 como sin cert y excluyendo null', async () => {
+    const mixed: Alumno[] = [
+      { ...alumnos[0], id: 1, certificacionesValidas: 2 },
+      { ...alumnos[1], id: 2, certificacionesValidas: 0 },
+      { ...alumnos[2], id: 3, certificacionesValidas: null },
+    ];
+    const f = await render(stubSource({ listar: () => Promise.resolve(mixed) }));
+    const page = f.componentInstance;
+
+    page.onCertificacion('con-cert');
+    expect(page.resultadosFiltrados().map((a) => a.id)).toEqual([1]);
+
+    page.onCertificacion('sin-cert');
+    expect(page.resultadosFiltrados().map((a) => a.id)).toEqual([2]);
   });
 
   it('vacía la búsqueda visible y restaura los resultados al limpiar filtros', async () => {
@@ -276,6 +367,12 @@ describe('StudentsListPage', () => {
     page.onForzarEstado('error');
     f.detectChanges();
     expect(el.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  it('oculta la barra Vista QA cuando el token QA es false', async () => {
+    const f = await render(undefined, false);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.vista-qa')).toBeNull();
   });
 
   it('renderiza tabla desktop, tarjetas mobile, caption sr-only y pager numerado', async () => {

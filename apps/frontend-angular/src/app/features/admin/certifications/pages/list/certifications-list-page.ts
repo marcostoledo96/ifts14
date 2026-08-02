@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, InjectionToken, isDevMode, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { UiSpinner } from '../../../../../shared/ui/ui-spinner';
+import { paginasVisiblesWindow } from '../../../../../shared/util/paginas-visibles-window';
 import { CERTIFICATIONS_SOURCE } from '../../certifications.service';
 import {
   Certificacion,
@@ -66,6 +67,12 @@ export class CertificationsListPage {
     const page = this.paginaSegura();
     return this.resultadosFiltrados().slice((page - 1) * PAGINA_TAMANO, page * PAGINA_TAMANO);
   });
+  readonly paginasVisibles = computed(() =>
+    paginasVisiblesWindow(this.totalPaginas(), this.paginaSegura()),
+  );
+  readonly mostrarResumen = computed(
+    () => this.vistaQA() === 'datos' && !this.cargando() && !this.error(),
+  );
   readonly vacioTotal = computed(() => this.vistaQA() === 'vacio-total' || (!this.cargando() && !this.error() && !this.hayFiltrosActivos() && this.certificados().length === 0));
   readonly sinCoincidencias = computed(() => !this.cargando() && !this.error() && this.vistaQA() === 'datos' && this.hayFiltrosActivos() && this.resultadosFiltrados().length === 0);
 
@@ -89,8 +96,8 @@ export class CertificationsListPage {
   readonly skeletonRows = [0, 1, 2, 3, 4] as const;
 
   async recargar(): Promise<void> {
-    const generation = ++this.loadGeneration;
     if (this.vistaQA() !== 'datos') return;
+    const generation = ++this.loadGeneration;
     this.cargando.set(true);
     this.error.set('');
     try {

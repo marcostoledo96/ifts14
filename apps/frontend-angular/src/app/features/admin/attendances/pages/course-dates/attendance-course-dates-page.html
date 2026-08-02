@@ -109,10 +109,18 @@
           <path d="M12 9v4M12 17h.01" stroke-linecap="round"/>
         </svg>
       </span>
-      <h2 class="estado-title">No pudimos cargar las fechas</h2>
+      <h2 class="estado-title">
+        @if (errorRecuperable()) {
+          No pudimos cargar las fechas
+        } @else {
+          Curso no encontrado
+        }
+      </h2>
       <p>{{ error() }}</p>
       <div class="estado-actions">
-        <button type="button" class="btn-primary" (click)="onReintentar()">Reintentar</button>
+        @if (errorRecuperable()) {
+          <button type="button" class="btn-primary" (click)="onReintentar()">Reintentar</button>
+        }
         <a class="btn-secondary" routerLink="/admin/asistencias">Volver a Asistencias</a>
       </div>
     </div>
