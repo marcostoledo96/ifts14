@@ -101,3 +101,6 @@ sdd/
 
 # Temporales de check de impresión F4-02 (script regenera en cada ejecución)
 openspec/changes/f4-02-certificate-pdf-preview/evidence/.pdf-check/
+
+# Artefactos locales de Karma/Chrome (nunca versionar)
+apps/frontend-angular/.tmp/
