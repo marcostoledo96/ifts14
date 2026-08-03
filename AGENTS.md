@@ -8,7 +8,7 @@ Mantener trabajo ordenado, seguro y documentado. Spec-Driven Development y TDD s
 
 ## Autores
 
-Proyecto desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**. LinkedIn y roles: `README.md` / `GUIA.md`.
+Desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**, con colaboración del **IFTS N.° 16**. LinkedIn y roles: `README.md` / `GUIA.md`.
 
 ## Reglas obligatorias
 

@@ -37,6 +37,7 @@ describe('LoginPage', () => {
     expect(el.textContent).toContain('Acceso restringido');
     expect(el.textContent).toContain('Marcos Ezequiel Toledo');
     expect(el.textContent).toContain('Matías Ríos');
+    expect(el.textContent).toContain('IFTS N.° 16');
     expect(el.querySelector('.aside-texture')).not.toBeNull();
     expect(el.querySelector('.main-texture')).not.toBeNull();
   });

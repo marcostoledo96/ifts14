@@ -57,6 +57,7 @@ describe('AdminShell', () => {
     const credits = el.querySelector('.admin-footer-credits');
     expect(credits?.textContent).toContain('Marcos Ezequiel Toledo');
     expect(credits?.textContent).toContain('Matías Ríos');
+    expect(credits?.textContent).toContain('IFTS N.° 16');
   });
 
   it('expone <router-outlet> y NO renderiza el dashboard inline', async () => {

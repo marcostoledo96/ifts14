@@ -93,12 +93,13 @@ Para fixes chicos: TDD o tests focalizados + PR alcanza.
 
 ## 7. Autores y roles
 
-Proyecto desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
+Desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**, con colaboración del **IFTS N.° 16**.
 
 | Persona | Alcance | LinkedIn |
 |---|---|---|
 | Marcos Ezequiel Toledo | Backend, DB, integración, deploy, seguridad, arquitectura, documentación, UI/UX Angular 20, sistema visual, panel admin, responsive y accesibilidad. | [linkedin.com/in/marcos-ezequiel-toledo](https://www.linkedin.com/in/marcos-ezequiel-toledo/) |
 | Matías Ríos | Desarrollo frontend Angular, documentación, QA y planificación del port visual. | [linkedin.com/in/matiasgermanrios](https://www.linkedin.com/in/matiasgermanrios/) |
+| IFTS N.° 16 | Colaboración institucional. | — |
 
 ## 8. Deploy (resumen)
 

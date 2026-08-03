@@ -13,12 +13,13 @@ Permite emitir certificados de curso con fechas asistidas y validarlos públicam
 
 ## Autores
 
-Desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**.
+Desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**, con colaboración del **IFTS N.° 16**.
 
 | Persona | Rol | LinkedIn |
 |---|---|---|
 | Marcos Ezequiel Toledo | Backend, datos, deploy, seguridad y frontend Angular (UI/UX, admin, responsive, a11y). | [linkedin.com/in/marcos-ezequiel-toledo](https://www.linkedin.com/in/marcos-ezequiel-toledo/) |
 | Matías Ríos | Desarrollo frontend Angular, documentación, QA y planificación. | [linkedin.com/in/matiasgermanrios](https://www.linkedin.com/in/matiasgermanrios/) |
+| IFTS N.° 16 | Colaboración institucional. | — |
 
 ## Stack confirmado
 

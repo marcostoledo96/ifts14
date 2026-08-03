@@ -4,7 +4,7 @@ Registro consolidado de lo implementado. No reemplaza el historial Git ni `opens
 
 ## 2026-08 — Créditos de autores y preparación repo público
 
-- Crédito de desarrollo en footers (público, login admin, shell admin) y en docs/README: Marcos Ezequiel Toledo y Matías Ríos, con LinkedIn en la documentación.
+- Crédito de desarrollo en footers (público, login admin, shell admin) y en docs/README: Marcos Ezequiel Toledo y Matías Ríos, con colaboración del IFTS N.° 16; LinkedIn de los autores en la documentación.
 - Retiro de `muestra_pagina/` del árbol (y purge del historial). Docs de hosting saneadas (sin usuario cPanel/DB reales). Recordatorio: credenciales demo locales no van a staging/prod.
 
 ## 2026-07 — Operación en staging

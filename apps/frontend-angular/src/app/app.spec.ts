@@ -57,6 +57,7 @@ describe('App', () => {
     const credits = compiled.querySelector('.site-footer-credits');
     expect(credits?.textContent).toContain('Marcos Ezequiel Toledo');
     expect(credits?.textContent).toContain('Matías Ríos');
+    expect(credits?.textContent).toContain('IFTS N.° 16');
   });
 
   it('en ruta pública incluye skip link hacia #contenido', async () => {
