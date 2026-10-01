@@ -28,13 +28,15 @@ Desarrollado por **Marcos Ezequiel Toledo** y **Matías Ríos**, con colaboraci�
 
 ## Stack
 
+> Estado operativo: producción activa y en uso institucional por confirmación explícita del responsable del 30/09/2026. No reescribir evidencia histórica de staging como si hubiera sido ejecutada en producción.
+
 ```txt
 Frontend: Angular 20
 Backend: PHP 8.4.22 (staging)
 Base: MariaDB 10.6.27
 Hosting: cPanel
 Staging: /certificados_staging/   (operativo)
-Producción: /certificados/        (aún no activada)
+Producción: /certificados/        (activa y en uso; confirmación owner 2026-09-30)
 ```
 
 ## Lectura mínima
