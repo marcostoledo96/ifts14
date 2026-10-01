@@ -2,10 +2,12 @@
 
 ## Contexto
 
+> Estado productivo confirmado por el responsable el 30/09/2026. Las versiones exactas documentadas como verificadas en staging no se presentan automáticamente como medición del runtime productivo.
+
 El IFTS N.° 14 necesita un módulo de certificaciones QR bajo:
 
 ```txt
-/certificados/            → producción (pendiente de activación)
+/certificados/            → producción activa y en uso institucional
 /certificados_staging/    → staging operativo (entorno de trabajo)
 ```
 
@@ -57,6 +59,5 @@ Gestión DB: phpMyAdmin / MySQL de cPanel
 - Sin proveedor SMTP; plantillas de mail pendientes.
 - Gestor de usuarios y roles (reemplazo del admin único por config).
 - Importación masiva de alumnos/cursos.
-- Activación de producción (operación de Marcos; no es ítem de roadmap de producto).
 
 Ver [`04-roadmap.md`](04-roadmap.md).
