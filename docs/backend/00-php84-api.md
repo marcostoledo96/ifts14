@@ -1,6 +1,6 @@
 # Backend PHP 8.4.22 — contrato de autenticación P5-01
 
-> PHP 8.4.22 CGI/FastCGI fue verificado únicamente en el candidato aislado de staging. Producción no está activada ni validada. Las referencias históricas a `X-Admin-Key` HTTP o `STOP DESPLIEGUE` no son normativa vigente.
+> PHP 8.4.22 CGI/FastCGI fue verificado en el candidato aislado de staging. La producción fue activada posteriormente y está en uso institucional según confirmación del responsable del 30/09/2026; esa confirmación no convierte la verificación de staging en una medición técnica del runtime productivo. Las referencias históricas a `X-Admin-Key` HTTP o `STOP DESPLIEGUE` no son normativa vigente.
 
 ## Objetivo
 

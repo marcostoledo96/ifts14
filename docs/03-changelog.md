@@ -1,5 +1,11 @@
 # Changelog del producto
 
+## 2026-09 — Activación productiva
+
+- Producción bajo `/certificados/` activa y en uso institucional, confirmada por el responsable el 30/09/2026.
+- Staging `/certificados_staging/` se conserva como entorno separado de trabajo y verificación.
+- Los reportes y archivos archivados anteriores mantienen su estado histórico y no se reescriben como evidencia de producción.
+
 Registro consolidado de lo implementado. No reemplaza el historial Git ni `openspec/changes/archive/`; resume el estado útil para onboarding.
 
 ## 2026-08 — Créditos de autores y preparación repo público
@@ -80,7 +86,6 @@ Migraciones `001`–`015` bajo `database/migrations/` (certificados, tokens, alu
 
 ## Fuera de alcance actual
 
-- Producción del módulo aún no activada.
 - Sin SMTP ni mails automáticos.
 - Gestor de usuarios y roles.
 - Importación masiva real.

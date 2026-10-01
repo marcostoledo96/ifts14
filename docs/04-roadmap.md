@@ -1,6 +1,6 @@
 # Roadmap y recomendaciones futuras
 
-Prioridades acordadas para evolucionar el módulo. No son compromisos de fecha. La **activación de producción** la opera Marcos fuera de este listado.
+Prioridades acordadas para evolucionar el módulo. No son compromisos de fecha. Producción está activa y en uso institucional desde la confirmación del responsable del 30/09/2026; futuras publicaciones y cambios productivos siguen siendo operaciones controladas por Marcos.
 
 ## Prioridad
 

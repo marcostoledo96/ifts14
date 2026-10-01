@@ -6,7 +6,7 @@ Módulo de certificaciones de curso con validación pública por QR/link, integr
 
 ```txt
 Staging (entorno de trabajo):  /certificados_staging/
-Producción (aún no activada):  /certificados/
+Producción (activa y en uso):   /certificados/
 ```
 
 ## Stack
@@ -20,10 +20,12 @@ Hosting:  cPanel
 
 ## Estado actual
 
+> La activación productiva y el uso institucional fueron confirmados por el responsable el 30/09/2026. Los documentos históricos de staging conservan el estado que tenían al momento de sus verificaciones; no deben leerse como estado productivo vigente.
+
 | Entorno | Estado |
 |---|---|
 | Staging (`/certificados_staging/`) | Operativo; es el entorno de trabajo diario. |
-| Producción (`/certificados/`) | Aún no activada ni validada para este módulo. |
+| Producción (`/certificados/`) | Activa y en uso institucional; estado confirmado por el responsable el 30/09/2026. |
 
 El producto admin cubre: login con sesión, cursos, alumnos, fechas, asistencias, emisión, expediente, PDF/QR, entrega manual, revocación y configuración institucional (firmas). La validación pública muestra el certificado vigente o revocado.
 
