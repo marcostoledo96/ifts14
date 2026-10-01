@@ -1,6 +1,6 @@
 # Staging cPanel — /certificados_staging/
 
-> **Estado vigente:** staging operativo (entorno de trabajo diario). Producción del módulo aún no activada. Host sin `mod_env`/`SetEnv`: `.user.ini` + `auto_prepend_file` → bootstrap de config fuera del webroot. Migraciones `001`–`015`+. Checklist corto: [`deploy/staging/CHECKLIST.md`](../../deploy/staging/CHECKLIST.md).
+> **Estado vigente:** staging operativo como entorno de trabajo; producción `/certificados/` activa y en uso institucional por confirmación del responsable del 30/09/2026. Host sin `mod_env`/`SetEnv`: `.user.ini` + `auto_prepend_file` → bootstrap de config fuera del webroot. Migraciones `001`–`015`+. Checklist corto: [`deploy/staging/CHECKLIST.md`](../../deploy/staging/CHECKLIST.md).
 
 Runbook de preparación local y ejecución manual para staging. El agente no ejecuta deploy remoto ni toca cPanel/DB real. Entrega sin SMTP automático (copiar link / descargar PDF). Folio Angular y TCPDF son ambos válidos.
 
@@ -10,9 +10,9 @@ Guía general del host: [`00-cpanel-certificados.md`](00-cpanel-certificados.md)
 
 Preparar localmente un paquete revisable para `/certificados_staging/` y dejar gates manuales para que Marcos ejecute la subida real en una ventana acordada. Hasta que los gates estén confirmados, el cambio queda como preparación local + documentación.
 
-## Evidencia operativa vigente
+## Evidencia operativa histórica de staging
 
-El 2026-07-15, el candidato aislado de staging bajo `/certificados_staging/` aprobó el gate operativo P5-01. Producción bajo `/certificados/` no fue activada.
+El 2026-07-15, el candidato aislado de staging bajo `/certificados_staging/` aprobó el gate operativo P5-01. **En ese corte histórico**, producción bajo `/certificados/` todavía no había sido activada. La activación posterior fue confirmada por el responsable el 30/09/2026; este runbook no se reinterpreta como una verificación técnica de producción.
 
 | Área | Resultado verificado |
 |---|---|
