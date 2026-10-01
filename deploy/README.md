@@ -16,10 +16,12 @@ Mapa operativo cPanel del módulo de certificaciones.
 
 ## Entornos
 
+> La tabla refleja el estado operativo vigente informado por el responsable. Los checklists de `production/` siguen siendo útiles para futuras publicaciones/cambios y no constituyen por sí solos evidencia de la activación ya realizada.
+
 | | Staging | Producción (opción A) |
 |---|---|---|
 | Ruta web | `/certificados_staging/` | `/certificados/` |
-| Estado | Operativo | Preparación (plantillas listas); no activada hasta gate PHP + smoke |
+| Estado | Operativo | Activa y en uso institucional; confirmación del responsable 30/09/2026 |
 | Config/DB | Dedicadas | Dedicadas (nunca reutilizar staging) |
 | Plantillas | [`staging/`](staging/) | [`production/`](production/) |
 
@@ -35,7 +37,7 @@ No mezclar rutas, configs ni smokes entre entornos.
 6. Aplicar migraciones SQL pendientes en DB staging.
 7. Smoke: `GET …/api/health`, login, un flujo corto.
 
-## Flujo de activación producción (opción A)
+## Flujo de publicación/actualización de producción (opción A)
 
 Detalle en [`production/INSTRUCCIONES-SUBIDA.md`](production/INSTRUCCIONES-SUBIDA.md):
 
