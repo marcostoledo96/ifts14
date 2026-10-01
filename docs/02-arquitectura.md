@@ -71,8 +71,8 @@ Ambos PDF son válidos; el instituto decide cuál entregar.
 | | Staging | Producción |
 |---|---|---|
 | Ruta | `/certificados_staging/` | `/certificados/` |
-| Estado | Operativo | No activada para este módulo |
-| Config/DB | Dedicadas, separadas | Separadas cuando se active |
+| Estado | Operativo | Activa y en uso institucional (confirmación responsable 30/09/2026) |
+| Config/DB | Dedicadas, separadas | Separadas de staging |
 
 ## Seguridad (resumen)
 
