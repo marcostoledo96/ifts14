@@ -17,7 +17,7 @@ Bedelía carga curso y fechas
 → el destinatario valida en /validar/:token
 ```
 
-Entorno de trabajo diario: **staging** (`/certificados_staging/`). Producción aún no está activada para este módulo.
+Staging (`/certificados_staging/`) continúa como entorno de trabajo. Producción (`/certificados/`) está activa y en uso institucional, según confirmación del responsable del 30/09/2026. Los reportes históricos de staging conservan su contexto temporal.
 
 ## 2. Stack
 
